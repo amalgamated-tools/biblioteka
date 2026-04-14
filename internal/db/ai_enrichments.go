@@ -150,3 +150,68 @@ func (d *DB) DeleteAIEnrichment(ctx context.Context, userID, id string) error {
 	}
 	return nil
 }
+
+// ApplyAIEnrichmentInput holds the parameters for ApplyAIEnrichment.
+type ApplyAIEnrichmentInput struct {
+	BookID       string
+	UserID       string
+	EnrichmentID string
+	TagIDs       []string   // union-merged tag IDs to set on the book
+	BookUpdate   *BookInput // non-nil when description should be updated
+}
+
+// ApplyAIEnrichment atomically sets book tags, optionally updates the book
+// description, and marks the enrichment as applied within a single transaction.
+// It returns the updated AIEnrichment record.
+func (d *DB) ApplyAIEnrichment(ctx context.Context, input ApplyAIEnrichmentInput) (*AIEnrichment, error) {
+	slog.DebugContext(ctx, "db: applying AI enrichment",
+		slog.String(otelkeys.AIEnrichmentID, input.EnrichmentID),
+		slog.String(otelkeys.BookID, input.BookID),
+		slog.String(otelkeys.UserID, input.UserID),
+	)
+
+	var result *AIEnrichment
+	err := d.WithTx(ctx, func(tx *sql.Tx) error {
+		// 1. Set book tags (delete + re-insert).
+		if _, err := tx.ExecContext(ctx, `DELETE FROM book_tags WHERE book_id = $1`, input.BookID); err != nil {
+			return fmt.Errorf("delete book tags: %w", err)
+		}
+		seen := make(map[string]struct{}, len(input.TagIDs))
+		for _, tagID := range input.TagIDs {
+			if _, ok := seen[tagID]; ok {
+				continue
+			}
+			seen[tagID] = struct{}{}
+			if _, err := tx.ExecContext(ctx, `INSERT INTO book_tags (book_id, tag_id) VALUES ($1, $2)`, input.BookID, tagID); err != nil {
+				return fmt.Errorf("insert book tag: %w", err)
+			}
+		}
+
+		// 2. Optionally update book description.
+		if input.BookUpdate != nil {
+			bi := input.BookUpdate
+			if _, err := tx.ExecContext(ctx,
+				`UPDATE books SET title = $1, description = $2, asin = $3, isbn10 = $4, isbn13 = $5, goodreads_id = $6, hardcover_id = $7, google_books_id = $8, publication_date = $9, publisher = $10, language = $11, cover_image_url = $12, updated_at = `+d.now()+` WHERE id = $13`,
+				bi.Title, bi.Description, bi.ASIN, bi.ISBN10, bi.ISBN13, bi.GoodreadsID, bi.HardcoverID, bi.GoogleBooksID, bi.PublicationDate, bi.Publisher, bi.Language, bi.CoverImageURL, input.BookID,
+			); err != nil {
+				return fmt.Errorf("update book: %w", err)
+			}
+		}
+
+		// 3. Mark enrichment as applied.
+		row := tx.QueryRowContext(ctx,
+			`UPDATE ai_enrichments SET status = $1, updated_at = `+d.now()+` WHERE id = $2 AND user_id = $3 RETURNING `+aiEnrichmentColumns,
+			AIEnrichmentStatusApplied, input.EnrichmentID, input.UserID,
+		)
+		enrichment, err := scanAIEnrichment(row)
+		if err != nil {
+			return fmt.Errorf("update enrichment status: %w", err)
+		}
+		result = enrichment
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}

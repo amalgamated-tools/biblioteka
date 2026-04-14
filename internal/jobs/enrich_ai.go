@@ -24,7 +24,7 @@ type EnrichAIPayload struct {
 
 // NewEnrichAIHandler returns a job handler that fetches book metadata using
 // an LLM provider and stores the result as a pending AIEnrichment.
-func NewEnrichAIHandler(database *db.DB, provider llm.Provider, providerName string, publisher pubsub.Publisher) func(ctx context.Context, payload []byte) error {
+func NewEnrichAIHandler(database *db.DB, provider llm.Provider, providerName, modelName string, publisher pubsub.Publisher) func(ctx context.Context, payload []byte) error {
 	return func(ctx context.Context, payload []byte) error {
 		var p EnrichAIPayload
 		if err := json.Unmarshal(payload, &p); err != nil {
@@ -48,11 +48,11 @@ func NewEnrichAIHandler(database *db.DB, provider llm.Provider, providerName str
 			return nil
 		}
 
-		return enrichAI(ctx, database, provider, providerName, publisher, p)
+		return enrichAI(ctx, database, provider, providerName, modelName, publisher, p)
 	}
 }
 
-func enrichAI(ctx context.Context, database *db.DB, provider llm.Provider, providerName string, publisher pubsub.Publisher, p EnrichAIPayload) error {
+func enrichAI(ctx context.Context, database *db.DB, provider llm.Provider, providerName, modelName string, publisher pubsub.Publisher, p EnrichAIPayload) error {
 	channel := pubsub.MetadataChannel(p.BookID, p.UserID)
 
 	publishAIProgress(ctx, publisher, channel, providerName, "fetching_book", "Fetching book...")
@@ -116,7 +116,7 @@ func enrichAI(ctx context.Context, database *db.DB, provider llm.Provider, provi
 		generatedDesc = &result.GeneratedDescription
 	}
 
-	enrichment, err := database.CreateAIEnrichment(ctx, p.UserID, bookIDPtr, providerName, "", result.SuggestedTags, readingLevel, generatedDesc, raw)
+	enrichment, err := database.CreateAIEnrichment(ctx, p.UserID, bookIDPtr, providerName, modelName, result.SuggestedTags, readingLevel, generatedDesc, raw)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to create AI enrichment",
 			slog.String(otelkeys.BookID, p.BookID),
@@ -126,7 +126,7 @@ func enrichAI(ctx context.Context, database *db.DB, provider llm.Provider, provi
 		return fmt.Errorf("create AI enrichment for book %s: %w", p.BookID, err)
 	}
 
-	publishEvent(ctx, publisher, channel, progressEvent{Event: EventComplete, Source: providerName, MetadataID: enrichment.ID})
+	publishEvent(ctx, publisher, channel, progressEvent{Event: EventComplete, Source: providerName, AIEnrichmentID: enrichment.ID})
 
 	return nil
 }

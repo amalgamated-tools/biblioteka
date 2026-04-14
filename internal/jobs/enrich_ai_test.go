@@ -58,7 +58,7 @@ func TestEnrichAI_Success(t *testing.T) {
 	payload, err := json.Marshal(EnrichAIPayload{BookID: book.ID, UserID: user.ID})
 	require.NoError(t, err)
 
-	handler := NewEnrichAIHandler(d, provider, "ollama", publisher)
+	handler := NewEnrichAIHandler(d, provider, "ollama", "llama3", publisher)
 	err = handler(t.Context(), payload)
 	require.NoError(t, err)
 
@@ -67,6 +67,7 @@ func TestEnrichAI_Success(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, db.AIEnrichmentStatusPending, enrichment.Status)
 	require.Equal(t, "ollama", enrichment.Provider)
+	require.Equal(t, "llama3", enrichment.Model)
 	require.Contains(t, enrichment.SuggestedTags, "sci-fi")
 
 	// Verify complete event was published
@@ -87,7 +88,7 @@ func TestEnrichAI_NilProvider(t *testing.T) {
 	payload, err := json.Marshal(EnrichAIPayload{BookID: book.ID, UserID: user.ID})
 	require.NoError(t, err)
 
-	handler := NewEnrichAIHandler(d, nil, "ollama", publisher)
+	handler := NewEnrichAIHandler(d, nil, "ollama", "llama3", publisher)
 	err = handler(t.Context(), payload)
 	require.NoError(t, err) // nil provider is not a retriable error
 
@@ -109,7 +110,7 @@ func TestEnrichAI_ProviderError(t *testing.T) {
 	payload, err := json.Marshal(EnrichAIPayload{BookID: book.ID, UserID: user.ID})
 	require.NoError(t, err)
 
-	handler := NewEnrichAIHandler(d, provider, "ollama", publisher)
+	handler := NewEnrichAIHandler(d, provider, "ollama", "llama3", publisher)
 	err = handler(t.Context(), payload)
 	require.Error(t, err) // provider error should be returned for retry
 
