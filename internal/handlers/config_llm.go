@@ -1,12 +1,15 @@
 package handlers
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/amalgamated-tools/biblioteka/internal/llm"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
@@ -64,6 +67,12 @@ func (h *ConfigHandler) handleSetLLMConfig(w http.ResponseWriter, r *http.Reques
 
 	if req.Enabled && req.Endpoint == "" {
 		writeError(r.Context(), w, http.StatusBadRequest, "endpoint is required when LLM is enabled")
+		return
+	}
+
+	if req.Enabled && req.Provider != "" && !llm.IsSupported(req.Provider) {
+		writeError(r.Context(), w, http.StatusBadRequest,
+			fmt.Sprintf("unsupported provider %q; supported: %s", req.Provider, strings.Join(llm.SupportedProviders, ", ")))
 		return
 	}
 

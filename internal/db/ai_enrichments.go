@@ -52,7 +52,7 @@ func scanAIEnrichment(row interface{ Scan(...any) error }) (*AIEnrichment, error
 		return nil, err
 	}
 	if err := json.Unmarshal([]byte(suggestedTagsJSON), &e.SuggestedTags); err != nil {
-		e.SuggestedTags = []string{}
+		return nil, fmt.Errorf("unmarshal suggested_tags: %w", err)
 	}
 	return e, nil
 }
@@ -70,7 +70,6 @@ func (d *DB) CreateAIEnrichment(
 ) (*AIEnrichment, error) {
 	slog.DebugContext(ctx, "db: creating AI enrichment",
 		slog.String(otelkeys.UserID, userID),
-		slog.String(otelkeys.AIEnrichmentID, ""),
 	)
 
 	if suggestedTags == nil {
