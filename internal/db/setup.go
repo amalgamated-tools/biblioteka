@@ -132,6 +132,26 @@ func setupSQLite(ctx context.Context) (*DB, error) {
 		return nil, fmt.Errorf("failed to run migrations on database at %s: %w", dbFilePath, err)
 	}
 
+	// Verify FTS5 index integrity and auto-rebuild if corrupted. A failed
+	// integrity check or rebuild is non-fatal: it is logged and the server
+	// continues to start. Searches will still function; they may just return
+	// stale or incomplete results until a manual rebuild is triggered via
+	// POST /api/admin/search/reindex.
+	if err := d.CheckFTSIntegrity(ctx); err != nil {
+		slog.WarnContext(ctx, "FTS5 index integrity check failed, attempting rebuild",
+			slog.String(otelkeys.Path, dbFilePath),
+			slog.Any(otelkeys.Error, err),
+		)
+		if rbErr := d.RebuildFTS(ctx); rbErr != nil {
+			slog.ErrorContext(ctx, "FTS5 index rebuild failed; search results may be incomplete",
+				slog.String(otelkeys.Path, dbFilePath),
+				slog.Any(otelkeys.Error, rbErr),
+			)
+		} else {
+			slog.InfoContext(ctx, "FTS5 index rebuilt successfully", slog.String(otelkeys.Path, dbFilePath))
+		}
+	}
+
 	slog.InfoContext(ctx, "Database setup complete", slog.String(otelkeys.Path, dbFilePath))
 	return d, nil
 }

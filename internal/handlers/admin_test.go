@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/stretchr/testify/require"
 )
 
@@ -237,4 +238,66 @@ func TestHandleSetAdmin_InvalidPath(t *testing.T) {
 	h.HandleSetAdmin(w, r)
 
 	require.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+// --- HandleFTSRebuild ---
+
+func TestHandleFTSRebuild_AdminSuccess(t *testing.T) {
+	h, adminID, _ := setupAdminHandler(t)
+
+	r := httptest.NewRequest(http.MethodPost, "/api/admin/search/reindex", nil)
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleFTSRebuild(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	var resp map[string]string
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	require.Equal(t, "search index rebuilt", resp["message"])
+}
+
+func TestHandleFTSRebuild_NonAdminForbidden(t *testing.T) {
+	h, _, regularID := setupAdminHandler(t)
+
+	r := httptest.NewRequest(http.MethodPost, "/api/admin/search/reindex", nil)
+	r = withUserID(r, regularID)
+	w := httptest.NewRecorder()
+
+	h.HandleFTSRebuild(w, r)
+
+	require.Equal(t, http.StatusForbidden, w.Code)
+}
+
+func TestHandleFTSRebuild_MethodNotAllowed(t *testing.T) {
+	h, adminID, _ := setupAdminHandler(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/api/admin/search/reindex", nil)
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleFTSRebuild(w, r)
+
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
+}
+
+func TestHandleFTSRebuild_RebuildPreservesSearchResults(t *testing.T) {
+	h, adminID, _ := setupAdminHandler(t)
+
+	_, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Foundation"})
+	require.NoError(t, err, "CreateBook()")
+
+	r := httptest.NewRequest(http.MethodPost, "/api/admin/search/reindex", nil)
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleFTSRebuild(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// Verify search still returns results after rebuild.
+	books, total, err := h.DB.SearchBooks(t.Context(), "Foundation", 10, 0)
+	require.NoError(t, err, "SearchBooks() after rebuild")
+	require.Equal(t, 1, total)
+	require.Len(t, books, 1)
 }

@@ -485,6 +485,30 @@ This endpoint requires no authentication and is suitable for liveness/readiness 
 
 ---
 
+## Search Index Maintenance (SQLite)
+
+Biblioteka uses an [FTS5](https://www.sqlite.org/fts5.html) virtual table (`books_fts`) to accelerate full-text search on SQLite. The index is **maintained automatically** by database triggers on every insert, update, and delete. No routine maintenance is needed.
+
+### Startup integrity check
+
+At startup, Biblioteka runs an FTS5 integrity check. If corruption is detected (which can happen after running SQLite's `VACUUM` command, because `VACUUM` may remap the implicit rowids that the content-table index relies on), the server automatically rebuilds the index and logs a warning. Startup is never aborted due to an FTS failure — searches may return incomplete results until the rebuild finishes.
+
+### Manual rebuild
+
+Admins can trigger a rebuild on demand via the API:
+
+```bash
+curl -sf -X POST http://localhost:8080/api/admin/search/reindex \
+  -H "Authorization: Bearer <admin-jwt>"
+# → {"message":"search index rebuilt"}
+```
+
+This is useful if you have run `VACUUM` on the database file outside of normal server operation, or if you suspect the index is out of sync. The rebuild is synchronous and may take a moment on large libraries.
+
+> **PostgreSQL:** The pg_trgm GIN indexes used for search on PostgreSQL are maintained automatically by the database engine. The `/api/admin/search/reindex` endpoint is accepted but performs no work on PostgreSQL instances.
+
+---
+
 ## Log-Based Troubleshooting
 
 Biblioteka writes structured JSON logs to stdout. Increase verbosity by setting `LOG_LEVEL=debug`:

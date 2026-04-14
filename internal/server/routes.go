@@ -46,6 +46,7 @@ func (s *Server) setupRoutes(ctx context.Context) {
 	// Protected admin routes (JWT-only: user management)
 	s.mux.Handle("/api/admin/users", s.requireJWTAuth(http.HandlerFunc(s.adminHandler.HandleListUsers)))
 	s.mux.Handle("/api/admin/users/", s.requireJWTAuth(http.HandlerFunc(s.adminHandler.HandleSetAdmin)))
+	s.mux.Handle("/api/admin/search/reindex", s.requireJWTAuth(http.HandlerFunc(s.adminHandler.HandleFTSRebuild)))
 
 	// Protected library routes
 	s.mux.Handle("/api/libraries", s.requireAuth(http.HandlerFunc(s.libraryHandler.HandleLibraries)))

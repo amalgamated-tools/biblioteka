@@ -65,23 +65,63 @@ func (h *AdminHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) {
 	listEntities(w, r, "users", h.DB.ListUsers, toAdminUserDTO)
 }
 
-// HandleSetAdmin updates the admin status of the specified user (admin only).
+// HandleFTSRebuild triggers a full rebuild of the FTS5 full-text search index
+// (admin only, SQLite only). On PostgreSQL the pg_trgm GIN indexes used for
+// search are maintained automatically, so this endpoint returns successfully
+// without performing any work.
 //
-//	@Summary		Set user admin status
-//	@Description	Change a user's admin status (admin only)
+// Rebuilding is necessary after running SQLite's VACUUM command, which can
+// silently remap rowids and corrupt the content-table FTS index. Biblioteka
+// also checks and auto-rebuilds the index at startup.
+//
+//	@Summary		Rebuild search index
+//	@Description	Triggers a full rebuild of the FTS5 search index (admin only, SQLite only)
 //	@Tags			Admin
-//	@Accept			json
 //	@Produce		json
 //	@Security		BearerAuth
-//	@Failure		401		{object}	errorResponse
-//	@Param			id		path		string			true	"User ID"
-//	@Param			body	body		setAdminRequest	true	"Set admin request"
-//	@Success		200		{object}	object{message=string}
-//	@Failure		400		{object}	errorResponse
-//	@Failure		403		{object}	errorResponse
-//	@Failure		404		{object}	errorResponse
-//	@Failure		500		{object}	errorResponse
-//	@Router			/admin/users/{id} [put]
+//	@Failure		401	{object}	errorResponse
+//	@Failure		403	{object}	errorResponse
+//	@Failure		405	{object}	errorResponse
+//	@Failure		500	{object}	errorResponse
+//	@Success		200	{object}	object{message=string}
+//	@Router			/admin/search/reindex [post]
+func (h *AdminHandler) HandleFTSRebuild(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	if !requireAdmin(h.DB, w, r) {
+		return
+	}
+
+	if err := h.DB.RebuildFTS(r.Context()); err != nil {
+		slog.ErrorContext(r.Context(), "FTS rebuild failed", slog.Any(otelkeys.Error, err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to rebuild search index")
+		return
+	}
+
+	callerID := auth.UserIDFromContext(r.Context())
+	logAudit(r.Context(), h.DB, callerID, db.AuditActionFTSRebuilt, "fts", "books_fts", nil)
+
+	writeJSON(r.Context(), w, http.StatusOK, map[string]string{"message": "search index rebuilt"})
+}
+
+// @Summary		Set user admin status
+// @Description	Change a user's admin status (admin only)
+// @Tags			Admin
+// @Accept			json
+// @Produce		json
+// @Security		BearerAuth
+// @Failure		401		{object}	errorResponse
+// @Param			id		path		string			true	"User ID"
+// @Param			body	body		setAdminRequest	true	"Set admin request"
+// @Success		200		{object}	object{message=string}
+// @Failure		400		{object}	errorResponse
+// @Failure		403		{object}	errorResponse
+// @Failure		404		{object}	errorResponse
+// @Failure		500		{object}	errorResponse
+// @Router			/admin/users/{id} [put]
 func (h *AdminHandler) HandleSetAdmin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
 		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")

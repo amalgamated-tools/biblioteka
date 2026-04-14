@@ -36,6 +36,7 @@ const (
 	AuditActionOPDSCredentialDeleted   = "opds_credential.deleted"
 	AuditActionOPDSCredentialUpdated   = "opds_credential.updated"
 	AuditActionPasswordChanged         = "user.password_changed"
+	AuditActionFTSRebuilt              = "fts.rebuilt"
 	AuditActionReadingListBookAdded    = "reading_list.book_added"
 	AuditActionReadingListBookRemoved  = "reading_list.book_removed"
 	AuditActionReadingListCreated      = "reading_list.created"
