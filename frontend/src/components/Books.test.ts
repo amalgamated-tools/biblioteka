@@ -19,6 +19,7 @@ vi.mock("./ui/BookList.svelte", () => ({ default: () => {} }));
 
 vi.mock("lucide-svelte", () => ({
   BookOpen: () => {},
+  Search: () => {},
 }));
 
 import Books from "./Books.svelte";
@@ -36,5 +37,13 @@ describe("Books", () => {
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
       "All Books",
     );
+  });
+
+  it("renders a search input for filtering books", async () => {
+    render(Books);
+    await tick();
+
+    const input = screen.getByRole("searchbox", { name: "Search books" });
+    expect(input).toBeInTheDocument();
   });
 });
