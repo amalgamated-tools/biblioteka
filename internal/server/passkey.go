@@ -56,8 +56,8 @@ func newPasskeyHandler(ctx context.Context, database *db.DB, jwt *auth.JWTManage
 	}
 
 	slog.InfoContext(ctx, "WebAuthn passkeys enabled",
-		slog.String("webauthn.rp_id", rpID),
-		slog.String("webauthn.rp_name", rpName),
+		slog.String(otelkeys.WebAuthnRPID, rpID),
+		slog.String(otelkeys.WebAuthnRPName, rpName),
 	)
 
 	return &handlers.PasskeyHandler{DB: database, WebAuthn: wa, JWT: jwt, SecureCookies: secureCookies}

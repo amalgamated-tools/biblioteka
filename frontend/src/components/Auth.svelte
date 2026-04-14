@@ -85,7 +85,8 @@
       const { session_id, options } = await beginPasskeyLogin();
 
       const assertion = await navigator.credentials.get({
-        publicKey: (options as { publicKey: unknown }).publicKey as PublicKeyCredentialRequestOptions,
+        publicKey: (options as { publicKey: unknown })
+          .publicKey as PublicKeyCredentialRequestOptions,
       });
 
       if (!assertion || !(assertion instanceof PublicKeyCredential)) {
@@ -95,7 +96,9 @@
 
       // Serialize the credential to JSON for the server.
       // PublicKeyCredential.toJSON() is available in all modern browsers.
-      const assertionJSON = (assertion as PublicKeyCredential & { toJSON(): unknown }).toJSON();
+      const assertionJSON = (
+        assertion as PublicKeyCredential & { toJSON(): unknown }
+      ).toJSON();
 
       const result = await finishPasskeyLogin(session_id, assertionJSON);
       authStore.user = result.user;
