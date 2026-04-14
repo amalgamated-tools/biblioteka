@@ -1,7 +1,13 @@
 <script lang="ts">
   import { BookCheck } from "lucide-svelte";
   import { authStore } from "../stores/auth.svelte";
-  import { getOidcEnabled, getSignupEnabled } from "../lib/api";
+  import {
+    getOidcEnabled,
+    getSignupEnabled,
+    getPasskeyEnabled,
+    beginPasskeyLogin,
+    finishPasskeyLogin,
+  } from "../lib/api";
   import { required, minLength, validate } from "../lib/validation";
   import AlertBanner from "./ui/AlertBanner.svelte";
   import Button from "./ui/Button.svelte";
@@ -15,7 +21,9 @@
   let loading = $state(false);
   let oidcEnabled = $state(false);
   let signupEnabled = $state(true);
+  let passkeyEnabled = $state(false);
   let initError: string | null = $state(null);
+  let passkeyLoading = $state(false);
 
   function handleTabKeydown(event: KeyboardEvent) {
     if (loading) return;
@@ -59,8 +67,49 @@
           console.error("Failed to check signup status", e);
           initError ??= "Unable to reach the server to load auth settings";
         });
+      getPasskeyEnabled()
+        .then((enabled) => {
+          passkeyEnabled = enabled;
+        })
+        .catch((e) => {
+          console.error("Failed to check passkey status", e);
+        });
     }
   });
+
+  async function handlePasskeySignIn() {
+    error = null;
+    passkeyLoading = true;
+
+    try {
+      const { session_id, options } = await beginPasskeyLogin();
+
+      const assertion = await navigator.credentials.get({
+        publicKey: (options as { publicKey: unknown }).publicKey as PublicKeyCredentialRequestOptions,
+      });
+
+      if (!assertion || !(assertion instanceof PublicKeyCredential)) {
+        error = "No passkey was selected";
+        return;
+      }
+
+      // Serialize the credential to JSON for the server.
+      // PublicKeyCredential.toJSON() is available in all modern browsers.
+      const assertionJSON = (assertion as PublicKeyCredential & { toJSON(): unknown }).toJSON();
+
+      const result = await finishPasskeyLogin(session_id, assertionJSON);
+      authStore.user = result.user;
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "NotAllowedError") {
+        // User cancelled or no passkey available — don't surface as an error.
+        error = null;
+      } else {
+        error = err instanceof Error ? err.message : "Passkey sign-in failed";
+      }
+    } finally {
+      passkeyLoading = false;
+    }
+  }
 
   async function handleSubmit(e: SubmitEvent) {
     e.preventDefault();
@@ -152,6 +201,31 @@
             <span
               class="px-3 bg-white dark:bg-ink-900 text-ink-500 dark:text-ink-300"
               >or</span
+            >
+          </div>
+        </div>
+      {/if}
+
+      {#if passkeyEnabled}
+        <button
+          type="button"
+          disabled={loading || passkeyLoading}
+          onclick={handlePasskeySignIn}
+          class="w-full flex items-center justify-center gap-2 bg-accent-600 hover:bg-accent-700 dark:bg-accent-700 dark:hover:bg-accent-600 text-white font-medium py-3 px-4 rounded-xl transition-all hover:shadow-lg mb-6 disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {passkeyLoading ? "Waiting for passkey..." : "Sign in with a Passkey"}
+        </button>
+
+        <div class="relative mb-6">
+          <div class="absolute inset-0 flex items-center">
+            <div
+              class="w-full border-t border-ink-100 dark:border-ink-700"
+            ></div>
+          </div>
+          <div class="relative flex justify-center text-sm">
+            <span
+              class="px-3 bg-white dark:bg-ink-900 text-ink-500 dark:text-ink-300"
+              >or sign in with password</span
             >
           </div>
         </div>

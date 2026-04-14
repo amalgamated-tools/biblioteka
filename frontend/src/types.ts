@@ -356,6 +356,15 @@ export interface PaginatedAuditLogs {
   offset: number;
 }
 
+// Passkeys
+
+export interface PasskeyCredential {
+  id: string;
+  name: string;
+  aaguid: string;
+  created_at: string;
+}
+
 // Reading Lists
 
 export interface ReadingList {
