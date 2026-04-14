@@ -29,6 +29,13 @@ func (d *DB) RecordBookDownload(ctx context.Context, bookFileID, userID string) 
 	return err
 }
 
+// scanMonthlyDownloadCount scans a single MonthlyDownloadCount row.
+func scanMonthlyDownloadCount(row interface{ Scan(...any) error }) (*MonthlyDownloadCount, error) {
+	return scanRow(row, func(m *MonthlyDownloadCount) []any {
+		return []any{&m.Month, &m.Count}
+	})
+}
+
 // GetMonthlyDownloads returns the download counts per calendar month for the
 // authenticated user over the last `months` calendar months (including the
 // current month). Results are ordered oldest-first and always contain an entry
@@ -96,15 +103,12 @@ ORDER BY ms.month ASC`
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	result := make([]MonthlyDownloadCount, 0)
-	for rows.Next() {
-		var m MonthlyDownloadCount
-		if err := rows.Scan(&m.Month, &m.Count); err != nil {
-			return nil, err
-		}
-		result = append(result, m)
+	result, err := collectRows(rows, scanMonthlyDownloadCount)
+	if err != nil {
+		return nil, err
 	}
-	return result, rows.Err()
+	if result == nil {
+		return []MonthlyDownloadCount{}, nil
+	}
+	return result, nil
 }
