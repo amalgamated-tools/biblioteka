@@ -98,12 +98,14 @@ func (h *AdminHandler) HandleFTSRebuild(w http.ResponseWriter, r *http.Request) 
 	}
 
 	callerID := auth.UserIDFromContext(r.Context())
+	rebuildBaseCtx := context.WithoutCancel(r.Context())
 
 	// Run the rebuild asynchronously so the response is not blocked by the
-	// server's 10 s WriteTimeout. The rebuild context is decoupled from the
-	// request so it survives after the HTTP handler returns.
+	// server's 10 s WriteTimeout. The rebuild context is decoupled from request
+	// cancellation so it survives after the HTTP handler returns, while still
+	// preserving request-scoped values for logs and audit records.
 	go func() {
-		rebuildCtx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+		rebuildCtx, cancel := context.WithTimeout(rebuildBaseCtx, 5*time.Minute)
 		defer cancel()
 
 		if err := h.DB.RebuildFTS(rebuildCtx); err != nil {

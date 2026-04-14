@@ -315,4 +315,20 @@ func TestHandleFTSRebuild_RebuildPreservesSearchResults(t *testing.T) {
 		books, total, err := h.DB.SearchBooks(t.Context(), "Foundation", 10, 0)
 		return err == nil && total == 1 && len(books) == 1
 	}, 5*time.Second, 50*time.Millisecond, "SearchBooks() after rebuild")
+
+	// The rebuild goroutine also writes an audit log entry after the rebuild.
+	// Wait for it so test cleanup does not close the DB while the goroutine
+	// is still running.
+	require.Eventually(t, func() bool {
+		logs, _, err := h.DB.ListAuditLogs(t.Context(), 10, 0)
+		if err != nil {
+			return false
+		}
+		for _, l := range logs {
+			if l.Action == db.AuditActionFTSRebuilt {
+				return true
+			}
+		}
+		return false
+	}, 5*time.Second, 50*time.Millisecond, "fts.rebuilt audit log after rebuild")
 }

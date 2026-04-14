@@ -501,7 +501,8 @@ Admins can trigger a rebuild on demand via the API:
 ```bash
 curl -sf -X POST http://localhost:8080/api/admin/search/reindex \
   -H "Authorization: Bearer <admin-jwt>"
-# → {"message":"search index rebuilt"}
+# → 202 Accepted
+# → {"message":"search index rebuild started"}
 ```
 
 This is useful if you have run `VACUUM` on the database file outside of normal server operation, or if you suspect the index is out of sync. The endpoint returns `202 Accepted` immediately and runs the rebuild in the background. A successful rebuild emits an audit log entry with action `fts.rebuilt` (`entity_type: fts`).
