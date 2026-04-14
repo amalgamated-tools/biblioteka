@@ -36,7 +36,7 @@ func (d *DB) RecordBookDownload(ctx context.Context, bookFileID, userID string) 
 func (d *DB) GetMonthlyDownloads(ctx context.Context, userID string, months int) ([]MonthlyDownloadCount, error) {
 	slog.DebugContext(ctx, "db: fetching monthly download counts",
 		slog.String(otelkeys.UserID, userID),
-		slog.Int(otelkeys.Count, months),
+		slog.Int(otelkeys.Limit, months),
 	)
 
 	var query string
