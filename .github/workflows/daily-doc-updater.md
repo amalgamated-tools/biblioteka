@@ -22,6 +22,11 @@ permissions:
 
 tracker-id: daily-doc-updater
 engine: copilot
+
+concurrency:
+  group: daily-doc-updater
+  cancel-in-progress: true  
+
 tools:
   github:
     toolsets: [default]
