@@ -34,9 +34,11 @@
 
   // Load list from store or server.
   $effect(() => {
-    list = readingListStore.lists.find((l) => l.id === listId) ?? null;
+    const found =
+      readingListStore.lists.find((l) => l.id === listId) ?? null;
+    list = found;
     error = null;
-    if (!list && readingListStore.loaded) {
+    if (!found && readingListStore.loaded) {
       error = readingListStore.loadError ?? "Reading list not found.";
     }
   });
