@@ -95,16 +95,18 @@ describe("BookList table view link accessibility (WCAG 2.1.1)", () => {
     const titleLink = screen.getByRole("link", { name: "Test Book" });
     expect(titleLink).not.toHaveAttribute("tabindex");
 
-    // Verify the link is actually reachable via Tab
+    // Bound the number of tab presses so the test fails fast if focus never reaches the link
+    const maxTabPresses = 10;
+    let tabPresses = 1;
     await user.tab();
-    // Tab through UI elements until focus reaches the title link
-    while (
-      document.activeElement !== titleLink &&
-      document.activeElement !== document.body
-    ) {
+    while (document.activeElement !== titleLink && tabPresses < maxTabPresses) {
       await user.tab();
+      tabPresses += 1;
     }
-    expect(document.activeElement).toBe(titleLink);
+    expect(
+      document.activeElement,
+      `Expected title link to be reachable within ${maxTabPresses} Tab presses`,
+    ).toBe(titleLink);
   });
 
   it("title link points to the book route", async () => {
