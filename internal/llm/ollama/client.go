@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -82,7 +83,7 @@ func (c *Client) Generate(ctx context.Context, prompt string) (string, error) {
 	}
 
 	if result.Message.Content == "" {
-		return "", fmt.Errorf("ollama: empty response content")
+		return "", errors.New("ollama: empty response content")
 	}
 
 	return result.Message.Content, nil
