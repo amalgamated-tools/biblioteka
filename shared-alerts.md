@@ -1,46 +1,38 @@
 # Shared Alerts
-**Updated:** 2026-04-13T23:45Z by agent-performance-analyzer
+**Updated:** 2026-04-14T23:44Z by agent-performance-analyzer
 
 ## Active Alerts
 
-### CRITICAL: Duplicate Code Detector Missing API Key
-- CODEX_API_KEY/OPENAI_API_KEY not configured — hard fail every run (36+ failures)
-- Action needed: Configure CODEX_API_KEY secret in repository settings
-- Impact: Zero output from only non-Copilot engine in ecosystem
+### CRITICAL: daily-doc-updater Triple Duplicate PRs
+- PRs #1994, #1980, #1976 identical: "docs(background-jobs): add scan:watch-folder"
+- 3rd consecutive day with duplicate PRs — deduplication urgently needed
+- Fix: Add `skip-if-match` or check for open PRs with same title before creating
 
-### MEDIUM: contribution-check Over-Creation (Persists)
-- Running 4x/day, creating report issues for "lgtm" / zero-finding scenarios
-- Issue #1875 created 2026-04-13 with 0 actionable items
-- Recommendation: Add skip condition when all checks pass with no findings
+### CRITICAL: Elevated Workflow Failure Rate (11% today)
+- 6 [aw] failures Apr 14: contribution-check, daily-repo-chronicle, markdown-linter, issue-triage, update-docs, contribution-guidelines-checker
+- Total open [aw] failures: 7 open issues (#1981, #1972, #1958, #1957, #1956, #1950, #1733)
+- Investigate shared root cause (MCP server? auth?) across all failures
 
-### MEDIUM: daily-doc-updater Duplicate PRs
-- PRs #1865 and #1870 both address "docs(stats): fix clamping description" — near-duplicate
-- 10 agent PRs currently open; review bandwidth may be bottleneck
-- Recommendation: Add deduplication check before creating docs PRs
+### HIGH: PR Backlog Surge
+- 22 open agent PRs (9 bot + 13 Copilot) vs ~10 yesterday
+- PR merge rate healthy (89%) but reviewer bandwidth may be strained
+- Alert threshold: throttle agents if backlog exceeds 25
+
+### MEDIUM: contribution-check Over-Creation
+- Creates issues even on "lgtm" runs — #1947 is zero-finding report
+- Fix: Add `skip-if-match` or no-findings skip condition
 
 ### MEDIUM: unbloat-docs Low Merge Rate
-- PR #1878 open (docs/administration unbloat)
-- Historical: 0% merge rate for recent batch
-- Recommendation: Review PR quality or adjust scope of changes
+- PR #1967 open to improve scope criteria — wait for merge before next cycle
 
-### MEDIUM: PR Backlog Growing
-- 10 open agent PRs (up from ~5 on Apr 12)
-- If maintainer bandwidth is limited, some agents may need throttling
-- Monitor: if backlog > 15 open agent PRs, recommend rate-limiting
+### LOW: Rapid Ecosystem Growth
+- 24 → 54 workflows in 10 days (+125%) — quality controls may lag
 
-### LOW: 5 Open [aw] Failure Issues (Stale)
-- #1753, #1737, #1735, #1730, #1702 — open since Apr 12, no resolution
-- These are noop/safe-output related failures from various workflows
-- May need manual triage by maintainer
+## Resolved Since Apr 13
+- A11y: 4 more issues resolved (#1904, #1902, #1900, #1898 merged in v0.13.0)
+- duplicate-code-detector (Codex): no new failures — likely removed
 
-### LOW: daily-plan Issue Staleness
-- #1804 Daily Plan from 2026-04-12 still open as of 2026-04-13
-- Daily plan issues should be closed/resolved within 24h
-- Recommendation: Add auto-close after 24h to daily-plan workflow
-
-## Resolved
-- a11y issues: RESOLVED (all merged in v0.10.0)
-- update-docs duplicate PRs: RESOLVED Apr 10
-- Copilot PR queue backlog: RESOLVED Apr 8
-- v0.10.0 shipped Apr 12 with features from agentic discussions
-- v0.11.0 release PR #1781 in progress
+## For Campaign Manager
+- Task-miner → Copilot PR chain active: #1968, #1964, #1965 from task-miner issues
+- Large feature PRs open: #1974 (AI enrichment), #1973 (recommendations), #1963 (groups)
+- v0.13.0 release PR #1959 open

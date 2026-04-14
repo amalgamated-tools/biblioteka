@@ -1,33 +1,32 @@
-# Agent Performance — 2026-04-13 (Evening)
-**Run:** 2026-04-13T23:45Z
+# Agent Performance — 2026-04-14 (Evening)
+**Run:** 2026-04-14T23:44Z
 
 ## Snapshot
-- 54 workflows registered; 53 Copilot / 1 Codex; all compiled
-- Agent PR merge rate (28 closed agent PRs): 82%
-- Overall PR merge rate (50 sample): 90%
-- Open issues: 17 (12 agent-created, 3 human, 2 other)
-- Open PRs: 11 (9 from amalgamated-bot, 1 human release PR)
-- Ecosystem growth: 24 → 54 workflows since Apr 4 metrics snapshot
+- 54 workflows registered; all Copilot engine; all compiled
+- Copilot PR merge rate (28 closed sample): 89% (avg 15.1h)
+- Bot (amalgamated-bot) PR merge rate (17 closed sample): 88% (avg 7.9h)
+- Open issues: 29 (20 agent-created today, 7 [aw] failure)
+- Open PRs: 23 (9 bot, 13 Copilot, 1 human release)
+- **PR backlog surge: 22 agent PRs open (up from ~10 yesterday)**
 
 ## Top Performers
-- **code-simplifier**: 100% merge rate; refactoring changes accepted immediately
-- **discussion-task-miner**: 3 relevant issues created today (#1842, #1839, #1840) — high quality task extraction
-- **repository-quality-improver**: New issue #1884 with thorough cross-dialect analysis
-- **tech-content-editorial-board**: Issue #1872 well-structured high-priority analysis
-- **daily-doc-updater**: Highly active; ~82% agent PR merge rate; volume leader
+- **discussion-task-miner**: 3 actionable issues closed today (#1942, #1939, #1938) → led to Copilot PRs #1968, #1964, #1965 — excellent quality chain
+- **daily-accessibility-review**: 4 a11y issues closed, PRs merged in v0.13.0 — high quality and completion
+- **daily-qa**: PR #1988 fix: otelkeys.Limit and ISBN fix — precise, targeted, merged quickly
+- **daily-perf-improver**: PR #1982 parallelize LoadBookRelations — valid perf improvement
+- **repository-quality-improver**: Issue #1990 API-Frontend type contract analysis — thorough, cross-codebase
+- **tech-content-editorial-board**: Issue #1978 migration accuracy review — high signal-to-noise
 
-## Underperformers
-- **duplicate-code-detector** (CODEX): HARD FAIL — CODEX_API_KEY missing; 36+ failures (CRITICAL, ongoing)
-- **contribution-check**: Issue #1875 created today for "lgtm" scenario — still low signal-to-noise (MEDIUM, persists since Apr 12)
-- **unbloat-docs**: PR #1878 open, previous batch had 0% merge rate (MEDIUM, ongoing)
-- **daily-doc-updater** (duplicate PRs): PRs #1865 and #1870 are near-duplicate docs PRs — over-creation signal
+## Critical Issues
+1. **daily-doc-updater**: TRIPLE DUPLICATE — PRs #1994, #1980, #1976 all identical "docs(background-jobs): add scan:watch-folder" — 3 open at once (CRITICAL, 3rd consecutive day)
+2. **Workflow Failure Surge**: 6 new [aw] failures today (contribution-check, daily-repo-chronicle, markdown-linter, issue-triage, update-docs, contribution-guidelines-checker)
+3. **contribution-check**: Issue #1947 open with "lgtm" label — zero-finding report still created (MEDIUM)
+4. **PR Backlog**: 22 open agent PRs — review bandwidth concern, up from ~10 on Apr 13
 
-## New Observations Since Apr 12
-- daily-doc-updater created duplicate docs PRs (#1865 and #1870 both "fix clamping description")
-- PR backlog at 10 agent PRs (up from ~5 on Apr 12) — review bandwidth may be limited
-- Overall merge rate improved from 84% → 90%
-- repo-assist active with CI improvement suggestion (#1827) — positive signal
-- 5 open [aw] failure issues remain from Apr 12 (#1753, #1737, #1735, #1730, #1702) — no resolution yet
+## Alerts Updated
+- daily-doc-updater duplicate PR issue escalated to CRITICAL (3 identical PRs)
+- New [aw] failures: 6 workflows failing daily (elevated concern)
+- PR backlog now at 22 open (raised threshold alert)
 
 ## Discussion Created
-Agent Performance Report — Week of 2026-04-13
+Agent Performance Report — Week of 2026-04-14
