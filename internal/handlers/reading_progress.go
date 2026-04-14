@@ -57,16 +57,6 @@ func (h *ReadingProgressHandler) HandleReadingProgressStats(w http.ResponseWrite
 	ctx := r.Context()
 	userID := auth.UserIDFromContext(ctx)
 
-	stats, err := h.DB.GetReadingStats(ctx, userID)
-	if err != nil {
-		slog.ErrorContext(ctx, "failed to get reading stats",
-			slog.Any(otelkeys.Error, err),
-			slog.String(otelkeys.UserID, userID),
-		)
-		writeError(ctx, w, http.StatusInternalServerError, "failed to get reading stats")
-		return
-	}
-
 	progressList, err := h.DB.ListReadingProgress(ctx, userID)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to list reading progress",
@@ -77,27 +67,28 @@ func (h *ReadingProgressHandler) HandleReadingProgressStats(w http.ResponseWrite
 		return
 	}
 
-	// Compute streak from the already-fetched progress list to avoid an
-	// additional DB round-trip.
+	// Compute all aggregate values from the already-fetched list to avoid
+	// additional DB round-trips. GetReadingStats issued a separate COUNT(*)
+	// query over the same table and WHERE clause; we can derive the same
+	// values in a single pass.
 	timestamps := make([]time.Time, len(progressList))
-	for i := range progressList {
-		timestamps[i] = progressList[i].UpdatedAt.Time
-	}
-	streak := db.ComputeReadingStreak(timestamps)
-
+	totalFinished := 0
 	inProgress := make([]readingProgressItemDTO, 0)
 	for i := range progressList {
 		p := &progressList[i]
-		if p.Percentage <= 0 || p.Percentage >= 0.99 {
-			continue
+		timestamps[i] = p.UpdatedAt.Time
+		if p.Percentage >= 0.99 {
+			totalFinished++
+		} else if p.Percentage > 0 {
+			inProgress = append(inProgress, toReadingProgressItemDTO(p))
 		}
-		inProgress = append(inProgress, toReadingProgressItemDTO(p))
 	}
+	streak := db.ComputeReadingStreak(timestamps)
 
 	writeJSON(ctx, w, http.StatusOK, readingProgressStatsResponse{
 		CurrentStreak: streak,
-		TotalTracked:  stats.TotalTracked,
-		TotalFinished: stats.TotalFinished,
+		TotalTracked:  len(progressList),
+		TotalFinished: totalFinished,
 		InProgress:    inProgress,
 	})
 }

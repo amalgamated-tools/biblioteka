@@ -56,24 +56,29 @@ describe("DownloadsHistogram", () => {
     expect(bars.children).toHaveLength(dataWithDownloads.length);
   });
 
-  it("applies a high-contrast focus-visible outline and does not suppress the focus ring on listitem elements", () => {
+  it("hides the visual chart from assistive technology", () => {
     render(DownloadsHistogram, { data: dataWithDownloads });
-    const items = screen.getAllByRole("listitem");
-    for (const item of items) {
-      // Must have a high-contrast focus-visible outline for WCAG 2.4.11 / 2.4.7
-      expect(item.className).toContain("focus-visible:outline-accent-600");
-      // Must NOT suppress the outline ring
-      expect(item.className).not.toContain("focus-within:outline-none");
-    }
+    expect(screen.queryByRole("list")).not.toBeInTheDocument();
+    expect(screen.queryByRole("listitem")).not.toBeInTheDocument();
+    expect(screen.getByTestId("histogram-bars")).toHaveAttribute(
+      "aria-hidden",
+      "true",
+    );
   });
 
-  it("links the list aria-labelledby to the heading id", () => {
+  it("renders an accessible data table with month and download counts", () => {
     render(DownloadsHistogram, { data: dataWithDownloads });
-    const heading = screen.getByRole("heading", { level: 3 });
-    const list = screen.getByRole("list");
-    const headingId = heading.getAttribute("id");
-    expect(headingId).toBeTruthy();
-    expect(list.getAttribute("aria-labelledby")).toBe(headingId);
+    const table = screen.getByRole("table", { name: "Downloads per month" });
+    expect(table).toBeInTheDocument();
+    expect(
+      screen.getByRole("columnheader", { name: "Month" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("columnheader", { name: "Downloads" }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole("rowheader")).toHaveLength(
+      dataWithDownloads.length,
+    );
   });
 
   it("generates unique ids for multiple instances", () => {

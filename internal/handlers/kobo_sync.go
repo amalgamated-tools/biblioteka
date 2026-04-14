@@ -70,7 +70,7 @@ func (h *KoboHandler) HandleSync(w http.ResponseWriter, r *http.Request) {
 
 	syncResults := make([]any, 0, len(books))
 	for _, book := range books {
-		bk := book // copy
+		bk := book // take address below
 		files := filesByBook[bk.ID]
 		authors := authorsByBook[bk.ID]
 		series := seriesByBook[bk.ID]

@@ -7,7 +7,7 @@ description: |
 
 on:
   pull_request:
-    types: [opened, synchronize]
+    types: [opened, ready_for_review]
   reaction: eyes
 
 permissions: read-all
@@ -22,6 +22,10 @@ safe-outputs:
     max: 1
   noop:
     report-as-issue: false
+
+concurrency:
+  group: contribution-check-${{ github.event.pull_request.number }}
+  cancel-in-progress: true    
 
 tools:
   github:
