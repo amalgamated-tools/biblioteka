@@ -159,9 +159,9 @@ The table below lists the conditions most worth alerting on in production. All o
 |-----------|-------------------|-----------------------|----------|
 | High error rate | `level == "ERROR"` | > 5 errors / minute | 🔴 Critical |
 | Slow HTTP responses | `duration > 2000000000` (> 2 s) | Sustained for > 2 minutes | 🟡 Warning |
-| Background job failures | `level == "ERROR"` + `msg` matches `scan\|process\|job\|file` | Any single occurrence | 🔴 Critical |
+| Background job failures | `level == "ERROR"` + `msg` matches `scan|process|job|file` | Any single occurrence | 🔴 Critical |
 | Authentication failures (rate-limiting) | `level == "INFO"` + `msg` matches `rate limit exceeded` | > 20 / minute per IP | 🟡 Warning |
-| Sidecar write failures | `level == "WARN"` + `msg` matches `sidecar\|cover\|opf` | > 10 / minute | 🟡 Warning |
+| Sidecar write failures | `level == "WARN"` + `msg` matches `sidecar|cover|opf` | > 10 / minute | 🟡 Warning |
 | Startup / migration errors | `level == "ERROR"` during first 30 s after start | Any single occurrence | 🔴 Critical |
 
 ### Example alert queries
@@ -179,7 +179,7 @@ docker compose logs --since 300s --no-log-prefix biblioteka \
 
 # Alert on any background-job error (pipe to pagerduty/slack webhook as needed)
 docker compose logs -f --no-log-prefix biblioteka \
-  | jq --unbuffered 'select(.level == "ERROR" and (.msg | test("scan|process|job|file"; "i")))'
+  | jq -c --unbuffered 'select(.level == "ERROR" and (.msg | test("scan|process|job|file"; "i")))'
 ```
 
 > **Tip:** When using Loki, use `{container="biblioteka"} | json | level = "ERROR"` as a starting point and layer on additional label filters. See the [Log Aggregation](#log-aggregation) section for platform integration options.
