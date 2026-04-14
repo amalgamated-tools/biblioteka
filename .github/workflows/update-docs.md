@@ -31,6 +31,8 @@ safe-outputs:
     protected-files: fallback-to-issue
     labels: [automation, documentation]
     max: 1
+  noop:
+    report-as-issue: false
 
 tools:
   github:
