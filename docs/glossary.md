@@ -68,9 +68,9 @@ A metadata suggestion record fetched from Goodreads and stored in the `goodreads
 |--------|---------|
 | `pending` | Fetched from Goodreads; awaiting user review |
 | `applied` | User accepted the suggestion; the book record has been updated |
-| `rejected` | User dismissed the suggestion; no changes were made |
+| `rejected` | User closed the suggestion without using the one-shot apply; the book may or may not have been updated manually |
 
-Fetching is triggered via the API, which enqueues a background job (`enrich:goodreads`). The job searches Goodreads, creates a `pending` record, and streams progress events over SSE. The user then reviews the suggestion and chooses to apply or reject it. Only one `pending` record per `(user, book)` pair is tracked at a time. The provenance identifier `"goodreads"` is included in API responses as the `source` field and in audit log entries. See also [`ASIN`](#asin).
+Fetching is triggered via the API, which enqueues a background job (`enrich:goodreads`). The job searches Goodreads, creates a `pending` record, and streams progress events over SSE. The user then reviews the suggestion and chooses to apply or reject it. If a `pending` record already exists for a given `(user, book)` pair, the fetch endpoint skips enqueueing another job, and reads use the most recent pending record for that pair. The provenance identifier `"goodreads"` is included in API responses as the `source` field and in audit log entries. See also [`ASIN`](#asin).
 
 ## JWT
 
