@@ -10,6 +10,24 @@ vi.mock("../ui/BookList.svelte", () => ({
   default: () => null,
 }));
 
+vi.mock("../../stores/reading-lists.svelte", () => ({
+  readingListStore: {
+    loaded: true,
+    loading: false,
+    loadError: null,
+    lists: [],
+    load: vi.fn().mockResolvedValue(undefined),
+    update: vi.fn(),
+    remove: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
+vi.mock("../../stores/router.svelte", () => ({
+  routerStore: {
+    navigate: vi.fn(),
+  },
+}));
+
 vi.mock("lucide-svelte", () => ({
   ArrowLeft: () => null,
   Pencil: () => null,
@@ -21,7 +39,6 @@ vi.mock("lucide-svelte", () => ({
 
 import type { ReadingList } from "../../types";
 import { readingListStore } from "../../stores/reading-lists.svelte";
-import { routerStore } from "../../stores/router.svelte";
 import ReadingListDetail from "./ReadingListDetail.svelte";
 
 const fakeList: ReadingList = {
@@ -35,26 +52,18 @@ const fakeList: ReadingList = {
 
 describe("ReadingListDetail delete confirmation accessibility", () => {
   beforeEach(() => {
-    vi.spyOn(readingListStore, "load").mockResolvedValue();
-    vi.spyOn(readingListStore, "update").mockResolvedValue(fakeList);
-    vi.spyOn(readingListStore, "remove").mockResolvedValue();
-    vi.spyOn(routerStore, "navigate").mockImplementation(() => {});
-
-    Object.assign(readingListStore, {
-      loaded: true,
-      loading: false,
-      loadError: null,
-      lists: [fakeList],
-    });
+    (readingListStore as any).loaded = true;
+    (readingListStore as any).loading = false;
+    (readingListStore as any).loadError = null;
+    (readingListStore as any).lists = [fakeList];
+    (readingListStore as any).update = vi.fn().mockResolvedValue(fakeList);
   });
 
   afterEach(() => {
-    Object.assign(readingListStore, {
-      loaded: false,
-      loading: false,
-      loadError: null,
-      lists: [],
-    });
+    (readingListStore as any).loaded = false;
+    (readingListStore as any).loading = false;
+    (readingListStore as any).loadError = null;
+    (readingListStore as any).lists = [];
     cleanup();
     vi.restoreAllMocks();
   });

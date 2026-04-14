@@ -206,8 +206,15 @@
                 Delete
               </Button>
             {:else}
-              <div class="flex items-center gap-2" use:autofocusFirstButton>
-                <span class="text-sm text-ink-600 dark:text-ink-300 mr-1"
+              <div
+                class="flex items-center gap-2"
+                role="group"
+                aria-labelledby="delete-confirm-prompt"
+                use:autofocusFirstButton
+              >
+                <span
+                  id="delete-confirm-prompt"
+                  class="text-sm text-ink-600 dark:text-ink-300 mr-1"
                   >Delete this list?</span
                 >
                 <Button
