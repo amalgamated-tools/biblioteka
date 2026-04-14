@@ -38,16 +38,18 @@ const (
 	// UserAgentHeader is the header name for the user agent.
 	UserAgentHeader = "User-Agent"
 	// HTTPWriteTimeout is the maximum duration before timing out writes of the response.
-	HTTPWriteTimeout = 10 * time.Second
+	// Set high enough to accommodate large uploads (e.g. 100 MB Calibre database imports).
+	HTTPWriteTimeout = 120 * time.Second
 	// HTTPReadTimeout is the maximum duration for reading the entire request, including the body.
-	HTTPReadTimeout = 10 * time.Second
+	// Set high enough to accommodate large uploads on slow connections.
+	HTTPReadTimeout = 120 * time.Second
 	// HTTPIdleTimeout is the maximum amount of time to wait for the next request when keep-alives are enabled.
 	HTTPIdleTimeout = 30 * time.Second
 	// HTTPRequestTimeout is the maximum duration for handling a single HTTP request.
 	HTTPRequestTimeout = 10 * time.Second
-	// ShutdownGracePeriod is the time we allow for graceful shutdown of the http server
-	// Should be longer than HTTPWriteTimeout, but shorter than the k8s terminationGracePeriodSeconds (30 seconds)
-	ShutdownGracePeriod = 15 * time.Second
+	// ShutdownGracePeriod is the time we allow for graceful shutdown of the http server.
+	// Should be longer than HTTPWriteTimeout, but shorter than the k8s terminationGracePeriodSeconds.
+	ShutdownGracePeriod = 150 * time.Second
 )
 
 // ShutdownFunc is a function that takes a context and returns an error
@@ -83,6 +85,7 @@ type Server struct {
 	kosyncHandler          *handlers.KOSyncHandler
 	statsHandler           *handlers.StatsHandler
 	readingProgressHandler *handlers.ReadingProgressHandler
+	calibreImportHandler   *handlers.CalibreImportHandler
 	requireAuth            func(http.Handler) http.Handler
 	requireJWTAuth         func(http.Handler) http.Handler
 	requireAdmin           func(http.Handler) http.Handler
@@ -228,6 +231,7 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	s.opdsCredentialHandler = &handlers.OPDSCredentialHandler{DB: s.DB}
 	s.kosyncHandler = &handlers.KOSyncHandler{DB: s.DB}
 	s.readingProgressHandler = &handlers.ReadingProgressHandler{DB: s.DB}
+	s.calibreImportHandler = &handlers.CalibreImportHandler{DB: s.DB}
 	s.apiKeyHandler = &handlers.APIKeyHandler{DB: s.DB}
 	s.koboHandler = &handlers.KoboHandler{DB: s.DB}
 	s.koboHandler.RegisterRoutes()

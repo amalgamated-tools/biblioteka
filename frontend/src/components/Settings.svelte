@@ -11,6 +11,7 @@
     KeyRound,
     BookOpen,
     FolderSearch,
+    DatabaseZap,
   } from "lucide-svelte";
   import AccountTab from "./settings/AccountTab.svelte";
   import OidcTab from "./settings/OidcTab.svelte";
@@ -20,6 +21,7 @@
   import APIKeysTab from "./settings/APIKeysTab.svelte";
   import KoboTab from "./settings/KoboTab.svelte";
   import WatchFolderTab from "./settings/WatchFolderTab.svelte";
+  import CalibreImportTab from "./settings/CalibreImportTab.svelte";
 
   type SettingsTab =
     | "account"
@@ -29,7 +31,8 @@
     | "users"
     | "api-keys"
     | "kobo"
-    | "watch-folder";
+    | "watch-folder"
+    | "calibre-import";
 
   type TabDef = { key: SettingsTab; label: string; icon: typeof Mail };
 
@@ -44,6 +47,7 @@
     { key: "oidc", label: "OIDC / SSO", icon: Shield },
     { key: "smtp", label: "Email / SMTP", icon: Send },
     { key: "watch-folder", label: "Watch Folder", icon: FolderSearch },
+    { key: "calibre-import", label: "Calibre Import", icon: DatabaseZap },
     { key: "users", label: "Users", icon: Users },
   ];
 
@@ -180,6 +184,10 @@
 
       {#if activeTab === "watch-folder" && isAdmin}
         <WatchFolderTab />
+      {/if}
+
+      {#if activeTab === "calibre-import" && isAdmin}
+        <CalibreImportTab />
       {/if}
 
       {#if activeTab === "users" && isAdmin}

@@ -2,6 +2,9 @@ package db
 
 import (
 	"context"
+	"database/sql"
+	"errors"
+	"fmt"
 	"log/slog"
 	"strconv"
 	"strings"
@@ -121,6 +124,38 @@ func (d *DB) GetBook(ctx context.Context, id string) (*Book, error) {
 		`SELECT `+bookColumns+` FROM books WHERE id = $1`,
 		id,
 	))
+}
+
+// FindBookByExternalID returns the first book that matches any of the given
+// external identifiers, checked in priority order: ISBN-13, ISBN-10, ASIN,
+// Goodreads ID. Returns sql.ErrNoRows when no match is found.
+func (d *DB) FindBookByExternalID(ctx context.Context, isbn13, isbn10, asin, goodreadsID *string) (*Book, error) {
+	type check struct {
+		val *string
+		col string
+	}
+	checks := []check{
+		{isbn13, "isbn13"},
+		{isbn10, "isbn10"},
+		{asin, "asin"},
+		{goodreadsID, "goodreads_id"},
+	}
+	for _, c := range checks {
+		if c.val == nil || *c.val == "" {
+			continue
+		}
+		book, err := scanBook(d.QueryRowContext(ctx,
+			fmt.Sprintf(`SELECT %s FROM books WHERE %s = $1 LIMIT 1`, bookColumns, c.col),
+			*c.val,
+		))
+		if err == nil {
+			return book, nil
+		}
+		if !errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("find book by %s: %w", c.col, err)
+		}
+	}
+	return nil, sql.ErrNoRows
 }
 
 // ListBooks returns all books ordered by title.
