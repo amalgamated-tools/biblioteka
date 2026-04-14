@@ -1,5 +1,9 @@
 <script lang="ts">
-  import type { RemoteMetadata, MetadataProgressEvent, CurrentValues } from "../../types";
+  import type {
+    RemoteMetadata,
+    MetadataProgressEvent,
+    CurrentValues,
+  } from "../../types";
   import { ApiError } from "../../lib/api/core";
   import * as api from "../../lib/api";
   import { Search } from "lucide-svelte";
