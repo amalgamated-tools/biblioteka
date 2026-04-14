@@ -199,18 +199,18 @@ func (h *MetadataHandler) applyAIEnrichment(w http.ResponseWriter, r *http.Reque
 
 	if (book.Description == nil || *book.Description == "") && enrichment.GeneratedDescription != nil && *enrichment.GeneratedDescription != "" {
 		input := db.BookInput{
-			Title:         book.Title,
-			Description:  enrichment.GeneratedDescription,
-			ASIN:         book.ASIN,
-			ISBN10:       book.ISBN10,
-			ISBN13:       book.ISBN13,
-			GoodreadsID:  book.GoodreadsID,
-			HardcoverID:  book.HardcoverID,
-			GoogleBooksID: book.GoogleBooksID,
+			Title:           book.Title,
+			Description:     enrichment.GeneratedDescription,
+			ASIN:            book.ASIN,
+			ISBN10:          book.ISBN10,
+			ISBN13:          book.ISBN13,
+			GoodreadsID:     book.GoodreadsID,
+			HardcoverID:     book.HardcoverID,
+			GoogleBooksID:   book.GoogleBooksID,
 			PublicationDate: book.PublicationDate,
-			Publisher:    book.Publisher,
-			Language:     book.Language,
-			CoverImageURL: book.CoverImageURL,
+			Publisher:       book.Publisher,
+			Language:        book.Language,
+			CoverImageURL:   book.CoverImageURL,
 		}
 		if _, err := h.DB.UpdateBook(r.Context(), bookID, input); err != nil {
 			slog.ErrorContext(r.Context(), "failed to update book description from AI enrichment",
