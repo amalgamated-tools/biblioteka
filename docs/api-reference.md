@@ -2450,6 +2450,7 @@ Deletes a reading list and all its book associations. Returns `204 No Content`.
 | Status | Meaning |
 |--------|---------|
 | `204 No Content` | Deleted successfully |
+| `400 Bad Request` | Missing or empty list ID path segment |
 | `401 Unauthorized` | Missing or invalid authentication |
 | `404 Not Found` | List not found or not owned by the user |
 | `500 Internal Server Error` | Database error |
