@@ -181,18 +181,23 @@ For each documentation change you plan to create a PR for, perform **both** chec
 - **If a matching open PR is found**: skip this change and log `DEDUP SKIP [title]: open PR #N already exists`. Do **not** create a new PR for this change.
 - **If no matching open PR is found**: continue to Check 2.
 
-**Check 2 — File-based deduplication**: Even when no title match is found, verify that no open PR (from **any** workflow or author) already modifies the same documentation files this candidate targets.
+**Check 2 — File-based deduplication**: Even when no title match is found, verify that no open automation-labeled PR already modifies the same documentation files this candidate targets.
 
+> **Pre-fetch (run once before evaluating any candidate)**:
+> 1. Search for all open PRs bearing both documentation labels: `repo:${{ github.repository }} is:pr is:open label:documentation label:automation`
+> 2. For each open PR returned, call `pull_request_read` with `method: get_files` to retrieve its list of changed files. If the call fails, retry up to 2 additional times. If it still fails after retries (e.g., transient API/network errors, rate limits, or permissions), mark **all file paths** for that PR as "unknown overlap" in the lookup map.
+> 3. Build a reusable lookup map: `{ filepath → [PR numbers] }` from the results above. For PRs whose file lists could not be fetched, store a sentinel entry so that any candidate can detect the unresolved PR.
+
+Per-candidate check (reuse the pre-fetched map):
 1. Identify the specific documentation file(s) this candidate would modify (e.g., `docs/stats.md`, `docs/kobo.md`).
-2. Search for all open PRs bearing both documentation labels: `repo:${{ github.repository }} is:pr is:open label:documentation label:automation`
-3. For each open PR returned, call `pull_request_read` with `method: get_files` to retrieve its list of changed files.
-4. Check whether the changed-file list of any open PR overlaps with the file(s) this candidate targets.
+2. Check whether any file in the candidate's target list appears in the pre-fetched map.
    - **If an overlap is found**: skip this candidate and log `FILE DEDUP SKIP [file]: open PR #N already modifies this file`. Do **not** create a new PR for this candidate.
+   - **If a candidate's target file maps to an unresolved PR** (file list fetch failed): skip this candidate conservatively and log `FILE DEDUP SKIP [file]: could not verify files for open PR #N; treating as potential overlap`. Do **not** create a new PR for this candidate.
    - **If no overlap is found**: proceed with this candidate.
 
 Apply both checks to every candidate PR before proceeding to the cap check below, and use the same `docs(daily): <summary>` format consistently in any related lookback searches and PR-title guidance.
 
-> **Note**: The cross-agent sibling PR check in Step 4b already filters files that the `update-docs` workflow is actively covering. Step 6a Check 1 focuses on deduplication of this workflow's own `docs(daily):` PRs; Check 2 catches near-identical PRs across all open automation PRs that touch the same files, regardless of title.
+> **Note**: The cross-agent sibling PR check in Step 4b already filters files that the `update-docs` workflow is actively covering. Step 6a Check 1 focuses on deduplication of this workflow's own `docs(daily):` PRs; Check 2 catches near-identical PRs among open PRs that already carry both the `documentation` and `automation` labels and touch the same files, regardless of title.
 
 #### 6b. Per-Run Hard Cap (8 PRs)
 
