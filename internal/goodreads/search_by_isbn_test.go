@@ -75,7 +75,7 @@ func TestSearchByISBN_HTTPFailure(t *testing.T) {
 	results, err := client.SearchByISBN(t.Context(), "9780306406157")
 	require.Error(t, err)
 	require.Nil(t, results)
-	require.Contains(t, err.Error(), "HTTP request failed")
+	require.Contains(t, err.Error(), "goodreads ISBN search request failed")
 }
 
 // TestSearchByISBN_NonOKStatus verifies that non-200 HTTP responses are treated as errors.
