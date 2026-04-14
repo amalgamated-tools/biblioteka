@@ -56,6 +56,15 @@ describe("BookList loading state", () => {
     const status = screen.getByRole("status");
     expect(status).toHaveTextContent("Loading books...");
   });
+
+  it("passes the query prop to fetchBooks", async () => {
+    const fetchBooks = vi.fn().mockResolvedValue(fakeBooks);
+    render(BookList, { props: { fetchBooks, query: "tolkien" } });
+    await tick();
+    await tick();
+
+    expect(fetchBooks).toHaveBeenCalledWith(24, 0, "tolkien");
+  });
 });
 
 describe("BookList table view keyboard accessibility (WCAG 2.1.1)", () => {
@@ -282,6 +291,19 @@ describe("BookList empty state", () => {
 
     expect(container.textContent).toContain("No books yet.");
     expect(container.textContent).not.toContain("Scanning library...");
+  });
+
+  it("shows 'No books found.' when a query is set but no results", async () => {
+    const fetchBooks = vi.fn().mockResolvedValue(emptyBooks);
+    const { container } = render(BookList, {
+      props: { fetchBooks, query: "tolkien" },
+    });
+    await tick();
+    await tick();
+
+    expect(container.textContent).toContain("No books found.");
+    expect(container.textContent).toContain("Try a different search term.");
+    expect(container.textContent).not.toContain("No books yet.");
   });
 
   it("shows 'Scanning library...' when pollingInterval is set and no books found", async () => {
