@@ -18,6 +18,7 @@ const (
 	AuditActionAuthorUpdated           = "author.updated"
 	AuditActionBookCreated             = "book.created"
 	AuditActionBookDeleted             = "book.deleted"
+	AuditActionCalibreImported         = "calibre.imported"
 	AuditActionBookFileCreated         = "book_file.created"
 	AuditActionBookFileDeleted         = "book_file.deleted"
 	AuditActionBookFileEmailed         = "book_file.emailed"

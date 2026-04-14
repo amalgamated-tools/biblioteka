@@ -131,8 +131,10 @@ describe("request()", () => {
       status: 400,
       statusText: "Bad Request",
       headers: new Headers({ "content-type": "application/json" }),
-      json: vi.fn().mockResolvedValue({ error: "name is required" }),
-      text: vi.fn(),
+      json: vi.fn(),
+      text: vi
+        .fn()
+        .mockResolvedValue(JSON.stringify({ error: "name is required" })),
     });
 
     const err = await request("POST", "/api/test", {}).catch((e) => e);
@@ -149,8 +151,8 @@ describe("request()", () => {
       status: 403,
       statusText: "Forbidden",
       headers: new Headers({ "content-type": "application/json" }),
-      json: vi.fn().mockResolvedValue({}),
-      text: vi.fn(),
+      json: vi.fn(),
+      text: vi.fn().mockResolvedValue(JSON.stringify({})),
     });
 
     await expect(request("GET", "/api/test")).rejects.toMatchObject({
