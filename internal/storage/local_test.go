@@ -3,6 +3,8 @@ package storage_test
 import (
 	"bytes"
 	"context"
+	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -37,7 +39,7 @@ func TestLocalStorage_Open_NotExist(t *testing.T) {
 	ls := newLocalStorage()
 	_, err := ls.Open(context.Background(), "/nonexistent/path/file.txt")
 	require.Error(t, err)
-	require.True(t, os.IsNotExist(err))
+	require.True(t, errors.Is(err, os.ErrNotExist))
 }
 
 func TestLocalStorage_Stat_File(t *testing.T) {
@@ -46,7 +48,7 @@ func TestLocalStorage_Stat_File(t *testing.T) {
 	content := []byte("stat me")
 	require.NoError(t, os.WriteFile(path, content, 0o644))
 
-	before := time.Now().Truncate(time.Second)
+	before := time.Now().Add(-time.Second)
 
 	ls := newLocalStorage()
 	fi, err := ls.Stat(context.Background(), path)
@@ -73,7 +75,7 @@ func TestLocalStorage_Stat_NotExist(t *testing.T) {
 	ls := newLocalStorage()
 	_, err := ls.Stat(context.Background(), "/nonexistent/path/file.txt")
 	require.Error(t, err)
-	require.True(t, os.IsNotExist(err))
+	require.True(t, errors.Is(err, os.ErrNotExist))
 }
 
 func TestLocalStorage_Write(t *testing.T) {
@@ -118,14 +120,14 @@ func TestLocalStorage_Delete(t *testing.T) {
 	require.NoError(t, ls.Delete(context.Background(), path))
 
 	_, err := os.Stat(path)
-	require.True(t, os.IsNotExist(err))
+	require.True(t, errors.Is(err, os.ErrNotExist))
 }
 
 func TestLocalStorage_Delete_NotExist(t *testing.T) {
 	ls := newLocalStorage()
 	err := ls.Delete(context.Background(), "/nonexistent/path/file.txt")
 	require.Error(t, err)
-	require.True(t, os.IsNotExist(err))
+	require.True(t, errors.Is(err, os.ErrNotExist))
 }
 
 func TestLocalStorage_List(t *testing.T) {
@@ -211,4 +213,83 @@ func TestLocalStorage_CanceledContext(t *testing.T) {
 
 	_, err = ls.List(ctx, dir)
 	require.ErrorIs(t, err, context.Canceled)
+}
+
+func TestLocalStorage_Write_AtomicPreservesOriginal(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "original.txt")
+	require.NoError(t, os.WriteFile(path, []byte("original"), 0o644))
+
+	ls := newLocalStorage()
+	err := ls.Write(context.Background(), path, &failingReader{failAfter: 3})
+	require.Error(t, err)
+
+	// Original file must still have its content.
+	got, err := os.ReadFile(path)
+	require.NoError(t, err)
+	require.Equal(t, "original", string(got))
+
+	// No temp files should remain.
+	entries, err := os.ReadDir(dir)
+	require.NoError(t, err)
+	require.Len(t, entries, 1)
+	require.Equal(t, "original.txt", entries[0].Name())
+}
+
+func TestLocalStorage_Write_CancelDuringCopy(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "out.txt")
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// slowReader cancels the context after the first Read, so the second
+	// Read through contextReader will see the cancellation.
+	sr := &cancelingReader{cancel: cancel}
+
+	ls := newLocalStorage()
+	err := ls.Write(ctx, path, sr)
+	require.ErrorIs(t, err, context.Canceled)
+
+	// No temp files should remain.
+	entries, err := os.ReadDir(dir)
+	require.NoError(t, err)
+	require.Empty(t, entries)
+}
+
+// failingReader returns an error after failAfter bytes.
+type failingReader struct {
+	failAfter int
+	read      int
+}
+
+func (r *failingReader) Read(p []byte) (int, error) {
+	if r.read >= r.failAfter {
+		return 0, errors.New("simulated read error")
+	}
+	n := len(p)
+	if remaining := r.failAfter - r.read; n > remaining {
+		n = remaining
+	}
+	for i := range n {
+		p[i] = 'x'
+	}
+	r.read += n
+	return n, nil
+}
+
+// cancelingReader cancels the context after the first Read so the next
+// Read through contextReader sees the cancellation.
+type cancelingReader struct {
+	cancel context.CancelFunc
+	called bool
+}
+
+func (r *cancelingReader) Read(p []byte) (int, error) {
+	if !r.called {
+		r.called = true
+		p[0] = 'a'
+		r.cancel()
+		return 1, nil
+	}
+	return 0, io.EOF
 }

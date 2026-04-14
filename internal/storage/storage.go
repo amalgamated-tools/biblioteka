@@ -39,5 +39,8 @@ type Storage interface {
 	Delete(ctx context.Context, path string) error
 
 	// List returns FileInfo for every entry directly under prefix (non-recursive).
+	// For local storage, prefix is a directory path. For S3, prefix is a key
+	// prefix (e.g. "books/2024/") that must end with "/" to scope results to a
+	// single "directory" level.
 	List(ctx context.Context, prefix string) ([]FileInfo, error)
 }

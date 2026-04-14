@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 )
 
 // Compile-time assertion that LocalStorage implements Storage.
@@ -23,7 +24,11 @@ func (l *LocalStorage) Open(ctx context.Context, path string) (io.ReadCloser, er
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	return os.Open(path)
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("open %s: %w", path, err)
+	}
+	return f, nil
 }
 
 // Stat implements Storage by calling os.Stat.
@@ -43,22 +48,33 @@ func (l *LocalStorage) Stat(ctx context.Context, path string) (FileInfo, error) 
 	}, nil
 }
 
-// Write implements Storage by creating or replacing the file at path with the
-// contents of r.
+// Write implements Storage by atomically creating or replacing the file at path
+// with the contents of r. It writes to a temporary file and renames on success,
+// so a crash or mid-write error never leaves a partial file at path.
+// The parent directory must already exist.
 func (l *LocalStorage) Write(ctx context.Context, path string, r io.Reader) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	f, err := os.Create(path)
+	dir := filepath.Dir(path)
+	tmp, err := os.CreateTemp(dir, ".tmp-write-*")
 	if err != nil {
-		return fmt.Errorf("create %s: %w", path, err)
+		return fmt.Errorf("create temp for %s: %w", path, err)
 	}
-	if _, err := io.Copy(f, r); err != nil {
-		_ = f.Close()
+	tmpName := tmp.Name()
+
+	if _, err := io.Copy(tmp, newContextReader(ctx, r)); err != nil {
+		_ = tmp.Close()
+		_ = os.Remove(tmpName)
 		return fmt.Errorf("write %s: %w", path, err)
 	}
-	if err := f.Close(); err != nil {
+	if err := tmp.Close(); err != nil {
+		_ = os.Remove(tmpName)
 		return fmt.Errorf("close %s: %w", path, err)
+	}
+	if err := os.Rename(tmpName, path); err != nil {
+		_ = os.Remove(tmpName)
+		return fmt.Errorf("rename to %s: %w", path, err)
 	}
 	return nil
 }
@@ -68,7 +84,10 @@ func (l *LocalStorage) Delete(ctx context.Context, path string) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	return os.Remove(path)
+	if err := os.Remove(path); err != nil {
+		return fmt.Errorf("delete %s: %w", path, err)
+	}
+	return nil
 }
 
 // List implements Storage by reading the directory at prefix and returning one
@@ -83,6 +102,9 @@ func (l *LocalStorage) List(ctx context.Context, prefix string) ([]FileInfo, err
 	}
 	infos := make([]FileInfo, 0, len(entries))
 	for _, e := range entries {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		info, err := e.Info()
 		if err != nil {
 			return nil, fmt.Errorf("stat entry %s: %w", e.Name(), err)
@@ -95,4 +117,22 @@ func (l *LocalStorage) List(ctx context.Context, prefix string) ([]FileInfo, err
 		})
 	}
 	return infos, nil
+}
+
+// contextReader wraps an io.Reader and checks ctx.Err() before each Read,
+// so that context cancellation is propagated into long-running io.Copy calls.
+type contextReader struct {
+	ctx context.Context
+	r   io.Reader
+}
+
+func newContextReader(ctx context.Context, r io.Reader) *contextReader {
+	return &contextReader{ctx: ctx, r: r}
+}
+
+func (cr *contextReader) Read(p []byte) (int, error) {
+	if err := cr.ctx.Err(); err != nil {
+		return 0, err
+	}
+	return cr.r.Read(p)
 }
