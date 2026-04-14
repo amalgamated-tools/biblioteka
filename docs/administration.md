@@ -83,11 +83,7 @@ By default, anyone who can reach your Biblioteka instance can create an account.
 DISABLE_SIGNUP=true
 ```
 
-When enabled:
-- `POST /api/auth/signup` returns `403 Forbidden` for all callers.
-- The **Sign Up** tab is hidden in the web UI.
-- The first admin account (created before disabling) retains full access.
-- The `GET /api/auth/signup/enabled` endpoint returns `{"enabled": false}`, letting clients adapt their UI accordingly.
+When enabled, `POST /api/auth/signup` returns `403 Forbidden` and the **Sign Up** tab is hidden in the web UI. The first admin account retains full access. The `GET /api/auth/signup/enabled` endpoint returns `{"enabled": false}` so clients can adapt their UI accordingly.
 
 > **Tip:** If you are the sole user, deploy with signup enabled initially, create your first admin account, then set `DISABLE_SIGNUP=true` and redeploy to prevent further self-service registrations.
 
@@ -130,10 +126,7 @@ curl "http://localhost:8080/api/audit-logs?limit=50&offset=50" \
 }
 ```
 
-**Pagination:**
-- `limit` defaults to `50`, maximum `200`.
-- `offset` is the number of entries to skip.
-- Entries are returned newest-first.
+Entries are returned newest-first. `limit` defaults to `50` (maximum `200`); `offset` skips that many entries.
 
 ### Action reference
 
@@ -166,10 +159,7 @@ curl "http://localhost:8080/api/audit-logs?limit=50&offset=50" \
 | `kosync_credential.deleted` | `kosync_credential` | `username`                           | `DELETE /api/kosync/credentials`        |
 | `smtp.config_updated`  | `config`      | `host`, `from`                                   | `PUT /api/config/smtp`                  |
 
-**Notes:**
-- `user_id` in an audit log entry is the ID of the user who performed the action. It is `null` for system-initiated actions (e.g. background job operations).
-- Audit log entries are never modified or deleted. They represent a historical record.
-- Book files created automatically by the background scanner do **not** currently produce an `audit_log` entry — only files created via the API are audited.
+**Notes:** `user_id` is the actor who performed the action (`null` for system/background actions). Entries are append-only and never modified. Book files created by the background scanner do **not** currently produce an audit entry — only files created via the API are audited.
 
 ---
 
@@ -353,11 +343,9 @@ curl -X POST http://localhost:8080/api/config/smtp/test \
 
 The test endpoint sends a short verification email to the authenticated admin's registered email address. It returns `200 OK` with a `{"message":"Test email sent to <email>"}` body on success, or a `4xx`/`5xx` error with `{"error":"…"}` on failure.
 
-All six SMTP fields are saved in a single database transaction. If the database write fails partway through, the entire update is rolled back and the previous configuration remains unchanged.
+All six SMTP settings (`host`, `port`, `username`, `password`, `from`, `tls`) are saved atomically in a single database transaction. If the write fails, none are changed — the configuration is never left in a partially-updated state.
 
 **TLS modes:** `none` (plaintext), `starttls` (STARTTLS upgrade on port 587, default), or `tls` (implicit TLS on port 465).
-
-All six settings (`host`, `port`, `username`, `password`, `from`, `tls`) are saved atomically in a single database transaction. If the write fails, none of the settings are changed — the configuration is never left in a partially-updated state.
 
 **Precedence:** When the `SMTP_HOST` environment variable is set, all SMTP settings are read exclusively from environment variables (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM`, `SMTP_TLS`) and the database values are ignored. The runtime configuration UI will appear read-only. When `SMTP_HOST` is unset (the default), the values stored in the database via the API or Settings UI are used.
 
@@ -365,11 +353,7 @@ See [API reference — SMTP config endpoints](api-reference.md#get-apiconfigsmtp
 
 ### Emailing book files to readers
 
-When SMTP is configured, any authenticated user can send a book file as an email attachment to any valid address directly from the library UI. This is useful for sending books to e-readers — for example, a Kindle personal document address.
-
-- The mail icon on each book card opens the send dialog. When a book has multiple files, a file selector is shown first.
-- Files larger than 25 MB are rejected with `413 Request Entity Too Large`.
-- Each successful send is recorded in the audit log as `book_file.emailed`.
+When SMTP is configured, any authenticated user can send a book file as an email attachment to any valid address from the library UI (useful for e-readers like Kindle). The mail icon on each book card opens the send dialog; books with multiple files show a file selector first. Files larger than 25 MB are rejected with `413 Request Entity Too Large`, and each successful send is recorded in the audit log as `book_file.emailed`.
 
 If SMTP is not configured, the request is rejected with `400 Bad Request` and the UI disables the send button accordingly.
 
@@ -397,13 +381,12 @@ The author and title come from embedded file metadata when available, falling ba
 
 **Behaviour details:**
 
-- **`book_per_folder`** requires both an author and a title; if either is absent after metadata extraction, the file stays in place.
-- **`book_per_file`** requires only an author; title is not needed.
+- `book_per_folder` requires both author and title; `book_per_file` requires only an author. If the required fields are absent after metadata extraction, the file stays in place.
 - Directory names are sanitized: path separators (`/`, `\`), control characters, colons, wildcards, and leading dots are removed. As a defense-in-depth measure, the computed target path is also verified to stay within the library root, guarding against path traversal via untrusted author/title metadata embedded in book files.
 - The move uses `os.Rename` when source and destination are on the same filesystem. A copy-then-delete falls back for cross-filesystem moves; source file permissions and modification time are preserved.
 - Empty source directories left behind after a move are removed automatically (up to but not including the library root).
-- If a file already exists at the target path, the handler skips the move and logs a warning — it never silently overwrites existing files.
-- If reorganization fails (e.g. permissions error), the handler logs a warning and continues processing the file at its original path. The import still completes; only the file location is affected.
+- If a file already exists at the target path, the move is skipped and a warning is logged — existing files are never silently overwritten.
+- If reorganization fails (e.g. permissions error), a warning is logged and the import completes at the original path.
 
 ### Path-parsing and series inference
 
