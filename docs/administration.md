@@ -504,7 +504,7 @@ curl -sf -X POST http://localhost:8080/api/admin/search/reindex \
 # → {"message":"search index rebuilt"}
 ```
 
-This is useful if you have run `VACUUM` on the database file outside of normal server operation, or if you suspect the index is out of sync. The rebuild is synchronous and may take a moment on large libraries. A successful rebuild emits an audit log entry with action `fts.rebuilt` (`entity_type: fts`).
+This is useful if you have run `VACUUM` on the database file outside of normal server operation, or if you suspect the index is out of sync. The endpoint returns `202 Accepted` immediately and runs the rebuild in the background. A successful rebuild emits an audit log entry with action `fts.rebuilt` (`entity_type: fts`).
 
 > **PostgreSQL:** The pg_trgm GIN indexes used for search on PostgreSQL are maintained automatically by the database engine. The `/api/admin/search/reindex` endpoint is accepted but performs no work on PostgreSQL instances.
 

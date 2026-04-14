@@ -85,7 +85,7 @@ func (h *AdminHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) {
 //	@Failure		403	{object}	errorResponse
 //	@Failure		405	{object}	errorResponse
 //	@Failure		500	{object}	errorResponse
-//	@Success		200	{object}	object{message=string}
+//	@Success		202	{object}	object{message=string}
 //	@Router			/admin/search/reindex [post]
 func (h *AdminHandler) HandleFTSRebuild(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -97,21 +97,25 @@ func (h *AdminHandler) HandleFTSRebuild(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Decouple from the request lifecycle so the rebuild can complete even if
-	// the HTTP connection is closed (e.g. WriteTimeout exceeded).
-	rebuildCtx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), 5*time.Minute)
-	defer cancel()
-
-	if err := h.DB.RebuildFTS(rebuildCtx); err != nil {
-		slog.ErrorContext(r.Context(), "FTS rebuild failed", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to rebuild search index")
-		return
-	}
-
 	callerID := auth.UserIDFromContext(r.Context())
-	logAudit(rebuildCtx, h.DB, callerID, db.AuditActionFTSRebuilt, "fts", "search_index", nil)
 
-	writeJSON(r.Context(), w, http.StatusOK, map[string]string{"message": "search index rebuilt"})
+	// Run the rebuild asynchronously so the response is not blocked by the
+	// server's 10 s WriteTimeout. The rebuild context is decoupled from the
+	// request so it survives after the HTTP handler returns.
+	go func() {
+		rebuildCtx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+		defer cancel()
+
+		if err := h.DB.RebuildFTS(rebuildCtx); err != nil {
+			slog.ErrorContext(rebuildCtx, "FTS rebuild failed", slog.Any(otelkeys.Error, err))
+			return
+		}
+
+		logAudit(rebuildCtx, h.DB, callerID, db.AuditActionFTSRebuilt, "fts", "search_index", nil)
+		slog.InfoContext(rebuildCtx, "FTS rebuild completed successfully")
+	}()
+
+	writeJSON(r.Context(), w, http.StatusAccepted, map[string]string{"message": "search index rebuild started"})
 }
 
 // @Summary		Set user admin status
