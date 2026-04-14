@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -95,7 +97,12 @@ func (h *AdminHandler) HandleFTSRebuild(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if err := h.DB.RebuildFTS(r.Context()); err != nil {
+	// Decouple from the request lifecycle so the rebuild can complete even if
+	// the HTTP connection is closed (e.g. WriteTimeout exceeded).
+	rebuildCtx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), 5*time.Minute)
+	defer cancel()
+
+	if err := h.DB.RebuildFTS(rebuildCtx); err != nil {
 		slog.ErrorContext(r.Context(), "FTS rebuild failed", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to rebuild search index")
 		return

@@ -491,7 +491,7 @@ Biblioteka uses an [FTS5](https://www.sqlite.org/fts5.html) virtual table (`book
 
 ### Startup integrity check
 
-At startup, Biblioteka runs an FTS5 integrity check. If corruption is detected (which can happen after running SQLite's `VACUUM` command, because `VACUUM` may remap the implicit rowids that the content-table index relies on), the server automatically rebuilds the index and logs a warning. Startup is never aborted due to an FTS failure — searches may return incomplete results until the rebuild finishes.
+At startup, Biblioteka runs an FTS5 integrity check. If corruption is detected (which can happen after running SQLite's `VACUUM` command, because `VACUUM` may remap the implicit rowids that the content-table index relies on), the server automatically rebuilds the index and logs a warning. Startup is never aborted due to an FTS failure, but startup may take longer while the rebuild runs. If the rebuild does not succeed, search requests may fail because the `books_fts` table remains broken.
 
 ### Manual rebuild
 
