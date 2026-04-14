@@ -21,6 +21,7 @@ func TestCheckFTSIntegrity_MissingFTSTable(t *testing.T) {
 	err = d.CheckFTSIntegrity(t.Context())
 	require.Error(t, err, "CheckFTSIntegrity() should fail when books_fts is missing")
 }
+
 func TestRebuildFTS_FreshDB(t *testing.T) {
 	d := newTestDB(t)
 	err := d.RebuildFTS(t.Context())
