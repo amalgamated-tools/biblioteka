@@ -127,19 +127,23 @@ func TestBuildILIKESearchWhere_ExtraWhitespace(t *testing.T) {
 	require.Equal(t, args1, args2)
 }
 
-func TestBuildILIKESearchWhere_SkipsNonWordTokens(t *testing.T) {
-	// Tokens without any letter or digit should be skipped, aligning with
-	// SQLite FTS5 which drops such tokens via containsWordChar.
+func TestBuildILIKESearchWhere_SpecialCharTokensIncluded(t *testing.T) {
+	// Tokens that contain only LIKE special characters (%, \, ---) are included
+	// in the ILIKE path because searchLikeReplacer safely escapes them. This
+	// differs from the SQLite FTS5 path where containsWordChar drops such tokens.
 	where, args := buildILIKESearchWhere(`% --- hello`, 1)
-	require.Equal(t, `WHERE (title ILIKE $1 ESCAPE '\' OR description ILIKE $1 ESCAPE '\')`, where)
-	require.Equal(t, []any{"%hello%"}, args)
+	expected := `WHERE (title ILIKE $1 ESCAPE '\' OR description ILIKE $1 ESCAPE '\') AND (title ILIKE $2 ESCAPE '\' OR description ILIKE $2 ESCAPE '\') AND (title ILIKE $3 ESCAPE '\' OR description ILIKE $3 ESCAPE '\')`
+	require.Equal(t, expected, where)
+	require.Equal(t, []any{`%\%%`, `%---%`, `%hello%`}, args)
 }
 
-func TestBuildILIKESearchWhere_AllNonWordTokens(t *testing.T) {
-	// When every token lacks word characters, return empty like the FTS5 path.
+func TestBuildILIKESearchWhere_AllSpecialCharTokens(t *testing.T) {
+	// When all tokens are pure special characters they are still included and
+	// escaped — the ILIKE path does not need the FTS5 word-char guard.
 	where, args := buildILIKESearchWhere(`% \ ---`, 1)
-	require.Empty(t, where)
-	require.Nil(t, args)
+	expected := `WHERE (title ILIKE $1 ESCAPE '\' OR description ILIKE $1 ESCAPE '\') AND (title ILIKE $2 ESCAPE '\' OR description ILIKE $2 ESCAPE '\') AND (title ILIKE $3 ESCAPE '\' OR description ILIKE $3 ESCAPE '\')`
+	require.Equal(t, expected, where)
+	require.Equal(t, []any{`%\%%`, `%\\%`, `%---%`}, args)
 }
 
 func TestBuildILIKESearchWhere_StartIdxClamped(t *testing.T) {
