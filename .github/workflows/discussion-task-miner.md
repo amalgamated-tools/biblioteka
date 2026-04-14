@@ -30,6 +30,8 @@ safe-outputs:
     run-started: "🔍 Discussion Task Miner starting! [{workflow_name}]({run_url}) is scanning discussions for actionable tasks..."
     run-success: "✅ Task mining complete! [{workflow_name}]({run_url}) has identified actionable tasks from recent discussions. 📊"
     run-failure: "⚠️ Task mining interrupted! [{workflow_name}]({run_url}) {status}. Please review the logs..."
+  noop:
+    report-as-issue: false
 
 tools:
   cache-memory: true
