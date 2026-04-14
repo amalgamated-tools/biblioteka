@@ -89,7 +89,9 @@ describe("MetadataComparison", () => {
         name: /comparison of current and fetched metadata/i,
       }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: "Field" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("columnheader", { name: "Field" }),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("columnheader", { name: "Current Value" }),
     ).toBeInTheDocument();
@@ -99,7 +101,9 @@ describe("MetadataComparison", () => {
     expect(
       screen.getByRole("columnheader", { name: "Fetched Value" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("rowheader", { name: "Title" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("rowheader", { name: "Title" }),
+    ).toBeInTheDocument();
   });
 
   it("only renders rows for non-null metadata fields", () => {

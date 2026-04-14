@@ -102,8 +102,11 @@
     </div>
   </div>
 
-  <table class="w-full table-fixed border-separate border-spacing-x-0 border-spacing-y-2">
-    <caption class="sr-only">Comparison of current and fetched metadata</caption>
+  <table
+    class="w-full table-fixed border-separate border-spacing-x-0 border-spacing-y-2"
+  >
+    <caption class="sr-only">Comparison of current and fetched metadata</caption
+    >
     <thead class="sr-only">
       <tr>
         <th scope="col">Field</th>
