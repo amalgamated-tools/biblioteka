@@ -132,6 +132,7 @@ lint-errorf:
 
 fmt:
 	go fmt ./...
+	cd frontend && pnpm run format
 
 hardfmt:
 	go tool gofumpt -w -l .

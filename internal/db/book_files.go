@@ -33,7 +33,11 @@ func scanBookFile(row interface{ Scan(...any) error }) (*BookFile, error) {
 
 // bookFileColumnsWithPrefix returns book_files columns with a table alias prefix.
 func bookFileColumnsWithPrefix(prefix string) string {
-	return prefix + "id, " + prefix + "book_id, " + prefix + "file_type, " + prefix + "file_name, " + prefix + "file_size, " + prefix + "file_hash, " + prefix + "file_path, " + prefix + "download_count, " + prefix + "created_at, " + prefix + "updated_at"
+	cols := strings.Split(bookFileColumns, ",")
+	for i, c := range cols {
+		cols[i] = prefix + strings.TrimSpace(c)
+	}
+	return strings.Join(cols, ", ")
 }
 
 // CreateBookFile inserts a new book file record and returns it.

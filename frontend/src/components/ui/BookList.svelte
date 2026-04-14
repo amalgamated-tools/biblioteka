@@ -10,7 +10,6 @@
   } from "lucide-svelte";
   import AlertBanner from "./AlertBanner.svelte";
   import BookCard from "./BookCard.svelte";
-  import { routerStore } from "../../stores/router.svelte";
 
   interface Props {
     fetchBooks: (
@@ -304,23 +303,7 @@
         <tbody>
           {#each books as book (book.id)}
             <tr
-              onclick={() => routerStore.navigate(`books/${book.id}`)}
-              onkeydown={(e) => {
-                if (
-                  e.key === "Enter" &&
-                  e.target === e.currentTarget &&
-                  !e.metaKey &&
-                  !e.ctrlKey &&
-                  !e.shiftKey &&
-                  !e.altKey
-                ) {
-                  e.preventDefault();
-                  routerStore.navigate(`books/${book.id}`);
-                }
-              }}
-              tabindex="0"
-              aria-label={`View ${book.title}`}
-              class="border-b border-ink-50 dark:border-ink-800/50 hover:bg-ink-50 dark:hover:bg-ink-800/30 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-500 focus-visible:outline-none"
+              class="border-b border-ink-50 dark:border-ink-800/50 hover:bg-ink-50 dark:hover:bg-ink-800/30 transition-colors"
             >
               <td class="px-4 py-3">
                 <div class="flex items-center gap-3">
@@ -343,8 +326,6 @@
                   {/if}
                   <a
                     href={`#books/${book.id}`}
-                    onclick={(e) => e.stopPropagation()}
-                    tabindex="-1"
                     class="font-medium text-ink-900 dark:text-cream-100 truncate max-w-xs hover:underline focus:outline-none focus:ring-2 focus:ring-accent-500 rounded"
                     title={book.title}
                   >

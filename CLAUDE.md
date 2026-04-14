@@ -56,6 +56,8 @@ db/migrations/
 ## After completing a task
 
 - Run `make fmt` and `make hardfmt` before committing.
+  - `make fmt` runs `go fmt ./...` (Go) and `pnpm run format` (frontend Prettier)
+  - `make hardfmt` runs `go tool gofumpt -w -l .` for strict Go formatting
 - Run `pnpm run lint` and `pnpm run check` in `frontend/` before committing frontend code.
 
 ## Commits and pushing
@@ -502,7 +504,7 @@ func (d *DB) DeleteMyProtocolCredential(ctx context.Context, userID string) erro
 - Manage reactive state in Svelte stores under `src/stores/`.
 - Style with Tailwind CSS utility classes — no component library.
 - Component files are PascalCase `.svelte`; store files are lowercase `.ts`.
-- Run `pnpm run lint` (ESLint) and `pnpm run check` (svelte-check) before committing frontend changes.
+- Run `pnpm run format` (Prettier), `pnpm run lint` (ESLint), and `pnpm run check` (svelte-check) before committing frontend changes.
 
 ## Testing
 
@@ -523,8 +525,8 @@ cd frontend && pnpm run test
 ```bash
 make dev        # Start backend (air hot-reload) + Vite frontend dev server
 make build      # Build frontend then compile Go binary
-make fmt        # Format code
-make hardfmt    # Strict formatting
+make fmt        # Format Go (go fmt ./...) and frontend (pnpm run format / Prettier)
+make hardfmt    # Strict Go formatting (go tool gofumpt -w -l .)
 go test ./...   # Run all Go tests
 cd frontend && pnpm run lint && pnpm run check   # Lint & type-check frontend
 ```
