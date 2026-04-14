@@ -159,7 +159,7 @@ The table below lists the conditions most worth alerting on in production. All o
 |-----------|-------------------|-----------------------|----------|
 | High error rate | `level == "ERROR"` | > 5 errors / minute | 🔴 Critical |
 | Slow HTTP responses | `duration > 2000000000` (> 2 s) | Sustained for > 2 minutes | 🟡 Warning |
-| Background job failures | `level == "ERROR"` + `msg` matches `scan\|process\|job` | Any single occurrence | 🔴 Critical |
+| Background job failures | `level == "ERROR"` + `msg` matches `scan\|process\|job\|file` | Any single occurrence | 🔴 Critical |
 | Authentication failures (rate-limiting) | `level == "WARN"` + `msg` matches `rate.limit\|too many` | > 20 / minute per IP | 🟡 Warning |
 | Sidecar write failures | `level == "WARN"` + `msg` matches `sidecar\|cover\|opf` | > 10 / minute | 🟡 Warning |
 | Startup / migration errors | `level == "ERROR"` during first 30 s after start | Any single occurrence | 🔴 Critical |
@@ -171,11 +171,11 @@ Use these alongside the [jq snippets above](#useful-jq-queries-local-development
 ```bash
 # Count ERROR-level entries in the last minute
 docker compose logs --since 60s --no-log-prefix biblioteka \
-  | jq 'select(.level == "ERROR")' | wc -l
+  | jq -c 'select(.level == "ERROR")' | wc -l
 
 # Count requests slower than 2 s in the last 5 minutes
 docker compose logs --since 300s --no-log-prefix biblioteka \
-  | jq 'select(.duration != null and .duration > 2000000000)' | wc -l
+  | jq -c 'select(.duration != null and .duration > 2000000000)' | wc -l
 
 # Alert on any background-job error (pipe to pagerduty/slack webhook as needed)
 docker compose logs -f --no-log-prefix biblioteka \
