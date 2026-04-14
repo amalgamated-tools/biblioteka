@@ -33,7 +33,7 @@ timeout-minutes: 30
 safe-outputs:
   create-pull-request:
     expires: 2d
-    title-prefix: "docs(daily):"
+    title-prefix: "docs(daily): "
     labels: [documentation, automation]
     reviewers: [copilot]
     draft: false
