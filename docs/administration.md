@@ -318,7 +318,7 @@ If the library has a `book_per_folder` or `book_per_file` organization type, new
 
 > **Audit trail:** Changes to the watch folder configuration are recorded in the audit log as `watch_folder.config_updated`.
 
-See [API Reference — Watch folder endpoints](api-reference.md#get-apiconfigwatch-folder--admin--jwt-only) for the full endpoint shape and error codes.
+See [API Reference — Watch folder endpoints](api-reference.md#get-apiconfigwatch-folder-admin-jwt-only) for the full endpoint shape and error codes.
 
 ---
 
