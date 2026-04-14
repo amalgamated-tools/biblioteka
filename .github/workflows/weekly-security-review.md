@@ -31,6 +31,8 @@ safe-outputs:
     title-prefix: "[weekly-security] "
     max: 1
     close-older-discussions: true
+  noop:
+    report-as-issue: false
 
 tools:
   cache-memory: true

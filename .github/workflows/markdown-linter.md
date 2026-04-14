@@ -17,6 +17,7 @@ safe-outputs:
     title-prefix: "docs(linter): "
     labels: [automation, code-quality]
   noop:
+    report-as-issue: false
 
 name: Markdown Linter
 timeout-minutes: 15
