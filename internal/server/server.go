@@ -20,6 +20,7 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/handlers"
 	"github.com/amalgamated-tools/biblioteka/internal/handlers/middleware"
+	"github.com/amalgamated-tools/biblioteka/internal/llm/ollama"
 	"github.com/amalgamated-tools/biblioteka/internal/otel"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/amalgamated-tools/biblioteka/internal/pubsub"
@@ -79,6 +80,7 @@ type Server struct {
 	bookFileHandler        *handlers.BookFileHandler
 	auditLogHandler        *handlers.AuditLogHandler
 	apiKeyHandler          *handlers.APIKeyHandler
+	tagHandler             *handlers.TagHandler
 	opdsHandler            *handlers.OPDSHandler
 	opdsCredentialHandler  *handlers.OPDSCredentialHandler
 	koboHandler            *handlers.KoboHandler
@@ -225,7 +227,28 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 			metadataHandler.Subscriber = psClient
 		}
 	}
+
+	// Wire up the LLM provider if configured in settings.
+	if llmEnabledStr, err := s.DB.GetSetting(ctx, db.SettingLLMEnabled); err == nil && llmEnabledStr == "true" {
+		llmProvider, _ := s.DB.GetSetting(ctx, db.SettingLLMProvider)
+		llmEndpoint, _ := s.DB.GetSetting(ctx, db.SettingLLMEndpoint)
+		llmModel, _ := s.DB.GetSetting(ctx, db.SettingLLMModel)
+		if llmEndpoint != "" {
+			ollamaClient := ollama.New(llmEndpoint, llmModel)
+			metadataHandler.LLMProvider = ollamaClient
+			metadataHandler.LLMProviderName = llmProvider
+			if metadataHandler.LLMProviderName == "" {
+				metadataHandler.LLMProviderName = "ollama"
+			}
+			slog.InfoContext(ctx, "LLM provider configured",
+				slog.String(otelkeys.Source, metadataHandler.LLMProviderName),
+				slog.String(otelkeys.URL, llmEndpoint),
+			)
+		}
+	}
+
 	s.bookHandler.MetadataHandler = metadataHandler
+	s.tagHandler = &handlers.TagHandler{DB: s.DB}
 	s.bookFileHandler = &handlers.BookFileHandler{DB: s.DB, Secrets: secretEncrypter}
 	s.auditLogHandler = &handlers.AuditLogHandler{DB: s.DB}
 	s.opdsHandler = &handlers.OPDSHandler{DB: s.DB}
