@@ -7,7 +7,6 @@
   } from "../../lib/api";
   import { required, minLength, matches, validate } from "../../lib/validation";
   import { AutoDismissTimer } from "../../lib/autoDismissTimer.svelte";
-  import { onDestroy } from "svelte";
   import { Lock, Mail, Link, User } from "lucide-svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
   import Button from "../ui/Button.svelte";
@@ -39,9 +38,15 @@
     }
   });
 
-  onDestroy(() => {
-    successTimer.clear();
-    nameSuccessTimer.clear();
+  // The first $effect has reactive dependencies so its cleanup fired on every re-run —
+  // including when nameLoading flipped to false right after calling nameSuccessTimer.show().
+  // The second $effect accesses no reactive state, so Svelte only runs it once on mount and
+  // runs the cleanup once on destroy, which is the correct onDestroy equivalent.
+  $effect(() => {
+    return () => {
+      successTimer.clear();
+      nameSuccessTimer.clear();
+    };
   });
 
   async function handleLinkSso() {
