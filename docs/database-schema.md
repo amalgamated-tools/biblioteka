@@ -34,8 +34,8 @@ users ────────────────────────�
   ├──── kobo_tokens
   ├──── goodreads_metadata
   ├──── reading_progress
-  ├──── reading_lists ──── reading_list_books ─┐
-  └──── kobo_reading_states ─────────────── books ──── book_authors ──── authors
+  ├──── reading_lists ──── reading_list_books ───┐
+  └──── kobo_reading_states ──────────────── books ──── book_authors ──── authors
                                                │
 libraries ──── library_books ─────────────────┤
                                                ├──── book_series ──── series
@@ -648,7 +648,7 @@ All database access lives in the `internal/db/` package. The books domain is spl
 | `kobo_tokens.go` | `KoboToken` struct; `CreateKoboToken`, `GetKoboToken`, `GetKoboTokenByHash`, `ListKoboTokens`, `DeleteKoboToken` |
 | `kobo_reading_states.go` | `KoboReadingState` struct; `GetKoboReadingState`, `UpsertKoboReadingState`, `ListKoboReadingStatesSince`, `GetReadingStatesForBooks` |
 | `kosync.go` | `KOSyncCredential` (type alias for `ProtocolCredential`); `GetKOSyncCredentialByUserID`, `GetKOSyncCredentialByUsername`, `UpsertKOSyncCredential`, `DeleteKOSyncCredential` — thin wrappers around the shared helpers in `protocol_credentials.go`; `ReadingProgress` struct; `GetReadingProgress`, `UpsertReadingProgress` |
-| `reading_progress.go` | Additional reading progress queries split from `kosync.go`: `ListReadingProgress`, `GetReadingStats`, `GetReadingStreak`, `ComputeReadingStreak` (pure function — computes consecutive-day streak from a slice of timestamps) |
+| `reading_progress.go` | Additional reading progress queries split from `kosync.go`: `ListReadingProgress`, `GetReadingStats`, `GetReadingStreak`, `ComputeReadingStreak` (computes a consecutive-day streak from a slice of timestamps, using the current UTC date to determine whether the streak reaches today or yesterday) |
 | `reading_lists.go` | `ReadingList` struct; `CreateReadingList`, `GetReadingList`, `ListReadingLists`, `UpdateReadingList`, `DeleteReadingList`, `AddBookToReadingList`, `RemoveBookFromReadingList`, `ListReadingListBooks`, `GetReadingListsForBook` |
 | `book_downloads.go` | `MonthlyDownloadCount` struct; `RecordBookDownload`, `GetMonthlyDownloads` |
 | `book_load_relations.go` | `BookRelations` struct; `LoadBookRelations` — batch-fetches authors, files, and series for a single book by delegating to the existing batch APIs |
