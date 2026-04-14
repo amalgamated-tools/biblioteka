@@ -43,8 +43,10 @@
     routerStore.setQueryParam("query", null);
   }
 
-  // A new function reference is created whenever debouncedQuery changes,
-  // which causes BookList to reset the page offset and re-fetch.
+  // The derived `fetchBooks` function creates a new reference whenever
+  // `debouncedQuery` changes. BookList's internal effect tracks `fetchBooks`
+  // as a dependency, so it detects the new reference and resets pagination
+  // offset to 0 before re-fetching.
   let fetchBooks = $derived(
     (limit: number, offset: number) =>
       api.listBooks(limit, offset, debouncedQuery),
