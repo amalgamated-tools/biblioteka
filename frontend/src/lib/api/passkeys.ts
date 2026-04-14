@@ -58,10 +58,7 @@ export async function finishPasskeyRegistration(
  * Returns the WebAuthn request options and a server-side session ID.
  */
 export async function beginPasskeyLogin(): Promise<PasskeyBeginResponse> {
-  return request<PasskeyBeginResponse>(
-    "POST",
-    "/api/auth/passkey/login/begin",
-  );
+  return request<PasskeyBeginResponse>("POST", "/api/auth/passkey/login/begin");
 }
 
 /**

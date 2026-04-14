@@ -87,10 +87,12 @@
 
     passkeyRegistering = true;
     try {
-      const { session_id, options } = await beginPasskeyRegistration(trimmedName);
+      const { session_id, options } =
+        await beginPasskeyRegistration(trimmedName);
 
       const credential = await navigator.credentials.create({
-        publicKey: (options as { publicKey: unknown }).publicKey as PublicKeyCredentialCreationOptions,
+        publicKey: (options as { publicKey: unknown })
+          .publicKey as PublicKeyCredentialCreationOptions,
       });
 
       if (!credential || !(credential instanceof PublicKeyCredential)) {
@@ -98,8 +100,13 @@
         return;
       }
 
-      const credentialJSON = (credential as PublicKeyCredential & { toJSON(): unknown }).toJSON();
-      const stored = await finishPasskeyRegistration(session_id, credentialJSON);
+      const credentialJSON = (
+        credential as PublicKeyCredential & { toJSON(): unknown }
+      ).toJSON();
+      const stored = await finishPasskeyRegistration(
+        session_id,
+        credentialJSON,
+      );
 
       passkeys = [stored, ...passkeys];
       passkeyRegisterName = "";
