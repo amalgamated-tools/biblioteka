@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
@@ -130,6 +131,29 @@ func setupSQLite(ctx context.Context) (*DB, error) {
 		)
 		_ = sqlDB.Close()
 		return nil, fmt.Errorf("failed to run migrations on database at %s: %w", dbFilePath, err)
+	}
+
+	// Verify FTS5 index integrity and auto-rebuild if corrupted. A failed
+	// integrity check or rebuild is non-fatal: it is logged and the server
+	// continues to start regardless of the outcome. If the FTS index remains
+	// corrupted, search requests may return incomplete results or fail until
+	// a rebuild succeeds, including via POST /api/admin/search/reindex.
+	ftsCtx, ftsCancel := context.WithTimeout(ctx, 5*time.Minute)
+	defer ftsCancel()
+
+	if err := d.CheckFTSIntegrity(ftsCtx); err != nil {
+		slog.WarnContext(ctx, "FTS5 index integrity check failed, attempting rebuild",
+			slog.String(otelkeys.Path, dbFilePath),
+			slog.Any(otelkeys.Error, err),
+		)
+		if rbErr := d.RebuildFTS(ftsCtx); rbErr != nil {
+			slog.ErrorContext(ctx, "FTS5 index rebuild failed; search requests may fail or return incomplete results until the index is rebuilt",
+				slog.String(otelkeys.Path, dbFilePath),
+				slog.Any(otelkeys.Error, rbErr),
+			)
+		} else {
+			slog.InfoContext(ctx, "FTS5 index rebuilt successfully", slog.String(otelkeys.Path, dbFilePath))
+		}
 	}
 
 	slog.InfoContext(ctx, "Database setup complete", slog.String(otelkeys.Path, dbFilePath))
