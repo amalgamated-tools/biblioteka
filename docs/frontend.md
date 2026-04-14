@@ -2894,13 +2894,16 @@ The following test suites cover reactive stores and the API client. Unlike the a
 
 ### `DownloadsHistogram.test.ts`
 
-`frontend/src/components/ui/DownloadsHistogram.test.ts` verifies the rendering and accessibility behavior of the `DownloadsHistogram` chart component. Five tests in one `describe` block:
+`frontend/src/components/ui/DownloadsHistogram.test.ts` verifies the rendering and accessibility behavior of the `DownloadsHistogram` chart component. Eight tests in one `describe` block:
 
 1. **`renders the default title`** — mounts with `data` containing downloads; asserts an `<h3>` heading with text `"Downloads per month"` is present.
 2. **`renders a custom title`** — mounts with a `title` override; asserts the `<h3>` heading reflects the custom string.
 3. **`shows the empty state message when all counts are zero`** — mounts with all-zero counts; asserts the "No downloads recorded yet." message is present and the `data-testid="histogram-bars"` container is absent.
 4. **`renders bars when data has downloads`** — mounts with non-zero counts; asserts the histogram-bars container is present and the empty-state message is absent.
 5. **`renders a bar element for each data point`** — mounts with three data points; asserts the histogram-bars container has exactly three child elements.
+6. **`hides the visual chart from assistive technology`** — asserts no `list` or `listitem` roles are present and the histogram-bars container has `aria-hidden="true"`.
+7. **`renders an accessible data table with month and download counts`** — asserts a `table` captioned "Downloads per month" exists with `Month` and `Downloads` column headers and one row header per data point.
+8. **`generates unique ids for multiple instances`** — renders two instances with different titles; asserts their heading `id` attributes are distinct.
 
 ---
 
