@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/svelte";
+import userEvent from "@testing-library/user-event";
 import { tick } from "svelte";
 import type { PaginatedBooks } from "../../types";
 import BookList from "./BookList.svelte";
@@ -81,8 +82,9 @@ describe("BookList table view link accessibility (WCAG 2.1.1)", () => {
   });
 
   it("title link remains in the natural tab order", async () => {
+    const user = userEvent.setup();
     const fetchBooks = vi.fn().mockResolvedValue(fakeBooks);
-    const { container } = render(BookList, { props: { fetchBooks } });
+    render(BookList, { props: { fetchBooks } });
     await tick();
     await tick();
 
@@ -90,8 +92,16 @@ describe("BookList table view link accessibility (WCAG 2.1.1)", () => {
     await fireEvent.click(tableViewButton);
     await tick();
 
-    const titleLink = container.querySelector(`a[href="#books/b1"]`);
+    const titleLink = screen.getByRole("link", { name: "Test Book" });
     expect(titleLink).not.toHaveAttribute("tabindex");
+
+    // Verify the link is actually reachable via Tab
+    await user.tab();
+    // Tab through UI elements until focus reaches the title link
+    while (document.activeElement !== titleLink && document.activeElement !== document.body) {
+      await user.tab();
+    }
+    expect(document.activeElement).toBe(titleLink);
   });
 
   it("title link points to the book route", async () => {
