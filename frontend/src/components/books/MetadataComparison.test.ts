@@ -94,6 +94,9 @@ describe("MetadataComparison", () => {
       screen.getByRole("columnheader", { name: "Current Value" }),
     ).toBeInTheDocument();
     expect(
+      screen.getByRole("columnheader", { name: "Action" }),
+    ).toBeInTheDocument();
+    expect(
       screen.getByRole("columnheader", { name: "Fetched Value" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("rowheader", { name: "Title" })).toBeInTheDocument();
