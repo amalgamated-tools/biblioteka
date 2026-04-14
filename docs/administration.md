@@ -277,6 +277,51 @@ This validation also applies at download time: if a previously registered file's
 
 ---
 
+## Watch Folder
+
+The watch folder lets Biblioteka automatically import any book file dropped into a designated directory. When enabled, the server runs a background scan every minute and enqueues a `process:file` job for each new file it finds.
+
+> **Requires Redis.** Watch folder scanning runs as a background job. The feature is only active when the server is started with a configured `REDIS_URL`.
+
+### Configure the watch folder
+
+Set the watch folder path and target library from **Settings → Watch Folder** in the web UI, or via the API:
+
+```bash
+# Set a watch folder
+curl -X PUT http://localhost:8080/api/config/watch-folder \
+  -H "Authorization: Bearer <admin-jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "path": "/mnt/incoming",
+    "library_id": "<library-uuid>"
+  }'
+
+# Clear the watch folder (disables scanning)
+curl -X PUT http://localhost:8080/api/config/watch-folder \
+  -H "Authorization: Bearer <admin-jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{"path": ""}'
+```
+
+**Requirements:**
+
+- `path` must be an absolute path to an existing directory on the server's filesystem.
+- `library_id` must be the UUID of an existing library. Every imported file is associated with this library.
+- Sending an empty `path` clears both `path` and `library_id`, disabling the watch folder.
+
+### How it works
+
+Every minute, the `scan:watch-folder` background job reads the configured path and library ID, then runs the same `ScanDirectory` pipeline used by the regular library scanner. Each supported file (`.epub`, `.mobi`, `.azw3`, `.pdf`) is enqueued as a `process:file` job. Already-indexed file paths are skipped — the scan is safe to run repeatedly.
+
+If the library has a `book_per_folder` or `book_per_file` organization type, newly imported files are moved into the library's canonical directory structure. Otherwise they remain in the watch folder path.
+
+> **Audit trail:** Changes to the watch folder configuration are recorded in the audit log as `watch_folder.config_updated`.
+
+See [API Reference — Watch folder endpoints](api-reference.md#get-apiconfigwatch-folder--admin--jwt-only) for the full endpoint shape and error codes.
+
+---
+
 ## OIDC Configuration (Runtime)
 
 Admins can configure OIDC at runtime without a server restart via **Settings → SSO** or the API:
