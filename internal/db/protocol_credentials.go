@@ -28,6 +28,7 @@ func (c *ProtocolCredential) CredentialInfo() (id, username string, createdAt, u
 
 const protocolCredentialColumns = `id, user_id, username, password_hash, created_at, updated_at`
 
+// scanProtocolCredential scans a protocol credential row into a ProtocolCredential struct.
 func scanProtocolCredential(row interface{ Scan(...any) error }) (*ProtocolCredential, error) {
 	return scanRow(row, func(c *ProtocolCredential) []any {
 		return []any{&c.ID, &c.UserID, &c.Username, &c.PasswordHash, &c.CreatedAt, &c.UpdatedAt}

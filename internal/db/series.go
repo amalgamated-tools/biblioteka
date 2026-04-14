@@ -39,6 +39,7 @@ func (seriesListQuery) orderBy(d *DB) string {
 	return d.dialectOrderBy("name", "ASC")
 }
 
+// scanSeries scans a series row into a Series struct.
 func scanSeries(row interface{ Scan(...any) error }) (*Series, error) {
 	return scanRow(row, func(s *Series) []any {
 		return []any{&s.ID, &s.Name, &s.GoodreadsID, &s.HardcoverID, &s.GoogleBooksID, &s.CreatedAt, &s.UpdatedAt}

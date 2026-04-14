@@ -30,6 +30,7 @@ type KoboReadingState struct {
 
 const koboReadingStateColumns = `id, user_id, book_id, status, percent_read, location_value, location_type, location_source, created_at, updated_at`
 
+// scanKoboReadingState scans a Kobo reading state row into a KoboReadingState struct.
 func scanKoboReadingState(row interface{ Scan(...any) error }) (*KoboReadingState, error) {
 	return scanRow(row, func(s *KoboReadingState) []any {
 		return []any{
