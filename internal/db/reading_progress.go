@@ -19,7 +19,7 @@ type ReadingStats struct {
 // ListReadingProgress returns all reading progress entries for a user, ordered
 // by last update time descending (most-recently synced first).
 func (d *DB) ListReadingProgress(ctx context.Context, userID string) ([]ReadingProgress, error) {
-	slog.DebugContext(ctx, "db: listing reading progress",
+	slog.DebugContext(ctx, "listing reading progress",
 		slog.String(otelkeys.UserID, userID),
 	)
 	rows, err := d.QueryContext(ctx,
@@ -39,7 +39,7 @@ func (d *DB) ListReadingProgress(ctx context.Context, userID string) ([]ReadingP
 // GetReadingStats returns aggregate reading statistics for a user: total
 // documents tracked and how many are finished (percentage >= 0.99).
 func (d *DB) GetReadingStats(ctx context.Context, userID string) (ReadingStats, error) {
-	slog.DebugContext(ctx, "db: fetching reading stats",
+	slog.DebugContext(ctx, "fetching reading stats",
 		slog.String(otelkeys.UserID, userID),
 	)
 	var stats ReadingStats
@@ -62,7 +62,7 @@ func (d *DB) GetReadingStats(ctx context.Context, userID string) (ReadingStats, 
 // on which at least one reading progress entry exists. Returns 0 when there is no
 // activity or the most-recent activity was before yesterday.
 func (d *DB) GetReadingStreak(ctx context.Context, userID string) (int, error) {
-	slog.DebugContext(ctx, "db: fetching reading streak",
+	slog.DebugContext(ctx, "fetching reading streak",
 		slog.String(otelkeys.UserID, userID),
 	)
 	items, err := d.ListReadingProgress(ctx, userID)
