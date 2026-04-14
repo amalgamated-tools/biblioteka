@@ -2413,9 +2413,14 @@ Returns a single reading list by ID. The list must be owned by the authenticated
 
 ### `PUT /api/reading-lists/{id}` 🔒
 
-Updates the name and/or description of a reading list.
+Updates a reading list. The `name` field is required; omitting `description` (or setting it to `null`) clears the field.
 
 **Request body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | ✓ | New list name (must not be blank) |
+| `description` | string \| null | | New description; omitted or `null` clears the field |
 
 ```json
 {
@@ -2431,7 +2436,7 @@ Updates the name and/or description of a reading list.
 | Status | Meaning |
 |--------|---------|
 | `200 OK` | Updated successfully |
-| `400 Bad Request` | Missing or blank `name` |
+| `400 Bad Request` | Invalid or empty reading list ID, or missing/blank `name` |
 | `401 Unauthorized` | Missing or invalid authentication |
 | `404 Not Found` | List not found or not owned by the user |
 | `409 Conflict` | Another list with that name already exists for this user |
@@ -2486,6 +2491,7 @@ See [Books](#books) for the book summary object shape. The `total` field reflect
 | Status | Meaning |
 |--------|---------|
 | `200 OK` | Success |
+| `400 Bad Request` | Invalid or empty reading list ID |
 | `401 Unauthorized` | Missing or invalid authentication |
 | `404 Not Found` | List not found or not owned by the user |
 | `500 Internal Server Error` | Database error |
@@ -2511,7 +2517,7 @@ Adds a book to a reading list. The operation is idempotent — adding a book tha
 | Status | Meaning |
 |--------|---------|
 | `204 No Content` | Book added (or already present) |
-| `400 Bad Request` | Missing `book_id` |
+| `400 Bad Request` | Invalid or empty reading list ID, or missing `book_id` |
 | `401 Unauthorized` | Missing or invalid authentication |
 | `404 Not Found` | Reading list or book not found |
 | `500 Internal Server Error` | Database error |
@@ -2527,6 +2533,7 @@ Removes a book from a reading list. The operation is idempotent — removing a b
 | Status | Meaning |
 |--------|---------|
 | `204 No Content` | Book removed (or was not present) |
+| `400 Bad Request` | Invalid or empty reading list ID |
 | `401 Unauthorized` | Missing or invalid authentication |
 | `404 Not Found` | Reading list not found or not owned by the user |
 | `500 Internal Server Error` | Database error |
@@ -2639,7 +2646,7 @@ Returns the authenticated user's reading streak, total-books-tracked count, fini
 | `percentage` | number | Reading progress in `[0, 1]` |
 | `device` | string | KOReader device name, when provided; omitted otherwise |
 | `last_synced` | string | ISO 8601 timestamp of the most recent sync |
-| `estimated_minutes_remaining` | integer | Linear estimate of minutes left; omitted when the estimate is unreliable (< 1% read, < 5 min elapsed, or sync span exceeds 30 days, i.e. `updated_at − created_at > 30 days`) |
+| `estimated_minutes_remaining` | integer | Linear estimate of minutes left; omitted when the estimate is unreliable (≤ 1% read, < 5 min elapsed, or sync span exceeds 30 days, i.e. `updated_at − created_at > 30 days`) |
 
 **Status codes:**
 

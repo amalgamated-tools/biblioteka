@@ -1296,7 +1296,7 @@ Top-level page component rendered when the router's `currentView` is `"reading-l
 
 | Sub-path | Behaviour |
 |----------|-----------|
-| `` (empty) | Shows the list of reading lists plus an inline creation form |
+| `(empty)` | Shows the list of reading lists plus an inline creation form |
 | `{id}` | Renders `ReadingListDetail` for the list with that ID |
 
 **Behaviour:**
