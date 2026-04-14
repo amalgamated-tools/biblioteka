@@ -1,11 +1,6 @@
 import { describe, expect, it, vi, afterEach, beforeEach } from "vitest";
-import {
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from "@testing-library/svelte";
+import { cleanup, render, screen, waitFor } from "@testing-library/svelte";
+import userEvent from "@testing-library/user-event";
 import { tick } from "svelte";
 
 vi.mock("../../lib/api", () => ({
@@ -77,10 +72,12 @@ describe("ReadingListDetail delete confirmation accessibility", () => {
   });
 
   it("moves focus to the confirm button when inline delete confirmation appears", async () => {
+    const user = userEvent.setup();
     render(ReadingListDetail, { props: { listId: fakeList.id } });
     await tick();
 
-    await fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    const deleteButton = screen.getByRole("button", { name: "Delete" });
+    await user.click(deleteButton);
 
     const confirmButton = await screen.findByRole("button", {
       name: "Yes, delete",
