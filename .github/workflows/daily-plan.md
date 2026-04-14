@@ -21,6 +21,7 @@ safe-outputs:
     title-prefix: "${{ github.workflow }}"
     category: "announcements"
     close-older-discussions: true
+    expires: 1d
 
 tools:
   github:
@@ -60,11 +61,5 @@ Your job is to act as a planner for the GitHub repository ${{ github.repository 
 
    3a. Create a discussion with an appropriate title starting with "${{ github.workflow }}" and the current date (e.g., "Daily Plan - 2025-10-10"), using the project plan as the body.
    
-   **Reminder**: You MUST call exactly one safe-output tool before finishing. If no file exceeds 500 lines, call `noop` with a status message. If a file exceeds 500 lines, call `create_issue`. Do NOT end without calling a safe-output tool.
-
-Example noop output:
-
-```json
-{"noop": {"message": "No action needed: all non-test source files are below the 500-line threshold after checking the largest files."}}
-```
+   **Reminder**: You MUST call exactly one safe-output tool before finishing. Call `create_discussion` to create the daily plan discussion with the project plan in its body. Do NOT end without calling a safe-output tool.
 
