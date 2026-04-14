@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/stretchr/testify/require"
@@ -251,10 +252,10 @@ func TestHandleFTSRebuild_AdminSuccess(t *testing.T) {
 
 	h.HandleFTSRebuild(w, r)
 
-	require.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, http.StatusAccepted, w.Code)
 	var resp map[string]string
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
-	require.Equal(t, "search index rebuilt", resp["message"])
+	require.Equal(t, "search index rebuild started", resp["message"])
 }
 
 func TestHandleFTSRebuild_NonAdminForbidden(t *testing.T) {
@@ -291,6 +292,7 @@ func TestHandleFTSRebuild_DBError(t *testing.T) {
 
 	h.HandleFTSRebuild(w, r)
 
+	// With a closed DB the admin check fails before the async rebuild starts.
 	require.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
@@ -306,11 +308,11 @@ func TestHandleFTSRebuild_RebuildPreservesSearchResults(t *testing.T) {
 
 	h.HandleFTSRebuild(w, r)
 
-	require.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, http.StatusAccepted, w.Code)
 
-	// Verify search still returns results after rebuild.
-	books, total, err := h.DB.SearchBooks(t.Context(), "Foundation", 10, 0)
-	require.NoError(t, err, "SearchBooks() after rebuild")
-	require.Equal(t, 1, total)
-	require.Len(t, books, 1)
+	// Wait for the async rebuild goroutine to complete.
+	require.Eventually(t, func() bool {
+		books, total, err := h.DB.SearchBooks(t.Context(), "Foundation", 10, 0)
+		return err == nil && total == 1 && len(books) == 1
+	}, 5*time.Second, 50*time.Millisecond, "SearchBooks() after rebuild")
 }
