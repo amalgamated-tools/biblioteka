@@ -1,12 +1,11 @@
 <script lang="ts">
-  import type { RemoteMetadata, MetadataProgressEvent } from "../../types";
+  import type { RemoteMetadata, MetadataProgressEvent, CurrentValues } from "../../types";
   import { ApiError } from "../../lib/api/core";
   import * as api from "../../lib/api";
   import { Search } from "lucide-svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
   import Button from "../ui/Button.svelte";
   import MetadataComparison from "./MetadataComparison.svelte";
-  import type { CurrentValues } from "./MetadataComparison.svelte";
   import type { FormFields } from "./BookEditForm.svelte";
 
   // Maps each editable RemoteMetadata key to the corresponding FormFields key.
