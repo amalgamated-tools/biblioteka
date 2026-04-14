@@ -20,6 +20,10 @@ import (
 
 const passkeyChallengeExpiry = 5 * time.Minute
 
+// errPasskeySessionExpired is returned by loadChallenge when the challenge's
+// TTL has elapsed.
+var errPasskeySessionExpired = errors.New("passkey session expired")
+
 // PasskeyHandler holds dependencies for passkey/WebAuthn endpoints.
 type PasskeyHandler struct {
 	DB            *db.DB
@@ -106,20 +110,21 @@ func (h *PasskeyHandler) storeChallenge(r *http.Request, userID *string, sd *web
 	return challenge.ID, nil
 }
 
-// loadChallenge retrieves, deletes, and decodes a stored challenge. Returns an error if expired.
-func (h *PasskeyHandler) loadChallenge(ctx context.Context, id string) (*passkeyChallengeData, error) {
+// loadChallenge retrieves, deletes, and decodes a stored challenge.
+// Returns the decoded data, the stored user ID (nil for login challenges), and an error if expired.
+func (h *PasskeyHandler) loadChallenge(ctx context.Context, id string) (*passkeyChallengeData, *string, error) {
 	rec, err := h.DB.GetAndDeletePasskeyChallenge(ctx, id)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if time.Now().UTC().After(rec.ExpiresAt.Time) {
-		return nil, errors.New("passkey session expired")
+		return nil, nil, errPasskeySessionExpired
 	}
 	var data passkeyChallengeData
 	if err = json.Unmarshal([]byte(rec.SessionData), &data); err != nil {
-		return nil, fmt.Errorf("unmarshal challenge: %w", err)
+		return nil, nil, fmt.Errorf("unmarshal challenge: %w", err)
 	}
-	return &data, nil
+	return &data, rec.UserID, nil
 }
 
 // HandlePasskeyEnabled reports whether passkeys are configured on this server.
@@ -223,6 +228,10 @@ func (h *PasskeyHandler) HandleBeginRegistration(w http.ResponseWriter, r *http.
 	req.Name = strings.TrimSpace(req.Name)
 	if req.Name == "" {
 		writeError(r.Context(), w, http.StatusBadRequest, "passkey name is required")
+		return
+	}
+	if len(req.Name) > maxTokenNameLength {
+		writeError(r.Context(), w, http.StatusBadRequest, fmt.Sprintf("passkey name must be %d characters or fewer", maxTokenNameLength))
 		return
 	}
 
@@ -330,13 +339,13 @@ func (h *PasskeyHandler) HandleFinishRegistration(w http.ResponseWriter, r *http
 
 	userID := auth.UserIDFromContext(r.Context())
 
-	challengeData, err := h.loadChallenge(r.Context(), sessionID)
+	challengeData, storedUserID, err := h.loadChallenge(r.Context(), sessionID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			writeError(r.Context(), w, http.StatusBadRequest, "invalid or expired session")
 			return
 		}
-		if err.Error() == "passkey session expired" {
+		if errors.Is(err, errPasskeySessionExpired) {
 			writeError(r.Context(), w, http.StatusBadRequest, "passkey session expired")
 			return
 		}
@@ -345,6 +354,11 @@ func (h *PasskeyHandler) HandleFinishRegistration(w http.ResponseWriter, r *http
 			slog.Any(otelkeys.Error, err),
 		)
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to load session")
+		return
+	}
+
+	if storedUserID != nil && *storedUserID != userID {
+		writeError(r.Context(), w, http.StatusBadRequest, "invalid or expired session")
 		return
 	}
 
@@ -502,13 +516,13 @@ func (h *PasskeyHandler) HandleFinishAuthentication(w http.ResponseWriter, r *ht
 		return
 	}
 
-	challengeData, err := h.loadChallenge(r.Context(), sessionID)
+	challengeData, _, err := h.loadChallenge(r.Context(), sessionID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			writeError(r.Context(), w, http.StatusUnauthorized, "invalid or expired session")
 			return
 		}
-		if err.Error() == "passkey session expired" {
+		if errors.Is(err, errPasskeySessionExpired) {
 			writeError(r.Context(), w, http.StatusUnauthorized, "passkey session expired")
 			return
 		}

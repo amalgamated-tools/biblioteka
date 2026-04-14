@@ -95,7 +95,9 @@ func TestPasskeyChallenges(t *testing.T) {
 	d := newTestDB(t)
 	ctx := t.Context()
 
-	uid := "user-abc"
+	user, err := d.CreateUser(ctx, "Challenge User", "challenge@example.com", "hash")
+	require.NoError(t, err)
+	uid := user.ID
 
 	t.Run("create and get-delete", func(t *testing.T) {
 		expiresAt := time.Now().UTC().Add(5 * time.Minute)

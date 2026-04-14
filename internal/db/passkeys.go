@@ -2,8 +2,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
-	"fmt"
 	"log/slog"
 	"time"
 
@@ -33,7 +31,7 @@ func scanPasskeyCredential(row interface{ Scan(...any) error }) (*PasskeyCredent
 func (d *DB) CreatePasskeyCredential(ctx context.Context, userID, name, credentialID, credentialData, aaguid string) (*PasskeyCredential, error) {
 	slog.DebugContext(ctx, "db: creating passkey credential",
 		slog.String(otelkeys.UserID, userID),
-		slog.String(otelkeys.PasskeyCredentialID, credentialID),
+		slog.String(otelkeys.PasskeyRawID, credentialID),
 	)
 	return scanPasskeyCredential(d.QueryRowContext(ctx,
 		`INSERT INTO passkey_credentials (user_id, name, credential_id, credential_data, aaguid) VALUES ($1, $2, $3, $4, $5) RETURNING `+passkeyCredentialColumns,
@@ -134,33 +132,10 @@ func (d *DB) CreatePasskeyChallenge(ctx context.Context, userID *string, session
 func (d *DB) GetAndDeletePasskeyChallenge(ctx context.Context, id string) (*PasskeyChallenge, error) {
 	slog.DebugContext(ctx, "db: getting and deleting passkey challenge", slog.String(otelkeys.PasskeySessionID, id))
 
-	tx, err := d.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, fmt.Errorf("begin transaction: %w", err)
-	}
-	defer deferRollback(ctx, tx)
-
-	var c PasskeyChallenge
-	err = tx.QueryRowContext(ctx,
-		`SELECT `+passkeyChallengeColumns+` FROM passkey_challenges WHERE id = $1`,
+	return scanPasskeyChallenge(d.QueryRowContext(ctx,
+		`DELETE FROM passkey_challenges WHERE id = $1 RETURNING `+passkeyChallengeColumns,
 		id,
-	).Scan(&c.ID, &c.UserID, &c.SessionData, &c.ExpiresAt, &c.CreatedAt)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, sql.ErrNoRows
-		}
-		return nil, fmt.Errorf("fetch challenge: %w", err)
-	}
-
-	if _, err = tx.ExecContext(ctx, `DELETE FROM passkey_challenges WHERE id = $1`, id); err != nil {
-		return nil, fmt.Errorf("delete challenge: %w", err)
-	}
-
-	if err = tx.Commit(); err != nil {
-		return nil, fmt.Errorf("commit: %w", err)
-	}
-
-	return &c, nil
+	))
 }
 
 // DeleteExpiredPasskeyChallenges removes all expired passkey challenges.
