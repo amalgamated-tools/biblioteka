@@ -39,6 +39,17 @@ safe-outputs:
     draft: false
     auto-merge: true
     protected-files: fallback-to-issue
+  create-issue:
+    expires: 2d
+    title-prefix: "docs(daily): "
+    labels: [documentation, automation]
+    max: 5
+    group: true   
+  add-comment:
+    max: 10
+    target: "*"
+    target-repo: ${{ vars.TARGET_REPOSITORY }}
+    hide-older-comments: true     
   noop:
     report-as-issue: false    
 
