@@ -104,15 +104,20 @@ func (d *DB) ListBooksByAuthorPaginated(ctx context.Context, authorID string, li
 	return books, total, nil
 }
 
+// seriesPositionOrderBy returns a dialect-appropriate ORDER BY clause for series books,
+// using NULLS LAST on PostgreSQL so unpositioned books sort after positioned ones.
+func (d *DB) seriesPositionOrderBy() string {
+	if d.Dialect == DialectPostgres {
+		return "ORDER BY bs.position ASC NULLS LAST, b.title ASC"
+	}
+	return "ORDER BY bs.position ASC, b.title ASC"
+}
+
 // ListBooksBySeries returns all books in a specific series, ordered by position.
 func (d *DB) ListBooksBySeries(ctx context.Context, seriesID string) ([]Book, error) {
 	slog.DebugContext(ctx, "db: listing books by series", slog.String(otelkeys.SeriesID, seriesID))
-	nullsLast := "ORDER BY bs.position ASC, b.title ASC"
-	if d.Dialect == DialectPostgres {
-		nullsLast = "ORDER BY bs.position ASC NULLS LAST, b.title ASC"
-	}
 	rows, err := d.QueryContext(ctx,
-		`SELECT `+bookColumnsWithPrefix("b.")+` FROM books b INNER JOIN book_series bs ON bs.book_id = b.id WHERE bs.series_id = $1 `+nullsLast,
+		`SELECT `+bookColumnsWithPrefix("b.")+` FROM books b INNER JOIN book_series bs ON bs.book_id = b.id WHERE bs.series_id = $1 `+d.seriesPositionOrderBy(),
 		seriesID,
 	)
 	if err != nil {
@@ -129,12 +134,8 @@ func (d *DB) ListBooksBySeriesPaginated(ctx context.Context, seriesID string, li
 		slog.Int(otelkeys.Offset, offset),
 	)
 
-	nullsLast := "ORDER BY bs.position ASC, b.title ASC"
-	if d.Dialect == DialectPostgres {
-		nullsLast = "ORDER BY bs.position ASC NULLS LAST, b.title ASC"
-	}
 	rows, err := d.QueryContext(ctx,
-		`SELECT `+bookColumnsWithPrefix("b.")+`, COUNT(*) OVER() FROM books b INNER JOIN book_series bs ON bs.book_id = b.id WHERE bs.series_id = $1 `+nullsLast+` LIMIT $2 OFFSET $3`,
+		`SELECT `+bookColumnsWithPrefix("b.")+`, COUNT(*) OVER() FROM books b INNER JOIN book_series bs ON bs.book_id = b.id WHERE bs.series_id = $1 `+d.seriesPositionOrderBy()+` LIMIT $2 OFFSET $3`,
 		seriesID, limit, offset,
 	)
 	if err != nil {
