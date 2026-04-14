@@ -160,7 +160,7 @@ The table below lists the conditions most worth alerting on in production. All o
 | High error rate | `level == "ERROR"` | > 5 errors / minute | 🔴 Critical |
 | Slow HTTP responses | `duration > 2000000000` (> 2 s) | Sustained for > 2 minutes | 🟡 Warning |
 | Background job failures | `level == "ERROR"` + `msg` matches `scan\|process\|job\|file` | Any single occurrence | 🔴 Critical |
-| Authentication failures (rate-limiting) | `level == "WARN"` + `msg` matches `rate.limit\|too many` | > 20 / minute per IP | 🟡 Warning |
+| Authentication failures (rate-limiting) | `level == "INFO"` + `msg` matches `rate limit exceeded` | > 20 / minute per IP | 🟡 Warning |
 | Sidecar write failures | `level == "WARN"` + `msg` matches `sidecar\|cover\|opf` | > 10 / minute | 🟡 Warning |
 | Startup / migration errors | `level == "ERROR"` during first 30 s after start | Any single occurrence | 🔴 Critical |
 
@@ -190,7 +190,7 @@ Biblioteka has **built-in support for distributed tracing** via OpenTelemetry. T
 
 ### How it works
 
-`TraceMiddleware` wraps every incoming HTTP request in an OTel span. The global tracer provider defaults to a **no-op provider**, so there is zero overhead and no spans leave the process until you register an exporter.
+`TraceMiddleware` wraps every incoming HTTP request in an OTel span. The global tracer provider defaults to a **no-op provider**, so the runtime overhead remains minimal and no spans leave the process until you register an exporter.
 
 The standard binary does not ship a built-in OTLP exporter or read `OTEL_EXPORTER_OTLP_ENDPOINT` at runtime. To enable span export, build from source and register a `TracerProvider` (e.g. using `go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc` or `otlptracehttp`) before calling `server.NewServer`. Span names follow the pattern `METHOD /path` (e.g. `GET /api/books`).
 
