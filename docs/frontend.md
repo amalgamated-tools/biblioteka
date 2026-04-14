@@ -906,6 +906,49 @@ Padding is intentionally left to the caller via the `class` prop to avoid Tailwi
 
 ---
 
+### `DownloadsHistogram.svelte`
+
+A pure-CSS bar-chart component that renders monthly download counts fetched from `GET /api/stats/downloads-per-month`. Used by `Dashboard.svelte` to display the authenticated user's download history.
+
+**Props:**
+
+| Prop | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| `data` | `MonthlyDownloads[]` | ✓ | — | Array of `{ month: "YYYY-MM", count: number }` objects ordered oldest-first |
+| `title` | `string` | | `"Downloads per month"` | Label rendered as an `<h3>` above the chart and used as the `aria-label` on the bar list |
+
+**Accessibility:**
+
+- The bar container uses `role="list"` with an `aria-label` matching the `title` prop.
+- Each bar column is a `role="listitem"` element with `tabindex="0"` and an `aria-label` of `"Month YYYY: N download(s)"`, so keyboard users can navigate each data point with Tab/arrow keys and screen readers announce the exact figure.
+- A count tooltip (`aria-hidden="true"`) appears above each bar on hover/focus — decorative only.
+- When all counts are zero, an empty-state `<p>` with `aria-live="polite"` is shown instead of the chart.
+
+**Usage:**
+
+```svelte
+<script lang="ts">
+  import DownloadsHistogram from "./ui/DownloadsHistogram.svelte";
+  import { getDownloadsPerMonth } from "../lib/api";
+  import type { MonthlyDownloads } from "../types";
+
+  let data = $state<MonthlyDownloads[]>([]);
+  $effect(() => {
+    getDownloadsPerMonth(12)
+      .then((d) => (data = d))
+      .catch((err) => {
+        console.error("Failed to fetch download stats:", err);
+      });
+  });
+</script>
+
+{#if data.length > 0}
+  <DownloadsHistogram {data} title="Downloads per month" />
+{/if}
+```
+
+---
+
 ### `TextInput.svelte`
 
 A styled text input with focus ring, dark-mode support, disabled styling, and ARIA attribute forwarding. In dark mode, placeholder text uses `dark:placeholder:text-ink-300` to maintain sufficient contrast against the dark background (WCAG 1.4.3 Contrast Minimum, Level AA). Form control borders use `border-ink-400 dark:border-ink-400` to meet the WCAG 1.4.11 Non-text Contrast minimum of 3:1.
