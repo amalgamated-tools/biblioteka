@@ -60,12 +60,12 @@ func newTestPostgresDB(t *testing.T) *DB {
 	// Use a short-lived admin connection to create the schema.
 	adminDB, err := sql.Open("pgx", baseURL)
 	require.NoError(t, err, "newTestPostgresDB: open admin connection")
+	defer adminDB.Close()
 	// Drop any leftover schema from a previous failed run, then create fresh.
 	_, err = adminDB.ExecContext(ctx, "DROP SCHEMA IF EXISTS "+quoted+" CASCADE")
 	require.NoError(t, err, "newTestPostgresDB: drop schema")
 	_, err = adminDB.ExecContext(ctx, "CREATE SCHEMA "+quoted)
 	require.NoError(t, err, "newTestPostgresDB: create schema")
-	_ = adminDB.Close()
 
 	// Drop the schema after the test finishes.
 	t.Cleanup(func() {
