@@ -25,7 +25,7 @@ safe-outputs:
     group: true
     labels: [cookie]
   noop:
-    report-as-issue: false    
+    report-as-issue: false
   create-discussion:
     category: "audits"
     expires: 1d

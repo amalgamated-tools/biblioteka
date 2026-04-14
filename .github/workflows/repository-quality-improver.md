@@ -25,7 +25,7 @@ safe-outputs:
     labels: [quality, automated-analysis]
     max: 1
   noop:
-    report-as-issue: false      
+    report-as-issue: false
 
 timeout-minutes: 20
 source: githubnext/agentics/workflows/repository-quality-improver.md@97143ac59cb3a13ef2a77581f929f06719c7402a

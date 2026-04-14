@@ -53,7 +53,7 @@ safe-outputs:
   link-sub-issue:
     max: 50
   noop:
-    report-as-issue: false  
+    report-as-issue: false
 timeout-minutes: 15
 source: githubnext/agentics/workflows/issue-arborist.md@97143ac59cb3a13ef2a77581f929f06719c7402a
 ---

@@ -28,7 +28,7 @@ safe-outputs:
     labels: [automation, pr-fix]
   add-comment:
   noop:
-    report-as-issue: false    
+    report-as-issue: false
 
 timeout-minutes: 20
 

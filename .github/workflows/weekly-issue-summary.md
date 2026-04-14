@@ -34,7 +34,7 @@ safe-outputs:
     close-older-discussions: true
     max: 3
   noop:
-    report-as-issue: false    
+    report-as-issue: false
 
 steps:
   - name: Setup Python environment

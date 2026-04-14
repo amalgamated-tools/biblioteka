@@ -37,7 +37,7 @@ steps:
 safe-outputs:
   upload-asset:
   noop:
-    report-as-issue: false    
+    report-as-issue: false
 timeout-minutes: 20
 imports:
   - uses: shared/daily-audit-discussion.md

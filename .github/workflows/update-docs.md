@@ -32,7 +32,7 @@ safe-outputs:
     labels: [automation, documentation]
     max: 1
   noop:
-    report-as-issue: false    
+    report-as-issue: false
 
 tools:
   github:

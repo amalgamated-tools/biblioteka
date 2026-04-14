@@ -30,7 +30,7 @@ safe-outputs:
     draft: false
     protected-files: allowed
   noop:
-    report-as-issue: false    
+    report-as-issue: false
 
 tools:
   github:

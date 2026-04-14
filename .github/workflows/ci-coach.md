@@ -38,7 +38,7 @@ safe-outputs:
     github-token-for-extra-empty-commit: ${{ secrets.GH_AW_CI_TRIGGER_TOKEN }}
     github-token: ${{ secrets.GH_AW_PUSH_TOKEN }}
   noop:
-    report-as-issue: false    
+    report-as-issue: false
 timeout-minutes: 30
 source: githubnext/agentics/workflows/ci-coach.md@97143ac59cb3a13ef2a77581f929f06719c7402a
 ---

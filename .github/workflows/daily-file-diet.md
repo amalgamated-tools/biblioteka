@@ -22,7 +22,7 @@ safe-outputs:
     max: 5
     group: true
   noop:
-    report-as-issue: false    
+    report-as-issue: false
 
 tools:
   github:

@@ -26,7 +26,7 @@ safe-outputs:
     labels: [automation, ci]
     close-older-issues: true
   noop:
-    report-as-issue: false    
+    report-as-issue: false
   add-comment:
 
 tools:

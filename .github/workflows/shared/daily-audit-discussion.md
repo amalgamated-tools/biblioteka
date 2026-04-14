@@ -27,5 +27,5 @@ safe-outputs:
     max: 1
     close-older-discussions: true
   noop:
-    report-as-issue: false      
+    report-as-issue: false
 ---

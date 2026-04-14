@@ -32,7 +32,7 @@ safe-outputs:
     run-success: "🔍 Nitpicks catalogued! [{workflow_name}]({run_url}) has documented all the tiny details. ✅"
     run-failure: "🔬 Lens cracked! [{workflow_name}]({run_url}) {status}. Some nitpicks remain undetected..."
   noop:
-    report-as-issue: false      
+    report-as-issue: false
 timeout-minutes: 15
 imports:
   - shared/reporting.md

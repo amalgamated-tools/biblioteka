@@ -26,7 +26,7 @@ safe-outputs:
   close-discussion:
     required-category: "Ideas"
   noop:
-    report-as-issue: false      
+    report-as-issue: false
 timeout-minutes: 10
 source: githubnext/agentics/workflows/plan.md@97143ac59cb3a13ef2a77581f929f06719c7402a
 ---

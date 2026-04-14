@@ -21,7 +21,7 @@ safe-outputs:
     max: 3
     close-older-discussions: true
   noop:
-    report-as-issue: false    
+    report-as-issue: false
 
 tools:
   github:
