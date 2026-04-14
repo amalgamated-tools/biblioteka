@@ -52,17 +52,17 @@ func (c *Client) SearchByISBN(ctx context.Context, isbn string) ([]BookResult, e
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, searchURL, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
+		return nil, fmt.Errorf("failed to create Goodreads ISBN search request for ISBN %q (%s): %w", isbn, searchURL, err)
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("HTTP request failed: %w", err)
+		return nil, fmt.Errorf("goodreads ISBN search request failed for ISBN %q (%s): %w", isbn, searchURL, err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("goodreads ISBN search returned status %d", resp.StatusCode)
+		return nil, fmt.Errorf("goodreads ISBN search for ISBN %q (%s) returned status %d (%s)", isbn, searchURL, resp.StatusCode, resp.Status)
 	}
 
 	const maxResponseSize = 1 << 20 // 1 MB
