@@ -97,6 +97,13 @@ func (h *AdminHandler) HandleFTSRebuild(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// On PostgreSQL, search uses pg_trgm GIN indexes maintained by the engine;
+	// there is nothing to rebuild, so return immediately.
+	if h.DB.Dialect != db.DialectSQLite {
+		writeJSON(r.Context(), w, http.StatusOK, map[string]string{"message": "search index rebuild not required for this database"})
+		return
+	}
+
 	callerID := auth.UserIDFromContext(r.Context())
 	rebuildBaseCtx := context.WithoutCancel(r.Context())
 
