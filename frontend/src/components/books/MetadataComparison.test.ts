@@ -75,6 +75,30 @@ describe("MetadataComparison", () => {
     expect(screen.getByText("Goodreads")).toBeInTheDocument();
   });
 
+  it("renders a semantic metadata comparison table with headers", () => {
+    render(MetadataComparison, {
+      metadata: baseMetadata,
+      currentValues: baseCurrentValues,
+      onApplyField: vi.fn(),
+      onApplyAll: vi.fn(),
+      onDismiss: vi.fn(),
+    });
+
+    expect(
+      screen.getByRole("table", {
+        name: /comparison of current and fetched metadata/i,
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Field" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("columnheader", { name: "Current Value" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("columnheader", { name: "Fetched Value" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("rowheader", { name: "Title" })).toBeInTheDocument();
+  });
+
   it("only renders rows for non-null metadata fields", () => {
     const metadata: RemoteMetadata = {
       ...baseMetadata,
