@@ -37,6 +37,10 @@ checkout:
   fetch: ["*"]     # fetch all remote branches to allow working on PR branches
   fetch-depth: 0   # fetch full history
 
+concurrency:
+  group: repo-assist-${{ github.event.pull_request.number }}
+  cancel-in-progress: true  
+
 tools:
   web-fetch:
   github:
