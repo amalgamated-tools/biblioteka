@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"strings"
 
@@ -153,15 +154,53 @@ func (d *DB) ListBooksBySeriesPaginated(ctx context.Context, seriesID string, li
 	return books, total, nil
 }
 
+// buildILIKESearchWhere builds a WHERE clause and args for a per-token ILIKE
+// search on the books table. Each whitespace-delimited token in query becomes
+// an independent AND condition that checks both title and description, giving
+// the same "all tokens must appear somewhere" semantics as the FTS5 path used
+// on SQLite.
+//
+// Positional placeholders start at startIdx. Returns ("", nil) when query
+// contains no tokens.
+func buildILIKESearchWhere(query string, startIdx int) (string, []any) {
+	if startIdx < 1 {
+		startIdx = 1
+	}
+	tokens := strings.Fields(query)
+	if len(tokens) == 0 {
+		return "", nil
+	}
+	conditions := make([]string, 0, len(tokens))
+	args := make([]any, 0, len(tokens))
+	idx := startIdx
+	for _, token := range tokens {
+		escaped := searchLikeReplacer.Replace(token)
+		conditions = append(conditions, fmt.Sprintf(
+			`(title ILIKE $%d ESCAPE '\' OR description ILIKE $%d ESCAPE '\')`,
+			idx, idx,
+		))
+		args = append(args, "%"+escaped+"%")
+		idx++
+	}
+	if len(conditions) == 0 {
+		return "", nil
+	}
+	return "WHERE " + strings.Join(conditions, " AND "), args
+}
+
 // SearchBooks searches books by title or description with pagination and total count.
 //
 // On SQLite the search is backed by a FTS5 virtual table (books_fts) for
 // index-accelerated full-text matching. Multi-token queries are evaluated as an
 // implicit AND across the combined FTS document (title + description), so
 // different tokens may match in different columns (e.g., one in title and one
-// in description). On PostgreSQL the existing ILIKE query is used, which is
-// accelerated by the pg_trgm GIN indexes added in migration
-// 20260412000000_add_books_trgm.
+// in description).
+//
+// On PostgreSQL each whitespace-delimited token produces its own ILIKE
+// condition (accelerated by the pg_trgm GIN indexes added in migration
+// 20260412000000_add_books_trgm), and all token conditions are joined with AND.
+// This mirrors FTS5 token-AND semantics: every token must appear somewhere in
+// either title or description.
 //
 // An empty or whitespace-only query returns zero results on all dialects.
 func (d *DB) SearchBooks(ctx context.Context, query string, limit, offset int) ([]Book, int, error) {
@@ -178,7 +217,7 @@ func (d *DB) SearchBooks(ctx context.Context, query string, limit, offset int) (
 
 	var (
 		whereClause string
-		matchArg    any
+		searchArgs  []any
 	)
 
 	if d.Dialect == DialectSQLite {
@@ -187,17 +226,24 @@ func (d *DB) SearchBooks(ctx context.Context, query string, limit, offset int) (
 			return []Book{}, 0, nil
 		}
 		whereClause = `WHERE rowid IN (SELECT rowid FROM books_fts WHERE books_fts MATCH $1)`
-		matchArg = ftsQuery
+		searchArgs = []any{ftsQuery}
 	} else {
-		escaped := searchLikeReplacer.Replace(query)
-		whereClause = `WHERE (title ILIKE $1 ESCAPE '\' OR description ILIKE $1 ESCAPE '\')`
-		matchArg = "%" + escaped + "%"
+		whereClause, searchArgs = buildILIKESearchWhere(query, 1)
+		if whereClause == "" {
+			return []Book{}, 0, nil
+		}
 	}
+
+	limitPos := dollarN(len(searchArgs) + 1)
+	offsetPos := dollarN(len(searchArgs) + 2)
+	mainArgs := make([]any, 0, len(searchArgs)+2)
+	mainArgs = append(mainArgs, searchArgs...)
+	mainArgs = append(mainArgs, limit, offset)
 
 	orderBy := d.dialectOrderBy("title", "ASC")
 	rows, err := d.QueryContext(ctx,
-		`SELECT `+bookColumns+`, COUNT(*) OVER() FROM books `+whereClause+` `+orderBy+` LIMIT $2 OFFSET $3`,
-		matchArg, limit, offset,
+		`SELECT `+bookColumns+`, COUNT(*) OVER() FROM books `+whereClause+` `+orderBy+` LIMIT `+limitPos+` OFFSET `+offsetPos,
+		mainArgs...,
 	)
 	if err != nil {
 		return nil, 0, err
@@ -207,7 +253,7 @@ func (d *DB) SearchBooks(ctx context.Context, query string, limit, offset int) (
 		return nil, 0, err
 	}
 	if err := countFallback(ctx, d, &total, len(books), offset,
-		`SELECT COUNT(*) FROM books `+whereClause, matchArg,
+		`SELECT COUNT(*) FROM books `+whereClause, searchArgs...,
 	); err != nil {
 		return nil, 0, err
 	}

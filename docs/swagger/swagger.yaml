@@ -1522,7 +1522,7 @@ paths:
       description: Returns paginated books (summary without relations). When query
         is provided, performs a title/description search.
       parameters:
-      - description: Search query (title/description substring match)
+      - description: Search query (SQLite FTS5 full-text match across title and description; PostgreSQL title/description substring match)
         in: query
         name: query
         type: string
