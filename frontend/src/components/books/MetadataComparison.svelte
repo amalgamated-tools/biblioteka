@@ -120,28 +120,25 @@
         {@const remote = metadata[field.key]}
         {#if remote != null}
           {@const different = isDifferent(field.key)}
+          {@const cellBg = different
+            ? "bg-accent-50 dark:bg-accent-800/20"
+            : "bg-ink-50 dark:bg-ink-800/30"}
           <tr class="text-sm">
             <th
               scope="row"
-              class="w-[120px] text-left text-ink-500 dark:text-ink-400 font-medium text-xs pt-0.5 p-2 rounded-l-lg align-top {different
-                ? 'bg-accent-50 dark:bg-accent-800/20 border-l-2 border-accent-500'
-                : 'bg-ink-50 dark:bg-ink-800/30'}"
+              class="w-[120px] text-left text-ink-500 dark:text-ink-400 font-medium text-xs pt-0.5 p-2 rounded-l-lg align-top {cellBg} {different
+                ? 'border-l-2 border-accent-500'
+                : ''}"
             >
               {field.label}
             </th>
             <td
-              class="text-ink-700 dark:text-ink-200 truncate p-2 align-top {different
-                ? 'bg-accent-50 dark:bg-accent-800/20'
-                : 'bg-ink-50 dark:bg-ink-800/30'}"
+              class="text-ink-700 dark:text-ink-200 truncate p-2 align-top {cellBg}"
               title={displayValue(currentValues[field.key])}
             >
               {displayValue(currentValues[field.key])}
             </td>
-            <td
-              class="w-12 p-2 align-top {different
-                ? 'bg-accent-50 dark:bg-accent-800/20'
-                : 'bg-ink-50 dark:bg-ink-800/30'}"
-            >
+            <td class="w-12 p-2 align-top {cellBg}">
               <div class="flex items-center justify-center">
                 {#if different}
                   <button
@@ -165,9 +162,9 @@
               </div>
             </td>
             <td
-              class="truncate p-2 rounded-r-lg align-top {different
-                ? 'bg-accent-50 dark:bg-accent-800/20 text-accent-700 dark:text-accent-300 font-medium'
-                : 'bg-ink-50 dark:bg-ink-800/30 text-ink-500 dark:text-ink-400'}"
+              class="truncate p-2 rounded-r-lg align-top {cellBg} {different
+                ? 'text-accent-700 dark:text-accent-300 font-medium'
+                : 'text-ink-500 dark:text-ink-400'}"
               title={String(remote)}
             >
               {String(remote)}
