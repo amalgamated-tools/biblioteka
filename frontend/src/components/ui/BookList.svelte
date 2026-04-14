@@ -10,10 +10,15 @@
   } from "lucide-svelte";
   import AlertBanner from "./AlertBanner.svelte";
   import BookCard from "./BookCard.svelte";
-  import { routerStore } from "../../stores/router.svelte";
 
   interface Props {
-    fetchBooks: (limit: number, offset: number) => Promise<PaginatedBooks>;
+    fetchBooks: (
+      limit: number,
+      offset: number,
+      query?: string,
+    ) => Promise<PaginatedBooks>;
+    /** Optional search query passed to fetchBooks on every load. */
+    query?: string;
     pageSize?: number;
     initialOffset?: number;
     onPageChange?: (offset: number) => void;
@@ -27,6 +32,7 @@
 
   let {
     fetchBooks,
+    query = undefined,
     pageSize = 24,
     initialOffset = 0,
     onPageChange,
@@ -63,13 +69,14 @@
     fetchFn: typeof fetchBooks,
     size: number,
     off: number,
+    q: string | undefined,
     silent = false,
   ) {
     const requestId = ++currentRequestId;
     if (!silent) loading = true;
     error = null;
     try {
-      const data = await fetchFn(size, off);
+      const data = await fetchFn(size, off, q);
       if (requestId !== currentRequestId) {
         return;
       }
@@ -100,11 +107,12 @@
   // `initialOffset` is honoured on mount.
   let hasInitialized = false;
 
-  // Reset offset when the data source or page size changes (but not on first
-  // mount, so that `initialOffset` is respected for the initial page load).
+  // Reset offset when the data source, page size, or query changes (but not on
+  // first mount, so that `initialOffset` is respected for the initial page load).
   $effect(() => {
     void fetchBooks;
     void effectivePageSize;
+    void query;
     if (!hasInitialized) {
       hasInitialized = true;
       return;
@@ -112,9 +120,9 @@
     offset = 0;
   });
 
-  // Load books whenever offset, page size, or fetch fn changes
+  // Load books whenever offset, page size, fetch fn, or query changes
   $effect(() => {
-    load(fetchBooks, effectivePageSize, offset);
+    load(fetchBooks, effectivePageSize, offset, query);
   });
 
   // Notify the parent whenever the offset changes so it can persist it in the
@@ -142,7 +150,7 @@
     let timerId: ReturnType<typeof setTimeout> | undefined;
 
     const poll = async () => {
-      await load(fetchBooks, effectivePageSize, offset, true);
+      await load(fetchBooks, effectivePageSize, offset, query, true);
       if (cancelled) return;
       timerId = setTimeout(() => {
         void poll();
@@ -211,10 +219,17 @@
           class="w-12 h-12 text-ink-200 dark:text-ink-700 mx-auto mb-4"
           aria-hidden="true"
         />
-        <p class="text-ink-500 dark:text-ink-300 text-lg">No books yet.</p>
-        <p class="text-ink-500 dark:text-ink-300 text-sm mt-1">
-          Books will appear here once they are added to your libraries.
-        </p>
+        {#if query}
+          <p class="text-ink-500 dark:text-ink-300 text-lg">No books found.</p>
+          <p class="text-ink-500 dark:text-ink-300 text-sm mt-1">
+            Try a different search term.
+          </p>
+        {:else}
+          <p class="text-ink-500 dark:text-ink-300 text-lg">No books yet.</p>
+          <p class="text-ink-500 dark:text-ink-300 text-sm mt-1">
+            Books will appear here once they are added to your libraries.
+          </p>
+        {/if}
       {/if}
     </div>
   </div>
@@ -288,23 +303,7 @@
         <tbody>
           {#each books as book (book.id)}
             <tr
-              onclick={() => routerStore.navigate(`books/${book.id}`)}
-              onkeydown={(e) => {
-                if (
-                  e.key === "Enter" &&
-                  e.target === e.currentTarget &&
-                  !e.metaKey &&
-                  !e.ctrlKey &&
-                  !e.shiftKey &&
-                  !e.altKey
-                ) {
-                  e.preventDefault();
-                  routerStore.navigate(`books/${book.id}`);
-                }
-              }}
-              tabindex="0"
-              aria-label={`View ${book.title}`}
-              class="border-b border-ink-50 dark:border-ink-800/50 hover:bg-ink-50 dark:hover:bg-ink-800/30 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-500 focus-visible:outline-none"
+              class="border-b border-ink-50 dark:border-ink-800/50 hover:bg-ink-50 dark:hover:bg-ink-800/30 transition-colors"
             >
               <td class="px-4 py-3">
                 <div class="flex items-center gap-3">
@@ -327,8 +326,6 @@
                   {/if}
                   <a
                     href={`#books/${book.id}`}
-                    onclick={(e) => e.stopPropagation()}
-                    tabindex="-1"
                     class="font-medium text-ink-900 dark:text-cream-100 truncate max-w-xs hover:underline focus:outline-none focus:ring-2 focus:ring-accent-500 rounded"
                     title={book.title}
                   >
