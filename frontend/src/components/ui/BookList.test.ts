@@ -98,7 +98,10 @@ describe("BookList table view link accessibility (WCAG 2.1.1)", () => {
     // Verify the link is actually reachable via Tab
     await user.tab();
     // Tab through UI elements until focus reaches the title link
-    while (document.activeElement !== titleLink && document.activeElement !== document.body) {
+    while (
+      document.activeElement !== titleLink &&
+      document.activeElement !== document.body
+    ) {
       await user.tab();
     }
     expect(document.activeElement).toBe(titleLink);
