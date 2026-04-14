@@ -210,11 +210,11 @@
               <div
                 class="flex items-center gap-2"
                 role="group"
-                aria-labelledby="delete-confirm-prompt"
+                aria-labelledby={`delete-confirm-prompt-${listId}`}
                 use:autofocusFirstButton
               >
                 <span
-                  id="delete-confirm-prompt"
+                  id={`delete-confirm-prompt-${listId}`}
                   class="text-sm text-ink-600 dark:text-ink-300 mr-1"
                   >Delete this list?</span
                 >
