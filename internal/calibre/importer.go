@@ -90,7 +90,7 @@ func runImport(ctx context.Context, biblDB *db.DB, calibreDB *DB, opts ImportOpt
 	slog.InfoContext(ctx, "calibre: loaded books",
 		slog.Int(otelkeys.BookCount, len(books)),
 	)
-	slog.InfoContext(ctx, "calibre: note: Calibre tags are not imported; re-tag books manually in Biblioteka if needed")
+	slog.DebugContext(ctx, "calibre: note: Calibre tags are not imported; re-tag books manually in Biblioteka if needed")
 
 	for i := range books {
 		book := &books[i]
