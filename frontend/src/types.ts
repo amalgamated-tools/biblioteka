@@ -371,3 +371,18 @@ export interface ReadingListInput {
   name: string;
   description?: string | null;
 }
+
+export interface CurrentValues {
+  title: string;
+  description: string | null;
+  publisher: string | null;
+  language: string | null;
+  publication_date: string | null;
+  isbn13: string | null;
+  isbn10: string | null;
+  asin: string | null;
+  goodreads_id: string | null;
+  hardcover_id: string | null;
+  google_books_id: string | null;
+  cover_image_url: string | null;
+}
