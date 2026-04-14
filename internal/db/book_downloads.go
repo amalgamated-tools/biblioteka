@@ -18,7 +18,7 @@ type MonthlyDownloadCount struct {
 // file and user. The error is non-critical and callers should log and continue
 // rather than surfacing it to the end user.
 func (d *DB) RecordBookDownload(ctx context.Context, bookFileID, userID string) error {
-	slog.DebugContext(ctx, "db: recording book download",
+	slog.DebugContext(ctx, "recording book download",
 		slog.String(otelkeys.BookFileID, bookFileID),
 		slog.String(otelkeys.UserID, userID),
 	)
@@ -34,7 +34,7 @@ func (d *DB) RecordBookDownload(ctx context.Context, bookFileID, userID string) 
 // current month). Results are ordered oldest-first and always contain an entry
 // for every month in the window, even if the count is zero.
 func (d *DB) GetMonthlyDownloads(ctx context.Context, userID string, months int) ([]MonthlyDownloadCount, error) {
-	slog.DebugContext(ctx, "db: fetching monthly download counts",
+	slog.DebugContext(ctx, "fetching monthly download counts",
 		slog.String(otelkeys.UserID, userID),
 		slog.Int(otelkeys.Count, months),
 	)
