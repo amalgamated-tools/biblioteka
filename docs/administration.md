@@ -158,6 +158,7 @@ Entries are returned newest-first. `limit` defaults to `50` (maximum `200`); `of
 | `kosync_credential.updated` | `kosync_credential` | `username`                           | `PUT /api/kosync/credentials`           |
 | `kosync_credential.deleted` | `kosync_credential` | `username`                           | `DELETE /api/kosync/credentials`        |
 | `smtp.config_updated`  | `config`      | `host`, `from`                                   | `PUT /api/config/smtp`                  |
+| `watch_folder.config_updated` | `config` | `path`, `library_id`                             | `PUT /api/config/watch-folder`          |
 
 **Notes:** `user_id` is the actor who performed the action (`null` for system/background actions). Entries are append-only and never modified. Book files created by the background scanner do **not** currently produce an audit entry — only files created via the API are audited.
 
@@ -307,7 +308,7 @@ curl -X PUT http://localhost:8080/api/config/watch-folder \
 **Requirements:**
 
 - `path` must be an absolute path to an existing directory on the server's filesystem.
-- `library_id` must be the UUID of an existing library. Every imported file is associated with this library.
+- `library_id` must be the ID of an existing library. Every imported file is associated with this library.
 - Sending an empty `path` clears both `path` and `library_id`, disabling the watch folder.
 
 ### How it works
