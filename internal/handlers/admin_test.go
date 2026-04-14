@@ -281,6 +281,19 @@ func TestHandleFTSRebuild_MethodNotAllowed(t *testing.T) {
 	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
+func TestHandleFTSRebuild_DBError(t *testing.T) {
+	h, adminID, _ := setupAdminHandler(t)
+	require.NoError(t, h.DB.Close(), "close db")
+
+	r := httptest.NewRequest(http.MethodPost, "/api/admin/search/reindex", nil)
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleFTSRebuild(w, r)
+
+	require.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
 func TestHandleFTSRebuild_RebuildPreservesSearchResults(t *testing.T) {
 	h, adminID, _ := setupAdminHandler(t)
 
