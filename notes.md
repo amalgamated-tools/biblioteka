@@ -1,7 +1,7 @@
 # Test Improver Memory — biblioteka
 
 ## Last Updated
-2026-04-13
+2026-04-14
 
 ## Build/Test/Coverage Commands
 
@@ -41,6 +41,8 @@ Use `GOTOOLCHAIN=local go version` to confirm. CI has the correct Go version.
 - errorResponse struct is `{Error string "json:\"error\""}` in handlers/response.go
 - CreateOIDCUser(ctx, name, email, oidcSubject) creates user with empty PasswordHash
 - httptest.NewRequest sets r.Host = "example.com" by default when no Host header present
+- Sub-resource handler tests call h.HandleBookRoutes(w, r) with the full path
+- readingListDTO is in reading_lists.go; AddBookToReadingList(ctx, listID, userID, bookID)
 
 ## Testing Landscape
 Codebase is very well tested overall. Most packages have 1:1 test file ratio.
@@ -60,24 +62,26 @@ Key untested internal helpers (tested only via high-level integration):
 - 2026-04-12 run 2: Tasks 4, 3, 7 (no open PRs to maintain; OIDC login regression PR; monthly issue update)
 - 2026-04-12 run 3: Tasks 2, 3, 7 (auth_origin CSRF helpers PR; new monthly issue)
 - 2026-04-13: Tasks 3, 7 (OIDC password change guard test PR; new monthly issue #1793 had been closed)
-- Next run: Task 4 (maintain PRs), Task 5 (comment on testing issues), Task 6 (test infrastructure), Task 7
+- 2026-04-14: Tasks 4, 6, 7 (no open Test Improver PRs; books reading-lists handler PR; new monthly issue)
+- Next run: Task 1 (re-validate commands), Task 2 (identify new opportunities), Task 5 (comment on testing issues), Task 7
 
 ## Testing Backlog (prioritized)
 
-1. **[IN PROGRESS] OIDC-only password change guard** — PR submitted on branch `test-assist/oidc-password-change-guard`
-   - Adds TestChangePassword_OIDCOnlyAccount: verifies CreateOIDCUser (empty PasswordHash) gets 400 "cannot change password for OIDC-only account"
-2. **organize path-escape defense-in-depth test** — the `filepath.Rel` escape guard in organize.go has no test. Likely unreachable in practice. Low value.
-3. **smtp/send.go** — no tests for newClientWithContext or Send. These require real TCP connections, making unit tests difficult. Could use a test server.
-4. **pathparser internal helpers** — isLikelyPersonName, stripTrailingAuthor have no direct tests. Covered via ParseBookPath table tests. Medium value if direct tests would catch regressions in heuristics.
+1. **organize path-escape defense-in-depth test** — the `filepath.Rel` escape guard in organize.go has no test. Likely unreachable in practice. Low value.
+2. **smtp/send.go** — no tests for newClientWithContext or Send. These require real TCP connections, making unit tests difficult. Could use a test server.
+3. **pathparser internal helpers** — isLikelyPersonName, stripTrailingAuthor have no direct tests. Covered via ParseBookPath table tests. Medium value if direct tests would catch regressions in heuristics.
 
 ## Maintainer Priorities
-- Previous monthly issue #1690 was closed by veverkap on 2026-04-12 as "completed"
-- Monthly issue #1793 was closed by veverkap on 2026-04-13 as "completed"
-- Signals positive reception; maintainer is actively merging Test Improver PRs (merged: #1689, #1771, #1792)
+- Previous monthly issues #1690, #1793, #1846 were all closed by veverkap as "completed"
+- Signals positive reception; maintainer is actively merging Test Improver PRs (merged: #1689, #1771, #1792, #1845)
 
 ## Completed Work
 
-### 2026-04-13
+### 2026-04-14
+- New monthly activity issue created (prior #1846 closed by maintainer)
+- Submitted PR on branch `test-assist/books-reading-lists-handler`: tests for getBookReadingLists — covers empty response, lists with books, user isolation, method not allowed
+
+### 2026-04-13 (PR #1845 — merged ✅)
 - New monthly activity issue created (prior #1793 closed by maintainer)
 - Submitted PR on branch `test-assist/oidc-password-change-guard`: TestChangePassword_OIDCOnlyAccount — verifies OIDC-only accounts cannot change their password (security boundary)
 
@@ -85,12 +89,11 @@ Key untested internal helpers (tested only via high-level integration):
 - Created new monthly activity issue for April 2026
 - Created PR on branch `test-assist/auth-origin-csrf-tests`: unit tests for CSRF origin-checking helpers (sameOrigin, matchRequestOrigin, parseHostPort, normalizeHost, defaultPort)
 
-### 2026-04-12 Run 2
+### 2026-04-12 Run 2 (PR #1771 — merged ✅)
 - Confirmed PR #1689 (sanitizeDirName tests) was merged
-- Created PR on branch `test-assist/oidc-login-enumeration-regression`: regression test for OIDC account enumeration fix (#1713) — merged as #1771 ✅
-- Updated monthly activity issue #1690
+- Created PR on branch `test-assist/oidc-login-enumeration-regression`: regression test for OIDC account enumeration fix (#1713)
 
-### 2026-04-11 Run 1
-- Created PR #1689: `test(organize): add direct unit tests for sanitizeDirName` (merged ✅)
+### 2026-04-11 Run 1 (PR #1689 — merged ✅)
+- Created PR #1689: `test(organize): add direct unit tests for sanitizeDirName`
 - Discovered commands and testing landscape
 - Created monthly activity issue #1690 for April 2026
