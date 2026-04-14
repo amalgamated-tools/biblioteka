@@ -1,5 +1,41 @@
 # Changelog
 
+## [0.11.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.10.0...v0.11.0) (2026-04-14)
+
+
+### Features
+
+* **calibre:** add Calibre library importer CLI command ([#1795](https://github.com/amalgamated-tools/biblioteka/issues/1795)) ([2302cfd](https://github.com/amalgamated-tools/biblioteka/commit/2302cfdb8da72543cb867afd4abed9d995c2e5a5))
+* **dashboard:** add reading progress dashboard with KOSync streak and in-progress tracking ([#1799](https://github.com/amalgamated-tools/biblioteka/issues/1799)) ([5e17867](https://github.com/amalgamated-tools/biblioteka/commit/5e1786793d55eaaa46bc6f9f9479eed40654c2aa))
+* **reading-lists:** implement user-curated reading lists & shelves ([#1801](https://github.com/amalgamated-tools/biblioteka/issues/1801)) ([7a5c2bc](https://github.com/amalgamated-tools/biblioteka/commit/7a5c2bce32b147a21b0f39cc8ad12efa22faf606))
+* **security:** encrypt SMTP password and OIDC client secret at rest ([#1862](https://github.com/amalgamated-tools/biblioteka/issues/1862)) ([46cbb24](https://github.com/amalgamated-tools/biblioteka/commit/46cbb2438412149ce2563645a6143485f7289fa3))
+* **stats:** add downloads-per-month histogram to dashboard ([#1794](https://github.com/amalgamated-tools/biblioteka/issues/1794)) ([c82e2a7](https://github.com/amalgamated-tools/biblioteka/commit/c82e2a7daf2b7fa85169af24d85b9ecadae64ad6))
+
+
+### Bug Fixes
+
+* **accessibility:** fix WCAG 1.4.3 contrast violations in DownloadsHistogram ([#1818](https://github.com/amalgamated-tools/biblioteka/issues/1818)) ([a80bf07](https://github.com/amalgamated-tools/biblioteka/commit/a80bf0794a57345cbe5f062c434f8eee35759d5f))
+* **accessibility:** focus close button on EmailBookModal open; scope keyboard handler to dialog ([#1822](https://github.com/amalgamated-tools/biblioteka/issues/1822)) ([e8991b1](https://github.com/amalgamated-tools/biblioteka/commit/e8991b1df81c90ace673789cd19e32e544e6f37c))
+* **accessibility:** high-contrast keyboard focus indicator for DownloadsHistogram bars ([#1823](https://github.com/amalgamated-tools/biblioteka/issues/1823)) ([b9cb897](https://github.com/amalgamated-tools/biblioteka/commit/b9cb8970be085ee6536cae85b17e4bf104a41be5))
+* **accessibility:** make BookList table rows keyboard accessible (WCAG 2.1.1) ([#1763](https://github.com/amalgamated-tools/biblioteka/issues/1763)) ([732502f](https://github.com/amalgamated-tools/biblioteka/commit/732502fa0febe37f90a5ee492101b4f9e4e30928))
+* **accessibility:** remove redundant aria-label on DownloadsHistogram heading, use aria-labelledby on list ([#1825](https://github.com/amalgamated-tools/biblioteka/issues/1825)) ([43304e9](https://github.com/amalgamated-tools/biblioteka/commit/43304e9c939c62e67e3076013e3b51f4dc1bc82a))
+* **accessibility:** replace undefined `warning` palette in MetadataComparison ([#1820](https://github.com/amalgamated-tools/biblioteka/issues/1820)) ([83d287b](https://github.com/amalgamated-tools/biblioteka/commit/83d287bcb1c9b0ea6ffb8f3e5e9ab0a20b86001e))
+* **code-simplifier:** refactor(opds,frontend): extract OPDS ErrorID constant and simplify Settings effect ([#1789](https://github.com/amalgamated-tools/biblioteka/issues/1789)) ([b3da489](https://github.com/amalgamated-tools/biblioteka/commit/b3da4897cc771662cf736c515f40678e742ce829))
+* **csp:** remove 'unsafe-inline' from style-src in global CSP ([#1861](https://github.com/amalgamated-tools/biblioteka/issues/1861)) ([955d93c](https://github.com/amalgamated-tools/biblioteka/commit/955d93cabca2e0cefedcbc8c279638361507c89f))
+* **handlers:** record download events for Kobo and OPDS downloads ([#1826](https://github.com/amalgamated-tools/biblioteka/issues/1826)) ([784d3d7](https://github.com/amalgamated-tools/biblioteka/commit/784d3d74a3dc30b6354c8203fee89012cd153454))
+* **security:** add HSTS header and iss/aud JWT claims for defense-in-depth ([#1767](https://github.com/amalgamated-tools/biblioteka/issues/1767)) ([0e18a7f](https://github.com/amalgamated-tools/biblioteka/commit/0e18a7f7115ed6bb575f99789a948b4e3697739a))
+* **security:** harden CSP by replacing unsafe-inline with sha256 hash in script-src ([#1768](https://github.com/amalgamated-tools/biblioteka/issues/1768)) ([aaae436](https://github.com/amalgamated-tools/biblioteka/commit/aaae436b2f84daf12845b36015776471f2578472))
+* **workflows:** remove `--search "-parent-issue:*"` from Issue Arborist to unblock DIFC proxy ([#1780](https://github.com/amalgamated-tools/biblioteka/issues/1780)) ([f557ba7](https://github.com/amalgamated-tools/biblioteka/commit/f557ba7f9196105f84d606bb31d0442667f939ca))
+* **workflows:** update concurrency group names and metadata hashes in reviewer workflows ([357591f](https://github.com/amalgamated-tools/biblioteka/commit/357591f604052835c04228db0ef8414d59fabf3c))
+
+
+### Performance Improvements
+
+* **db:** add composite index on reading_progress(user_id, updated_at) ([#1876](https://github.com/amalgamated-tools/biblioteka/issues/1876)) ([58f51e1](https://github.com/amalgamated-tools/biblioteka/commit/58f51e194d049e75ce239a6c15f7e9b06f22b678))
+* **db:** add index on book_downloads.book_file_id for cascade delete ([#1806](https://github.com/amalgamated-tools/biblioteka/issues/1806)) ([66cfa6d](https://github.com/amalgamated-tools/biblioteka/commit/66cfa6d19dc70e2309f21c20d09026f14966a38c))
+* **db:** optimize ListAuditLogs to single COUNT(*) OVER() query ([#1854](https://github.com/amalgamated-tools/biblioteka/issues/1854)) ([9e06d5d](https://github.com/amalgamated-tools/biblioteka/commit/9e06d5d280d897f48375ec67825d602bdd487886))
+* **server:** add Cache-Control headers for Vite content-hashed assets ([#1790](https://github.com/amalgamated-tools/biblioteka/issues/1790)) ([140a1ae](https://github.com/amalgamated-tools/biblioteka/commit/140a1ae5f15fe5514064722781b8febd72aca0c3))
+
 ## [0.10.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.9.0...v0.10.0) (2026-04-12)
 
 
