@@ -12,6 +12,15 @@ func TestCheckFTSIntegrity_FreshDB(t *testing.T) {
 	require.NoError(t, err, "CheckFTSIntegrity() on fresh DB should succeed")
 }
 
+func TestCheckFTSIntegrity_MissingFTSTable(t *testing.T) {
+	d := newTestDB(t)
+
+	_, err := d.ExecContext(t.Context(), "DROP TABLE books_fts")
+	require.NoError(t, err, "DROP TABLE books_fts")
+
+	err = d.CheckFTSIntegrity(t.Context())
+	require.Error(t, err, "CheckFTSIntegrity() should fail when books_fts is missing")
+}
 func TestRebuildFTS_FreshDB(t *testing.T) {
 	d := newTestDB(t)
 	err := d.RebuildFTS(t.Context())
