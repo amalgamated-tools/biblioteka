@@ -281,7 +281,7 @@ This validation also applies at download time: if a previously registered file's
 
 The watch folder lets Biblioteka automatically import any book file dropped into a designated directory. When enabled, the server runs a background scan every minute and enqueues a `process:file` job for each new file it finds.
 
-> **Requires Redis.** Watch folder scanning runs as a background job. The feature is only active when the server is started with a configured `REDIS_URL`.
+> **Requires Redis and an active worker.** Watch folder scanning runs as a background job. The feature is only active when the background worker is running (server mode `all` or `worker`). Redis must be reachable; the server defaults `REDIS_URL` to `redis://localhost:6379` if not explicitly set.
 
 ### Configure the watch folder
 
