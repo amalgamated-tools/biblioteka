@@ -61,7 +61,7 @@ Before performing any analysis or making any changes, count how many `docs(daily
 repo:${{ github.repository }} is:pr is:open label:automation label:documentation "docs(daily):" in:title
 ```
 
-- **If the open count is ≥ 5**: exit immediately using the `noop` safe-output tool with the message:
+- **If the open count is ≥ 5**: exit immediately using the `noop` safe-output tool with the message (replace `{count}` with the actual number found):
   `Open-PR gate: skipping run — {count} open docs(daily): PRs already exist (threshold: 5). Review and merge or close them before new documentation PRs are created.`
   Do **not** proceed with any further steps.
 - **If the open count is < 5**: proceed to Step 1.
@@ -319,4 +319,7 @@ This PR updates the documentation based on features merged in the last 24 hours.
 - If you estimate **> 5 PRs**, apply the hard cap from Step 6b immediately: process only the first 5 candidates and post the overflow summary on a tracking issue. Do **not** exceed 5 PRs in a single run under any circumstances.
 - If you estimate **≤ 5 PRs**, proceed normally.
 
-> **Note**: This per-run cap is enforced in Step 6b (before PR creation). The open-PR gate in Step 0 is a separate run-level skip that prevents new PRs from being created when 5 or more `docs(daily):` PRs are already open. The cumulative daily alert in Step 6c is a separate monitoring signal that tracks the total `docs(daily):` PRs opened across *all* runs today.
+> **Note**: Three complementary mechanisms control PR volume:
+> - **Step 0 (open-PR gate)**: skips the entire run when ≥ 5 `docs(daily):` PRs are already open.
+> - **Step 6b (per-run cap)**: limits new PRs to 5 per run regardless of how many candidates exist.
+> - **Step 6c (daily alert)**: tracks cumulative PRs created today across all runs and raises an issue at ≥ 10.
