@@ -35,7 +35,8 @@
 
   // Load list from store or server.
   $effect(() => {
-    const nextList = readingListStore.lists.find((l) => l.id === listId) ?? null;
+    const nextList =
+      readingListStore.lists.find((l) => l.id === listId) ?? null;
     list = nextList;
     error =
       !nextList && readingListStore.loaded

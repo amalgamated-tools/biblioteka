@@ -1,5 +1,11 @@
 import { describe, expect, it, vi, afterEach, beforeEach } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/svelte";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/svelte";
 import { tick } from "svelte";
 
 vi.mock("../../lib/api", () => ({
@@ -41,6 +47,8 @@ import type { ReadingList } from "../../types";
 import { readingListStore } from "../../stores/reading-lists.svelte";
 import ReadingListDetail from "./ReadingListDetail.svelte";
 
+const store = readingListStore as unknown as Record<string, unknown>;
+
 const fakeList: ReadingList = {
   id: "rl-1",
   name: "To Read",
@@ -52,18 +60,18 @@ const fakeList: ReadingList = {
 
 describe("ReadingListDetail delete confirmation accessibility", () => {
   beforeEach(() => {
-    (readingListStore as any).loaded = true;
-    (readingListStore as any).loading = false;
-    (readingListStore as any).loadError = null;
-    (readingListStore as any).lists = [fakeList];
-    (readingListStore as any).update = vi.fn().mockResolvedValue(fakeList);
+    store.loaded = true;
+    store.loading = false;
+    store.loadError = null;
+    store.lists = [fakeList];
+    store.update = vi.fn().mockResolvedValue(fakeList);
   });
 
   afterEach(() => {
-    (readingListStore as any).loaded = false;
-    (readingListStore as any).loading = false;
-    (readingListStore as any).loadError = null;
-    (readingListStore as any).lists = [];
+    store.loaded = false;
+    store.loading = false;
+    store.loadError = null;
+    store.lists = [];
     cleanup();
     vi.restoreAllMocks();
   });
