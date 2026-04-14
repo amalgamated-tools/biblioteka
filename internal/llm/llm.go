@@ -3,6 +3,22 @@ package llm
 
 import "context"
 
+// ProviderOllama is the provider name for Ollama.
+const ProviderOllama = "ollama"
+
+// SupportedProviders lists the provider names the system can instantiate.
+var SupportedProviders = []string{ProviderOllama}
+
+// IsSupported reports whether the given provider name is supported.
+func IsSupported(provider string) bool {
+	for _, p := range SupportedProviders {
+		if p == provider {
+			return true
+		}
+	}
+	return false
+}
+
 // Provider generates LLM completions from a prompt.
 type Provider interface {
 	Generate(ctx context.Context, prompt string) (string, error)

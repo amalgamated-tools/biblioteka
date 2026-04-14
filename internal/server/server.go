@@ -20,6 +20,7 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/handlers"
 	"github.com/amalgamated-tools/biblioteka/internal/handlers/middleware"
+	"github.com/amalgamated-tools/biblioteka/internal/llm"
 	"github.com/amalgamated-tools/biblioteka/internal/llm/ollama"
 	"github.com/amalgamated-tools/biblioteka/internal/otel"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
@@ -234,16 +235,23 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 		llmEndpoint, _ := s.DB.GetSetting(ctx, db.SettingLLMEndpoint)
 		llmModel, _ := s.DB.GetSetting(ctx, db.SettingLLMModel)
 		if llmEndpoint != "" {
-			ollamaClient := ollama.New(llmEndpoint, llmModel)
-			metadataHandler.LLMProvider = ollamaClient
-			metadataHandler.LLMProviderName = llmProvider
-			if metadataHandler.LLMProviderName == "" {
-				metadataHandler.LLMProviderName = "ollama"
+			switch llmProvider {
+			case llm.ProviderOllama, "":
+				ollamaClient := ollama.New(llmEndpoint, llmModel)
+				metadataHandler.LLMProvider = ollamaClient
+				metadataHandler.LLMProviderName = llmProvider
+				if metadataHandler.LLMProviderName == "" {
+					metadataHandler.LLMProviderName = llm.ProviderOllama
+				}
+				slog.InfoContext(ctx, "LLM provider configured",
+					slog.String(otelkeys.Source, metadataHandler.LLMProviderName),
+					slog.String(otelkeys.URL, llmEndpoint),
+				)
+			default:
+				slog.WarnContext(ctx, "unsupported LLM provider, AI enrichment disabled",
+					slog.String(otelkeys.Source, llmProvider),
+				)
 			}
-			slog.InfoContext(ctx, "LLM provider configured",
-				slog.String(otelkeys.Source, metadataHandler.LLMProviderName),
-				slog.String(otelkeys.URL, llmEndpoint),
-			)
 		}
 	}
 
