@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -48,10 +49,10 @@ type groupMemberDTO struct {
 }
 
 type groupMemberProgressDTO struct {
-	UserID     string       `json:"user_id"`
-	UserName   string       `json:"user_name"`
-	Percentage float64      `json:"percentage"`
-	UpdatedAt  db.Timestamp `json:"updated_at"`
+	UserID     string        `json:"user_id"`
+	UserName   string        `json:"user_name"`
+	Percentage float64       `json:"percentage"`
+	UpdatedAt  *db.Timestamp `json:"updated_at"`
 }
 
 func toGroupDTO(g *db.ReadingGroup) groupDTO {
@@ -191,10 +192,7 @@ func (h *GroupHandler) updateGroup(w http.ResponseWriter, r *http.Request, id st
 
 	userID := auth.UserIDFromContext(ctx)
 	g, err := h.DB.UpdateGroup(ctx, id, userID, req.Name, req.Description)
-	if err != nil {
-		if handleUpdateErr(ctx, w, err, db.ErrInvalidGroupName, db.ErrGroupNameExists, "a group", "group", id) {
-			return
-		}
+	if handleUpdateErr(ctx, w, err, db.ErrInvalidGroupName, db.ErrGroupNameExists, "a group", "group", id) {
 		return
 	}
 
@@ -265,6 +263,10 @@ func (h *GroupHandler) addGroupMember(w http.ResponseWriter, r *http.Request, gr
 
 	userID := auth.UserIDFromContext(ctx)
 	if err := h.DB.AddGroupMember(ctx, groupID, userID, req.UserID); err != nil {
+		if errors.Is(err, db.ErrMemberUserNotFound) {
+			writeError(ctx, w, http.StatusNotFound, "user not found")
+			return
+		}
 		if handleDBErr(ctx, w, err, "group") {
 			return
 		}
@@ -295,6 +297,10 @@ func (h *GroupHandler) removeGroupMember(w http.ResponseWriter, r *http.Request,
 	ctx := r.Context()
 	userID := auth.UserIDFromContext(ctx)
 	if err := h.DB.RemoveGroupMember(ctx, groupID, userID, memberID); err != nil {
+		if errors.Is(err, db.ErrOwnerCannotLeaveGroup) {
+			writeError(ctx, w, http.StatusBadRequest, "owner cannot leave their own group")
+			return
+		}
 		if handleDBErr(ctx, w, err, "group") {
 			return
 		}

@@ -34,6 +34,15 @@ func (d *DB) CreateAnnotation(ctx context.Context, userID, bookID, text string, 
 		slog.String(otelkeys.UserID, userID),
 		slog.String(otelkeys.BookID, bookID),
 	)
+	if groupID != nil {
+		isMember, err := d.IsMember(ctx, *groupID, userID)
+		if err != nil {
+			return nil, err
+		}
+		if !isMember {
+			return nil, ErrNotGroupMember
+		}
+	}
 	return scanBookAnnotation(d.QueryRowContext(ctx,
 		`INSERT INTO book_annotations (user_id, book_id, text, cfi, group_id) VALUES ($1, $2, $3, $4, $5)
 		 RETURNING id, user_id, book_id, text, cfi, group_id,
@@ -91,6 +100,15 @@ func (d *DB) UpdateAnnotation(ctx context.Context, id, userID, text string, cfi,
 		slog.String(otelkeys.AnnotationID, id),
 		slog.String(otelkeys.UserID, userID),
 	)
+	if groupID != nil {
+		isMember, err := d.IsMember(ctx, *groupID, userID)
+		if err != nil {
+			return nil, err
+		}
+		if !isMember {
+			return nil, ErrNotGroupMember
+		}
+	}
 	return scanBookAnnotation(d.QueryRowContext(ctx,
 		`UPDATE book_annotations SET text = $1, cfi = $2, group_id = $3, updated_at = `+d.now()+`
 		 WHERE id = $4 AND user_id = $5
