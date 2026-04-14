@@ -158,6 +158,7 @@ Entries are returned newest-first. `limit` defaults to `50` (maximum `200`); `of
 | `kosync_credential.updated` | `kosync_credential` | `username`                           | `PUT /api/kosync/credentials`           |
 | `kosync_credential.deleted` | `kosync_credential` | `username`                           | `DELETE /api/kosync/credentials`        |
 | `smtp.config_updated`  | `config`      | `host`, `from`                                   | `PUT /api/config/smtp`                  |
+| `fts.rebuilt`          | `fts`         | —                                                | `POST /api/admin/search/reindex`        |
 | `watch_folder.config_updated` | `config` | `path`, `library_id`                             | `PUT /api/config/watch-folder`          |
 
 **Notes:** `user_id` is the actor who performed the action (`null` for system/background actions). Entries are append-only and never modified. Book files created by the background scanner do **not** currently produce an audit entry — only files created via the API are audited. Background imports run without an authenticated user context (there is no actor to attribute the action to), so they cannot be represented in the same audit model as user-initiated writes.
@@ -503,7 +504,7 @@ curl -sf -X POST http://localhost:8080/api/admin/search/reindex \
 # → {"message":"search index rebuilt"}
 ```
 
-This is useful if you have run `VACUUM` on the database file outside of normal server operation, or if you suspect the index is out of sync. The rebuild is synchronous and may take a moment on large libraries.
+This is useful if you have run `VACUUM` on the database file outside of normal server operation, or if you suspect the index is out of sync. The rebuild is synchronous and may take a moment on large libraries. A successful rebuild emits an audit log entry with action `fts.rebuilt` (`entity_type: fts`).
 
 > **PostgreSQL:** The pg_trgm GIN indexes used for search on PostgreSQL are maintained automatically by the database engine. The `/api/admin/search/reindex` endpoint is accepted but performs no work on PostgreSQL instances.
 
