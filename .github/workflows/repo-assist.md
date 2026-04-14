@@ -57,7 +57,7 @@ safe-outputs:
     hide-older-comments: true
   create-pull-request:
     draft: true
-    title-prefix: "[Repo Assist] "
+    title-prefix: "fix(repo assist): "
     labels: [automation, repo-assist]
     protected-files: fallback-to-issue
     max: 4
@@ -82,6 +82,8 @@ safe-outputs:
     allowed: [bug, enhancement, "help wanted", "good first issue", "spam", "off topic", documentation, question, duplicate, wontfix, "needs triage", "needs investigation", "breaking change", performance, security, refactor]
     max: 5
     target: "*" 
+  noop:
+    report-as-issue: false
 
 steps:
   - name: Fetch repo data for task weighting

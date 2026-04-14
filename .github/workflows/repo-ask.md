@@ -17,6 +17,8 @@ network: defaults
 
 safe-outputs:
   add-comment:
+  noop:
+    report-as-issue: false
 
 tools:
   web-fetch:
