@@ -22,7 +22,7 @@ timeout-minutes: 60
 permissions: read-all
 
 concurrency:
-  group: daily-perf-improver
+  group: daily-perf-improver-${{ github.event.issue.number || github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true
 
 network:
