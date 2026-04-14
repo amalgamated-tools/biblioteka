@@ -29,7 +29,6 @@ safe-outputs:
     max: 1
     close-older-discussions: true
   noop:
-    report-as-issue: false
 timeout-minutes: 30
 strict: true
 imports:

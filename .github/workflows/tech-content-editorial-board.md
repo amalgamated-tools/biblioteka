@@ -21,8 +21,6 @@ safe-outputs:
     title-prefix: "[editorial-board] "
     labels: [quality, automated-analysis]
     max: 1
-  noop:
-    report-as-issue: false
   create-pull-request:
     title-prefix: "[editorial-improvements] "
     labels: [quality, content-improvement, automated-analysis]

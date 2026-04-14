@@ -29,8 +29,6 @@ safe-outputs:
     run-started: "😤 *sigh* [{workflow_name}]({run_url}) is begrudgingly looking at this {event_type}... This better be worth my time."
     run-success: "😤 Fine. [{workflow_name}]({run_url}) finished the review. It wasn't completely terrible. I guess. 🙄"
     run-failure: "😤 Great. [{workflow_name}]({run_url}) {status}. As if my day couldn't get any worse..."
-  noop:
-    report-as-issue: false
 
 timeout-minutes: 10
 source: githubnext/agentics/workflows/grumpy-reviewer.md@97143ac59cb3a13ef2a77581f929f06719c7402a

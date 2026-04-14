@@ -21,7 +21,7 @@ network:
 safe-outputs:
   create-pull-request:
     expires: 1d
-    title-prefix: "chore: "
+    title-prefix: "chore:"
     labels: [automation]
     reviewers: [copilot]
     draft: false
@@ -31,8 +31,6 @@ safe-outputs:
     max: 1
   add-comment:
     max: 1    
-  noop:
-    report-as-issue: false
 
 tools:
   cache-memory: true

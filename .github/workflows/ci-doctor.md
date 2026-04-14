@@ -22,11 +22,9 @@ network: defaults
 
 safe-outputs:
   create-issue:
-    title-prefix: "ci(fix issue): "
+    title-prefix: "fix(ci): ${{ github.workflow }}"
     labels: [automation, ci]
     close-older-issues: true
-  noop:
-    report-as-issue: false
   add-comment:
 
 tools:

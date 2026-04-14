@@ -37,13 +37,13 @@ safe-outputs:
     hide-older-comments: true
   create-pull-request:
     draft: true
-    title-prefix: "test: "
+    title-prefix: "[Test Improver] "
     labels: [automation, testing]
     max: 4
     protected-files: fallback-to-issue
   push-to-pull-request-branch:
     target: "*"
-    title-prefix: "test: "
+    title-prefix: "[Test Improver] "
     max: 4
   create-issue:
     title-prefix: "[Test Improver] "
@@ -53,8 +53,6 @@ safe-outputs:
     target: "*"
     title-prefix: "[Test Improver] "
     max: 1
-  noop:
-    report-as-issue: false
 
 checkout:
   fetch: ["*"]

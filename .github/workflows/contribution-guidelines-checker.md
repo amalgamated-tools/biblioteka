@@ -20,8 +20,6 @@ safe-outputs:
     max: 1
   add-comment:
     max: 1
-  noop:
-    report-as-issue: false
 
 tools:
   github:

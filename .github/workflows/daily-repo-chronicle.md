@@ -37,8 +37,6 @@ safe-outputs:
     category: "announcements"
     title-prefix: "📰 "
     close-older-discussions: true
-  noop:
-    report-as-issue: false
 imports:
   - shared/reporting.md
 
