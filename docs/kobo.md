@@ -76,6 +76,13 @@ The sync endpoint exposes files with these Kobo format identifiers:
 
 Books with no supported file format are excluded from the sync response.
 
+### Download tracking
+
+Each book download via the Kobo endpoint records two tracking events (both best-effort — a failure does not block the file transfer):
+
+- **Download count**: the `download_count` column on the `book_files` row is incremented.
+- **Download event**: a timestamped row is inserted into the `book_downloads` table linked to the authenticated user. These events power the monthly downloads histogram visible on the Dashboard.
+
 ### Reading progress
 
 When you read a book on your Kobo, the device periodically pushes reading state updates (reading status, percent read, and bookmark location) to `PUT /kobo/<token>/v1/library/{bookID}/state`. Biblioteka stores this per-user in the `kobo_reading_states` table and includes updated states in subsequent sync responses so progress is preserved even after a factory reset.
