@@ -52,7 +52,7 @@ frontend/
         BookList.svelte      Paginated book list with grid / table view toggle; accepts a `fetchBooks` callback; supports optional polling for scan-aware empty states; table-view rows are keyboard-accessible via `tabindex="0"` and Enter-key navigation (WCAG 2.1.1)
         Button.svelte        Reusable button with `primary`, `secondary`, and `danger` variants
         DeleteConfirmation.svelte  Accessible inline delete-confirmation dialog (`role="alertdialog"`, Escape-to-dismiss, autofocus on open); encapsulates the standard pattern for accessible destructive-action confirmations (WCAG 4.1.2)
-        DownloadsHistogram.svelte  Bar chart showing monthly download counts; accessible via `role="list"` + per-bar `aria-label`; count tooltip uses `text-ink-600 dark:text-ink-200` and month labels use `text-ink-600 dark:text-ink-400` to meet the WCAG 1.4.3 Contrast Minimum (Level AA)
+        DownloadsHistogram.svelte  Bar chart showing monthly download counts; visual bars are `aria-hidden` and paired with a screen-reader-only data table (`Month` + `Downloads`) as the accessible equivalent; count tooltip uses `text-ink-600 dark:text-ink-200` and month labels use `text-ink-600 dark:text-ink-400` to meet the WCAG 1.4.3 Contrast Minimum (Level AA)
         EmailBookModal.svelte      Modal dialog for emailing a book file to an address; implements full focus trapping (Tab / Shift+Tab wrap-around), Escape-to-dismiss, and autofocus on the Close button (WCAG 2.1.1, 2.1.2)
         TextInput.svelte     Reusable text input; forwards all standard `<input>` HTML attributes; placeholder text in dark mode uses `dark:placeholder:text-ink-300` to meet the minimum contrast ratio for non-active UI text (WCAG 1.4.3); border uses `border-ink-400 dark:border-ink-400` to meet the Non-text Contrast minimum (WCAG 1.4.11)
     stores/             Reactive state modules (lowercase, *.svelte.ts)
@@ -915,13 +915,13 @@ A pure-CSS bar-chart component that renders monthly download counts fetched from
 | Prop | Type | Required | Default | Description |
 |------|------|----------|---------|-------------|
 | `data` | `MonthlyDownloads[]` | ✓ | — | Array of `{ month: "YYYY-MM", count: number }` objects ordered oldest-first |
-| `title` | `string` | | `"Downloads per month"` | Label rendered as an `<h3>` above the chart and used as the `aria-label` on the bar list |
+| `title` | `string` | | `"Downloads per month"` | Label rendered as an `<h3>` above the chart and used as the caption for the screen-reader-only data table |
 
 **Accessibility:**
 
-- The bar container uses `role="list"` with an `aria-label` matching the `title` prop.
-- Each bar column is a `role="listitem"` element with `tabindex="0"` and an `aria-label` of `"Month YYYY: N download(s)"`, so keyboard users can navigate each data point with Tab/arrow keys and screen readers announce the exact figure.
-- A count tooltip (`aria-hidden="true"`) appears above each bar on hover/focus — decorative only.
+- The visual chart container is `aria-hidden="true"` so assistive technologies do not read duplicate chart markup.
+- A screen-reader-only `<table>` exposes the same data semantically with a caption (`title`), `Month` column, and `Downloads` column.
+- A count tooltip (`aria-hidden="true"`) appears above each bar on hover — decorative only.
 - When all counts are zero, an empty-state `<p>` with `aria-live="polite"` is shown instead of the chart.
 
 **Usage:**
@@ -1263,7 +1263,7 @@ A bar chart that visualises monthly download counts for a book or the library. E
 | Prop | Type | Required | Default | Description |
 |------|------|----------|---------|-------------|
 | `data` | `MonthlyDownloads[]` | ✓ | — | Array of `{ month: string; count: number }` objects. `month` is in `"YYYY-MM"` format. |
-| `title` | `string` | | `"Downloads per month"` | Heading rendered above the chart and used as the `aria-label` for the bar list. |
+| `title` | `string` | | `"Downloads per month"` | Heading rendered above the chart and used as the caption for the screen-reader-only data table. |
 
 **Usage:**
 
@@ -1280,11 +1280,9 @@ A bar chart that visualises monthly download counts for a book or the library. E
 
 **Accessibility:**
 
-- The bar container uses `role="list"` with an `aria-label` matching the `title` prop.
-- Each bar is a `role="listitem"` with a full `aria-label` in the form `"January 2026: 5 downloads"` so screen readers can announce every data point without relying on the visual bar heights.
-- The count tooltip (shown on hover/focus) and month axis labels use `text-ink-600` (light mode) to satisfy the WCAG 1.4.3 Contrast Minimum of 4.5:1. The count tooltip additionally uses `dark:text-ink-200` in dark mode to maintain contrast against the `accent-500` bar background. Month axis labels use `dark:text-ink-400` in dark mode.
-- Each bar is `tabindex="0"` so keyboard users can navigate the chart with Tab.
-- The month label row and the count tooltip are `aria-hidden="true"` because the equivalent information is already conveyed by the per-bar `aria-label`.
+- The visual bar area is `aria-hidden="true"` and paired with a screen-reader-only table that provides the equivalent data (`Month` + `Downloads`) and a caption (`title`).
+- The count tooltip (shown on hover) and month axis labels use `text-ink-600` (light mode) to satisfy the WCAG 1.4.3 Contrast Minimum of 4.5:1. The count tooltip additionally uses `dark:text-ink-200` in dark mode to maintain contrast against the `accent-500` bar background. Month axis labels use `dark:text-ink-400` in dark mode.
+- The month label row and the count tooltip are `aria-hidden="true"` because the equivalent information is already conveyed by the accessible table.
 - The empty-state message uses `aria-live="polite"`; note that the element is conditionally rendered inside `{#if isEmpty}`, so announcements may not fire reliably in all screen readers (NVDA and JAWS sometimes skip announcements when a live region is inserted with text already populated).
 
 ---
