@@ -9,6 +9,7 @@ package otelkeys
 const (
 	Action               string = "action"
 	Address              string = "address"
+	AIEnrichmentID       string = "ai_enrichment_id"
 	AnnotationID         string = "annotation_id"
 	APIKeyID             string = "api_key_id"
 	ASIN                 string = "asin"
@@ -124,6 +125,7 @@ const (
 	StopAt               string = "stop_at"
 	Subject              string = "subject"
 	TargetID             string = "target_id"
+	TagID                string = "tag_id"
 	TargetPath           string = "target_path"
 	TaskID               string = "task_id"
 	TelemetryDisableHint string = "telemetry_disable_hint"
