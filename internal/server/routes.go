@@ -43,7 +43,7 @@ func (s *Server) setupRoutes(ctx context.Context) {
 	s.mux.Handle("/api/config/smtp/test", s.requireJWTAuth(s.authLimiter.Limit(s.configHandler.HandleSMTPTest)))
 	s.mux.Handle("/api/config/watch-folder", s.requireJWTAuth(http.HandlerFunc(s.configHandler.HandleWatchFolderConfig)))
 
-	// Protected admin routes (JWT-only: user management)
+	// Protected admin routes (JWT-only)
 	s.mux.Handle("/api/admin/users", s.requireJWTAuth(http.HandlerFunc(s.adminHandler.HandleListUsers)))
 	s.mux.Handle("/api/admin/users/", s.requireJWTAuth(http.HandlerFunc(s.adminHandler.HandleSetAdmin)))
 	s.mux.Handle("/api/admin/search/reindex", s.requireJWTAuth(http.HandlerFunc(s.adminHandler.HandleFTSRebuild)))
