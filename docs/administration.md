@@ -159,7 +159,7 @@ Entries are returned newest-first. `limit` defaults to `50` (maximum `200`); `of
 | `kosync_credential.deleted` | `kosync_credential` | `username`                           | `DELETE /api/kosync/credentials`        |
 | `smtp.config_updated`  | `config`      | `host`, `from`                                   | `PUT /api/config/smtp`                  |
 
-**Notes:** `user_id` is the actor who performed the action (`null` for system/background actions). Entries are append-only and never modified. Book files created by the background scanner do **not** currently produce an audit entry — only files created via the API are audited.
+**Notes:** `user_id` is the actor who performed the action (`null` for system/background actions). Entries are append-only and never modified. Book files created by the background scanner do **not** currently produce an audit entry — only files created via the API are audited. Background imports run without an authenticated user context (there is no actor to attribute the action to), so they cannot be represented in the same audit model as user-initiated writes.
 
 ---
 
@@ -187,6 +187,21 @@ curl http://localhost:8080/asynqmon/ \
 | **Completed** | Successfully finished jobs (retained briefly for inspection) |
 | **Failed** | Jobs that exhausted all retries (default: 5 attempts) |
 | **Scheduled** | Jobs queued to run at a future time |
+
+### Common failure causes
+
+Before retrying a failed job, check the application logs to understand the root cause. The most common reasons a `process:file` job fails are:
+
+- **ExifTool not on `PATH`** — metadata extraction requires ExifTool to be installed and accessible. If the `process:file` job fails with `exiftool is not available on this system`, install ExifTool and restart the server. See [Metadata — Installing ExifTool](metadata.md#installing-exiftool) for platform-specific instructions. The Dockerfiles in this repository include ExifTool by default.
+- **Filesystem permission errors** — the server process must be able to read every file it scans and write to library directories when file organization is enabled. A `permission denied` error in the logs indicates the process user lacks the required access. Check directory ownership and permission bits, and ensure the user running Biblioteka can read (and, if organizing files, write) the library paths.
+- **Cross-filesystem move failures** — when file organization is enabled and the source and destination are on different filesystems, Biblioteka falls back to a copy-then-delete. If the destination filesystem is full or read-only the job will fail. See [File Organization](#file-organization) for details on how reorganization failures are handled.
+- **Corrupt or unreadable files** — a file that ExifTool cannot parse (e.g. a truncated EPUB) causes the `process:file` job for that file to fail. The file is skipped and the rest of the scan continues normally.
+
+To find the error for a specific failed job, look up the job's `task_id` in the Asynqmon UI and then search the logs:
+
+```bash
+docker compose logs biblioteka | jq 'select(.task_id == "<task-id>")'
+```
 
 ### Retrying failed jobs
 
