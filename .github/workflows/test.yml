@@ -331,8 +331,43 @@ jobs:
           echo "::warning::Only Go stdlib vulnerabilities found (requires Go toolchain update to fix)"
           exit 0
 
+  go-test-postgres:
+    needs: [check-docs-only]
+    if: needs.check-docs-only.outputs.skip-tests != 'true' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    name: Go Tests (PostgreSQL)
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: biblioteka
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: biblioteka_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name: Set up Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+        with:
+          go-version: 1.26.1
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Run PostgreSQL integration tests
+        env:
+          TEST_DATABASE_URL: postgres://biblioteka:testpassword@localhost:5432/biblioteka_test?sslmode=disable
+        run: go test ./internal/db/... -run TestSearchBooks_Postgres -v
+
   go-all:
-    needs: [check-docs-only, go-lint, go-test]
+    needs: [check-docs-only, go-lint, go-test, go-test-postgres]
     runs-on: ubuntu-latest
     if: always()
     # This job only runs a shell check; 2 minutes is more than enough.
@@ -345,7 +380,7 @@ jobs:
             echo "Skipping Go tests (docs-only PR)"
             exit 0
           fi
-          if [[ "${{ needs.go-lint.result }}" != "success" || "${{ needs.go-test.result }}" != "success" ]]; then
+          if [[ "${{ needs.go-lint.result }}" != "success" || "${{ needs.go-test.result }}" != "success" || "${{ needs.go-test-postgres.result }}" != "success" ]]; then
             echo "One or more Go jobs failed"
             exit 1
           fi
