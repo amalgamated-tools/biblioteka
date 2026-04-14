@@ -194,7 +194,7 @@ Biblioteka has **built-in support for distributed tracing** via OpenTelemetry. T
 
 The standard binary does not ship a built-in OTLP exporter or read `OTEL_EXPORTER_OTLP_ENDPOINT` at runtime. To enable span export, build from source and register a `TracerProvider` (e.g. using `go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc` or `otlptracehttp`) before calling `server.NewServer`. Span names follow the pattern `METHOD /path` (e.g. `GET /api/books`).
 
-> **For most deployments**, structured log correlation via `request_id` is sufficient. Distributed tracing is an advanced, opt-in integration for environments that already operate an OTLP-compatible backend (Jaeger, Tempo, Zipkin, etc.).
+> **For most deployments**, structured log correlation via `request_id` is sufficient. Distributed tracing is an advanced, opt-in integration for environments that already operate an OTLP endpoint (often via an OpenTelemetry Collector) to send traces to Jaeger, Tempo, Zipkin, or similar backends.
 
 ---
 
