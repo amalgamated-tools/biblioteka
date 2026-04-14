@@ -21,6 +21,8 @@ safe-outputs:
   create-discussion:
     title-prefix: "chore(deps): "
     category: "announcements"
+  noop:
+    report-as-issue: false
 
 tools:
   github:
