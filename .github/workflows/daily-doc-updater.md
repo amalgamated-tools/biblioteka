@@ -39,8 +39,19 @@ safe-outputs:
     draft: false
     auto-merge: true
     protected-files: fallback-to-issue
+  create-issue:
+    expires: 2d
+    title-prefix: "docs(daily): "
+    labels: [documentation, automation]
+    max: 5
+    group: true   
+  add-comment:
+    max: 10
+    target: "*"
+    target-repo: ${{ vars.TARGET_REPOSITORY }}
+    hide-older-comments: true     
   noop:
-    report-as-issue: false
+    report-as-issue: false    
 
 source: githubnext/agentics/workflows/daily-doc-updater.md@97143ac59cb3a13ef2a77581f929f06719c7402a
 ---
@@ -54,6 +65,21 @@ You are an AI documentation agent that automatically updates project documentati
 Scan the repository for merged pull requests and code changes from the last 24 hours, identify new features or changes that should be documented, and update the documentation accordingly.
 
 ## Task Steps
+
+### 0. Open-PR Gate
+
+Before performing any analysis or making any changes, count how many `docs(daily):` PRs are **currently open** in this repository:
+
+```
+repo:${{ github.repository }} is:pr is:open label:automation label:documentation "docs(daily):" in:title
+```
+
+- **If the open count is ≥ 5**: exit immediately using the `noop` safe-output tool with the message (replace `{count}` with the actual number found):
+  `Open-PR gate: skipping run — {count} open docs(daily): PRs already exist (threshold: 5). Review and merge or close them before new documentation PRs are created.`
+  Do **not** proceed with any further steps.
+- **If the open count is < 5**: proceed to Step 1.
+
+> **Why this matters**: Each daily run can create up to 5 PRs. If those PRs are not reviewed and merged, they accumulate. The open-PR gate prevents unbounded queue growth by pausing new PR creation until the backlog is cleared.
 
 ### 1. Scan Recent Activity (Last 24 Hours)
 
@@ -185,52 +211,52 @@ Apply this check to every candidate PR before proceeding to the cap check below,
 
 > **Note**: The cross-agent sibling PR check in Step 4b already filters files that the `update-docs` workflow is actively covering. Step 6a focuses on deduplication of this workflow's own `docs(daily):` PRs.
 
-#### 6b. Per-Run Hard Cap (8 PRs)
+#### 6b. Per-Run Hard Cap (5 PRs)
 
 After deduplication, count the remaining candidate PRs:
 
-1. **If the candidate count is ≤ 8**: proceed to create all candidate PRs normally (go to Step 7).
+1. **If the candidate count is ≤ 5**: proceed to create all candidate PRs normally (go to Step 7).
 
-2. **If the candidate count is > 8**: apply the hard cap:
-   - Select the **first 8 candidates** (prioritize changes to files most recently updated).
+2. **If the candidate count is > 5**: apply the hard cap:
+   - Select the **first 5 candidates** (prioritize changes to files most recently updated).
    - For the **remaining candidates** (those over the cap), do **not** create PRs. Instead, collect them into a summary list.
    - **Find or create a tracking issue**:
      - Search for an existing tracking issue: `repo:${{ github.repository }} is:issue is:open label:automation label:documentation "daily-doc-updater overflow" in:title`
      - **If found**: use the `add_comment` safe-outputs MCP tool to post a comment listing the skipped candidates.
      - **If not found**: use the `create_issue` safe-outputs MCP tool to create an issue titled `daily-doc-updater overflow: pending documentation changes (YYYY-MM-DD)` (replace YYYY-MM-DD with today's date in UTC) with body:
        ```
-       The daily-doc-updater hit the 8-PR-per-run cap. The following documentation changes were deferred:
+       The daily-doc-updater hit the 5-PR-per-run cap. The following documentation changes were deferred:
 
        <list each skipped change as a bullet: file, scope, and the triggering merged PR>
 
        These will be picked up in a future run once the queue clears.
        ```
      - Label the issue `documentation` and `automation`.
-   - After posting the overflow summary, create only the first 8 PRs (proceed to Step 7).
+   - After posting the overflow summary, create only the first 5 PRs (proceed to Step 7).
 
 #### 6c. Daily Volume Alert (Threshold Monitor)
 
 After deduplication and capping, count how many `docs(daily):` PRs this workflow has already opened **today** (across all runs) using `search_pull_requests`:
 `repo:${{ github.repository }} is:pr in:title "docs(daily):" label:automation label:documentation created:>=YYYY-MM-DD` (replace YYYY-MM-DD with today's date in UTC)
 
-- **If the daily count is ≥ 12**, raise a threshold alert:
+- **If the daily count is ≥ 10**, raise a threshold alert:
   - Search for an existing alert issue: `repo:${{ github.repository }} is:issue is:open label:automation label:documentation "daily-doc-updater volume alert" in:title created:>=YYYY-MM-DD`
   - **If found**: use `add_comment` to add a comment with the updated count.
-  - **If not found**: use `create_issue` to create a GitHub issue titled `⚠️ daily-doc-updater volume alert: ≥12 PRs opened today (YYYY-MM-DD)` with body:
+  - **If not found**: use `create_issue` to create a GitHub issue titled `⚠️ daily-doc-updater volume alert: ≥10 PRs opened today (YYYY-MM-DD)` with body:
     ```
-    The daily-doc-updater has opened 12 or more pull requests today, which exceeds the monitoring threshold.
+    The daily-doc-updater has opened 10 or more pull requests today, which exceeds the monitoring threshold.
 
     **Action required**: Review whether the PR volume is expected.
-    - The per-run hard cap is 8 PRs. If the daily count is still ≥ 12, multiple runs may have fired.
+    - The per-run hard cap is 5 PRs. If the daily count is still ≥ 10, multiple runs may have fired.
     - Consider increasing the lookback window or narrowing the scope of changes.
 
     Today's count: <replace with the actual count>
-    Per-run cap: 8
-    Alert threshold: 12
+    Per-run cap: 5
+    Alert threshold: 10
     ```
   - Label the issue `documentation` and `automation`.
   - Continue creating the (already-capped) PRs as usual (the alert is informational, not a blocker).
-- **If the daily count is < 12**, proceed normally.
+- **If the daily count is < 10**, proceed normally.
 
 ### 7. Create Pull Request
 
@@ -301,9 +327,12 @@ This PR updates the documentation based on features merged in the last 24 hours.
 
 ## Per-Run Volume Guard
 
-**Hard cap: 8 PRs per run.** Before making any documentation changes, estimate how many candidates this run will produce.
+**Hard cap: 5 PRs per run.** Before making any documentation changes, estimate how many candidates this run will produce.
 
-- If you estimate **> 8 PRs**, apply the hard cap from Step 6b immediately: process only the first 8 candidates and post the overflow summary on a tracking issue. Do **not** exceed 8 PRs in a single run under any circumstances.
-- If you estimate **≤ 8 PRs**, proceed normally.
+- If you estimate **> 5 PRs**, apply the hard cap from Step 6b immediately: process only the first 5 candidates and post the overflow summary on a tracking issue. Do **not** exceed 5 PRs in a single run under any circumstances.
+- If you estimate **≤ 5 PRs**, proceed normally.
 
-> **Note**: This per-run cap is enforced in Step 6b (before PR creation). The cumulative daily alert in Step 6c is a separate monitoring signal that tracks the total `docs(daily):` PRs opened across *all* runs today.
+> **Note**: Three complementary mechanisms control PR volume:
+> - **Step 0 (open-PR gate)**: skips the entire run when ≥ 5 `docs(daily):` PRs are already open.
+> - **Step 6b (per-run cap)**: limits new PRs to 5 per run regardless of how many candidates exist.
+> - **Step 6c (daily alert)**: tracks cumulative PRs created today across all runs and raises an issue at ≥ 10.
