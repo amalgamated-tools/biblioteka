@@ -70,13 +70,21 @@ describe("DownloadsHistogram", () => {
     render(DownloadsHistogram, { data: dataWithDownloads });
     const table = screen.getByRole("table", { name: "Downloads per month" });
     expect(table).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: "Month" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("columnheader", { name: "Month" }),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("columnheader", { name: "Downloads" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("rowheader", { name: "January 2026" })).toBeInTheDocument();
-    expect(screen.getByRole("rowheader", { name: "February 2026" })).toBeInTheDocument();
-    expect(screen.getByRole("rowheader", { name: "March 2026" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("rowheader", { name: "January 2026" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("rowheader", { name: "February 2026" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("rowheader", { name: "March 2026" }),
+    ).toBeInTheDocument();
   });
 
   it("generates unique ids for multiple instances", () => {
