@@ -53,7 +53,7 @@ func (h *StatsHandler) HandleDownloadsPerMonth(w http.ResponseWriter, r *http.Re
 
 	slog.DebugContext(r.Context(), "fetching monthly download stats",
 		slog.String(otelkeys.UserID, userID),
-		slog.Int(otelkeys.Count, months),
+		slog.Int(otelkeys.Limit, months),
 	)
 
 	counts, err := h.DB.GetMonthlyDownloads(r.Context(), userID, months)
