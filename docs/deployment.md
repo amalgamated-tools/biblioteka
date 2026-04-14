@@ -177,7 +177,7 @@ See the [Configuration](../README.md#configuration) table in the README for the 
 
 | Variable | Required | Notes |
 |----------|----------|-------|
-| `JWT_SECRET` | **Yes** | Random secret for signing JWTs (minimum 32 characters recommended; a shorter value logs a startup warning); tokens are valid for **24 hours** after issuance — leaked tokens remain valid until expiry. To immediately invalidate all active sessions (e.g. after a suspected credential leak), rotate the secret and redeploy; see [JWT Secret Rotation](#jwt-secret-rotation) |
+| `JWT_SECRET` | **Yes** | Random secret used for two purposes: (1) signing JWTs (tokens are valid for **24 hours**; a shorter value than 32 characters logs a startup warning), and (2) deriving the AES-256-GCM key that encrypts sensitive settings stored in the database (SMTP password, OIDC client secret). **Changing this value invalidates all active sessions AND makes previously-encrypted settings unreadable** — operators must re-enter the SMTP password and OIDC client secret through the UI after a key rotation. See [JWT Secret Rotation](#jwt-secret-rotation) |
 | `SECURE_COOKIES` | **Yes** (set to `true`) | Prevents cookies being sent over HTTP |
 | `DATABASE_URL` | No | Omit for SQLite; set to a PostgreSQL DSN for Postgres |
 | `REDIS_URL` | No | Defaults to `redis://localhost:6379` |
@@ -213,6 +213,7 @@ docker compose up -d --force-recreate biblioteka-worker
 - All API clients using JWT Bearer tokens must re-authenticate to obtain a new token.
 - [API keys](../README.md#api-keys) (`bib_…`) are **not** affected — they authenticate via a separate mechanism and remain valid after a JWT secret rotation.
 - Kobo sync tokens are **not** affected — they authenticate via a separate mechanism.
+- **Encrypted settings become unreadable.** `JWT_SECRET` is used to derive the encryption key for sensitive settings stored in the database (SMTP password, OIDC client secret). After rotation, these stored secrets cannot be decrypted and must be re-entered through the admin UI under *Settings → Email* and *Settings → Authentication*.
 
 > **OIDC sessions:** If OIDC is enabled, rotating `JWT_SECRET` invalidates the Biblioteka-issued JWT but does **not** invalidate the user's session with their identity provider. Users will be sent back through the OIDC login flow, but many providers will silently reuse an existing IdP session and may not prompt for credentials again. If rotation happens while an OIDC login or account-link flow is already in progress, that flow may fail and need to be restarted because OIDC `state` validation is derived from `JWT_SECRET`.
 
