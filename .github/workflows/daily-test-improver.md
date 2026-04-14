@@ -54,7 +54,7 @@ safe-outputs:
     title-prefix: "[Test Improver] "
     max: 1
   noop:
-    report-as-issue: false    
+    report-as-issue: false
 
 checkout:
   fetch: ["*"]

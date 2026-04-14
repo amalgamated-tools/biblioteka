@@ -26,7 +26,7 @@ safe-outputs:
     group: true
     close-older-issues: true
   noop:
-    report-as-issue: false    
+    report-as-issue: false
 
 tools:
   playwright:

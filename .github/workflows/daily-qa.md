@@ -29,7 +29,7 @@ safe-outputs:
     labels: [automation, qa]
     protected-files: fallback-to-issue
   noop:
-    report-as-issue: false    
+    report-as-issue: false
 
 tools:
   github:

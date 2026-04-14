@@ -40,7 +40,7 @@ safe-outputs:
     auto-merge: true
     protected-files: fallback-to-issue
   noop:
-    report-as-issue: false    
+    report-as-issue: false
 
 source: githubnext/agentics/workflows/daily-doc-updater.md@97143ac59cb3a13ef2a77581f929f06719c7402a
 ---

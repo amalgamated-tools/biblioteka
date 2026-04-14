@@ -83,7 +83,7 @@ safe-outputs:
     max: 5
     target: "*" 
   noop:
-    report-as-issue: false      
+    report-as-issue: false
 
 steps:
   - name: Fetch repo data for task weighting

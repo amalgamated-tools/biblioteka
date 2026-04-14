@@ -22,7 +22,7 @@ safe-outputs:
     title-prefix: "chore(deps): "
     category: "announcements"
   noop:
-    report-as-issue: false    
+    report-as-issue: false
 
 tools:
   github:

@@ -23,7 +23,7 @@ safe-outputs:
     retention-days: 30
     skip-archive: true
   noop:
-    report-as-issue: false    
+    report-as-issue: false
 timeout-minutes: 30
 imports:
   - uses: shared/daily-audit-discussion.md

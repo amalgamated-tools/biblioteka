@@ -28,7 +28,7 @@ safe-outputs:
     labels: [refactoring, code-quality, automation]
     expires: 1d
   noop:
-    report-as-issue: false    
+    report-as-issue: false
 
 tools:
   github:

@@ -32,7 +32,7 @@ safe-outputs:
       - .github/workflows/*.lock.yml
       - .github/workflows/shared/*.md
   noop:
-    report-as-issue: false        
+    report-as-issue: false
 
 tools:
   agentic-workflows:

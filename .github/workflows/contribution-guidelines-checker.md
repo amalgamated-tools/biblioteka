@@ -21,7 +21,7 @@ safe-outputs:
   add-comment:
     max: 1
   noop:
-    report-as-issue: false    
+    report-as-issue: false
 
 tools:
   github:
