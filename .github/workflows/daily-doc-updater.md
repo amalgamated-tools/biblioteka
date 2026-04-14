@@ -185,14 +185,16 @@ For each documentation change you plan to create a PR for, perform **both** chec
 
 > **Pre-fetch (run once before evaluating any candidate)**:
 > 1. Search for all open PRs bearing both documentation labels: `repo:${{ github.repository }} is:pr is:open label:documentation label:automation`
-> 2. For each open PR returned, call `pull_request_read` with `method: get_files` to retrieve its list of changed files. If the call fails, retry up to 2 additional times. If it still fails after retries (e.g., transient API/network errors, rate limits, or permissions), mark **all file paths** for that PR as "unknown overlap" in the lookup map.
-> 3. Build a reusable lookup map: `{ filepath → [PR numbers] }` from the results above. For PRs whose file lists could not be fetched, store a sentinel entry so that any candidate can detect the unresolved PR.
+> 2. For each open PR returned, call `pull_request_read` with `method: get_files` to retrieve its list of changed files. If the call fails, retry up to 2 additional times.
+> 3. Build two data structures from the results:
+>    - `fileMap`: `{ filepath → [PR numbers] }` — from PRs whose file lists were successfully fetched.
+>    - `unresolvedPRs`: `[PR numbers]` — PRs whose file lists could not be fetched after retries.
 
-Per-candidate check (reuse the pre-fetched map):
-1. Identify the specific documentation file(s) this candidate would modify (e.g., `docs/stats.md`, `docs/kobo.md`).
-2. Check whether any file in the candidate's target list appears in the pre-fetched map.
+Per-candidate check (reuse the pre-fetched state):
+1. If `unresolvedPRs` is non-empty: skip this candidate conservatively and log `FILE DEDUP SKIP [file]: could not verify files for open PR(s) #N; treating as potential overlap`. Do **not** create a new PR for this candidate.
+2. Otherwise, identify the specific documentation file(s) this candidate would modify (e.g., `docs/stats.md`, `docs/kobo.md`).
+3. Check whether any file in the candidate's target list appears in `fileMap`.
    - **If an overlap is found**: skip this candidate and log `FILE DEDUP SKIP [file]: open PR #N already modifies this file`. Do **not** create a new PR for this candidate.
-   - **If a candidate's target file maps to an unresolved PR** (file list fetch failed): skip this candidate conservatively and log `FILE DEDUP SKIP [file]: could not verify files for open PR #N; treating as potential overlap`. Do **not** create a new PR for this candidate.
    - **If no overlap is found**: proceed with this candidate.
 
 Apply both checks to every candidate PR before proceeding to the cap check below, and use the same `docs(daily): <summary>` format consistently in any related lookback searches and PR-title guidance.
