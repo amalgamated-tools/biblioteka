@@ -26,7 +26,7 @@
     return d.toLocaleString("default", { month: "short" });
   }
 
-  /** Returns "Month YYYY" for tooltip / aria-label. */
+  /** Returns "Month YYYY" for tooltip and screen-reader data table. */
   function monthFull(yyyyMM: string): string {
     const [year, month] = yyyyMM.split("-");
     const d = new Date(Number(year), Number(month) - 1, 1);

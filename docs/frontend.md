@@ -1256,7 +1256,7 @@ An accessible inline delete-confirmation dialog that replaces the current item's
 
 ### `DownloadsHistogram.svelte`
 
-A bar chart that visualises monthly download counts for a book or the library. Each bar is sized proportionally to the highest count in the dataset. An empty-state message is shown when all counts are zero. All visual data is also exposed as accessible text through ARIA attributes so the chart is usable without a pointing device or visual display.
+A bar chart that visualises monthly download counts for a book or the library. Each bar is sized proportionally to the highest count in the dataset. An empty-state message is shown when all counts are zero. The visual bars are marked `aria-hidden`, and the same data is exposed to assistive technology through a screen-reader-only table so the chart remains usable without a pointing device or visual display.
 
 **Props:**
 
