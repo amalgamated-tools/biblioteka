@@ -65,6 +65,68 @@ describe("BookList loading state", () => {
 
     expect(fetchBooks).toHaveBeenCalledWith(24, 0, "tolkien");
   });
+
+  it("resets offset to 0 when query changes", async () => {
+    // Return enough books to have multiple pages
+    const page1: PaginatedBooks = {
+      books: Array.from({ length: 2 }, (_, i) => ({
+        id: `b${i}`,
+        title: `Book ${i}`,
+        description: null,
+        asin: null,
+        isbn10: null,
+        isbn13: null,
+        goodreads_id: null,
+        hardcover_id: null,
+        google_books_id: null,
+        publication_date: null,
+        publisher: null,
+        language: null,
+        cover_image_url: null,
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+      })),
+      total: 50,
+      limit: 2,
+      offset: 0,
+    };
+    const page2: PaginatedBooks = { ...page1, offset: 2 };
+    const searchResult: PaginatedBooks = {
+      books: [page1.books[0]],
+      total: 1,
+      limit: 2,
+      offset: 0,
+    };
+
+    const fetchBooks = vi
+      .fn()
+      .mockResolvedValueOnce(page1) // initial load
+      .mockResolvedValueOnce(page2) // after next page
+      .mockResolvedValueOnce(searchResult); // after query change
+
+    const { rerender } = render(BookList, {
+      props: { fetchBooks, pageSize: 2 },
+    });
+    await tick();
+    await tick();
+
+    // Navigate to page 2
+    const nextButton = screen.getByRole("button", { name: /Next page/ });
+    await fireEvent.click(nextButton);
+    await tick();
+    await tick();
+
+    // Verify we're on page 2 (offset=2)
+    expect(fetchBooks).toHaveBeenLastCalledWith(2, 2, undefined);
+
+    // Change the query prop
+    await rerender({ fetchBooks, pageSize: 2, query: "tolkien" });
+    await tick();
+    await tick();
+
+    // Offset should have reset to 0
+    expect(fetchBooks).toHaveBeenLastCalledWith(2, 0, "tolkien");
+  });
 });
 
 describe("BookList table view keyboard accessibility (WCAG 2.1.1)", () => {
