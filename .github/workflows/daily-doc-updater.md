@@ -206,15 +206,33 @@ Before creating any pull requests, perform the following checks **in order**:
 
 #### 6a. Deduplication Guard
 
-For each documentation change you plan to create a PR for, use the standardized PR title format `docs(daily): <summary>` and search for an existing **open** PR with a matching title. Derive the search terms from the proposed PR title: use the fixed `docs(daily):` prefix and 2–3 significant words from the remainder. For example, for a proposed PR titled `docs(daily): decorative icon aria-hidden pattern`, search:
+For each documentation change you plan to create a PR for, perform **both** checks below. Skip the candidate if **either** check matches.
+
+**Check 1 — Title-based deduplication**: Use the standardized PR title format `docs(daily): <summary>` and search for an existing **open** PR with a matching title. Derive the search terms from the proposed PR title: use the fixed `docs(daily):` prefix and 2–3 significant words from the remainder. For example, for a proposed PR titled `docs(daily): decorative icon aria-hidden pattern`, search:
 `repo:${{ github.repository }} is:pr is:open in:title "docs(daily): decorative icon"`
 
 - **If a matching open PR is found**: skip this change and log `DEDUP SKIP [title]: open PR #N already exists`. Do **not** create a new PR for this change.
-- **If no matching open PR is found**: proceed with this change.
+- **If no matching open PR is found**: continue to Check 2.
 
-Apply this check to every candidate PR before proceeding to the cap check below, and use the same `docs(daily): <summary>` format consistently in any related lookback searches and PR-title guidance.
+**Check 2 — File-based deduplication**: Even when no title match is found, verify that no open automation-labeled PR already modifies the same documentation files this candidate targets.
 
-> **Note**: The cross-agent sibling PR check in Step 4b already filters files that the `update-docs` workflow is actively covering. Step 6a focuses on deduplication of this workflow's own `docs(daily):` PRs.
+> **Pre-fetch (run once before evaluating any candidate)**:
+> 1. Search for all open PRs bearing both documentation labels: `repo:${{ github.repository }} is:pr is:open label:documentation label:automation`
+> 2. For each open PR returned, call `pull_request_read` with `method: get_files` to retrieve its list of changed files. If the call fails, retry up to 2 additional times.
+> 3. Build two data structures from the results:
+>    - `fileMap`: `{ filepath → [PR numbers] }` — from PRs whose file lists were successfully fetched.
+>    - `unresolvedPRs`: `[PR numbers]` — PRs whose file lists could not be fetched after retries.
+
+Per-candidate check (reuse the pre-fetched state):
+1. If `unresolvedPRs` is non-empty: skip this candidate conservatively and log `FILE DEDUP SKIP [file]: could not verify files for open PR(s) #N; treating as potential overlap`. Do **not** create a new PR for this candidate.
+2. Otherwise, identify the specific documentation file(s) this candidate would modify (e.g., `docs/stats.md`, `docs/kobo.md`).
+3. Check whether any file in the candidate's target list appears in `fileMap`.
+   - **If an overlap is found**: skip this candidate and log `FILE DEDUP SKIP [file]: open PR #N already modifies this file`. Do **not** create a new PR for this candidate.
+   - **If no overlap is found**: proceed with this candidate.
+
+Apply both checks to every candidate PR before proceeding to the cap check below, and use the same `docs(daily): <summary>` format consistently in any related lookback searches and PR-title guidance.
+
+> **Note**: The cross-agent sibling PR check in Step 4b already filters files that the `update-docs` workflow is actively covering. Step 6a Check 1 focuses on deduplication of this workflow's own `docs(daily):` PRs; Check 2 catches near-identical PRs among open PRs that already carry both the `documentation` and `automation` labels and touch the same files, regardless of title.
 
 #### 6b. Per-Run Hard Cap (5 PRs)
 
