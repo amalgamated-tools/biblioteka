@@ -21,6 +21,8 @@ safe-outputs:
     title-prefix: "${{ github.workflow }}"
     category: "announcements"
     close-older-discussions: true
+  noop:
+    report-as-issue: false
 
 tools:
   github:

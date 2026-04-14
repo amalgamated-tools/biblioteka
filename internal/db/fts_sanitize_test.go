@@ -57,3 +57,98 @@ func TestContainsWordChar(t *testing.T) {
 	require.False(t, containsWordChar("-"))
 	require.False(t, containsWordChar(""))
 }
+
+// ---- buildILIKESearchWhere ----
+
+func TestBuildILIKESearchWhere_EmptyQuery(t *testing.T) {
+	where, args := buildILIKESearchWhere("", 1)
+	require.Empty(t, where)
+	require.Nil(t, args)
+}
+
+func TestBuildILIKESearchWhere_WhitespaceOnly(t *testing.T) {
+	where, args := buildILIKESearchWhere("   ", 1)
+	require.Empty(t, where)
+	require.Nil(t, args)
+}
+
+func TestBuildILIKESearchWhere_SingleToken(t *testing.T) {
+	where, args := buildILIKESearchWhere("Foundation", 1)
+	require.Equal(t, `WHERE (title ILIKE $1 ESCAPE '\' OR description ILIKE $1 ESCAPE '\')`, where)
+	require.Equal(t, []any{"%Foundation%"}, args)
+}
+
+func TestBuildILIKESearchWhere_MultipleTokens_ANDSemantics(t *testing.T) {
+	where, args := buildILIKESearchWhere("desert planet", 1)
+	expected := `WHERE (title ILIKE $1 ESCAPE '\' OR description ILIKE $1 ESCAPE '\') AND (title ILIKE $2 ESCAPE '\' OR description ILIKE $2 ESCAPE '\')`
+	require.Equal(t, expected, where)
+	require.Equal(t, []any{"%desert%", "%planet%"}, args)
+}
+
+func TestBuildILIKESearchWhere_ThreeTokens(t *testing.T) {
+	where, args := buildILIKESearchWhere("a b c", 1)
+	expected := `WHERE (title ILIKE $1 ESCAPE '\' OR description ILIKE $1 ESCAPE '\') AND (title ILIKE $2 ESCAPE '\' OR description ILIKE $2 ESCAPE '\') AND (title ILIKE $3 ESCAPE '\' OR description ILIKE $3 ESCAPE '\')`
+	require.Equal(t, expected, where)
+	require.Equal(t, []any{"%a%", "%b%", "%c%"}, args)
+}
+
+func TestBuildILIKESearchWhere_SpecialCharsEscaped(t *testing.T) {
+	where, args := buildILIKESearchWhere(`100%`, 1)
+	require.Equal(t, `WHERE (title ILIKE $1 ESCAPE '\' OR description ILIKE $1 ESCAPE '\')`, where)
+	require.Equal(t, []any{`%100\%%`}, args)
+}
+
+func TestBuildILIKESearchWhere_UnderscoreEscaped(t *testing.T) {
+	where, args := buildILIKESearchWhere("hello_world", 1)
+	require.Equal(t, `WHERE (title ILIKE $1 ESCAPE '\' OR description ILIKE $1 ESCAPE '\')`, where)
+	require.Equal(t, []any{`%hello\_world%`}, args)
+}
+
+func TestBuildILIKESearchWhere_BackslashEscaped(t *testing.T) {
+	where, args := buildILIKESearchWhere(`back\slash`, 1)
+	require.Equal(t, `WHERE (title ILIKE $1 ESCAPE '\' OR description ILIKE $1 ESCAPE '\')`, where)
+	require.Equal(t, []any{`%back\\slash%`}, args)
+}
+
+func TestBuildILIKESearchWhere_CustomStartIdx(t *testing.T) {
+	// When called with startIdx=3, placeholders begin at $3.
+	where, args := buildILIKESearchWhere("desert planet", 3)
+	expected := `WHERE (title ILIKE $3 ESCAPE '\' OR description ILIKE $3 ESCAPE '\') AND (title ILIKE $4 ESCAPE '\' OR description ILIKE $4 ESCAPE '\')`
+	require.Equal(t, expected, where)
+	require.Equal(t, []any{"%desert%", "%planet%"}, args)
+}
+
+func TestBuildILIKESearchWhere_ExtraWhitespace(t *testing.T) {
+	// Extra whitespace between tokens should produce the same result as a
+	// single space.
+	where1, args1 := buildILIKESearchWhere("desert planet", 1)
+	where2, args2 := buildILIKESearchWhere("  desert   planet  ", 1)
+	require.Equal(t, where1, where2)
+	require.Equal(t, args1, args2)
+}
+
+func TestBuildILIKESearchWhere_SkipsNonWordTokens(t *testing.T) {
+	// Tokens without any letter or digit should be skipped, aligning with
+	// SQLite FTS5 which drops such tokens via containsWordChar.
+	where, args := buildILIKESearchWhere(`% --- hello`, 1)
+	require.Equal(t, `WHERE (title ILIKE $1 ESCAPE '\' OR description ILIKE $1 ESCAPE '\')`, where)
+	require.Equal(t, []any{"%hello%"}, args)
+}
+
+func TestBuildILIKESearchWhere_AllNonWordTokens(t *testing.T) {
+	// When every token lacks word characters, return empty like the FTS5 path.
+	where, args := buildILIKESearchWhere(`% \ ---`, 1)
+	require.Empty(t, where)
+	require.Nil(t, args)
+}
+
+func TestBuildILIKESearchWhere_StartIdxClamped(t *testing.T) {
+	// A startIdx < 1 should be clamped to 1.
+	where, args := buildILIKESearchWhere("hello", 0)
+	require.Equal(t, `WHERE (title ILIKE $1 ESCAPE '\' OR description ILIKE $1 ESCAPE '\')`, where)
+	require.Equal(t, []any{"%hello%"}, args)
+
+	where2, args2 := buildILIKESearchWhere("hello", -5)
+	require.Equal(t, where, where2)
+	require.Equal(t, args, args2)
+}

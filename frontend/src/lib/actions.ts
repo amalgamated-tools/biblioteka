@@ -6,7 +6,7 @@ import { tick } from "svelte";
  */
 export function autofocusFirstButton(node: HTMLElement) {
   tick().then(() => {
-    const btn = node.querySelector<HTMLElement>("button");
+    const btn = node.querySelector<HTMLElement>("button:not([disabled])");
     btn?.focus();
   });
 }
