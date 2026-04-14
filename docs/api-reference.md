@@ -1,3 +1,7 @@
+---
+disable-agentic-editing: true
+---
+
 # API Reference
 
 All endpoints are under the base path `/api`. JSON is used for all request and response bodies. Timestamps are returned as ISO 8601 strings (e.g., `"2026-03-14T02:00:00Z"`).

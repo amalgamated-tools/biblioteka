@@ -105,20 +105,29 @@ This will help you avoid re-cleaning files that were recently processed.
 
 ### 2. Find Documentation Files
 
-Scan the repository for markdown documentation files. Common locations include:
-- `docs/` directory
-- `README.md` files
-- `.md` files in project root
-- Any documentation subdirectories
+Scan the repository for markdown documentation files. **Only target files in the `docs/` subdirectory** — root-level `.md` files (README.md, CONTRIBUTING.md, CLAUDE.md, AGENTS.md, GEMINI.md, SECURITY.md, CHANGELOG.md, CLA.md, etc.) are out of scope.
+
+```bash
+find docs/ -maxdepth 2 -name "*.md" | sort
+```
 
 **IMPORTANT**: Exclude these types of files:
 - Auto-generated files (e.g., API references generated from code)
 - Changelog files
 - License files
 - Code of conduct files
-- **Files with `disable-agentic-editing: true` in frontmatter** - These files are protected from automated editing
+- **Files with `disable-agentic-editing: true` in frontmatter** — these files are explicitly protected from automated editing
+- Files under 150 lines (too small to contain meaningful bloat)
+- Files modified within the last 3 days (avoid conflicting with active development)
 
-Look for documentation files that were recently modified or are likely to benefit from cleanup.
+Check modification date with:
+```bash
+git log -1 --format="%ai" -- <filename>
+```
+
+Skip files modified more recently than 3 days ago.
+
+Look for documentation files with clear, objective bloat signals (see section 4).
 
 {{#if ${{ github.event.pull_request.number }}}}
 **Pull Request Context**: Since this workflow is running in the context of PR #${{ github.event.pull_request.number }}, prioritize reviewing the documentation files that were modified in this pull request. Use the GitHub API to get the list of changed files and focus on markdown files.
@@ -129,10 +138,14 @@ Look for documentation files that were recently modified or are likely to benefi
 **IMPORTANT**: Work on only **ONE file at a time** to keep changes small and reviewable.
 
 **NEVER select these types of files**:
-- Auto-generated documentation
+- Auto-generated documentation (e.g., swagger, generated API docs)
 - Changelog or release notes
 - License or legal files
-- **Files with `disable-agentic-editing: true` in frontmatter** - These files are explicitly protected from automated editing
+- **Files with `disable-agentic-editing: true` in frontmatter** — these files are explicitly protected from automated editing
+- Files outside the `docs/` directory
+- Files under 150 lines
+- Files modified within the last 3 days
+- **Files already in cleaned-files.txt cache** — skip recently cleaned files
 
 Before selecting a file, check its frontmatter to ensure it doesn't have `disable-agentic-editing: true`:
 ````bash
@@ -141,12 +154,13 @@ head -20 <filename> | grep -A1 "^---" | grep "disable-agentic-editing: true"
 # If this returns a match, SKIP this file - it's protected
 ````
 
-Choose the file most in need of improvement based on:
-- Recent modification date
-- File size (larger files may have more bloat)
-- Number of bullet points or repetitive patterns
-- **Files NOT in the cleaned-files.txt cache** (avoid duplicating recent work)
-- **Files WITHOUT `disable-agentic-editing: true` in frontmatter** (respect protection flag)
+Choose the file most in need of improvement based on **objective bloat signals**:
+- **Verified duplicate content**: identical or near-identical paragraphs/sections that repeat the same information
+- **Excessive bullet lists**: lists of 5+ items where 3+ items express the same idea differently
+- **File size**: larger files have more opportunity for meaningful reduction
+- **Files NOT already in cleaned-files.txt cache** (avoid duplicating recent work)
+
+**Required threshold before proceeding**: You must identify **at least 2 distinct categories of bloat** (from the list in section 4) before opening a PR. If you can only find 1 category or no clear bloat, call `noop` instead.
 
 ### 4. Analyze the File
 
@@ -156,14 +170,17 @@ Choose the file most in need of improvement based on:
 head -20 <filename> | grep -A1 "^---" | grep "disable-agentic-editing: true"
 ````
 
-If this command returns a match, **STOP** - the file is protected. Select a different file.
+If this command returns a match, **STOP** — the file is protected. Select a different file.
 
-Once you've confirmed the file is editable, read it and identify bloat:
-- Count bullet points - are there excessive lists?
-- Look for duplicate information
-- Check for repetitive "What it does" / "Why it's valuable" patterns
-- Identify verbose or wordy sections
-- Find redundant examples
+Once you've confirmed the file is editable, read it and **objectively catalogue** the bloat you find. You must document at least 2 of the following categories to proceed:
+
+1. **Exact or near-exact duplicate content** — the same fact/statement appears in two or more places
+2. **Excessive bullet lists** — a list of 5+ bullets where 3+ bullets convey the same point differently
+3. **Redundant examples** — two or more code examples demonstrating the identical concept
+4. **Verbose filler phrases** — sentences that contain no technical information (e.g., "It is worth noting that…", "As mentioned above…")
+5. **Repeated structural patterns** — the "What it does / Why it's valuable" formula applied to every item in a list
+
+If you cannot identify at least 2 categories with specific line numbers and examples, **stop and call `noop`** — the file does not need cleaning.
 
 ### 5. Remove Bloat
 
@@ -271,11 +288,13 @@ Use it when you need X by following steps 1-5. [Learn more](url)
 ## Success Criteria
 
 A successful run:
-- ✅ Improves exactly **ONE** documentation file
-- ✅ Reduces bloat by at least 20% (lines, words, or bullet points)
-- ✅ Preserves all essential information
-- ✅ Creates a clear, reviewable pull request
-- ✅ Explains the improvements made
+- ✅ Improves exactly **ONE** documentation file from the `docs/` directory
+- ✅ File has at least 150 lines and was not modified in the last 3 days
+- ✅ At least **2 distinct bloat categories** were identified with specific line-number evidence
+- ✅ Reduces bloat by at least 20% (lines, words, or bullet points) AND at least 5 lines in absolute terms
+- ✅ Preserves all essential information, technical accuracy, links, and code examples
+- ✅ Creates a clear, reviewable pull request that lists each bloat category found and fixed
+- ✅ If no qualifying file is found or fewer than 2 bloat categories exist, calls `noop` rather than opening a marginal PR
 
 Begin by scanning the repository for documentation and selecting the best candidate for improvement!
 
