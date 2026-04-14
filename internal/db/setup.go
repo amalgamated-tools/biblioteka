@@ -134,9 +134,9 @@ func setupSQLite(ctx context.Context) (*DB, error) {
 
 	// Verify FTS5 index integrity and auto-rebuild if corrupted. A failed
 	// integrity check or rebuild is non-fatal: it is logged and the server
-	// continues to start. Searches will still function; they may just return
-	// stale or incomplete results until a manual rebuild is triggered via
-	// POST /api/admin/search/reindex.
+	// continues to start regardless of the outcome. Searches will still
+	// function; they may just return stale or incomplete results until a
+	// manual rebuild is triggered via POST /api/admin/search/reindex.
 	if err := d.CheckFTSIntegrity(ctx); err != nil {
 		slog.WarnContext(ctx, "FTS5 index integrity check failed, attempting rebuild",
 			slog.String(otelkeys.Path, dbFilePath),
