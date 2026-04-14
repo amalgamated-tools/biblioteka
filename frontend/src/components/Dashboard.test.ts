@@ -31,6 +31,13 @@ vi.mock("../lib/api", () => ({
     total_finished: 0,
     in_progress: [],
   }),
+  getYearInBooks: vi.fn().mockResolvedValue({
+    year: 2026,
+    books_finished: 0,
+    active_days: 0,
+    longest_streak: 0,
+    total_downloads: 0,
+  }),
 }));
 
 vi.mock("lucide-svelte", () => ({
@@ -41,6 +48,8 @@ vi.mock("lucide-svelte", () => ({
   Flame: () => {},
   BookOpen: () => {},
   CheckCheck: () => {},
+  CalendarDays: () => {},
+  Download: () => {},
 }));
 
 import Dashboard from "./Dashboard.svelte";
@@ -50,6 +59,7 @@ import {
   getTotalBooksCount,
   getDownloadsPerMonth,
   getReadingProgressStats,
+  getYearInBooks,
 } from "../lib/api";
 
 describe("Dashboard", () => {
@@ -63,6 +73,13 @@ describe("Dashboard", () => {
       total_tracked: 0,
       total_finished: 0,
       in_progress: [],
+    });
+    vi.mocked(getYearInBooks).mockResolvedValue({
+      year: 2026,
+      books_finished: 0,
+      active_days: 0,
+      longest_streak: 0,
+      total_downloads: 0,
     });
   });
 
@@ -460,5 +477,88 @@ describe("Dashboard", () => {
     expect(
       screen.getByRole("heading", { name: /Welcome to Biblioteka/i }),
     ).toBeInTheDocument();
+  });
+
+  describe("Year in Books", () => {
+    it("does not show year-in-books card when all stats are zero", async () => {
+      vi.mocked(libraryStore).loaded = true;
+      vi.mocked(libraryStore).libraries = libWithOne;
+      vi.mocked(getYearInBooks).mockResolvedValue({
+        year: 2026,
+        books_finished: 0,
+        active_days: 0,
+        longest_streak: 0,
+        total_downloads: 0,
+      });
+      render(Dashboard);
+      await tick();
+
+      await waitFor(() => {
+        expect(
+          screen.queryByTestId("year-in-books-card"),
+        ).not.toBeInTheDocument();
+      });
+    });
+
+    it("shows year-in-books card when there are books finished", async () => {
+      vi.mocked(libraryStore).loaded = true;
+      vi.mocked(libraryStore).libraries = libWithOne;
+      vi.mocked(getYearInBooks).mockResolvedValue({
+        year: 2026,
+        books_finished: 3,
+        active_days: 20,
+        longest_streak: 5,
+        total_downloads: 8,
+      });
+      render(Dashboard);
+
+      await waitFor(() => {
+        expect(screen.getByTestId("year-in-books-card")).toBeInTheDocument();
+      });
+      expect(screen.getByText("2026 in Books")).toBeInTheDocument();
+      expect(screen.getByText("3")).toBeInTheDocument();
+      expect(screen.getByText("books finished")).toBeInTheDocument();
+      expect(screen.getByText("20")).toBeInTheDocument();
+      expect(screen.getByText("days reading")).toBeInTheDocument();
+      expect(screen.getByText("5")).toBeInTheDocument();
+      expect(screen.getByText("day longest streak")).toBeInTheDocument();
+      expect(screen.getByText("8")).toBeInTheDocument();
+      expect(screen.getByText("downloads")).toBeInTheDocument();
+    });
+
+    it("shows year-in-books card when there are downloads only", async () => {
+      vi.mocked(libraryStore).loaded = true;
+      vi.mocked(libraryStore).libraries = libWithOne;
+      vi.mocked(getYearInBooks).mockResolvedValue({
+        year: 2026,
+        books_finished: 0,
+        active_days: 0,
+        longest_streak: 0,
+        total_downloads: 5,
+      });
+      render(Dashboard);
+
+      await waitFor(() => {
+        expect(screen.getByTestId("year-in-books-card")).toBeInTheDocument();
+      });
+    });
+
+    it("uses singular 'book' when exactly one book is finished", async () => {
+      vi.mocked(libraryStore).loaded = true;
+      vi.mocked(libraryStore).libraries = libWithOne;
+      vi.mocked(getYearInBooks).mockResolvedValue({
+        year: 2026,
+        books_finished: 1,
+        active_days: 10,
+        longest_streak: 3,
+        total_downloads: 1,
+      });
+      render(Dashboard);
+
+      await waitFor(() => {
+        expect(screen.getByText("book finished")).toBeInTheDocument();
+        expect(screen.getByText("download")).toBeInTheDocument();
+      });
+    });
   });
 });
