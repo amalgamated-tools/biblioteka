@@ -8,7 +8,7 @@ Biblioteka uses [dbmate](https://github.com/amacneil/dbmate) migrations, which r
 
 ## Access model
 
-Biblioteka uses a **shared catalog** model. Books, libraries, authors, and series are global resources visible to every authenticated user. There is no per-user book ownership or private reading list in the current implementation.
+Biblioteka uses a **shared catalog** model. Books, libraries, authors, and series are global resources visible to every authenticated user. Reading lists and reading progress are per-user private entities — each user sees and manages only their own.
 
 | Entity | Scope | Notes |
 |--------|-------|-------|
@@ -18,9 +18,9 @@ Biblioteka uses a **shared catalog** model. Books, libraries, authors, and serie
 | `opds_credentials` | Per-user | One credential set per user; used only for OPDS Basic Auth |
 | `kobo_tokens` | Per-user | One or more sync tokens per user; each token authenticates a single Kobo device |
 | `kobo_reading_states` | Per-user | Reading progress reported by Kobo devices; one record per user–book pair |
+| `reading_lists`, `reading_list_books` | Per-user | User-curated ordered lists of books; one user cannot see another's lists |
+| `reading_progress` | Per-user | KOReader sync progress; one record per user–document pair |
 | `audit_logs` | Global record — admin read | Logs record which user performed each action |
-
-> **Note:** The `MyLibrary` view in the frontend is a planned feature (currently a placeholder) that will eventually let each user maintain a personal reading list independent of the shared catalog.
 
 ---
 
@@ -33,7 +33,9 @@ users ────────────────────────�
   ├──── opds_credentials                       audit_logs
   ├──── kobo_tokens
   ├──── goodreads_metadata
-  └──── kobo_reading_states ─────────────── books ──── book_authors ──── authors
+  ├──── reading_progress
+  ├──── reading_lists ──── reading_list_books ───┐
+  └──── kobo_reading_states ──────────────── books ──── book_authors ──── authors
                                                │
 libraries ──── library_books ─────────────────┤
                                                ├──── book_series ──── series
@@ -517,6 +519,52 @@ Stores KOReader reading progress for each user–document pair. The `document` f
 
 ---
 
+### `reading_lists`
+
+Stores user-curated ordered lists of books. Each reading list is owned by a single user and is invisible to other users.
+
+| Column        | Type     | Nullable | Default  | Description                                      |
+|---------------|----------|----------|----------|--------------------------------------------------|
+| `id`          | TEXT     | NOT NULL | auto-gen | Primary key                                      |
+| `user_id`     | TEXT     | NOT NULL | —        | FK → `users.id` ON DELETE CASCADE                |
+| `name`        | TEXT     | NOT NULL | —        | Display name; normalized (trimmed, single spaces)|
+| `description` | TEXT     | NULL     | NULL     | Optional free-text description                   |
+| `created_at`  | DATETIME | NOT NULL | `now()`  | When the reading list was created                |
+| `updated_at`  | DATETIME | NOT NULL | `now()`  | When the reading list was last updated           |
+
+**Indexes:**
+- `idx_reading_lists_user_name` (unique) — enforces one list per normalized name per user
+
+**Notes:**
+- Names are normalized before storage (`NormalizeReadingListName`); duplicate normalized names for the same user are rejected with `ErrReadingListNameExists`.
+- `book_count` is computed on read via a `LEFT JOIN` to `reading_list_books` — it is not stored.
+- Deleting a user cascades and removes their reading lists, which in turn cascade-deletes their `reading_list_books` entries.
+
+---
+
+### `reading_list_books` (join table)
+
+Associates books with reading lists and tracks their order and insertion time.
+
+| Column            | Type     | Nullable | Default | Description                                   |
+|-------------------|----------|----------|---------|-----------------------------------------------|
+| `reading_list_id` | TEXT     | NOT NULL | —       | FK → `reading_lists.id` ON DELETE CASCADE     |
+| `book_id`         | TEXT     | NOT NULL | —       | FK → `books.id` ON DELETE CASCADE             |
+| `position`        | INTEGER  | NOT NULL | `0`     | Display order (ascending); ties broken by `added_at` |
+| `added_at`        | DATETIME | NOT NULL | `now()` | When the book was added to this list          |
+
+**Primary key:** `(reading_list_id, book_id)`
+
+**Indexes:**
+- `idx_reading_list_books_book` — fast lookup of which lists contain a given book
+
+**Notes:**
+- `ADD` is idempotent: inserting a duplicate `(reading_list_id, book_id)` pair is silently ignored (`ON CONFLICT DO NOTHING`).
+- `REMOVE` is also idempotent: removing a book that is not present returns `(false, nil)`.
+- Deleting a book cascades and removes it from all reading lists.
+
+---
+
 ### `goodreads_metadata`
 
 Stores Goodreads (and compatible catalog) metadata candidates fetched on behalf of a user. Each row is an imported snapshot of book metadata that can be reviewed and applied to a book record. The `status` field tracks whether the candidate has been accepted, rejected, or is awaiting review.
@@ -566,11 +614,12 @@ Stores Goodreads (and compatible catalog) metadata candidates fetched on behalf 
 
 | Deleted entity | Also deletes                                      |
 |----------------|---------------------------------------------------|
-| `users`        | `api_keys`, `opds_credentials`, `kobo_tokens`, `kobo_reading_states`, `kosync_credentials`, `reading_progress`, `goodreads_metadata` for that user |
+| `users`        | `api_keys`, `opds_credentials`, `kobo_tokens`, `kobo_reading_states`, `kosync_credentials`, `reading_progress`, `reading_lists` (which cascades to `reading_list_books`), `goodreads_metadata` for that user |
 | `libraries`    | `library_books` entries for that library          |
-| `books`        | `book_files`, `book_authors`, `book_series`, `library_books`, `kobo_reading_states` entries for that book; sets `goodreads_metadata.book_id = NULL` for linked candidates |
+| `books`        | `book_files`, `book_authors`, `book_series`, `library_books`, `kobo_reading_states`, `reading_list_books` entries for that book; sets `goodreads_metadata.book_id = NULL` for linked candidates |
 | `authors`      | `book_authors` entries for that author            |
 | `series`       | `book_series` entries for that series             |
+| `reading_lists` | `reading_list_books` entries for that list       |
 
 ---
 
@@ -599,10 +648,14 @@ All database access lives in the `internal/db/` package. The books domain is spl
 | `kobo_tokens.go` | `KoboToken` struct; `CreateKoboToken`, `GetKoboToken`, `GetKoboTokenByHash`, `ListKoboTokens`, `DeleteKoboToken` |
 | `kobo_reading_states.go` | `KoboReadingState` struct; `GetKoboReadingState`, `UpsertKoboReadingState`, `ListKoboReadingStatesSince`, `GetReadingStatesForBooks` |
 | `kosync.go` | `KOSyncCredential` (type alias for `ProtocolCredential`); `GetKOSyncCredentialByUserID`, `GetKOSyncCredentialByUsername`, `UpsertKOSyncCredential`, `DeleteKOSyncCredential` — thin wrappers around the shared helpers in `protocol_credentials.go`; `ReadingProgress` struct; `GetReadingProgress`, `UpsertReadingProgress` |
+| `reading_progress.go` | Additional reading progress queries split from `kosync.go`: `ListReadingProgress`, `GetReadingStats`, `GetReadingStreak`, `ComputeReadingStreak` (computes a consecutive-day streak from a slice of timestamps, using the current UTC date to determine whether the streak reaches today or yesterday) |
+| `reading_lists.go` | `ReadingList` struct; `CreateReadingList`, `GetReadingList`, `ListReadingLists`, `UpdateReadingList`, `DeleteReadingList`, `AddBookToReadingList`, `RemoveBookFromReadingList`, `ListReadingListBooks`, `GetReadingListsForBook` |
+| `book_downloads.go` | `MonthlyDownloadCount` struct; `RecordBookDownload`, `GetMonthlyDownloads` |
+| `book_load_relations.go` | `BookRelations` struct; `LoadBookRelations` — batch-fetches authors, files, and series for a single book by delegating to the existing batch APIs |
 | `audit_logs.go` | `AuditLog` struct; `CreateAuditLog`, `ListAuditLogs` |
 | `goodreads_metadata.go` | `GoodreadsMetadata` struct; `GoodreadsMetadataInput` struct (holds the 20 optional fields passed to `CreateGoodreadsMetadata` in place of positional arguments); `CreateGoodreadsMetadata`, `GetGoodreadsMetadata`, `ListGoodreadsMetadataByUser`, `ListGoodreadsMetadataByStatus`, `UpdateGoodreadsMetadataStatus`, `DeleteGoodreadsMetadata` |
 | `find_or_create.go` | Unexported generic helper `findOrCreate[T]` — implements the lookup → insert → race-fetch pattern shared by `FindOrCreateAuthor` and `FindOrCreateSeries`. Normalizes the name, validates it, attempts the insert, and falls back to a second lookup when a concurrent insert wins the unique-constraint race. |
-| `named_entity_write.go` | Unexported generic helpers `namedEntityCreate[T]` and `namedEntityUpdate[T]` — normalize the name, validate it, execute the provided insert/update function, and translate unique-constraint violations into the entity-specific sentinel errors (`ErrXxxNameExists`). Currently used by `CreateAuthor`/`UpdateAuthor` and `CreateSeries`/`UpdateSeries`; also serves as a reusable helper for future named-entity CRUD. |
+| `named_entity_write.go` | Unexported generic helpers `namedEntityCreate[T]` and `namedEntityUpdate[T]` — normalize the name, validate it, execute the provided insert/update function, and translate unique-constraint violations into the entity-specific sentinel errors (`ErrXxxNameExists`). Used by `CreateAuthor`/`UpdateAuthor`, `CreateSeries`/`UpdateSeries`, and `CreateReadingList`/`UpdateReadingList`. |
 | `scan_helpers.go` | Unexported generic scan utilities: `scanRow[T]` (wraps single-row scan to eliminate per-entity boilerplate), `collectRows[T]` (iterates `*sql.Rows` and collects results into a slice), and `collectRowsAndTotal[T]` (same as `collectRows` but also captures a `COUNT(*) OVER()` window-function total for paginated queries). |
 | `tx.go` | Unexported transaction helper `deferRollback` — intended for use with `defer`; calls `tx.Rollback()`, silently ignores `sql.ErrTxDone`, and logs a warning for any other rollback error. |
 | `paginate.go` | Two internal generic helpers sharing the `listQuery` interface and `allowedListTables` allowlist: `listAll[T]` — full-table SELECT with no limit; used by `ListAuthors`, `ListSeries`, `ListLibraries`; `listPaginated[T]` — issues a `COUNT(*)` then a paginated SELECT; used by `ListAuthorsPaginated` and `ListSeriesPaginated`. Both validate table names against the allowlist to prevent SQL injection |
