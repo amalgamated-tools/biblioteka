@@ -353,6 +353,8 @@ Views that need their own internal navigation use `routerStore.subPath`. The con
 | `libraries` | `new` | Create-library form |
 | `libraries` | `{id}` | View a library's books |
 | `libraries` | `edit/{id}` | Edit-library form |
+| `reading-lists` | *(empty)* | List all reading lists + create form |
+| `reading-lists` | `{id}` | Detail / edit / delete view for a single list |
 | `settings` | `account` | Account settings tab |
 | `settings` | `oidc` | OIDC / SSO settings tab |
 | `settings` | `smtp` | SMTP mail configuration tab (admin) |
