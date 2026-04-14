@@ -221,6 +221,70 @@ func TestSearchBooks_EmptyAfterSanitize(t *testing.T) {
 	}
 }
 
+// TestSearchBooks_MultiWordSemanticDivergence explicitly documents the
+// behavioral gap between the two search backends:
+//
+//   - SQLite FTS5 (token-AND): each whitespace-separated word in the query
+//     becomes an independent FTS5 term; all terms must match somewhere in the
+//     combined FTS document (title ∪ description), but they may appear in any
+//     order and may each be satisfied by a different column.
+//
+//   - PostgreSQL ILIKE (phrase-substring): the entire query string is wrapped in
+//     `%…%` and matched as a single contiguous substring against each column
+//     independently; tokens that are present but in a different order, or split
+//     across columns, do NOT produce a match.
+//
+// The two sub-cases below run against the SQLite path and assert the FTS5
+// token-AND semantics. Comments on each sub-case describe what the PostgreSQL
+// ILIKE path would return for the same input so that the divergence is
+// self-documenting.
+func TestSearchBooks_MultiWordSemanticDivergence(t *testing.T) {
+	t.Run("reversed word order in same field", func(t *testing.T) {
+		// Description: "Planet of Deserts" – the words "desert" and "planet" both appear
+		// but in the opposite order to the query "desert planet".
+		//
+		// FTS5 (SQLite): "desert"* AND "planet"* → both tokens match the
+		// combined document → MATCH.
+		//
+		// ILIKE (PostgreSQL): %desert planet% → "Planet of Deserts" does not
+		// contain the literal substring "desert planet" → NO MATCH.
+		d := newTestDB(t)
+
+		desc := "Planet of Deserts"
+		_, err := d.CreateBook(t.Context(), BookInput{Title: "Reversed Order", Description: &desc})
+		require.NoError(t, err, "CreateBook(Reversed Order)")
+
+		books, total, err := d.SearchBooks(t.Context(), "desert planet", 10, 0)
+		require.NoError(t, err, "SearchBooks('desert planet') error")
+		require.Equal(t, 1, total, "FTS5 token-AND should match reversed word order")
+		require.Len(t, books, 1)
+		require.Equal(t, "Reversed Order", books[0].Title)
+	})
+
+	t.Run("words split across title and description", func(t *testing.T) {
+		// Title contains "desert"; description contains "planet".
+		// Neither field alone contains both words.
+		//
+		// FTS5 (SQLite): the combined FTS document (title ∥ description) has
+		// both "desert" and "planet" → "desert"* AND "planet"* → MATCH.
+		//
+		// ILIKE (PostgreSQL): %desert planet% is checked against title and
+		// description separately; neither field alone contains the phrase
+		// "desert planet" → NO MATCH.
+		d := newTestDB(t)
+
+		desc := "life on another planet"
+		_, err := d.CreateBook(t.Context(), BookInput{Title: "Desert Chronicles", Description: &desc})
+		require.NoError(t, err, "CreateBook(Desert Chronicles)")
+
+		books, total, err := d.SearchBooks(t.Context(), "desert planet", 10, 0)
+		require.NoError(t, err, "SearchBooks('desert planet') error")
+		require.Equal(t, 1, total, "FTS5 token-AND should match words split across title and description")
+		require.Len(t, books, 1)
+		require.Equal(t, "Desert Chronicles", books[0].Title)
+	})
+}
+
 // ---- FTS trigger sync tests ----
 
 func TestSearchBooks_UpdateTitleSyncsIndex(t *testing.T) {
