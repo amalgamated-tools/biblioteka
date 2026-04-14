@@ -38,10 +38,9 @@
     }
   });
 
-  // The first $effect has reactive dependencies so its cleanup fired on every re-run —
-  // including when nameLoading flipped to false right after calling nameSuccessTimer.show().
-  // The second $effect accesses no reactive state, so Svelte only runs it once on mount and
-  // runs the cleanup once on destroy, which is the correct onDestroy equivalent.
+  // Keep timer cleanup in a separate $effect that reads no reactive state so it is registered
+  // once on mount and only runs on destroy. This avoids re-registering or cleaning up the
+  // timers when the displayName-sync $effect reruns.
   $effect(() => {
     return () => {
       successTimer.clear();
