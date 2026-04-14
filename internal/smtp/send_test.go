@@ -3,6 +3,7 @@ package smtp
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"strings"
@@ -18,17 +19,27 @@ type failDeadlineConn struct {
 }
 
 func (f *failDeadlineConn) SetDeadline(_ time.Time) error {
-	return fmt.Errorf("intentional SetDeadline failure")
+	return errors.New("intentional SetDeadline failure")
 }
 
-// serveOnePeer writes the SMTP 220 greeting on conn and then drains reads
-// until the connection is closed.
+// serveOnePeer writes the SMTP 220 greeting on conn, responds to EHLO/HELO,
+// and then drains reads until the connection is closed.
 func serveOnePeer(conn net.Conn) {
-	fmt.Fprintf(conn, "220 test.example.com ESMTP\r\n")
+	defer conn.Close()
+	if _, err := fmt.Fprintf(conn, "220 test.example.com ESMTP\r\n"); err != nil {
+		return
+	}
 	buf := make([]byte, 256)
 	for {
-		if _, err := conn.Read(buf); err != nil {
+		n, err := conn.Read(buf)
+		if err != nil {
 			return
+		}
+		line := strings.ToUpper(strings.TrimSpace(string(buf[:n])))
+		if strings.HasPrefix(line, "EHLO") || strings.HasPrefix(line, "HELO") {
+			if _, err := fmt.Fprintf(conn, "250 test.example.com\r\n"); err != nil {
+				return
+			}
 		}
 	}
 }
@@ -85,7 +96,7 @@ func runFakeSMTP(conn net.Conn, ch chan<- string) {
 					line = line[1:]
 				}
 				body.WriteString(line)
-				body.WriteString("\n")
+				body.WriteString("\r\n")
 			}
 			continue
 		}
@@ -114,9 +125,11 @@ func runFakeSMTP(conn net.Conn, ch chan<- string) {
 
 func TestNewClientWithContext_Success(t *testing.T) {
 	server, client := net.Pipe()
+	defer server.Close()
 	go serveOnePeer(server)
 
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
 	smtpClient, cleanup, err := newClientWithContext(ctx, client, "test.example.com")
 	require.NoError(t, err)
 	require.NotNil(t, smtpClient)
@@ -155,6 +168,7 @@ func TestNewClientWithContext_SetDeadlineFails(t *testing.T) {
 
 func TestNewClientWithContext_ContextDeadlineEarlierThanSession(t *testing.T) {
 	server, client := net.Pipe()
+	defer server.Close()
 	go serveOnePeer(server)
 
 	// Deadline of 10 s is shorter than SessionTimeout (30 s) but long enough
@@ -187,7 +201,9 @@ func TestSend_None_DeliverySuccess(t *testing.T) {
 	addr, delivered := newFakeSMTPServer(t)
 
 	msg := []byte("Subject: Unit test\r\n\r\nHello, world.")
-	err := Send(context.Background(), addr, nil, "from@example.com", "to@example.com", msg, "none")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	err := Send(ctx, addr, nil, "from@example.com", "to@example.com", msg, "none")
 	require.NoError(t, err)
 
 	select {
