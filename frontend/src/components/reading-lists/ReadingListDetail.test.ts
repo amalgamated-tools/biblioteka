@@ -1,22 +1,20 @@
-import { describe, expect, it, vi, afterEach } from "vitest";
+import { describe, expect, it, vi, afterEach, beforeEach } from "vitest";
 import { cleanup, render, screen, fireEvent } from "@testing-library/svelte";
 import { tick } from "svelte";
 
-const fakeList = {
-  id: "rl-1",
-  name: "Test List",
-  description: null,
-  book_count: 0,
-  created_at: "2026-01-01T00:00:00Z",
-  updated_at: "2026-01-01T00:00:00Z",
-};
-
 vi.mock("../../stores/reading-lists.svelte", () => ({
   readingListStore: {
-    loaded: true,
+    loaded: false,
     loading: false,
-    loadError: null,
-    lists: [fakeList],
+    loadError: null as string | null,
+    lists: [] as Array<{
+      id: string;
+      name: string;
+      description: string | null;
+      book_count: number;
+      created_at: string;
+      updated_at: string;
+    }>,
     load: vi.fn().mockResolvedValue(undefined),
     update: vi.fn(),
     remove: vi.fn().mockResolvedValue(undefined),
@@ -30,7 +28,12 @@ vi.mock("../../stores/router.svelte", () => ({
 }));
 
 vi.mock("../../lib/api", () => ({
-  listReadingListBooks: vi.fn(),
+  listReadingListBooks: vi.fn().mockResolvedValue({
+    books: [],
+    total: 0,
+    limit: 24,
+    offset: 0,
+  }),
 }));
 
 vi.mock("../ui/AlertBanner.svelte", () => ({
@@ -51,8 +54,25 @@ vi.mock("lucide-svelte", () => ({
 }));
 
 import ReadingListDetail from "./ReadingListDetail.svelte";
+import { readingListStore } from "../../stores/reading-lists.svelte";
 
 describe("ReadingListDetail accessibility", () => {
+  beforeEach(() => {
+    vi.mocked(readingListStore).loaded = true;
+    vi.mocked(readingListStore).loading = false;
+    vi.mocked(readingListStore).loadError = null;
+    vi.mocked(readingListStore).lists = [
+      {
+        id: "rl-1",
+        name: "Test List",
+        description: null,
+        book_count: 0,
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+      },
+    ];
+  });
+
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();
