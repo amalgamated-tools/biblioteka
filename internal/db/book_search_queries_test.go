@@ -222,7 +222,7 @@ func TestSearchBooks_EmptyAfterSanitize(t *testing.T) {
 }
 
 // TestSearchBooks_MultiWordSemanticDivergence explicitly documents the
-// behavioural gap between the two search backends:
+// behavioral gap between the two search backends:
 //
 //   - SQLite FTS5 (token-AND): each whitespace-separated word in the query
 //     becomes an independent FTS5 term; all terms must match somewhere in the
@@ -240,7 +240,7 @@ func TestSearchBooks_EmptyAfterSanitize(t *testing.T) {
 // self-documenting.
 func TestSearchBooks_MultiWordSemanticDivergence(t *testing.T) {
 	t.Run("reversed word order in same field", func(t *testing.T) {
-		// Title: "Planet of Deserts" – the words "desert" and "planet" both appear
+		// Description: "Planet of Deserts" – the words "desert" and "planet" both appear
 		// but in the opposite order to the query "desert planet".
 		//
 		// FTS5 (SQLite): "desert"* AND "planet"* → both tokens match the
