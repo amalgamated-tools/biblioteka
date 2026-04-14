@@ -38,6 +38,7 @@ vi.mock("../lib/api", () => ({
     longest_streak: 0,
     total_downloads: 0,
   }),
+  getRecommendations: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock("lucide-svelte", () => ({
@@ -50,6 +51,7 @@ vi.mock("lucide-svelte", () => ({
   CheckCheck: () => {},
   CalendarDays: () => {},
   Download: () => {},
+  Sparkles: () => {},
 }));
 
 import Dashboard from "./Dashboard.svelte";
@@ -60,6 +62,7 @@ import {
   getDownloadsPerMonth,
   getReadingProgressStats,
   getYearInBooks,
+  getRecommendations,
 } from "../lib/api";
 
 describe("Dashboard", () => {
@@ -81,6 +84,7 @@ describe("Dashboard", () => {
       longest_streak: 0,
       total_downloads: 0,
     });
+    vi.mocked(getRecommendations).mockResolvedValue([]);
   });
 
   afterEach(() => {
