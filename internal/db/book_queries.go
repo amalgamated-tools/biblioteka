@@ -163,20 +163,30 @@ func (d *DB) ListBooksBySeriesPaginated(ctx context.Context, seriesID string, li
 // Positional placeholders start at startIdx. Returns ("", nil) when query
 // contains no tokens.
 func buildILIKESearchWhere(query string, startIdx int) (string, []any) {
+	if startIdx < 1 {
+		startIdx = 1
+	}
 	tokens := strings.Fields(query)
 	if len(tokens) == 0 {
 		return "", nil
 	}
 	conditions := make([]string, 0, len(tokens))
 	args := make([]any, 0, len(tokens))
-	for i, token := range tokens {
+	idx := startIdx
+	for _, token := range tokens {
+		if !containsWordChar(token) {
+			continue
+		}
 		escaped := searchLikeReplacer.Replace(token)
-		n := startIdx + i
 		conditions = append(conditions, fmt.Sprintf(
 			`(title ILIKE $%d ESCAPE '\' OR description ILIKE $%d ESCAPE '\')`,
-			n, n,
+			idx, idx,
 		))
 		args = append(args, "%"+escaped+"%")
+		idx++
+	}
+	if len(conditions) == 0 {
+		return "", nil
 	}
 	return "WHERE " + strings.Join(conditions, " AND "), args
 }

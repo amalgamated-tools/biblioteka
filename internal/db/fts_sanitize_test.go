@@ -126,3 +126,29 @@ func TestBuildILIKESearchWhere_ExtraWhitespace(t *testing.T) {
 	require.Equal(t, where1, where2)
 	require.Equal(t, args1, args2)
 }
+
+func TestBuildILIKESearchWhere_SkipsNonWordTokens(t *testing.T) {
+	// Tokens without any letter or digit should be skipped, aligning with
+	// SQLite FTS5 which drops such tokens via containsWordChar.
+	where, args := buildILIKESearchWhere(`% --- hello`, 1)
+	require.Equal(t, `WHERE (title ILIKE $1 ESCAPE '\' OR description ILIKE $1 ESCAPE '\')`, where)
+	require.Equal(t, []any{"%hello%"}, args)
+}
+
+func TestBuildILIKESearchWhere_AllNonWordTokens(t *testing.T) {
+	// When every token lacks word characters, return empty like the FTS5 path.
+	where, args := buildILIKESearchWhere(`% \ ---`, 1)
+	require.Empty(t, where)
+	require.Nil(t, args)
+}
+
+func TestBuildILIKESearchWhere_StartIdxClamped(t *testing.T) {
+	// A startIdx < 1 should be clamped to 1.
+	where, args := buildILIKESearchWhere("hello", 0)
+	require.Equal(t, `WHERE (title ILIKE $1 ESCAPE '\' OR description ILIKE $1 ESCAPE '\')`, where)
+	require.Equal(t, []any{"%hello%"}, args)
+
+	where2, args2 := buildILIKESearchWhere("hello", -5)
+	require.Equal(t, where, where2)
+	require.Equal(t, args, args2)
+}
