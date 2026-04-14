@@ -24,6 +24,9 @@ safe-outputs:
     labels:
       - contribution-report
     close-older-issues: true
+    max: 1
+  noop:
+    report-as-issue: false
   add-labels:
     allowed: [spam, needs-work, outdated, lgtm]
     max: 4

@@ -25,10 +25,12 @@ network:
 safe-outputs:
   create-pull-request:
     expires: 1d
-    title-prefix: "[actions] "
+    title-prefix: "perf: "
     labels: [dependencies, automation]
     draft: false
     protected-files: allowed
+  noop:
+    report-as-issue: false    
 
 tools:
   github:

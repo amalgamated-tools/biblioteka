@@ -33,12 +33,14 @@ timeout-minutes: 30
 safe-outputs:
   create-pull-request:
     expires: 2d
-    title-prefix: "docs(daily):"
+    title-prefix: "docs(daily): "
     labels: [documentation, automation]
     reviewers: [copilot]
     draft: false
     auto-merge: true
     protected-files: fallback-to-issue
+  noop:
+    report-as-issue: false    
 
 source: githubnext/agentics/workflows/daily-doc-updater.md@97143ac59cb3a13ef2a77581f929f06719c7402a
 ---

@@ -37,13 +37,13 @@ safe-outputs:
     hide-older-comments: true
   create-pull-request:
     draft: true
-    title-prefix: "[Perf Improver] "
+    title-prefix: "perf: "
     labels: [automation, performance]
     max: 4
     protected-files: fallback-to-issue
   push-to-pull-request-branch:
     target: "*"
-    title-prefix: "[Perf Improver] "
+    title-prefix: "perf: "
     max: 4
   create-issue:
     title-prefix: "[Perf Improver] "
@@ -53,6 +53,8 @@ safe-outputs:
     target: "*"
     title-prefix: "[Perf Improver] "
     max: 1
+  noop:
+    report-as-issue: false    
 
 checkout:
   fetch: ["*"]
