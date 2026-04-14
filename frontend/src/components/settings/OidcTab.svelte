@@ -47,7 +47,9 @@
     return oidcConfigured ? "Update Configuration" : "Save Configuration";
   });
 
-  $effect(() => () => successTimer.clear());
+  $effect(() => {
+    return () => successTimer.clear();
+  });
 
   async function handleOidcSave(e: SubmitEvent) {
     e.preventDefault();
