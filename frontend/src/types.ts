@@ -386,4 +386,3 @@ export interface CurrentValues {
   google_books_id: string | null;
   cover_image_url: string | null;
 }
-
