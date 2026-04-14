@@ -186,3 +186,29 @@ func TestLocalStorage_List_Empty(t *testing.T) {
 	require.NoError(t, err)
 	require.Empty(t, entries)
 }
+
+func TestLocalStorage_CanceledContext(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "file.txt")
+	require.NoError(t, os.WriteFile(path, []byte("data"), 0o644))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // cancel immediately
+
+	ls := newLocalStorage()
+
+	_, err := ls.Open(ctx, path)
+	require.ErrorIs(t, err, context.Canceled)
+
+	_, err = ls.Stat(ctx, path)
+	require.ErrorIs(t, err, context.Canceled)
+
+	err = ls.Write(ctx, path, strings.NewReader("x"))
+	require.ErrorIs(t, err, context.Canceled)
+
+	err = ls.Delete(ctx, path)
+	require.ErrorIs(t, err, context.Canceled)
+
+	_, err = ls.List(ctx, dir)
+	require.ErrorIs(t, err, context.Canceled)
+}
