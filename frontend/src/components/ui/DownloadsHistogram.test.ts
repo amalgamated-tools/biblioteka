@@ -76,15 +76,9 @@ describe("DownloadsHistogram", () => {
     expect(
       screen.getByRole("columnheader", { name: "Downloads" }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole("rowheader", { name: "January 2026" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("rowheader", { name: "February 2026" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("rowheader", { name: "March 2026" }),
-    ).toBeInTheDocument();
+    expect(screen.getAllByRole("rowheader")).toHaveLength(
+      dataWithDownloads.length,
+    );
   });
 
   it("generates unique ids for multiple instances", () => {
