@@ -2576,7 +2576,7 @@ Accessibility regressions are locked in by dedicated test files. Keep all of the
 
 #### `Dashboard.test.ts`
 
-`frontend/src/components/Dashboard.test.ts` verifies the behavior and accessibility of the home screen, covering both the onboarding empty state and the stats grid. Thirteen tests in one `Dashboard` describe block:
+`frontend/src/components/Dashboard.test.ts` verifies the behavior and accessibility of the home screen, covering the onboarding empty state, the stats grid, and the Reading Activity section. Twenty tests in one `Dashboard` describe block:
 
 1. **`renders the Dashboard heading`** — asserts a `<h1>` heading with text `"Dashboard"` is present on mount.
 2. **`shows the onboarding card when libraries are loaded and empty`** — seeds `libraryStore.loaded = true` with no libraries; asserts the `"Get started with Biblioteka"` heading is rendered.
@@ -2592,7 +2592,17 @@ Accessibility regressions are locked in by dedicated test files. Keep all of the
 12. **`shows the downloads histogram when data is available`** — `getDownloadsPerMonth` resolves with two data points; asserts the `data-testid="downloads-histogram-card"` element appears in the DOM.
 13. **`shows a downloads error banner when the stats fetch fails`** — `getDownloadsPerMonth` rejects with `Error("network error")`; asserts the error message `"network error"` is rendered in an `AlertBanner`.
 
-> **Mocking note:** `libraryStore` (from `../stores/libraries.svelte`), `routerStore` (from `../stores/router.svelte`), `getTotalBooksCount`, and `getDownloadsPerMonth` (both from `../lib/api`) and all `lucide-svelte` icons are mocked. `beforeEach` resets `libraryStore.loaded` and `libraries`, and resets both `getTotalBooksCount` (to resolve `0`) and `getDownloadsPerMonth` (to resolve `[]`). `afterEach` calls `cleanup()` and `vi.clearAllMocks()` to prevent state leakage between tests.
+**Reading Activity section — seven tests:**
+
+14. **`shows Reading Activity heading when stats load`** — seeds one library; `getReadingProgressStats` resolves with a zeroed stats object; asserts the `"Reading Activity"` heading is present after stats load.
+15. **`shows KOSync nudge when total_tracked is 0`** — `getReadingProgressStats` resolves with `total_tracked: 0`; asserts the `"No reading activity recorded yet"` nudge text is rendered.
+16. **`shows streak badge when current_streak > 0`** — `getReadingProgressStats` resolves with `current_streak: 5`; asserts the `"5-day streak"` badge is visible.
+17. **`shows finished books badge when total_finished > 0`** — `getReadingProgressStats` resolves with `total_finished: 2`; asserts the `"2 books finished"` badge is visible.
+18. **`shows Currently Reading list with document names`** — `getReadingProgressStats` resolves with one in-progress item (`document: "my-great-book"`, `percentage: 0.42`, `device: "KOReader"`); asserts the document name, `"42%"`, and `"KOReader"` are all rendered.
+19. **`shows estimated time remaining when provided`** — `getReadingProgressStats` resolves with `estimated_minutes_remaining: 45`; asserts the `"~45m left"` label is rendered.
+20. **`does not show reading activity section while stats are still loading`** — `getReadingProgressStats` never resolves; asserts the `"Reading Activity"` heading is absent and the welcome fallback is shown instead.
+
+> **Mocking note:** `libraryStore` (from `../stores/libraries.svelte`), `routerStore` (from `../stores/router.svelte`), `getTotalBooksCount`, `getDownloadsPerMonth`, and `getReadingProgressStats` (all from `../lib/api`) and all `lucide-svelte` icons are mocked. `beforeEach` resets `libraryStore.loaded` and `libraries`, and resets `getTotalBooksCount` (to resolve `0`), `getDownloadsPerMonth` (to resolve `[]`), and `getReadingProgressStats` (to resolve a zero-activity stats object). `afterEach` calls `cleanup()` and `vi.clearAllMocks()` to prevent state leakage between tests.
 
 #### `LibraryForm.test.ts`
 
