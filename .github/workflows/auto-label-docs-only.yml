@@ -24,7 +24,7 @@ jobs:
           
           # Get list of changed files in this PR
           BASE_REF="origin/${{ github.event.pull_request.base.ref }}"
-          git fetch origin "${{ github.event.pull_request.base.ref }}" --depth=1
+          git fetch origin "${{ github.event.pull_request.base.ref }}"
           git diff --name-only "$BASE_REF"...HEAD > /tmp/changed_files.txt
           
           # Check if all changed files are documentation-related.

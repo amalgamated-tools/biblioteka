@@ -158,8 +158,9 @@ Entries are returned newest-first. `limit` defaults to `50` (maximum `200`); `of
 | `kosync_credential.updated` | `kosync_credential` | `username`                           | `PUT /api/kosync/credentials`           |
 | `kosync_credential.deleted` | `kosync_credential` | `username`                           | `DELETE /api/kosync/credentials`        |
 | `smtp.config_updated`  | `config`      | `host`, `from`                                   | `PUT /api/config/smtp`                  |
+| `watch_folder.config_updated` | `config` | `path`, `library_id`                             | `PUT /api/config/watch-folder`          |
 
-**Notes:** `user_id` is the actor who performed the action (`null` for system/background actions). Entries are append-only and never modified. Book files created by the background scanner do **not** currently produce an audit entry — only files created via the API are audited.
+**Notes:** `user_id` is the actor who performed the action (`null` for system/background actions). Entries are append-only and never modified. Book files created by the background scanner do **not** currently produce an audit entry — only files created via the API are audited. Background imports run without an authenticated user context (there is no actor to attribute the action to), so they cannot be represented in the same audit model as user-initiated writes.
 
 ---
 
@@ -187,6 +188,21 @@ curl http://localhost:8080/asynqmon/ \
 | **Completed** | Successfully finished jobs (retained briefly for inspection) |
 | **Failed** | Jobs that exhausted all retries (default: 5 attempts) |
 | **Scheduled** | Jobs queued to run at a future time |
+
+### Common failure causes
+
+Before retrying a failed job, check the application logs to understand the root cause. The most common reasons a `process:file` job fails are:
+
+- **ExifTool not on `PATH`** — metadata extraction requires ExifTool to be installed and accessible. Without ExifTool, the `process:file` job still succeeds but falls back to filename-derived metadata only (no title, author, or ISBN from file contents). A `DEBUG`-level log line mentioning `exiftool is not available on this system` confirms this. Install ExifTool and restart the server to enable full extraction. See [Metadata — Installing ExifTool](metadata.md#installing-exiftool) for platform-specific instructions. The Dockerfiles in this repository include ExifTool by default.
+- **Filesystem permission errors** — the server process must be able to read every file it scans and write to library directories when file organization is enabled. A `permission denied` error in the logs indicates the process user lacks the required access. Check directory ownership and permission bits, and ensure the user running Biblioteka can read (and, if organizing files, write) the library paths.
+- **Cross-filesystem move failures** — when file organization is enabled and the source and destination are on different filesystems, Biblioteka falls back to a copy-then-delete. If the destination filesystem is full or read-only the job will fail. See [File Organization](#file-organization) for details on how reorganization failures are handled.
+- **Corrupt or unreadable files** — a file that ExifTool cannot parse (e.g. a truncated EPUB) logs a `WARN`-level `metadata extraction failed` entry and continues with filename-derived metadata. The `process:file` job does not fail; the file is still imported with a minimal record. Inspect `WARN`-level log entries to identify which files produced degraded metadata.
+
+To find the error for a specific failed job, look up the job's `task_id` in the Asynqmon UI and then search the logs:
+
+```bash
+docker compose logs biblioteka | jq 'select(.task_id == "<task-id>")'
+```
 
 ### Retrying failed jobs
 
@@ -274,6 +290,51 @@ file path is outside allowed library directories
 ```
 
 This validation also applies at download time: if a previously registered file's stored path no longer falls within any library root (for example, after a library is removed), the download endpoints (`GET /download/{bookID}/{format}` and the OPDS download endpoint) return `403 Forbidden` instead of serving the file.
+
+---
+
+## Watch Folder
+
+The watch folder lets Biblioteka automatically import any book file dropped into a designated directory. When enabled, the server runs a background scan every minute and enqueues a `process:file` job for each new file it finds.
+
+> **Requires Redis and an active worker.** Watch folder scanning runs as a background job. The feature is only active when the background worker is running (server mode `all` or `worker`). Redis must be reachable; the server defaults `REDIS_URL` to `redis://localhost:6379` if not explicitly set.
+
+### Configure the watch folder
+
+Set the watch folder path and target library from **Settings → Watch Folder** in the web UI, or via the API:
+
+```bash
+# Set a watch folder
+curl -X PUT http://localhost:8080/api/config/watch-folder \
+  -H "Authorization: Bearer <admin-jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "path": "/mnt/incoming",
+    "library_id": "<library-uuid>"
+  }'
+
+# Clear the watch folder (disables scanning)
+curl -X PUT http://localhost:8080/api/config/watch-folder \
+  -H "Authorization: Bearer <admin-jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{"path": ""}'
+```
+
+**Requirements:**
+
+- `path` must be an absolute path to an existing directory on the server's filesystem.
+- `library_id` must be the ID of an existing library. Every imported file is associated with this library.
+- Sending an empty `path` clears both `path` and `library_id`, disabling the watch folder.
+
+### How it works
+
+Every minute, the `scan:watch-folder` background job reads the configured path and library ID, then runs the same `ScanDirectory` pipeline used by the regular library scanner. Each supported file (`.epub`, `.mobi`, `.azw3`, `.pdf`) is enqueued as a `process:file` job. Already-indexed file paths are skipped — the scan is safe to run repeatedly.
+
+If the library has a `book_per_folder` or `book_per_file` organization type, newly imported files are moved into the library's canonical directory structure. Otherwise they remain in the watch folder path.
+
+> **Audit trail:** Changes to the watch folder configuration are recorded in the audit log as `watch_folder.config_updated`.
+
+See [API Reference — Watch folder endpoints](api-reference.md#get-apiconfigwatch-folder-admin-jwt-only) for the full endpoint shape and error codes.
 
 ---
 
