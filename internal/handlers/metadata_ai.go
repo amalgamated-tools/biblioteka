@@ -127,6 +127,7 @@ func (h *MetadataHandler) getPendingAIEnrichment(w http.ResponseWriter, r *http.
 
 // applyAIEnrichment applies a pending AI enrichment to the book.
 // It union-merges suggested tags and sets the description if the book has none.
+// All mutations (tags, description, status) are applied atomically.
 func (h *MetadataHandler) applyAIEnrichment(w http.ResponseWriter, r *http.Request, bookID string) {
 	userID := auth.UserIDFromContext(r.Context())
 
@@ -182,23 +183,21 @@ func (h *MetadataHandler) applyAIEnrichment(w http.ResponseWriter, r *http.Reque
 		unionIDs = append(unionIDs, id)
 	}
 
-	if err := h.DB.SetBookTags(r.Context(), bookID, unionIDs); err != nil {
-		slog.ErrorContext(r.Context(), "failed to set book tags",
-			slog.String(otelkeys.BookID, bookID),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to set book tags")
-		return
-	}
-
 	// Set description if book has none and enrichment has one.
 	book, err := h.DB.GetBook(r.Context(), bookID)
 	if handleDBErr(r.Context(), w, err, "book") {
 		return
 	}
 
+	applyInput := db.ApplyAIEnrichmentInput{
+		BookID:       bookID,
+		UserID:       userID,
+		EnrichmentID: enrichment.ID,
+		TagIDs:       unionIDs,
+	}
+
 	if (book.Description == nil || *book.Description == "") && enrichment.GeneratedDescription != nil && *enrichment.GeneratedDescription != "" {
-		input := db.BookInput{
+		applyInput.BookUpdate = &db.BookInput{
 			Title:           book.Title,
 			Description:     enrichment.GeneratedDescription,
 			ASIN:            book.ASIN,
@@ -212,24 +211,16 @@ func (h *MetadataHandler) applyAIEnrichment(w http.ResponseWriter, r *http.Reque
 			Language:        book.Language,
 			CoverImageURL:   book.CoverImageURL,
 		}
-		if _, err := h.DB.UpdateBook(r.Context(), bookID, input); err != nil {
-			slog.ErrorContext(r.Context(), "failed to update book description from AI enrichment",
-				slog.String(otelkeys.BookID, bookID),
-				slog.Any(otelkeys.Error, err),
-			)
-			writeError(r.Context(), w, http.StatusInternalServerError, "failed to update book description")
-			return
-		}
 	}
 
-	// Mark enrichment as applied.
-	updated, err := h.DB.UpdateAIEnrichmentStatus(r.Context(), userID, enrichment.ID, db.AIEnrichmentStatusApplied)
+	updated, err := h.DB.ApplyAIEnrichment(r.Context(), applyInput)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to mark AI enrichment as applied",
+		slog.ErrorContext(r.Context(), "failed to apply AI enrichment",
 			slog.String(otelkeys.AIEnrichmentID, enrichment.ID),
+			slog.String(otelkeys.BookID, bookID),
 			slog.Any(otelkeys.Error, err),
 		)
-		writeError(r.Context(), w, http.StatusInternalServerError, "tags updated but failed to mark enrichment as applied")
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to apply AI enrichment")
 		return
 	}
 

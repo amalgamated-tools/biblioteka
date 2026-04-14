@@ -129,14 +129,15 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 		// the job handler handles that gracefully.
 		var llmProvider llm.Provider
 		var llmProviderName string
+		var llmModelName string
 		if llmEnabledStr, err := database.GetSetting(cancelCtx, db.SettingLLMEnabled); err == nil && llmEnabledStr == "true" {
 			llmEndpoint, _ := database.GetSetting(cancelCtx, db.SettingLLMEndpoint)
-			llmModel, _ := database.GetSetting(cancelCtx, db.SettingLLMModel)
+			llmModelName, _ = database.GetSetting(cancelCtx, db.SettingLLMModel)
 			llmProviderName, _ = database.GetSetting(cancelCtx, db.SettingLLMProvider)
 			if llmEndpoint != "" {
 				switch llmProviderName {
 				case llm.ProviderOllama, "":
-					llmProvider = ollama.New(llmEndpoint, llmModel)
+					llmProvider = ollama.New(llmEndpoint, llmModelName)
 					if llmProviderName == "" {
 						llmProviderName = llm.ProviderOllama
 					}
@@ -147,7 +148,7 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 				}
 			}
 		}
-		w.Register(cancelCtx, jobs.JobEnrichAI, jobs.NewEnrichAIHandler(database, llmProvider, llmProviderName, publisher))
+		w.Register(cancelCtx, jobs.JobEnrichAI, jobs.NewEnrichAIHandler(database, llmProvider, llmProviderName, llmModelName, publisher))
 
 		if _, err := w.RegisterSchedule("@every 24h", jobs.JobScanLibraries, struct{}{}); err != nil {
 			slog.ErrorContext(cancelCtx, "failed to schedule scan:libraries job", slog.Any(otelkeys.Error, err))
