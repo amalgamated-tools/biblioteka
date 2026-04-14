@@ -11,11 +11,13 @@ import (
 
 // Sentinel errors for reading group operations.
 var (
-	ErrInvalidGroupName   = errors.New("invalid group name")
-	ErrGroupNameExists    = errors.New("group name already exists")
-	ErrGroupNotFound      = errors.New("group not found")
-	ErrNotGroupMember     = errors.New("not a group member")
-	ErrAlreadyGroupMember = errors.New("already a group member")
+	ErrInvalidGroupName      = errors.New("invalid group name")
+	ErrGroupNameExists       = errors.New("group name already exists")
+	ErrGroupNotFound         = errors.New("group not found")
+	ErrMemberUserNotFound    = errors.New("member user not found")
+	ErrNotGroupMember        = errors.New("not a group member")
+	ErrAlreadyGroupMember    = errors.New("already a group member")
+	ErrOwnerCannotLeaveGroup = errors.New("owner cannot leave their own group")
 )
 
 // NormalizeGroupName normalizes a group name.
@@ -227,7 +229,7 @@ func (d *DB) AddGroupMember(ctx context.Context, groupID, ownerID, memberUserID 
 	)
 	if err != nil {
 		if isForeignKeyViolation(err) {
-			return ErrGroupNotFound
+			return ErrMemberUserNotFound
 		}
 		return err
 	}
@@ -249,6 +251,15 @@ func (d *DB) RemoveGroupMember(ctx context.Context, groupID, requesterID, target
 		if ownerID != requesterID {
 			return sql.ErrNoRows
 		}
+	} else {
+		// Prevent the owner from abandoning their own group.
+		var ownerID string
+		if err := d.QueryRowContext(ctx, `SELECT owner_id FROM reading_groups WHERE id = $1`, groupID).Scan(&ownerID); err != nil {
+			return err
+		}
+		if ownerID == targetUserID {
+			return ErrOwnerCannotLeaveGroup
+		}
 	}
 	return d.execAffected(ctx,
 		`DELETE FROM reading_group_members WHERE group_id = $1 AND user_id = $2`,
@@ -268,10 +279,10 @@ func (d *DB) IsMember(ctx context.Context, groupID, userID string) (bool, error)
 
 // GroupMemberProgress holds reading progress info for a group member on a specific book.
 type GroupMemberProgress struct {
-	UserID     string    `json:"user_id"`
-	UserName   string    `json:"user_name"`
-	Percentage float64   `json:"percentage"`
-	UpdatedAt  Timestamp `json:"updated_at"`
+	UserID     string     `json:"user_id"`
+	UserName   string     `json:"user_name"`
+	Percentage float64    `json:"percentage"`
+	UpdatedAt  *Timestamp `json:"updated_at"`
 }
 
 // ListGroupMemberProgress returns reading progress for all group members on a specific book.
@@ -292,9 +303,9 @@ func (d *DB) ListGroupMemberProgress(ctx context.Context, groupID, bookID, reque
 		`SELECT m.user_id, u.name, COALESCE(k.percent_read, 0), k.updated_at
 		 FROM reading_group_members m
 		 JOIN users u ON u.id = m.user_id
-		 JOIN kobo_reading_states k ON k.user_id = m.user_id AND k.book_id = $2
+		 LEFT JOIN kobo_reading_states k ON k.user_id = m.user_id AND k.book_id = $2
 		 WHERE m.group_id = $1
-		 ORDER BY k.updated_at DESC`,
+		 ORDER BY (k.updated_at IS NULL), k.updated_at DESC`,
 		groupID, bookID,
 	)
 	if err != nil {
