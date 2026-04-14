@@ -153,7 +153,7 @@ Before going live, verify each item:
 - [ ] **`SECURE_COOKIES=true`** — ensures session cookies are only sent over HTTPS. Only set this to `false` for local HTTP development.
 - [ ] **TLS** — terminate TLS at a reverse proxy (nginx, Caddy, Traefik). Do not expose port 8080 directly to the internet.
 - [ ] **Redis persistence** — configure Redis with at least `appendonly yes` if background job durability matters to you.
-- [ ] **Redis eviction policy** — set `maxmemory-policy noeviction` in your Redis configuration. asynq stores queued and scheduled job records directly in Redis; any eviction policy that silently removes keys under memory pressure (e.g. `allkeys-lru`, `volatile-lru`, `allkeys-random`) will cause background jobs to be dropped without error. `noeviction` makes Redis return an error when it is full instead of silently discarding data, so the problem surfaces immediately rather than silently losing work.
+- [ ] **Redis eviction policy** — set `maxmemory-policy noeviction`. Other policies may silently evict queued jobs under memory pressure; `noeviction` surfaces the problem as an error instead.
 - [ ] **PostgreSQL backups** — if using PostgreSQL, schedule regular `pg_dump` backups of the `biblioteka` database.
 - [ ] **SQLite backups** — if using SQLite, back up the Docker volume (`biblioteka-data`) or the `*.db` file.
 - [ ] **`TELEMETRY_ENABLED`** — leave unset (or set to `false`) to keep anonymous telemetry disabled (default). Set to `true` to enable it.
@@ -177,7 +177,7 @@ See the [Configuration](../README.md#configuration) table in the README for the 
 
 | Variable | Required | Notes |
 |----------|----------|-------|
-| `JWT_SECRET` | **Yes** | Random secret used for two purposes: (1) signing JWTs (tokens are valid for **24 hours**; a shorter value than 32 characters logs a startup warning), and (2) deriving the AES-256-GCM key that encrypts sensitive settings stored in the database (SMTP password, OIDC client secret). **Changing this value invalidates all active sessions AND makes previously-encrypted settings unreadable** — operators must re-enter the SMTP password and OIDC client secret through the UI after a key rotation. See [JWT Secret Rotation](#jwt-secret-rotation) |
+| `JWT_SECRET` | **Yes** | Signs JWTs (24 h validity) and derives the AES-256-GCM key for sensitive DB-stored settings (SMTP password, OIDC client secret). Minimum 32 characters recommended. **Rotating invalidates all active sessions and makes previously-encrypted DB settings unreadable.** See [JWT Secret Rotation](#jwt-secret-rotation) |
 | `SECURE_COOKIES` | **Yes** (set to `true`) | Prevents cookies being sent over HTTP |
 | `DATABASE_URL` | No | Omit for SQLite; set to a PostgreSQL DSN for Postgres |
 | `REDIS_URL` | No | Defaults to `redis://localhost:6379` |
@@ -187,10 +187,7 @@ See the [Configuration](../README.md#configuration) table in the README for the 
 
 JWT tokens are **stateless** — the server does not maintain a token revocation list. Rotating `JWT_SECRET` and redeploying is the only way to invalidate all active sessions. In deployments with multiple replicas or rolling updates, sessions are not fully invalidated until all running instances have been restarted with the new secret.
 
-**When to rotate:**
-- A `JWT_SECRET` value is accidentally exposed (committed to version control, leaked in logs, etc.).
-- A server is decommissioned and its environment variables may have been observed by others.
-- As a precautionary measure on a regular security schedule.
+**When to rotate:** when the secret is accidentally exposed (version control, logs), when a server is decommissioned, or on a regular security schedule.
 
 **How to rotate:**
 
@@ -211,11 +208,10 @@ docker compose up -d --force-recreate biblioteka-worker
 **Consequences of rotation:**
 - All active browser sessions are immediately invalidated — every logged-in user will appear logged out and be shown the login screen on their next request.
 - All API clients using JWT Bearer tokens must re-authenticate to obtain a new token.
-- [API keys](../README.md#api-keys) (`bib_…`) are **not** affected — they authenticate via a separate mechanism and remain valid after a JWT secret rotation.
-- Kobo sync tokens are **not** affected — they authenticate via a separate mechanism.
-- **Encrypted settings become unreadable.** `JWT_SECRET` is used to derive the encryption key for sensitive settings stored in the database (SMTP password, OIDC client secret). After rotation, these stored secrets cannot be decrypted and must be re-entered through the admin UI under *Settings → Email / SMTP* and *Settings → OIDC / SSO*.
+- [API keys](../README.md#api-keys) (`bib_…`) and **Kobo sync tokens** are **not** affected — they authenticate via independent mechanisms and remain valid after rotation.
+- **Encrypted settings become unreadable.** Re-enter the SMTP password and OIDC client secret in the admin UI (*Settings → Email / SMTP* and *Settings → OIDC / SSO*) after rotation.
 
-> **OIDC sessions:** If OIDC is enabled, rotating `JWT_SECRET` invalidates the Biblioteka-issued JWT but does **not** invalidate the user's session with their identity provider. Users will be sent back through the OIDC login flow, but many providers will silently reuse an existing IdP session and may not prompt for credentials again. If rotation happens while an OIDC login or account-link flow is already in progress, that flow may fail and need to be restarted because OIDC `state` validation is derived from `JWT_SECRET`.
+> **OIDC sessions:** Rotating `JWT_SECRET` does not invalidate users' sessions with their identity provider. Users are redirected through the OIDC login flow, but most providers will silently reuse an existing IdP session without prompting for credentials again.
 
 ## Reverse Proxy Setup
 
@@ -315,19 +311,11 @@ Biblioteka sets the following HTTP security headers on every response via the `N
 | `Permissions-Policy` | `camera=(), microphone=(), geolocation=()` | Disables browser feature access not needed by the application |
 | `Strict-Transport-Security` | `max-age=63072000; includeSubDomains` | Enforces HTTPS for two years; set only when `SECURE_COOKIES=true` (HTTPS deployments) |
 
-The CSP permits the embedded frontend's inline theme bootstrap script (via its SHA-256 hash) and Google Fonts resources required by the SPA. Individual route handlers (such as the Swagger UI) may override the CSP with a more permissive or restrictive value for their specific use case; all other security headers remain in effect.
+The CSP permits the frontend's inline theme bootstrap script (via SHA-256 hash) and Google Fonts. Individual route handlers may override the CSP for their specific use case.
 
 > **Note:** If the inline `<script>` block in `frontend/index.html` is ever modified (even whitespace), the SHA-256 hash in `internal/handlers/middleware/security_headers.go` must be recomputed. See the comment in that file for the one-line regeneration command.
 
-The `Strict-Transport-Security` header is only emitted when `SECURE_COOKIES=true` (the default). It is suppressed for local development (`SECURE_COOKIES=false`) where TLS is not in use.
-
-> **Upgrade note (JWT `iss`/`aud` claims):** Starting with this release, all JWT
-> tokens include `iss` and `aud` claims set to `"biblioteka"`, and validation
-> requires them. Tokens issued by earlier versions (which lack these claims) will
-> be rejected, effectively logging out existing sessions on deploy. No data is
-> lost — users simply need to log in again.
-
-No additional reverse proxy configuration is required to enable these headers — the application server sets them directly.
+No additional reverse proxy configuration is required — the application server sets these headers directly.
 
 ---
 
