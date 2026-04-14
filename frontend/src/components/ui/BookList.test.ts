@@ -58,13 +58,13 @@ describe("BookList loading state", () => {
   });
 });
 
-describe("BookList table view keyboard accessibility (WCAG 2.1.1)", () => {
+describe("BookList table view link accessibility (WCAG 2.1.1)", () => {
   afterEach(() => cleanup());
   beforeEach(() => {
     window.location.hash = "";
   });
 
-  it("table rows have tabindex=0 and aria-label", async () => {
+  it("table rows are not interactive", async () => {
     const fetchBooks = vi.fn().mockResolvedValue(fakeBooks);
     render(BookList, { props: { fetchBooks } });
     await tick();
@@ -74,68 +74,13 @@ describe("BookList table view keyboard accessibility (WCAG 2.1.1)", () => {
     await fireEvent.click(tableViewButton);
     await tick();
 
-    const row = screen.getByRole("row", { name: "View Test Book" });
+    const row = screen.getByRole("row", { name: /Test Book/i });
     expect(row.tagName).toBe("TR");
-    expect(row).toHaveAttribute("tabindex", "0");
-    expect(row).toHaveAttribute("aria-label", "View Test Book");
+    expect(row).not.toHaveAttribute("tabindex");
+    expect(row).not.toHaveAttribute("aria-label");
   });
 
-  it("table rows navigate on Enter key", async () => {
-    const fetchBooks = vi.fn().mockResolvedValue(fakeBooks);
-    render(BookList, { props: { fetchBooks } });
-    await tick();
-    await tick();
-
-    const tableViewButton = screen.getByRole("button", { name: "Table view" });
-    await fireEvent.click(tableViewButton);
-    await tick();
-
-    const row = screen.getByRole("row", { name: "View Test Book" });
-    await fireEvent.keyDown(row, { key: "Enter" });
-
-    expect(window.location.hash).toBe("#books/b1");
-  });
-
-  it("does not navigate on Space key", async () => {
-    const fetchBooks = vi.fn().mockResolvedValue(fakeBooks);
-    render(BookList, { props: { fetchBooks } });
-    await tick();
-    await tick();
-
-    const tableViewButton = screen.getByRole("button", { name: "Table view" });
-    await fireEvent.click(tableViewButton);
-    await tick();
-
-    const row = screen.getByRole("row", { name: "View Test Book" });
-    await fireEvent.keyDown(row, { key: " " });
-
-    expect(window.location.hash).toBe("");
-  });
-
-  it.each([
-    { modifier: "ctrlKey" },
-    { modifier: "metaKey" },
-    { modifier: "shiftKey" },
-    { modifier: "altKey" },
-  ])("does not navigate when $modifier is pressed", async ({ modifier }) => {
-    const fetchBooks = vi.fn().mockResolvedValue(fakeBooks);
-    render(BookList, { props: { fetchBooks } });
-    await tick();
-    await tick();
-
-    const tableViewButton = screen.getByRole("button", {
-      name: "Table view",
-    });
-    await fireEvent.click(tableViewButton);
-    await tick();
-
-    const row = screen.getByRole("row", { name: "View Test Book" });
-    await fireEvent.keyDown(row, { key: "Enter", [modifier]: true });
-
-    expect(window.location.hash).toBe("");
-  });
-
-  it("title anchor has tabindex=-1 to avoid double-tabbing", async () => {
+  it("title link remains in the natural tab order", async () => {
     const fetchBooks = vi.fn().mockResolvedValue(fakeBooks);
     const { container } = render(BookList, { props: { fetchBooks } });
     await tick();
@@ -146,7 +91,21 @@ describe("BookList table view keyboard accessibility (WCAG 2.1.1)", () => {
     await tick();
 
     const titleLink = container.querySelector(`a[href="#books/b1"]`);
-    expect(titleLink).toHaveAttribute("tabindex", "-1");
+    expect(titleLink).not.toHaveAttribute("tabindex");
+  });
+
+  it("title link points to the book route", async () => {
+    const fetchBooks = vi.fn().mockResolvedValue(fakeBooks);
+    render(BookList, { props: { fetchBooks } });
+    await tick();
+    await tick();
+
+    const tableViewButton = screen.getByRole("button", { name: "Table view" });
+    await fireEvent.click(tableViewButton);
+    await tick();
+
+    const titleLink = screen.getByRole("link", { name: "Test Book" });
+    expect(titleLink).toHaveAttribute("href", "#books/b1");
   });
 });
 
