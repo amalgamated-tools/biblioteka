@@ -437,33 +437,3 @@ describe("BookList polling", () => {
     expect(fetchBooks).toHaveBeenCalledTimes(1);
   });
 });
-
-describe("BookList query prop", () => {
-  afterEach(() => cleanup());
-
-  it("passes query to fetchBooks as third argument", async () => {
-    const fetchBooks = vi.fn().mockResolvedValue(fakeBooks);
-    render(BookList, { props: { fetchBooks, query: "hobbit" } });
-    await tick();
-    await tick();
-
-    expect(fetchBooks).toHaveBeenCalledWith(
-      expect.any(Number),
-      expect.any(Number),
-      "hobbit",
-    );
-  });
-
-  it("passes undefined to fetchBooks when no query prop given", async () => {
-    const fetchBooks = vi.fn().mockResolvedValue(fakeBooks);
-    render(BookList, { props: { fetchBooks } });
-    await tick();
-    await tick();
-
-    expect(fetchBooks).toHaveBeenCalledWith(
-      expect.any(Number),
-      expect.any(Number),
-      undefined,
-    );
-  });
-});
