@@ -2,7 +2,6 @@
   import { setOidcConfig } from "../../lib/api";
   import { required, validate } from "../../lib/validation";
   import { AutoDismissTimer } from "../../lib/autoDismissTimer.svelte";
-  import { onDestroy } from "svelte";
   import { Shield } from "lucide-svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
   import Button from "../ui/Button.svelte";
@@ -48,7 +47,9 @@
     return oidcConfigured ? "Update Configuration" : "Save Configuration";
   });
 
-  onDestroy(() => successTimer.clear());
+  $effect(() => {
+    return () => successTimer.clear();
+  });
 
   async function handleOidcSave(e: SubmitEvent) {
     e.preventDefault();
