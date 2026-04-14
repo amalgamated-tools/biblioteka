@@ -454,7 +454,7 @@ describe("BookList query prop", () => {
     );
   });
 
-  it("passes empty string to fetchBooks when no query prop given", async () => {
+  it("passes undefined to fetchBooks when no query prop given", async () => {
     const fetchBooks = vi.fn().mockResolvedValue(fakeBooks);
     render(BookList, { props: { fetchBooks } });
     await tick();
@@ -463,7 +463,7 @@ describe("BookList query prop", () => {
     expect(fetchBooks).toHaveBeenCalledWith(
       expect.any(Number),
       expect.any(Number),
-      "",
+      undefined,
     );
   });
 });
