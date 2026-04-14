@@ -66,7 +66,7 @@ func (c *Client) SearchByISBN(ctx context.Context, isbn string) ([]BookResult, e
 
 	searchURL := fmt.Sprintf("https://goodreads.com/book/auto_complete?format=json&q=%s", url.QueryEscape(isbnValue))
 
-	req, err := http.NewRequestWithContext(ctx, "GET", searchURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, searchURL, nil)
 	if err != nil {
 		slog.ErrorContext(
 			ctx,

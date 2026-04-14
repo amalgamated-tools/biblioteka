@@ -1509,7 +1509,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Search query (title/description substring match)",
+                        "description": "Search query (SQLite: FTS5 full-text match across title and description; PostgreSQL: title/description substring match)",
                         "name": "query",
                         "in": "query"
                     },
