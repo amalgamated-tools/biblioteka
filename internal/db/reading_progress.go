@@ -124,3 +124,147 @@ func ComputeReadingStreak(timestamps []time.Time) int {
 	}
 	return streak
 }
+
+// ComputeLongestStreak returns the length of the longest consecutive run of
+// calendar days (UTC) in the given slice of timestamps. The timestamps need
+// not be sorted or unique. Returns 0 for an empty slice.
+func ComputeLongestStreak(timestamps []time.Time) int {
+	if len(timestamps) == 0 {
+		return 0
+	}
+
+	// Collect distinct calendar dates (UTC).
+	seen := map[string]struct{}{}
+	var dates []time.Time
+	for _, ts := range timestamps {
+		dayKey := ts.UTC().Format("2006-01-02")
+		if _, ok := seen[dayKey]; !ok {
+			seen[dayKey] = struct{}{}
+			dates = append(dates, ts.UTC().Truncate(24*time.Hour))
+		}
+	}
+
+	// Sort ascending (oldest first) to walk forward through consecutive days.
+	slices.SortFunc(dates, func(a, b time.Time) int {
+		return a.Compare(b)
+	})
+
+	longest := 1
+	current := 1
+	for i := 1; i < len(dates); i++ {
+		if dates[i].Equal(dates[i-1].Add(24 * time.Hour)) {
+			current++
+			if current > longest {
+				longest = current
+			}
+		} else {
+			current = 1
+		}
+	}
+	return longest
+}
+
+// YearInBooks holds aggregate reading and download statistics for a calendar year.
+type YearInBooks struct {
+	Year           int `json:"year"`
+	BooksFinished  int `json:"books_finished"`
+	ActiveDays     int `json:"active_days"`
+	LongestStreak  int `json:"longest_streak"`
+	TotalDownloads int `json:"total_downloads"`
+}
+
+// GetYearInBooks returns aggregate reading and download statistics for the given
+// calendar year and user. BooksFinished counts documents whose percentage
+// reached >= 0.99 and were last updated during the requested year.
+// ActiveDays is the number of distinct calendar days (UTC) with reading
+// activity in that year. LongestStreak is the longest consecutive-day reading
+// run within the year. TotalDownloads counts book file downloads in that year.
+func (d *DB) GetYearInBooks(ctx context.Context, userID string, year int) (YearInBooks, error) {
+	slog.DebugContext(ctx, "db: fetching year-in-books stats",
+		slog.String(otelkeys.UserID, userID),
+		slog.Int(otelkeys.Year, year),
+	)
+
+	result := YearInBooks{Year: year}
+
+	var finishedQuery, activeDaysQuery, downloadsQuery string
+	if d.Dialect == DialectPostgres {
+		finishedQuery = `
+			SELECT COUNT(*) FROM reading_progress
+			WHERE user_id = $1
+			  AND percentage >= 0.99
+			  AND EXTRACT(YEAR FROM updated_at AT TIME ZONE 'UTC') = $2`
+		activeDaysQuery = `
+			SELECT COUNT(DISTINCT DATE_TRUNC('day', updated_at AT TIME ZONE 'UTC'))
+			FROM reading_progress
+			WHERE user_id = $1
+			  AND EXTRACT(YEAR FROM updated_at AT TIME ZONE 'UTC') = $2`
+		downloadsQuery = `
+			SELECT COUNT(*) FROM book_downloads
+			WHERE user_id = $1
+			  AND EXTRACT(YEAR FROM downloaded_at AT TIME ZONE 'UTC') = $2`
+	} else {
+		finishedQuery = `
+			SELECT COUNT(*) FROM reading_progress
+			WHERE user_id = $1
+			  AND percentage >= 0.99
+			  AND strftime('%Y', updated_at) = $2`
+		activeDaysQuery = `
+			SELECT COUNT(DISTINCT strftime('%Y-%m-%d', updated_at))
+			FROM reading_progress
+			WHERE user_id = $1
+			  AND strftime('%Y', updated_at) = $2`
+		downloadsQuery = `
+			SELECT COUNT(*) FROM book_downloads
+			WHERE user_id = $1
+			  AND strftime('%Y', downloaded_at) = $2`
+	}
+
+	yearStr := fmt.Sprintf("%04d", year)
+
+	if err := d.QueryRowContext(ctx, finishedQuery, userID, yearStr).Scan(&result.BooksFinished); err != nil {
+		return YearInBooks{}, fmt.Errorf("query books finished: %w", err)
+	}
+	if err := d.QueryRowContext(ctx, activeDaysQuery, userID, yearStr).Scan(&result.ActiveDays); err != nil {
+		return YearInBooks{}, fmt.Errorf("query active days: %w", err)
+	}
+	if err := d.QueryRowContext(ctx, downloadsQuery, userID, yearStr).Scan(&result.TotalDownloads); err != nil {
+		return YearInBooks{}, fmt.Errorf("query total downloads: %w", err)
+	}
+
+	// Compute longest streak from reading progress timestamps within the year.
+	var tsQuery string
+	if d.Dialect == DialectPostgres {
+		tsQuery = `
+			SELECT updated_at FROM reading_progress
+			WHERE user_id = $1
+			  AND EXTRACT(YEAR FROM updated_at AT TIME ZONE 'UTC') = $2`
+	} else {
+		tsQuery = `
+			SELECT updated_at FROM reading_progress
+			WHERE user_id = $1
+			  AND strftime('%Y', updated_at) = $2`
+	}
+	rows, err := d.QueryContext(ctx, tsQuery, userID, yearStr)
+	if err != nil {
+		return YearInBooks{}, fmt.Errorf("query timestamps for streak: %w", err)
+	}
+	var timestamps []time.Time
+	for rows.Next() {
+		var ts Timestamp
+		if err := rows.Scan(&ts); err != nil {
+			_ = rows.Close()
+			return YearInBooks{}, fmt.Errorf("scan timestamp: %w", err)
+		}
+		timestamps = append(timestamps, ts.Time)
+	}
+	if err := rows.Close(); err != nil {
+		return YearInBooks{}, fmt.Errorf("close rows: %w", err)
+	}
+	if err := rows.Err(); err != nil {
+		return YearInBooks{}, fmt.Errorf("rows error: %w", err)
+	}
+
+	result.LongestStreak = ComputeLongestStreak(timestamps)
+	return result, nil
+}

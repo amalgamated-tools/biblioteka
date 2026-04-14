@@ -136,4 +136,5 @@ const (
 	WatchFolderPath      string = "watch_folder_path"
 	WorkID               string = "work_id"
 	WorkLegacyID         string = "work_legacy_id"
+	Year                 string = "year"
 )
