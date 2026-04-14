@@ -59,7 +59,7 @@ jobs:
           # Evaluate the actual changed files instead of relying on labels,
           # which avoids a race condition with auto-label-docs-only.yml.
           BASE_REF="origin/${{ github.event.pull_request.base.ref }}"
-          git fetch origin "${{ github.event.pull_request.base.ref }}" --depth=1
+          git fetch origin "${{ github.event.pull_request.base.ref }}"
           CHANGED=$(git diff --name-only "$BASE_REF"...HEAD)
 
           DOCS_ONLY=true
