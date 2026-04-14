@@ -7,7 +7,6 @@
   } from "../../lib/api";
   import { required, minLength, matches, validate } from "../../lib/validation";
   import { AutoDismissTimer } from "../../lib/autoDismissTimer.svelte";
-  import { onDestroy } from "svelte";
   import { Lock, Mail, Link, User } from "lucide-svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
   import Button from "../ui/Button.svelte";
@@ -39,9 +38,14 @@
     }
   });
 
-  onDestroy(() => {
-    successTimer.clear();
-    nameSuccessTimer.clear();
+  // Keep timer cleanup in a separate $effect that reads no reactive state so it is registered
+  // once on mount and only runs on destroy. This avoids re-registering or cleaning up the
+  // timers when the displayName-sync $effect reruns.
+  $effect(() => {
+    return () => {
+      successTimer.clear();
+      nameSuccessTimer.clear();
+    };
   });
 
   async function handleLinkSso() {
