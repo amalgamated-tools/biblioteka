@@ -6,12 +6,19 @@ A self-hosted personal book library manager. Scan local files, extract metadata,
 
 - **Multi-format support** — EPUB, MOBI, AZW3, and PDF
 - **Automatic metadata extraction** — title, author, ISBN, description, publisher, language, and publication date via [ExifTool](https://exiftool.org/)
+- **Remote metadata lookup** — fetch, review, and selectively apply metadata from Goodreads before committing changes
 - **Path-based metadata** — derives author, title, series name, and position from directory structure
 - **File organization** — configurable layouts: `book_per_folder`, `book_per_file`, or `none`
+- **Book upload** — upload books directly through the web UI or `POST /api/books/upload`
+- **Watch folder** — automatically imports books dropped in a designated folder (requires Redis worker)
+- **Migrate from Calibre** — import books, authors, series, and files from an existing Calibre library via CLI
 - **Goodreads catalog lookup** — search by title, author, ISBN, ASIN, or Goodreads ID from the CLI
 - **Sidecar files** — writes OPF metadata and cover images alongside book files (Calibre/KOReader/Kobo compatible)
 - **Multiple libraries** — group books into named libraries with configurable paths
 - **Author and series tracking** — browse by author or series with position numbers
+- **Reading lists** — user-curated named collections of books (shelves) for organizing reading
+- **Reading progress dashboard** — KOSync reading streaks, in-progress books, monthly download histogram
+- **Email a book** — send any book file as an email attachment to a Kindle or other e-reader
 - **User authentication** — JWT-based login with optional OIDC/SSO
 - **API keys** — long-lived tokens for programmatic access
 - **OPDS 1.2 catalog** — browse and download books from any OPDS-compatible e-reader app
@@ -36,9 +43,10 @@ A self-hosted personal book library manager. Scan local files, extract metadata,
 
 - [Deployment](deployment.md) — get Biblioteka running with Docker or from source
 - [Authentication](authentication.md) — configure JWT, OIDC, and account linking
-- [Administration](administration.md) — manage users, libraries, and file organization
+- [Administration](administration.md) — manage users, libraries, watch folder, and file organization
 - [API Reference](api-reference.md) — complete REST API documentation
 - [OPDS Catalog](opds.md) — set up e-reader access
 - [Kobo Sync](kobo.md) — sync with Kobo e-readers
 - [KOReader Sync](koreader.md) — sync reading progress with KOReader
 - [Goodreads Lookup](metadata.md#goodreads-lookup) — search the Goodreads catalog by title, author, ISBN, ASIN, or ID
+- [Migrate from Calibre](calibre.md) — import your existing Calibre library

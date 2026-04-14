@@ -20,7 +20,7 @@ import (
 //	@Tags			Books
 //	@Produce		json
 //	@Security		BearerAuth
-//	@Param			query	query		string	false	"Search query (title/description substring match)"
+//	@Param			query	query		string	false	"Search query (SQLite: FTS5 full-text match across title and description; PostgreSQL: title/description substring match)"
 //	@Param			limit	query		int		false	"Max items per page (default 50, max 200)"
 //	@Param			offset	query		int		false	"Number of items to skip (default 0)"
 //	@Success		200		{object}	bookListDTO
