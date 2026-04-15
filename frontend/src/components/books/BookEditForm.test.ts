@@ -99,6 +99,18 @@ describe("BookEditForm", () => {
     expect(screen.queryByText("Title is required")).not.toBeInTheDocument();
   });
 
+  it("shows cover image preview when coverImageUrl is set", () => {
+    renderForm();
+    const img = screen.getByAltText("Cover preview") as HTMLImageElement;
+    expect(img).toBeInTheDocument();
+    expect(img.src).toBe("https://example.com/cover.jpg");
+  });
+
+  it("does not show cover image preview when coverImageUrl is empty", () => {
+    renderForm({ fields: makeFields({ coverImageUrl: "" }) });
+    expect(screen.queryByAltText("Cover preview")).not.toBeInTheDocument();
+  });
+
   it("disables all inputs and buttons when saving is true", () => {
     renderForm({ saving: true });
 

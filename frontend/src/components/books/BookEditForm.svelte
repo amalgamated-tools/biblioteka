@@ -285,6 +285,15 @@
           class="w-full py-2.5"
           disabled={saving}
         />
+        {#if fields.coverImageUrl}
+          <div class="mt-2">
+            <img
+              src={fields.coverImageUrl}
+              alt="Cover preview"
+              class="max-h-48 rounded-md border border-ink-200 dark:border-ink-700 object-contain"
+            />
+          </div>
+        {/if}
       </div>
     </div>
 
