@@ -220,6 +220,39 @@ The resulting `goodreads_metadata` record stores the Goodreads book title, ident
 
 **Failure handling:** if the Goodreads client call or the database write fails, the error is returned and asynq retries the job up to `DefaultMaxRetry` (5) times with exponential back-off. A failed enrichment never blocks or modifies the book record already committed by `POST /api/books`.
 
+### `enrich:ai`
+
+| | |
+|---|---|
+| **Source** | `internal/jobs/enrich_ai.go` — `NewEnrichAIHandler` |
+| **Trigger** | Enqueued on demand via `POST /api/books/{id}/metadata/ai-fetch` |
+| **Payload** | `{ "book_id": "<uuid>", "user_id": "<uuid>" }` |
+
+Calls the configured LLM provider to generate metadata for a book and stores the result as an `ai_enrichments` record with `status = "pending"` for user review. The job executes the following steps in order:
+
+1. Fetches the book record and its associated author names from the database.
+2. Builds a structured prompt via `llm.BuildEnrichPrompt` using the book's title, author list, and existing description.
+3. Sends the prompt to the LLM provider (currently Ollama at `/api/chat` with `stream: false`).
+4. Parses the raw response with `llm.ParseEnrichmentResult`, which strips optional markdown code fences before unmarshalling JSON.
+5. Writes the `ai_enrichments` record to the database with `status = "pending"`.
+
+Real-time progress events (`fetching_book`, `building_prompt`, `generating`) are published to the Redis pub/sub channel for the book and user, making them visible in the SSE stream at `GET /api/books/{id}/metadata/events`.
+
+The pending candidate must be explicitly reviewed and either applied (via `POST /api/books/{id}/metadata/ai-apply`) or rejected (via `POST /api/books/{id}/metadata/ai-reject`) before any changes are written to the book record.
+
+**Enrichment result fields stored in `ai_enrichments`:**
+
+| Field | Description |
+|-------|-------------|
+| `suggested_tags` | 5–10 concise tags for library cataloging |
+| `reading_level` | One of `"children"`, `"young_adult"`, `"adult"`, `"academic"` |
+| `generated_description` | 2–3 sentence catalog description |
+| `raw_response` | Verbatim LLM response (stored for debugging and auditing) |
+
+**Failure handling:** LLM generation errors and parse failures are logged at `ERROR` level, an error progress event is published, and the error is returned so asynq retries the job up to `DefaultMaxRetry` (5) times with exponential back-off. When the LLM provider is `nil` (not configured at startup), the job publishes an error event and returns `nil` — asynq does not retry it.
+
+> **Note:** AI enrichment requires a running Redis worker and a configured LLM provider. See [`PUT /api/config/llm`](api-reference.md#put-apiconfigllm-) for configuration details.
+
 ### `scan:watch-folder`
 
 | | |
@@ -254,6 +287,13 @@ Book creation also triggers a parallel enrichment job:
 ```
 POST /api/books
  └─▶ enrich:goodreads  (one per created book)
+```
+
+AI enrichment is triggered on demand by the API:
+
+```
+POST /api/books/{id}/metadata/ai-fetch
+ └─▶ enrich:ai  (one per request, deduplicated while a pending record exists)
 ```
 
 The watch folder runs on its own schedule:
@@ -339,6 +379,7 @@ cmd/server/main.go            # Registers handlers, schedules, starts worker
 internal/
   jobs/
     enrich_goodreads.go            # enrich:goodreads handler — fetches Goodreads metadata and creates a pending goodreads_metadata record
+    enrich_ai.go               # enrich:ai handler — generates metadata via LLM and creates a pending ai_enrichments record
     scan_directory.go          # ScanDirectory: walks a path and enqueues process:file jobs; defines Enqueuer interface and supportedExtensions
     scan_libraries.go          # scan:libraries handler (scans all monitored libraries)
     scan_library.go            # scan:library handler (scans a single library)
