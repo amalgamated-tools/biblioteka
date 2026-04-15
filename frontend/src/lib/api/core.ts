@@ -55,22 +55,52 @@ export async function request<T>(
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 
+  return parseResponse<T>(res);
+}
+
+// requestFormData sends a multipart/form-data request and returns the parsed
+// JSON response. The caller is responsible for building the FormData body.
+export async function requestFormData<T>(
+  method: string,
+  path: string,
+  body: FormData,
+): Promise<T> {
+  const headers: Record<string, string> = {};
+
+  const token = getToken();
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  // Do not set Content-Type — the browser sets it automatically with the
+  // correct multipart boundary when given a FormData body.
+  const res = await fetch(path, { method, headers, body });
+
+  return parseResponse<T>(res);
+}
+
+// parseResponse handles the common response parsing logic: 204 No Content,
+// content-type detection, JSON parsing with fallback, and ApiError throwing.
+async function parseResponse<T>(res: Response): Promise<T> {
   if (res.status === 204) {
     return undefined as T;
   }
 
   const contentType = res.headers.get("content-type") || "";
+  const text = await res.text();
   let data: unknown;
 
   if (contentType.includes("application/json")) {
-    try {
-      data = await res.json();
-    } catch {
-      const text = await res.text();
-      data = text ? { error: text } : {};
+    if (text) {
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { error: text };
+      }
+    } else {
+      data = {};
     }
   } else {
-    const text = await res.text();
     data = text ? { error: text } : {};
   }
 
