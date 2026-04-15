@@ -81,4 +81,27 @@ describe("ReadingListDetail delete confirmation accessibility", () => {
       expect(confirmButton).toHaveFocus();
     });
   });
+
+  it("marks edit name invalid and links it to the save error banner", async () => {
+    const user = userEvent.setup();
+    vi.mocked(readingListStore).update = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("Name already exists"));
+    render(ReadingListDetail, { props: { listId: fakeList.id } });
+    await tick();
+
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveAttribute("id", "edit-reading-list-error");
+    expect(screen.getByLabelText(/Name/i)).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    );
+    expect(screen.getByLabelText(/Name/i)).toHaveAttribute(
+      "aria-describedby",
+      "edit-reading-list-error",
+    );
+  });
 });

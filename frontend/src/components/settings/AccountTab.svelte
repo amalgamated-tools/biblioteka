@@ -37,6 +37,7 @@
   let nameError: string | null = $state(null);
   let nameLoading = $state(false);
   const nameSuccessTimer = new AutoDismissTimer();
+  let displayNameInvalid = $derived(!!nameError);
 
   // Keep displayName in sync when the auth store user loads or updates externally.
   $effect(() => {
@@ -64,6 +65,16 @@
   let passkeyRegistering = $state(false);
   let passkeyDeleting = $state<string | null>(null);
   const passkeySuccessTimer = new AutoDismissTimer();
+  let currentPasswordInvalid = $derived(
+    passwordError === "Current password is required",
+  );
+  let newPasswordInvalid = $derived(
+    passwordError === "New password is required" ||
+      passwordError === "New password must be at least 6 characters",
+  );
+  let confirmPasswordInvalid = $derived(
+    passwordError === "Passwords do not match",
+  );
 
   onMount(async () => {
     try {
@@ -272,11 +283,17 @@
           class="w-full py-2.5"
           placeholder="Your name"
           disabled={nameLoading}
+          aria-invalid={displayNameInvalid}
+          aria-describedby={displayNameInvalid
+            ? "display-name-error"
+            : undefined}
         />
       </div>
 
       {#if nameError}
-        <AlertBanner variant="error">{nameError}</AlertBanner>
+        <AlertBanner id="display-name-error" variant="error"
+          >{nameError}</AlertBanner
+        >
       {/if}
 
       {#if nameSuccessTimer.visible}
@@ -362,6 +379,10 @@
           class="w-full py-2.5"
           placeholder="••••••••"
           disabled={passwordLoading}
+          aria-invalid={currentPasswordInvalid}
+          aria-describedby={currentPasswordInvalid
+            ? "password-change-error"
+            : undefined}
         />
       </div>
 
@@ -380,6 +401,10 @@
           class="w-full py-2.5"
           placeholder="••••••••"
           disabled={passwordLoading}
+          aria-invalid={newPasswordInvalid}
+          aria-describedby={newPasswordInvalid
+            ? "password-change-error"
+            : undefined}
         />
       </div>
 
@@ -398,11 +423,17 @@
           class="w-full py-2.5"
           placeholder="••••••••"
           disabled={passwordLoading}
+          aria-invalid={confirmPasswordInvalid}
+          aria-describedby={confirmPasswordInvalid
+            ? "password-change-error"
+            : undefined}
         />
       </div>
 
       {#if passwordError}
-        <AlertBanner variant="error">{passwordError}</AlertBanner>
+        <AlertBanner id="password-change-error" variant="error"
+          >{passwordError}</AlertBanner
+        >
       {/if}
 
       {#if successTimer.visible}

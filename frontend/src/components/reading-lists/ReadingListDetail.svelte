@@ -30,6 +30,7 @@
   let editDescription = $state("");
   let saving = $state(false);
   let saveError: string | null = $state(null);
+  let editNameInvalid = $derived(!!saveError);
   let confirmDelete = $state(false);
   let deleting = $state(false);
 
@@ -127,7 +128,11 @@
             Edit Reading List
           </h2>
           {#if saveError}
-            <AlertBanner variant="error" class="mb-3">{saveError}</AlertBanner>
+            <AlertBanner
+              id="edit-reading-list-error"
+              variant="error"
+              class="mb-3">{saveError}</AlertBanner
+            >
           {/if}
           <div class="space-y-3">
             <div>
@@ -141,6 +146,10 @@
                 id="edit-list-name"
                 bind:value={editName}
                 disabled={saving}
+                aria-invalid={editNameInvalid}
+                aria-describedby={editNameInvalid
+                  ? "edit-reading-list-error"
+                  : undefined}
               />
             </div>
             <div>
