@@ -140,5 +140,6 @@ describe("prepareRequestOptions", () => {
 
     const result = prepareRequestOptions(options);
     expect(result.challenge).toBeInstanceOf(Uint8Array);
+    expect(Array.from(result.challenge as Uint8Array)).toEqual([105, 191, 191]);
   });
 });
