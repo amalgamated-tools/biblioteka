@@ -60,7 +60,7 @@ func TestPasskeyCredentials(t *testing.T) {
 		cred, err := d.CreatePasskeyCredential(ctx, user.ID, "Updated Key", "cred-id-4", `{"v":1}`, "")
 		require.NoError(t, err)
 
-		err = d.UpdatePasskeyCredentialData(ctx, cred.CredentialID, `{"v":2}`)
+		err = d.UpdatePasskeyCredentialData(ctx, user.ID, cred.CredentialID, `{"v":2}`)
 		require.NoError(t, err)
 
 		got, err := d.GetPasskeyCredentialByCredentialID(ctx, cred.CredentialID)

@@ -76,13 +76,16 @@ func (d *DB) ListPasskeyCredentials(ctx context.Context, userID string) ([]Passk
 }
 
 // UpdatePasskeyCredentialData updates the stored credential JSON (e.g. after sign count update following authentication).
-func (d *DB) UpdatePasskeyCredentialData(ctx context.Context, credentialID, credentialData string) error {
-	slog.DebugContext(ctx, "db: updating passkey credential data")
-	_, err := d.ExecContext(ctx,
-		`UPDATE passkey_credentials SET credential_data = $1 WHERE credential_id = $2`,
-		credentialData, credentialID,
+// Returns sql.ErrNoRows if the credential does not exist or does not belong to the user.
+func (d *DB) UpdatePasskeyCredentialData(ctx context.Context, userID, credentialID, credentialData string) error {
+	slog.DebugContext(ctx, "db: updating passkey credential data",
+		slog.String(otelkeys.UserID, userID),
+		slog.String(otelkeys.PasskeyRawID, credentialID),
 	)
-	return err
+	return d.execAffected(ctx,
+		`UPDATE passkey_credentials SET credential_data = $1 WHERE credential_id = $2 AND user_id = $3`,
+		credentialData, credentialID, userID,
+	)
 }
 
 // DeletePasskeyCredential removes a passkey credential by ID, scoped to the given user.

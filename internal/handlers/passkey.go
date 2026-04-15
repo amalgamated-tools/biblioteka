@@ -79,16 +79,21 @@ type passkeyBeginResponse struct {
 }
 
 // loadWebAuthnCredentials deserializes a slice of db.PasskeyCredential into webauthn.Credential values.
-func loadWebAuthnCredentials(creds []db.PasskeyCredential) ([]webauthn.Credential, error) {
+// Corrupted entries are logged and skipped rather than aborting the entire operation.
+func loadWebAuthnCredentials(ctx context.Context, creds []db.PasskeyCredential) []webauthn.Credential {
 	result := make([]webauthn.Credential, 0, len(creds))
 	for i := range creds {
 		var waCred webauthn.Credential
 		if err := json.Unmarshal([]byte(creds[i].CredentialData), &waCred); err != nil {
-			return nil, fmt.Errorf("unmarshal credential %s: %w", creds[i].ID, err)
+			slog.WarnContext(ctx, "skipping corrupted passkey credential",
+				slog.String(otelkeys.PasskeyCredentialID, creds[i].ID),
+				slog.Any(otelkeys.Error, err),
+			)
+			continue
 		}
 		result = append(result, waCred)
 	}
-	return result, nil
+	return result
 }
 
 // storeChallenge JSON-encodes the session data and persists it. Returns the session ID.
@@ -261,15 +266,7 @@ func (h *PasskeyHandler) HandleBeginRegistration(w http.ResponseWriter, r *http.
 		return
 	}
 
-	waCreds, err := loadWebAuthnCredentials(existingCreds)
-	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to load passkey credentials",
-			slog.String(otelkeys.UserID, userID),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to load credentials")
-		return
-	}
+	waCreds := loadWebAuthnCredentials(r.Context(), existingCreds)
 
 	waUser := &passkeyUser{user: user, credentials: waCreds}
 
@@ -386,15 +383,7 @@ func (h *PasskeyHandler) HandleFinishRegistration(w http.ResponseWriter, r *http
 		return
 	}
 
-	waCreds, err := loadWebAuthnCredentials(existingCreds)
-	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to load passkey credentials for finish",
-			slog.String(otelkeys.UserID, userID),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to load credentials")
-		return
-	}
+	waCreds := loadWebAuthnCredentials(r.Context(), existingCreds)
 
 	waUser := &passkeyUser{user: user, credentials: waCreds}
 
@@ -555,10 +544,7 @@ func (h *PasskeyHandler) HandleFinishAuthentication(w http.ResponseWriter, r *ht
 			return nil, fmt.Errorf("list credentials: %w", credsErr)
 		}
 
-		waCreds, loadErr := loadWebAuthnCredentials(userCreds)
-		if loadErr != nil {
-			return nil, fmt.Errorf("load credentials: %w", loadErr)
-		}
+		waCreds := loadWebAuthnCredentials(r.Context(), userCreds)
 
 		authedUserID = user.ID
 		authedCredentialID = credID
@@ -583,11 +569,19 @@ func (h *PasskeyHandler) HandleFinishAuthentication(w http.ResponseWriter, r *ht
 			slog.Any(otelkeys.Error, err),
 		)
 	} else {
-		if updateErr := h.DB.UpdatePasskeyCredentialData(r.Context(), authedCredentialID, string(updatedData)); updateErr != nil {
-			slog.WarnContext(r.Context(), "failed to update passkey credential sign count",
-				slog.String(otelkeys.UserID, authedUserID),
-				slog.Any(otelkeys.Error, updateErr),
-			)
+		if updateErr := h.DB.UpdatePasskeyCredentialData(r.Context(), authedUserID, authedCredentialID, string(updatedData)); updateErr != nil {
+			if errors.Is(updateErr, sql.ErrNoRows) {
+				slog.ErrorContext(r.Context(), "passkey credential not found during sign-count update",
+					slog.String(otelkeys.UserID, authedUserID),
+					slog.String(otelkeys.PasskeyRawID, authedCredentialID),
+					slog.Any(otelkeys.Error, updateErr),
+				)
+			} else {
+				slog.WarnContext(r.Context(), "failed to update passkey credential sign count",
+					slog.String(otelkeys.UserID, authedUserID),
+					slog.Any(otelkeys.Error, updateErr),
+				)
+			}
 		}
 	}
 
