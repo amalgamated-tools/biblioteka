@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"log/slog"
 
@@ -146,21 +147,17 @@ func (d *DB) SetBookTags(ctx context.Context, bookID string, tagIDs []string) er
 		}
 	}
 
-	tx, err := d.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer deferRollback(ctx, tx)
-
-	if _, err := tx.ExecContext(ctx, `DELETE FROM book_tags WHERE book_id = $1`, bookID); err != nil {
-		return err
-	}
-
-	for _, tagID := range unique {
-		if _, err := tx.ExecContext(ctx, `INSERT INTO book_tags (book_id, tag_id) VALUES ($1, $2)`, bookID, tagID); err != nil {
+	return d.WithTx(ctx, func(tx *sql.Tx) error {
+		if _, err := tx.ExecContext(ctx, `DELETE FROM book_tags WHERE book_id = $1`, bookID); err != nil {
 			return err
 		}
-	}
 
-	return tx.Commit()
+		for _, tagID := range unique {
+			if _, err := tx.ExecContext(ctx, `INSERT INTO book_tags (book_id, tag_id) VALUES ($1, $2)`, bookID, tagID); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
 }
