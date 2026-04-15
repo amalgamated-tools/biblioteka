@@ -1,5 +1,6 @@
 <script lang="ts">
   import { BookOpen, Search, X } from "lucide-svelte";
+  import { untrack } from "svelte";
   import BookList from "./ui/BookList.svelte";
   import BookDetail from "./books/BookDetail.svelte";
   import BookEdit from "./books/BookEdit.svelte";
@@ -21,11 +22,35 @@
   let bookId = $derived(subParts[0] ?? "");
   let isEdit = $derived(subParts.length > 1 && subParts[1] === "edit");
 
-  // Search state — input value (immediate) and debounced value (drives API calls)
-  const initialQuery = routerStore.queryParams.get("query") ?? "";
-  let searchInput = $state(initialQuery);
-  let debouncedQuery = $state(initialQuery);
+  // Search state — input value (immediate) and debounced value (drives API calls).
+  // `currentQuery` is derived from the URL so back/forward navigation and manual
+  // hash edits are reflected in the input.
+  let currentQuery = $derived(routerStore.queryParams.get("query") ?? "");
+  let searchInput = $state(untrack(() => currentQuery));
+  let debouncedQuery = $state(untrack(() => currentQuery));
   let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+
+  // Sync local state when the URL query param changes externally.
+  // Only track `currentQuery` — use untrack for local state comparisons
+  // so that typing into the input doesn't trigger this effect.
+  $effect(() => {
+    const q = currentQuery;
+    if (untrack(() => q === searchInput && q === debouncedQuery)) {
+      return;
+    }
+
+    clearTimeout(debounceTimer);
+    searchInput = q;
+    debouncedQuery = q;
+  });
+
+  // Clean up any pending debounce timer when the component unmounts.
+  $effect(() => {
+    return () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = undefined;
+    };
+  });
 
   function onSearchInput(value: string) {
     searchInput = value;
@@ -103,6 +128,7 @@
       />
       {#if searchInput}
         <button
+          type="button"
           onclick={clearSearch}
           aria-label="Clear search"
           class="absolute right-3 top-1/2 -translate-y-1/2 text-ink-400 hover:text-ink-600 dark:hover:text-ink-200 transition-colors"
