@@ -30,6 +30,7 @@ type KoboReadingState struct {
 
 const koboReadingStateColumns = `id, user_id, book_id, status, percent_read, location_value, location_type, location_source, created_at, updated_at`
 
+// scanKoboReadingState scans a Kobo reading state row into a KoboReadingState struct.
 func scanKoboReadingState(row interface{ Scan(...any) error }) (*KoboReadingState, error) {
 	return scanRow(row, func(s *KoboReadingState) []any {
 		return []any{
@@ -42,7 +43,7 @@ func scanKoboReadingState(row interface{ Scan(...any) error }) (*KoboReadingStat
 // GetKoboReadingState returns the reading state for a specific user+book pair,
 // or sql.ErrNoRows if not found.
 func (d *DB) GetKoboReadingState(ctx context.Context, userID, bookID string) (*KoboReadingState, error) {
-	slog.DebugContext(ctx, "db: fetching kobo reading state",
+	slog.DebugContext(ctx, "fetching kobo reading state",
 		slog.String(otelkeys.UserID, userID),
 		slog.String(otelkeys.BookID, bookID),
 	)
@@ -58,7 +59,7 @@ func (d *DB) GetKoboReadingState(ctx context.Context, userID, bookID string) (*K
 
 // UpsertKoboReadingState creates or updates the reading state for a user+book pair.
 func (d *DB) UpsertKoboReadingState(ctx context.Context, userID, bookID, status string, percentRead *float64, locationValue, locationType, locationSource *string) (*KoboReadingState, error) {
-	slog.DebugContext(ctx, "db: upserting kobo reading state",
+	slog.DebugContext(ctx, "upserting kobo reading state",
 		slog.String(otelkeys.UserID, userID),
 		slog.String(otelkeys.BookID, bookID),
 		slog.String(otelkeys.Status, status),
@@ -90,7 +91,7 @@ func (d *DB) UpsertKoboReadingState(ctx context.Context, userID, bookID, status 
 // ListKoboReadingStatesSince returns reading states updated after the given time for a user.
 // If since is the zero time, all reading states for the user are returned.
 func (d *DB) ListKoboReadingStatesSince(ctx context.Context, userID string, since time.Time) ([]KoboReadingState, error) {
-	slog.DebugContext(ctx, "db: listing kobo reading states since",
+	slog.DebugContext(ctx, "listing kobo reading states since",
 		slog.String(otelkeys.UserID, userID),
 	)
 
@@ -138,7 +139,7 @@ func (d *DB) GetReadingStatesForBooks(ctx context.Context, userID string, bookID
 	if len(bookIDs) == 0 {
 		return nil, nil
 	}
-	slog.DebugContext(ctx, "db: batch fetching reading states for books",
+	slog.DebugContext(ctx, "batch fetching reading states for books",
 		slog.String(otelkeys.UserID, userID),
 		slog.Int(otelkeys.BookCount, len(bookIDs)),
 	)
