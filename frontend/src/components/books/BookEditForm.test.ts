@@ -78,7 +78,20 @@ describe("BookEditForm", () => {
 
     await user.click(screen.getByText("Save Changes"));
 
-    expect(screen.getByText("Title is required")).toBeInTheDocument();
+    const error = screen.getByText("Title is required");
+    expect(error).toBeInTheDocument();
+    expect(error.closest('[role="alert"]')).toHaveAttribute(
+      "id",
+      "book-edit-form-error",
+    );
+    expect(screen.getByLabelText(/Title/i)).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    );
+    expect(screen.getByLabelText(/Title/i)).toHaveAttribute(
+      "aria-describedby",
+      "book-edit-form-error",
+    );
   });
 
   it("does not display an error banner initially", () => {
