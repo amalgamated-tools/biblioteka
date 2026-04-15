@@ -1287,7 +1287,7 @@ A bar chart that visualises monthly download counts for a book or the library. E
 **Accessibility:**
 
 - The visual bar area is `aria-hidden="true"` and paired with a screen-reader-only table that provides the equivalent data (`Month` + `Downloads`) and a caption (`title`).
-- The count tooltip (shown on hover) and month axis labels use `text-ink-600` (light mode) to satisfy the WCAG 1.4.3 Contrast Minimum of 4.5:1. The count tooltip additionally uses `dark:text-ink-200` in dark mode to maintain contrast against the `accent-500` bar background. Month axis labels use `dark:text-ink-400` in dark mode.
+- The count tooltip (shown on hover) and month axis labels use `text-ink-600` (light mode) to satisfy the WCAG 1.4.3 Contrast Minimum of 4.5:1. The count tooltip additionally uses `dark:text-ink-200` in dark mode to maintain contrast against the `accent-500` bar background. Month axis labels use `dark:text-ink-300` in dark mode.
 - The month label row and the count tooltip are `aria-hidden="true"` because the equivalent information is already conveyed by the accessible table.
 - The empty-state message uses `aria-live="polite"`; note that the element is conditionally rendered inside `{#if isEmpty}`, so announcements may not fire reliably in all screen readers (NVDA and JAWS sometimes skip announcements when a live region is inserted with text already populated).
 
