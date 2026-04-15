@@ -392,8 +392,7 @@
               {yearInBooks.longest_streak}
             </span>
             <span class="text-xs text-ink-500 dark:text-ink-400 text-center">
-              {yearInBooks.longest_streak === 1 ? "day" : "days"} longest
-              streak
+              {yearInBooks.longest_streak === 1 ? "day" : "days"} longest streak
             </span>
           </div>
 
