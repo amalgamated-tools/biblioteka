@@ -234,27 +234,15 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	// NOTE: LLM config is read once at startup. Changes via /api/config/llm
 	// require a server restart to take effect (communicated via restart_required
 	// in the PUT response).
-	if llmEnabledStr, err := s.DB.GetSetting(ctx, db.SettingLLMEnabled); err == nil && llmEnabledStr == "true" {
-		llmProviderName, _ := s.DB.GetSetting(ctx, db.SettingLLMProvider)
-		llmEndpoint, _ := s.DB.GetSetting(ctx, db.SettingLLMEndpoint)
-		llmModel, _ := s.DB.GetSetting(ctx, db.SettingLLMModel)
-		if llmEndpoint != "" {
-			factories := map[string]llm.Factory{
-				llm.ProviderOllama: func(endpoint, model string) llm.Provider { return ollama.New(endpoint, model) },
-			}
-			p, name, err := llm.NewProvider(llmProviderName, llmEndpoint, llmModel, factories)
-			if err != nil {
-				slog.WarnContext(ctx, "unsupported LLM provider, AI enrichment disabled",
-					slog.String(otelkeys.Source, llmProviderName),
-				)
-			} else {
-				metadataHandler.LLMProvider = p
-				slog.InfoContext(ctx, "LLM provider configured",
-					slog.String(otelkeys.Source, name),
-					slog.String(otelkeys.URL, llmEndpoint),
-				)
-			}
-		}
+	factories := map[string]llm.Factory{
+		llm.ProviderOllama: func(endpoint, model string) llm.Provider { return ollama.New(endpoint, model) },
+	}
+	llmResult := llm.Bootstrap(ctx, s.DB, [4]string{db.SettingLLMEnabled, db.SettingLLMProvider, db.SettingLLMEndpoint, db.SettingLLMModel}, factories)
+	if llmResult.Provider != nil {
+		metadataHandler.LLMProvider = llmResult.Provider
+		slog.InfoContext(ctx, "LLM provider configured",
+			slog.String(otelkeys.Source, llmResult.ProviderName),
+		)
 	}
 
 	s.bookHandler.MetadataHandler = metadataHandler
