@@ -288,7 +288,7 @@ describe("FirstLibraryWizard – step 4 (review & create)", () => {
     });
   });
 
-  it("calls clearSkip and navigates to the new library after successful creation", async () => {
+  it("navigates to the new library after successful creation", async () => {
     vi.mocked(libraryStore.add).mockResolvedValue(mockLibrary);
     await advanceToStep4();
     await fireEvent.click(

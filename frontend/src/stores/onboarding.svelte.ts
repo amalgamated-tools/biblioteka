@@ -1,6 +1,8 @@
 const STORAGE_KEY_PREFIX = "biblioteka_onboarding_skipped_";
 
 class OnboardingStore {
+  #skippedForUser = $state<string | undefined>(undefined);
+
   /**
    * Returns true if the first-library setup wizard has been dismissed for
    * the given user.  Returns false when `userId` is undefined (e.g. while
@@ -8,6 +10,8 @@ class OnboardingStore {
    */
   isSkipped(userId: string | undefined): boolean {
     if (!userId) return false;
+    // Depend on reactive state so callers re-evaluate when skip changes.
+    void this.#skippedForUser;
     try {
       return localStorage.getItem(STORAGE_KEY_PREFIX + userId) === "1";
     } catch {
@@ -20,6 +24,7 @@ class OnboardingStore {
     if (!userId) return;
     try {
       localStorage.setItem(STORAGE_KEY_PREFIX + userId, "1");
+      this.#skippedForUser = userId;
     } catch {
       // Ignore storage errors (e.g. private-browsing quotas).
     }
@@ -34,6 +39,7 @@ class OnboardingStore {
     if (!userId) return;
     try {
       localStorage.removeItem(STORAGE_KEY_PREFIX + userId);
+      this.#skippedForUser = undefined;
     } catch {
       // Ignore storage errors.
     }
