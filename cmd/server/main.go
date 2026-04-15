@@ -11,7 +11,7 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/goodreads"
 	"github.com/amalgamated-tools/biblioteka/internal/jobs"
 	"github.com/amalgamated-tools/biblioteka/internal/llm"
-	"github.com/amalgamated-tools/biblioteka/internal/llm/ollama"
+	"github.com/amalgamated-tools/biblioteka/internal/llm/registry"
 	"github.com/amalgamated-tools/biblioteka/internal/metadata"
 	"github.com/amalgamated-tools/biblioteka/internal/otel"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
@@ -127,10 +127,12 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 
 		// Register AI enrichment job. The provider is nil when LLM is not configured;
 		// the job handler handles that gracefully.
-		factories := map[string]llm.Factory{
-			llm.ProviderOllama: func(endpoint, model string) llm.Provider { return ollama.New(endpoint, model) },
-		}
-		llmResult := llm.Bootstrap(cancelCtx, database, [4]string{db.SettingLLMEnabled, db.SettingLLMProvider, db.SettingLLMEndpoint, db.SettingLLMModel}, factories)
+		llmResult := llm.Bootstrap(cancelCtx, database, llm.BootstrapSettings{
+			Enabled:  db.SettingLLMEnabled,
+			Provider: db.SettingLLMProvider,
+			Endpoint: db.SettingLLMEndpoint,
+			Model:    db.SettingLLMModel,
+		}, registry.DefaultFactories())
 		w.Register(cancelCtx, jobs.JobEnrichAI, jobs.NewEnrichAIHandler(database, llmResult.Provider, llmResult.ProviderName, llmResult.ModelName, publisher))
 
 		if _, err := w.RegisterSchedule("@every 24h", jobs.JobScanLibraries, struct{}{}); err != nil {
