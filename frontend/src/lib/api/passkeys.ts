@@ -1,5 +1,5 @@
 import type { PasskeyCredential } from "../../types";
-import { request } from "./core";
+import { request, setToken } from "./core";
 
 export async function getPasskeyEnabled(): Promise<boolean> {
   const resp = await request<{ enabled: boolean }>(
@@ -69,9 +69,14 @@ export async function finishPasskeyLogin(
   sessionId: string,
   credential: unknown,
 ): Promise<{ token: string; user: import("../../types").User }> {
-  return request(
+  const data = await request<{
+    token: string;
+    user: import("../../types").User;
+  }>(
     "POST",
     `/api/auth/passkey/login/finish?session_id=${encodeURIComponent(sessionId)}`,
     credential,
   );
+  setToken(data.token);
+  return data;
 }
