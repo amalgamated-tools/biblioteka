@@ -192,17 +192,18 @@ func (d *DB) ApplyAIEnrichment(ctx context.Context, input ApplyAIEnrichmentInput
 		if err != nil {
 			return fmt.Errorf("read existing book tags: %w", err)
 		}
+		defer rows.Close()
+
 		tagIDSet := make(map[string]struct{})
 		for rows.Next() {
 			var id string
 			if err := rows.Scan(&id); err != nil {
-				rows.Close()
 				return fmt.Errorf("scan existing tag id: %w", err)
 			}
 			tagIDSet[id] = struct{}{}
 		}
-		if err := rows.Close(); err != nil {
-			return fmt.Errorf("close existing tags rows: %w", err)
+		if err := rows.Err(); err != nil {
+			return fmt.Errorf("iterate existing tag ids: %w", err)
 		}
 
 		// Union-merge new tag IDs.

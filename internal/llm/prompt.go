@@ -2,6 +2,7 @@ package llm
 
 import (
 	"fmt"
+	"html"
 	"strings"
 )
 
@@ -30,5 +31,5 @@ Return ONLY valid JSON with no additional text, explanation, or markdown.
 <title>%s</title>
 <authors>%s</authors>
 <description>%s</description>
-</book>`, title, authorStr, desc)
+</book>`, html.EscapeString(title), html.EscapeString(authorStr), html.EscapeString(desc))
 }
