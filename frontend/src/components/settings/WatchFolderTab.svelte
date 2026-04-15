@@ -202,7 +202,7 @@
       {/if}
 
       <div class="flex gap-3">
-        <Button type="submit" disabled={loading} class="flex-1 px-4 py-2.5">
+        <Button type="submit" disabled={loading} class="flex-1">
           {submitLabel}
         </Button>
         {#if configured}
