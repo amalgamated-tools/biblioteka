@@ -114,7 +114,7 @@ A library organization layout that leaves imported book files in place — no fi
 
 ## Reading List
 
-A user-curated named collection of books, sometimes called a "shelf". Reading lists are user-scoped — each user manages their own lists independently. Each list has a required name (unique per user after normalization), an optional description, and a `book_count` computed at read time. Books are added and removed individually; both operations are idempotent.
+A user-curated named collection of books. Reading lists are user-scoped — each user manages their own lists independently. Each list has a required name (unique per user after normalization), an optional description, and a `book_count` computed at read time. Books are added and removed individually; both operations are idempotent.
 
 Reading lists are managed via the REST API at `/api/reading-lists` and `/api/reading-lists/{id}/books`. The `GET /api/books/{id}/reading-lists` endpoint returns the lists that contain a specific book. Frontend state is managed by `readingListStore` and the feature is accessible from the **Reading Lists** sidebar entry. See [API Reference](api-reference.md).
 
