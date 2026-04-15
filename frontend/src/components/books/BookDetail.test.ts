@@ -92,9 +92,6 @@ const fakeBookWithFiles: Book = {
 describe("BookDetail", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockBookFileDownloadUrl.mockImplementation(
-      (id: string) => `/api/book-files/${id}/download`,
-    );
   });
 
   afterEach(() => cleanup());
@@ -175,10 +172,9 @@ describe("BookDetail", () => {
           name: "Download the-hobbit.epub (EPUB)",
         }),
       ).toBeInTheDocument();
+      expect(
+        screen.getByRole("link", { name: "Download the-hobbit.pdf (PDF)" }),
+      ).toBeInTheDocument();
     });
-
-    expect(
-      screen.getByRole("link", { name: "Download the-hobbit.pdf (PDF)" }),
-    ).toBeInTheDocument();
   });
 });
