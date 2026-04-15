@@ -27,6 +27,14 @@ func newBenchDB(b *testing.B) *DB {
 	`)
 	require.NoError(b, err, "newBenchDB: pragmas")
 
+	// In-memory SQLite databases are connection-scoped: each new connection
+	// from the pool gets its own empty database.  Pinning to a single
+	// connection ensures all queries see the same schema and data.  This
+	// serializes concurrent callers (e.g. LoadBookRelations' errgroup), so
+	// it does not exercise true parallelism; a shared-cache DSN
+	// (file::memory:?cache=shared) would be needed for that.
+	sqlDB.SetMaxOpenConns(1)
+
 	d := &DB{DB: sqlDB, Dialect: DialectSQLite}
 
 	require.NoError(b, runMigrations(b.Context(), d), "newBenchDB: migrations")
@@ -262,6 +270,37 @@ func BenchmarkListSeriesPaginated_100(b *testing.B) {
 	b.ReportAllocs()
 	for range b.N {
 		_, _, err := d.ListSeriesPaginated(ctx, 50, 0)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+// ---- LoadBookRelations ----
+
+// BenchmarkLoadBookRelations measures the concurrent three-query fetch for a
+// single book's authors, files, and series. This benchmark covers the book
+// detail and Kobo metadata endpoints.
+func BenchmarkLoadBookRelations(b *testing.B) {
+	d := newBenchDB(b)
+	ctx := b.Context()
+
+	bk, err := d.CreateBook(ctx, BookInput{Title: "Benchmark Book"})
+	require.NoError(b, err, "CreateBook")
+
+	author, err := d.CreateAuthor(ctx, "Benchmark Author", nil, nil, nil, nil)
+	require.NoError(b, err, "CreateAuthor")
+	require.NoError(b, d.SetBookAuthors(ctx, bk.ID, []string{author.ID}), "SetBookAuthors")
+
+	series, err := d.CreateSeries(ctx, "Benchmark Series", nil, nil, nil)
+	require.NoError(b, err, "CreateSeries")
+	pos := 1.0
+	require.NoError(b, d.SetBookSeries(ctx, bk.ID, []BookSeriesInput{{SeriesID: series.ID, Position: &pos}}), "SetBookSeries")
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for range b.N {
+		_, err := d.LoadBookRelations(ctx, bk.ID)
 		if err != nil {
 			b.Fatal(err)
 		}
