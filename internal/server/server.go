@@ -66,6 +66,7 @@ type Server struct {
 
 	oidcHandler            *handlers.OIDCHandler
 	authHandler            *handlers.AuthHandler
+	passkeyHandler         *handlers.PasskeyHandler
 	configHandler          *handlers.ConfigHandler
 	adminHandler           *handlers.AdminHandler
 	libraryHandler         *handlers.LibraryHandler
@@ -182,6 +183,10 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	disableSignup := os.Getenv("DISABLE_SIGNUP") == "true"
 
 	s.authHandler = &handlers.AuthHandler{DB: s.DB, JWT: s.JWT, SecureCookies: secureCookies, DisableSignup: disableSignup}
+
+	// Initialize WebAuthn for passkey support. RPID and origins must match the
+	// deployment domain; they default to localhost for local development.
+	s.passkeyHandler = newPasskeyHandler(ctx, s.DB, s.JWT, secureCookies)
 	s.adminHandler = &handlers.AdminHandler{DB: s.DB}
 	s.libraryHandler = &handlers.LibraryHandler{DB: s.DB}
 	if s.Worker != nil {

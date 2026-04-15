@@ -92,6 +92,9 @@ const (
 	OldPath              string = "old_path"
 	OPDSUsername         string = "opds_username"
 	Page                 string = "page"
+	PasskeyCredentialID  string = "passkey_credential_id"
+	PasskeyRawID         string = "passkey_raw_id"
+	PasskeySessionID     string = "passkey_session_id"
 	Path                 string = "path"
 	PathsEnqueued        string = "paths_enqueued"
 	Port                 string = "port"
@@ -134,6 +137,8 @@ const (
 	Value                string = "value"
 	Version              string = "version"
 	WatchFolderPath      string = "watch_folder_path"
+	WebAuthnRPID         string = "webauthn.rp_id"
+	WebAuthnRPName       string = "webauthn.rp_name"
 	WorkID               string = "work_id"
 	WorkLegacyID         string = "work_legacy_id"
 )

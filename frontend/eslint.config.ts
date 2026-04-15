@@ -10,7 +10,11 @@ export default tseslint.config(
   ...svelte.configs["flat/recommended"],
   {
     languageOptions: {
-      globals: globals.browser,
+      globals: {
+        ...globals.browser,
+        PublicKeyCredentialCreationOptions: "readonly",
+        PublicKeyCredentialRequestOptions: "readonly",
+      },
     },
   },
   {
