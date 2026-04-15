@@ -21,7 +21,7 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/handlers"
 	"github.com/amalgamated-tools/biblioteka/internal/handlers/middleware"
 	"github.com/amalgamated-tools/biblioteka/internal/llm"
-	"github.com/amalgamated-tools/biblioteka/internal/llm/ollama"
+	"github.com/amalgamated-tools/biblioteka/internal/llm/registry"
 	"github.com/amalgamated-tools/biblioteka/internal/otel"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/amalgamated-tools/biblioteka/internal/pubsub"
@@ -234,10 +234,12 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	// NOTE: LLM config is read once at startup. Changes via /api/config/llm
 	// require a server restart to take effect (communicated via restart_required
 	// in the PUT response).
-	factories := map[string]llm.Factory{
-		llm.ProviderOllama: func(endpoint, model string) llm.Provider { return ollama.New(endpoint, model) },
-	}
-	llmResult := llm.Bootstrap(ctx, s.DB, [4]string{db.SettingLLMEnabled, db.SettingLLMProvider, db.SettingLLMEndpoint, db.SettingLLMModel}, factories)
+	llmResult := llm.Bootstrap(ctx, s.DB, llm.BootstrapSettings{
+		Enabled:  db.SettingLLMEnabled,
+		Provider: db.SettingLLMProvider,
+		Endpoint: db.SettingLLMEndpoint,
+		Model:    db.SettingLLMModel,
+	}, registry.DefaultFactories())
 	if llmResult.Provider != nil {
 		metadataHandler.LLMProvider = llmResult.Provider
 		slog.InfoContext(ctx, "LLM provider configured",
