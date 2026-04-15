@@ -27,13 +27,13 @@ imports:
 
 steps:
   - name: Checkout repository
-    uses: actions/checkout@v6.0.2
+    uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
     with:
       fetch-depth: 0
       persist-credentials: false
 
   - name: Super-linter
-    uses: super-linter/super-linter@v8.5.0
+    uses: super-linter/super-linter@9e863354e3ff62e0727d37183162c4a88873df41
     id: super-linter
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
