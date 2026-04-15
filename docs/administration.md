@@ -423,6 +423,52 @@ See [API reference — `POST /api/book-files/{id}/email`](api-reference.md#post-
 
 ---
 
+## LLM Configuration (Runtime)
+
+Biblioteka can enrich book metadata using a locally-hosted large language model. When configured, the **AI Enrich** action on a book detail page enqueues a background job that sends the book's title, authors, and existing description to the LLM and stores the suggested genres, themes, mood, reading level, tags, and generated catalog description as a pending review record. The user can then apply or reject the suggestions without committing them automatically.
+
+> **Requires Redis.** AI enrichment runs as a background job; a Redis worker must be running. See [Background Jobs](background-jobs.md#enrichai) for details on the `enrich:ai` job.
+
+### Supported providers
+
+Currently only [Ollama](https://ollama.com/) is supported. Run Ollama locally or on a server reachable from the Biblioteka host.
+
+### Configuring LLM access
+
+Admins can configure the LLM at runtime via **Settings → AI Enrichment** or the API:
+
+```bash
+# Get current LLM config
+curl http://localhost:8080/api/config/llm \
+  -H "Authorization: Bearer <admin-jwt>"
+
+# Enable and configure Ollama
+curl -X PUT http://localhost:8080/api/config/llm \
+  -H "Authorization: Bearer <admin-jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "provider":  "ollama",
+    "endpoint":  "http://localhost:11434",
+    "model":     "llama3",
+    "enabled":   true
+  }'
+```
+
+| Field | Required when `enabled` | Description |
+|-------|------------------------|-------------|
+| `provider` | No | LLM provider name. Currently only `"ollama"` is accepted. Defaults to `"ollama"` when omitted. |
+| `endpoint` | Yes | Base URL of the Ollama server (e.g. `"http://localhost:11434"`). |
+| `model` | Yes | Ollama model name (e.g. `"llama3"`, `"mistral"`, `"gemma3"`). The model must already be pulled on the Ollama server. |
+| `enabled` | — | `true` to activate AI enrichment; `false` to disable it. |
+
+A successful update is recorded in the audit log as `llm.config_updated`.
+
+> **Restart required.** LLM configuration is read once at server startup. After saving a new configuration via the API, **restart the server** (or the worker process if running in split mode) for the change to take effect. The `PUT /api/config/llm` response always includes `"restart_required": true` as a reminder.
+
+See [API reference — LLM config endpoints](api-reference.md#get-apiconfigllm--admin--jwt-only) for the full request/response shapes.
+
+---
+
 ## File Organization
 
 Biblioteka can automatically move imported book files into an organized directory structure under each library root. This keeps your collection tidy and makes paths predictable.

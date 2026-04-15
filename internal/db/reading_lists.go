@@ -210,7 +210,7 @@ func (d *DB) RemoveBookFromReadingList(ctx context.Context, listID, userID, book
 }
 
 // ListReadingListBooks returns a paginated list of books in a reading list,
-// ordered by position then added_at. The list must be owned by userID.
+// ordered by added_at. The list must be owned by userID.
 // Returns sql.ErrNoRows if the list doesn't exist or is not owned by the user.
 func (d *DB) ListReadingListBooks(ctx context.Context, listID, userID string, limit, offset int) ([]Book, int, error) {
 	slog.DebugContext(ctx, "listing reading list books",
@@ -228,7 +228,7 @@ func (d *DB) ListReadingListBooks(ctx context.Context, listID, userID string, li
          FROM books b
          INNER JOIN reading_list_books rlb ON rlb.book_id = b.id
          WHERE rlb.reading_list_id = $1
-         ORDER BY rlb.position ASC, rlb.added_at ASC, b.id ASC
+         ORDER BY rlb.added_at ASC, b.id ASC
          LIMIT $2 OFFSET $3`,
 		listID, limit, offset,
 	)

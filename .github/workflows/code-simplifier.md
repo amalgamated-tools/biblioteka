@@ -13,6 +13,7 @@ network:
   - python
   - rust
   - java
+  - go
 
 permissions: read-all
 
