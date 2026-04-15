@@ -30,9 +30,10 @@ func newBenchDB(b *testing.B) *DB {
 
 	// In-memory SQLite databases are connection-scoped: each new connection
 	// from the pool gets its own empty database.  Pinning to a single
-	// connection ensures migrations and subsequent queries all see the same
-	// schema, which is required by benchmarks that use errgroup-based
-	// concurrency (e.g. BenchmarkLoadBookRelations).
+	// connection ensures all queries see the same schema and data.  This
+	// serializes concurrent callers (e.g. LoadBookRelations' errgroup), so
+	// it does not exercise true parallelism; a shared-cache DSN
+	// (file::memory:?cache=shared) would be needed for that.
 	sqlDB.SetMaxOpenConns(1)
 
 	d := &DB{DB: sqlDB, Dialect: DialectSQLite}
