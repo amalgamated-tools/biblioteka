@@ -10,6 +10,8 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/goodreads"
 	"github.com/amalgamated-tools/biblioteka/internal/jobs"
+	"github.com/amalgamated-tools/biblioteka/internal/llm"
+	"github.com/amalgamated-tools/biblioteka/internal/llm/ollama"
 	"github.com/amalgamated-tools/biblioteka/internal/metadata"
 	"github.com/amalgamated-tools/biblioteka/internal/otel"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
@@ -122,6 +124,32 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 		}
 
 		w.Register(cancelCtx, jobs.JobEnrichGoodreads, jobs.NewEnrichGoodreadsHandler(database, grClient, publisher))
+
+		// Register AI enrichment job. The provider is nil when LLM is not configured;
+		// the job handler handles that gracefully.
+		var llmProvider llm.Provider
+		var llmProviderName string
+		var llmModelName string
+		if llmEnabledStr, err := database.GetSetting(cancelCtx, db.SettingLLMEnabled); err == nil && llmEnabledStr == "true" {
+			llmEndpoint, _ := database.GetSetting(cancelCtx, db.SettingLLMEndpoint)
+			llmModelName, _ = database.GetSetting(cancelCtx, db.SettingLLMModel)
+			llmProviderName, _ = database.GetSetting(cancelCtx, db.SettingLLMProvider)
+			if llmEndpoint != "" {
+				factories := map[string]llm.Factory{
+					llm.ProviderOllama: func(endpoint, model string) llm.Provider { return ollama.New(endpoint, model) },
+				}
+				p, name, err := llm.NewProvider(llmProviderName, llmEndpoint, llmModelName, factories)
+				if err != nil {
+					slog.WarnContext(cancelCtx, "unsupported LLM provider, AI enrichment disabled",
+						slog.String(otelkeys.Source, llmProviderName),
+					)
+				} else {
+					llmProvider = p
+					llmProviderName = name
+				}
+			}
+		}
+		w.Register(cancelCtx, jobs.JobEnrichAI, jobs.NewEnrichAIHandler(database, llmProvider, llmProviderName, llmModelName, publisher))
 
 		if _, err := w.RegisterSchedule("@every 24h", jobs.JobScanLibraries, struct{}{}); err != nil {
 			slog.ErrorContext(cancelCtx, "failed to schedule scan:libraries job", slog.Any(otelkeys.Error, err))
