@@ -353,6 +353,23 @@ describe("BookList empty state", () => {
     expect(container.textContent).toContain("Scanning library...");
     expect(container.textContent).not.toContain("No books yet.");
   });
+
+  it("shows custom emptyMessage when provided", async () => {
+    const fetchBooks = vi.fn().mockResolvedValue(emptyBooks);
+    const { container } = render(BookList, {
+      props: {
+        fetchBooks,
+        emptyMessage: 'No results for "tolkien"',
+        emptySubMessage: "Try a different search term.",
+      },
+    });
+    await tick();
+    await tick();
+
+    expect(container.textContent).toContain('No results for "tolkien"');
+    expect(container.textContent).toContain("Try a different search term.");
+    expect(container.textContent).not.toContain("No books yet.");
+  });
 });
 
 describe("BookList polling", () => {

@@ -20,6 +20,8 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/handlers"
 	"github.com/amalgamated-tools/biblioteka/internal/handlers/middleware"
+	"github.com/amalgamated-tools/biblioteka/internal/llm"
+	"github.com/amalgamated-tools/biblioteka/internal/llm/ollama"
 	"github.com/amalgamated-tools/biblioteka/internal/otel"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/amalgamated-tools/biblioteka/internal/pubsub"
@@ -38,16 +40,18 @@ const (
 	// UserAgentHeader is the header name for the user agent.
 	UserAgentHeader = "User-Agent"
 	// HTTPWriteTimeout is the maximum duration before timing out writes of the response.
-	HTTPWriteTimeout = 10 * time.Second
+	// Set high enough to accommodate large uploads (e.g. 100 MB Calibre database imports).
+	HTTPWriteTimeout = 120 * time.Second
 	// HTTPReadTimeout is the maximum duration for reading the entire request, including the body.
-	HTTPReadTimeout = 10 * time.Second
+	// Set high enough to accommodate large uploads on slow connections.
+	HTTPReadTimeout = 120 * time.Second
 	// HTTPIdleTimeout is the maximum amount of time to wait for the next request when keep-alives are enabled.
 	HTTPIdleTimeout = 30 * time.Second
 	// HTTPRequestTimeout is the maximum duration for handling a single HTTP request.
 	HTTPRequestTimeout = 10 * time.Second
-	// ShutdownGracePeriod is the time we allow for graceful shutdown of the http server
-	// Should be longer than HTTPWriteTimeout, but shorter than the k8s terminationGracePeriodSeconds (30 seconds)
-	ShutdownGracePeriod = 15 * time.Second
+	// ShutdownGracePeriod is the time we allow for graceful shutdown of the http server.
+	// Should be longer than HTTPWriteTimeout, but shorter than the k8s terminationGracePeriodSeconds.
+	ShutdownGracePeriod = 150 * time.Second
 )
 
 // ShutdownFunc is a function that takes a context and returns an error
@@ -66,6 +70,7 @@ type Server struct {
 
 	oidcHandler            *handlers.OIDCHandler
 	authHandler            *handlers.AuthHandler
+	passkeyHandler         *handlers.PasskeyHandler
 	configHandler          *handlers.ConfigHandler
 	adminHandler           *handlers.AdminHandler
 	libraryHandler         *handlers.LibraryHandler
@@ -76,12 +81,16 @@ type Server struct {
 	bookFileHandler        *handlers.BookFileHandler
 	auditLogHandler        *handlers.AuditLogHandler
 	apiKeyHandler          *handlers.APIKeyHandler
+	tagHandler             *handlers.TagHandler
 	opdsHandler            *handlers.OPDSHandler
 	opdsCredentialHandler  *handlers.OPDSCredentialHandler
 	koboHandler            *handlers.KoboHandler
 	kosyncHandler          *handlers.KOSyncHandler
+	groupHandler           *handlers.GroupHandler
 	statsHandler           *handlers.StatsHandler
 	readingProgressHandler *handlers.ReadingProgressHandler
+	calibreImportHandler   *handlers.CalibreImportHandler
+	recommendationHandler  *handlers.RecommendationHandler
 	requireAuth            func(http.Handler) http.Handler
 	requireJWTAuth         func(http.Handler) http.Handler
 	requireAdmin           func(http.Handler) http.Handler
@@ -182,6 +191,10 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	disableSignup := os.Getenv("DISABLE_SIGNUP") == "true"
 
 	s.authHandler = &handlers.AuthHandler{DB: s.DB, JWT: s.JWT, SecureCookies: secureCookies, DisableSignup: disableSignup}
+
+	// Initialize WebAuthn for passkey support. RPID and origins must match the
+	// deployment domain; they default to localhost for local development.
+	s.passkeyHandler = newPasskeyHandler(ctx, s.DB, s.JWT, secureCookies)
 	s.adminHandler = &handlers.AdminHandler{DB: s.DB}
 	s.libraryHandler = &handlers.LibraryHandler{DB: s.DB}
 	if s.Worker != nil {
@@ -216,17 +229,49 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 			metadataHandler.Subscriber = psClient
 		}
 	}
+
+	// Wire up the LLM provider if configured in settings.
+	// NOTE: LLM config is read once at startup. Changes via /api/config/llm
+	// require a server restart to take effect (communicated via restart_required
+	// in the PUT response).
+	if llmEnabledStr, err := s.DB.GetSetting(ctx, db.SettingLLMEnabled); err == nil && llmEnabledStr == "true" {
+		llmProviderName, _ := s.DB.GetSetting(ctx, db.SettingLLMProvider)
+		llmEndpoint, _ := s.DB.GetSetting(ctx, db.SettingLLMEndpoint)
+		llmModel, _ := s.DB.GetSetting(ctx, db.SettingLLMModel)
+		if llmEndpoint != "" {
+			factories := map[string]llm.Factory{
+				llm.ProviderOllama: func(endpoint, model string) llm.Provider { return ollama.New(endpoint, model) },
+			}
+			p, name, err := llm.NewProvider(llmProviderName, llmEndpoint, llmModel, factories)
+			if err != nil {
+				slog.WarnContext(ctx, "unsupported LLM provider, AI enrichment disabled",
+					slog.String(otelkeys.Source, llmProviderName),
+				)
+			} else {
+				metadataHandler.LLMProvider = p
+				slog.InfoContext(ctx, "LLM provider configured",
+					slog.String(otelkeys.Source, name),
+					slog.String(otelkeys.URL, llmEndpoint),
+				)
+			}
+		}
+	}
+
 	s.bookHandler.MetadataHandler = metadataHandler
+	s.tagHandler = &handlers.TagHandler{DB: s.DB}
 	s.bookFileHandler = &handlers.BookFileHandler{DB: s.DB, Secrets: secretEncrypter}
 	s.auditLogHandler = &handlers.AuditLogHandler{DB: s.DB}
 	s.opdsHandler = &handlers.OPDSHandler{DB: s.DB}
 	s.opdsCredentialHandler = &handlers.OPDSCredentialHandler{DB: s.DB}
 	s.kosyncHandler = &handlers.KOSyncHandler{DB: s.DB}
 	s.readingProgressHandler = &handlers.ReadingProgressHandler{DB: s.DB}
+	s.calibreImportHandler = &handlers.CalibreImportHandler{DB: s.DB}
 	s.apiKeyHandler = &handlers.APIKeyHandler{DB: s.DB}
 	s.koboHandler = &handlers.KoboHandler{DB: s.DB}
 	s.koboHandler.RegisterRoutes()
+	s.groupHandler = &handlers.GroupHandler{DB: s.DB}
 	s.statsHandler = &handlers.StatsHandler{DB: s.DB}
+	s.recommendationHandler = &handlers.RecommendationHandler{DB: s.DB}
 	s.requireKoboAuth = auth.KoboTokenAuthMiddleware(&koboDBAdapter{db: s.DB})
 	protocolCredAdapter := &protocolCredDBAdapter{db: s.DB}
 	s.requireOPDSAuth = auth.OPDSBasicAuthMiddleware(protocolCredAdapter)

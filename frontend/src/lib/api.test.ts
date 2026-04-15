@@ -169,8 +169,10 @@ describe("request (via API functions)", () => {
       status: 401,
       statusText: "Unauthorized",
       headers: new Headers({ "content-type": "application/json" }),
-      json: vi.fn().mockResolvedValue({ error: "Invalid credentials" }),
-      text: vi.fn(),
+      json: vi.fn(),
+      text: vi
+        .fn()
+        .mockResolvedValue(JSON.stringify({ error: "Invalid credentials" })),
     } as unknown as Response;
     fetchMock.mockResolvedValue(resp);
 

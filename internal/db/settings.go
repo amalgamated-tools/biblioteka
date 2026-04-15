@@ -11,8 +11,12 @@ import (
 
 // Well-known setting keys shared across packages.
 const (
-	SettingWatchFolderPath      = "watch_folder_path"
+	SettingLLMEnabled           = "llm_enabled"
+	SettingLLMEndpoint          = "llm_endpoint"
+	SettingLLMModel             = "llm_model"
+	SettingLLMProvider          = "llm_provider"
 	SettingWatchFolderLibraryID = "watch_folder_library_id"
+	SettingWatchFolderPath      = "watch_folder_path"
 )
 
 // Setting holds a configuration key-value pair for bulk saves.
@@ -28,7 +32,7 @@ type settingExecer interface {
 // GetSetting retrieves a setting value by key.
 // Returns sql.ErrNoRows if the key does not exist.
 func (d *DB) GetSetting(ctx context.Context, key string) (string, error) {
-	slog.DebugContext(ctx, "db: fetching setting", slog.String(otelkeys.Key, key))
+	slog.DebugContext(ctx, "fetching setting", slog.String(otelkeys.Key, key))
 	var value string
 	err := d.QueryRowContext(ctx, "SELECT value FROM settings WHERE key = $1", key).Scan(&value)
 	return value, err
@@ -36,7 +40,7 @@ func (d *DB) GetSetting(ctx context.Context, key string) (string, error) {
 
 // SetSetting upserts a setting key-value pair.
 func (d *DB) SetSetting(ctx context.Context, key, value string) error {
-	slog.DebugContext(ctx, "db: saving setting", slog.String(otelkeys.Key, key))
+	slog.DebugContext(ctx, "saving setting", slog.String(otelkeys.Key, key))
 	return d.setSetting(ctx, d.DB, key, value)
 }
 
@@ -44,19 +48,19 @@ func (d *DB) SetSetting(ctx context.Context, key, value string) error {
 func (d *DB) SetSettings(ctx context.Context, settings []Setting) error {
 	tx, err := d.BeginTx(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("db: begin settings transaction: %w", err)
+		return fmt.Errorf("begin settings transaction: %w", err)
 	}
 	defer deferRollback(ctx, tx)
 
 	for _, setting := range settings {
-		slog.DebugContext(ctx, "db: saving setting", slog.String(otelkeys.Key, setting.Key))
+		slog.DebugContext(ctx, "saving setting", slog.String(otelkeys.Key, setting.Key))
 		if err := d.setSetting(ctx, tx, setting.Key, setting.Value); err != nil {
-			return fmt.Errorf("db: saving setting %q: %w", setting.Key, err)
+			return fmt.Errorf("saving setting %q: %w", setting.Key, err)
 		}
 	}
 
 	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("db: commit settings transaction: %w", err)
+		return fmt.Errorf("commit settings transaction: %w", err)
 	}
 	return nil
 }
