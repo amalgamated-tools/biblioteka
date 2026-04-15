@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"log/slog"
@@ -44,6 +45,26 @@ func toReadingListDTO(rl *db.ReadingList) readingListDTO {
 		CreatedAt:   rl.CreatedAt,
 		UpdatedAt:   rl.UpdatedAt,
 	}
+}
+
+func handleReadingListOpErr(ctx context.Context, w http.ResponseWriter, err error, op string, attrs ...slog.Attr) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(ctx, w, http.StatusNotFound, "reading list not found")
+		return true
+	}
+
+	logAttrs := make([]any, 0, len(attrs)+1)
+	for _, attr := range attrs {
+		logAttrs = append(logAttrs, attr)
+	}
+	logAttrs = append(logAttrs, slog.Any(otelkeys.Error, err))
+
+	slog.ErrorContext(ctx, op, logAttrs...)
+	writeError(ctx, w, http.StatusInternalServerError, op)
+	return true
 }
 
 // HandleReadingLists handles GET /api/reading-lists and POST /api/reading-lists.
@@ -200,16 +221,9 @@ func (h *ReadingListHandler) listReadingListBooks(w http.ResponseWriter, r *http
 	limit, offset := parseLimitOffset(r, defaultPageLimit, maxPageLimit)
 
 	books, total, err := h.DB.ListReadingListBooks(ctx, listID, userID, limit, offset)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			writeError(ctx, w, http.StatusNotFound, "reading list not found")
-			return
-		}
-		slog.ErrorContext(ctx, "failed to list reading list books",
-			slog.String(otelkeys.ReadingListID, listID),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(ctx, w, http.StatusInternalServerError, "failed to list reading list books")
+	if handleReadingListOpErr(ctx, w, err, "failed to list reading list books",
+		slog.String(otelkeys.ReadingListID, listID),
+	) {
 		return
 	}
 
@@ -235,21 +249,14 @@ func (h *ReadingListHandler) addBookToReadingList(w http.ResponseWriter, r *http
 
 	userID := auth.UserIDFromContext(ctx)
 	added, err := h.DB.AddBookToReadingList(ctx, listID, userID, req.BookID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			writeError(ctx, w, http.StatusNotFound, "reading list not found")
-			return
-		}
-		if errors.Is(err, db.ErrBookNotFound) {
-			writeError(ctx, w, http.StatusNotFound, "book not found")
-			return
-		}
-		slog.ErrorContext(ctx, "failed to add book to reading list",
-			slog.String(otelkeys.ReadingListID, listID),
-			slog.String(otelkeys.BookID, req.BookID),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(ctx, w, http.StatusInternalServerError, "failed to add book to reading list")
+	if errors.Is(err, db.ErrBookNotFound) {
+		writeError(ctx, w, http.StatusNotFound, "book not found")
+		return
+	}
+	if handleReadingListOpErr(ctx, w, err, "failed to add book to reading list",
+		slog.String(otelkeys.ReadingListID, listID),
+		slog.String(otelkeys.BookID, req.BookID),
+	) {
 		return
 	}
 
@@ -278,17 +285,10 @@ func (h *ReadingListHandler) removeBookFromReadingList(w http.ResponseWriter, r 
 	userID := auth.UserIDFromContext(ctx)
 
 	removed, err := h.DB.RemoveBookFromReadingList(ctx, listID, userID, bookID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			writeError(ctx, w, http.StatusNotFound, "reading list not found")
-			return
-		}
-		slog.ErrorContext(ctx, "failed to remove book from reading list",
-			slog.String(otelkeys.ReadingListID, listID),
-			slog.String(otelkeys.BookID, bookID),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(ctx, w, http.StatusInternalServerError, "failed to remove book from reading list")
+	if handleReadingListOpErr(ctx, w, err, "failed to remove book from reading list",
+		slog.String(otelkeys.ReadingListID, listID),
+		slog.String(otelkeys.BookID, bookID),
+	) {
 		return
 	}
 
