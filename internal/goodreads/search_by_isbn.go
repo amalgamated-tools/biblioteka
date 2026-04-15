@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -12,6 +13,8 @@ import (
 	"sync"
 
 	"github.com/buger/jsonparser"
+
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
 // SearchByISBN searches Goodreads for books matching the given ISBN and returns a list of search results.
@@ -152,6 +155,10 @@ func (c *Client) parseISBNSearchResponse(ctx context.Context, bodyText []byte) (
 			}
 
 			// Fallback: build a partial result from the autocomplete data.
+			slog.WarnContext(ctx, "failed to get book by legacy ID, returning partial result",
+				slog.Int64(otelkeys.BookLegacyID, e.bookID),
+				slog.Any(otelkeys.Error, err),
+			)
 			resultsCh <- indexedResult{index: idx, result: buildFallbackResult(e)}
 		}(i, entry)
 	}
