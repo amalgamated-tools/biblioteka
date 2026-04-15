@@ -13,10 +13,8 @@ import (
 var (
 	ErrInvalidGroupName      = errors.New("invalid group name")
 	ErrGroupNameExists       = errors.New("group name already exists")
-	ErrGroupNotFound         = errors.New("group not found")
 	ErrMemberUserNotFound    = errors.New("member user not found")
 	ErrNotGroupMember        = errors.New("not a group member")
-	ErrAlreadyGroupMember    = errors.New("already a group member")
 	ErrOwnerCannotLeaveGroup = errors.New("owner cannot leave their own group")
 )
 
@@ -39,7 +37,6 @@ type ReadingGroupMember struct {
 	GroupID  string    `json:"group_id"`
 	UserID   string    `json:"user_id"`
 	UserName string    `json:"user_name"`
-	Email    string    `json:"email"`
 	Role     string    `json:"role"`
 	JoinedAt Timestamp `json:"joined_at"`
 }
@@ -52,7 +49,7 @@ func scanReadingGroup(row interface{ Scan(...any) error }) (*ReadingGroup, error
 
 func scanReadingGroupMember(row interface{ Scan(...any) error }) (*ReadingGroupMember, error) {
 	return scanRow(row, func(m *ReadingGroupMember) []any {
-		return []any{&m.GroupID, &m.UserID, &m.UserName, &m.Email, &m.Role, &m.JoinedAt}
+		return []any{&m.GroupID, &m.UserID, &m.UserName, &m.Role, &m.JoinedAt}
 	})
 }
 
@@ -194,7 +191,7 @@ func (d *DB) ListGroupMembers(ctx context.Context, groupID, requesterID string) 
 		return nil, sql.ErrNoRows
 	}
 	rows, err := d.QueryContext(ctx,
-		`SELECT m.group_id, m.user_id, u.name, u.email, m.role, m.joined_at
+		`SELECT m.group_id, m.user_id, u.name, m.role, m.joined_at
 		 FROM reading_group_members m
 		 JOIN users u ON u.id = m.user_id
 		 WHERE m.group_id = $1
