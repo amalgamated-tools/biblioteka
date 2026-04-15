@@ -47,9 +47,8 @@
   // `debouncedQuery` changes. BookList's internal effect tracks `fetchBooks`
   // as a dependency, so it detects the new reference and resets pagination
   // offset to 0 before re-fetching.
-  let fetchBooks = $derived(
-    (limit: number, offset: number) =>
-      api.listBooks(limit, offset, debouncedQuery),
+  let fetchBooks = $derived((limit: number, offset: number) =>
+    api.listBooks(limit, offset, debouncedQuery),
   );
 
   let emptyMessage = $derived(
