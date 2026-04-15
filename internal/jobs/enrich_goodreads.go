@@ -45,11 +45,12 @@ type GoodreadsSearcher interface {
 
 // progressEvent is the JSON structure published to Redis pub/sub for SSE clients.
 type progressEvent struct {
-	Event      string `json:"event"`
-	Source     string `json:"source,omitempty"`
-	Step       string `json:"step,omitempty"`
-	Message    string `json:"message,omitempty"`
-	MetadataID string `json:"metadata_id,omitempty"`
+	Event          string `json:"event"`
+	Source         string `json:"source,omitempty"`
+	Step           string `json:"step,omitempty"`
+	Message        string `json:"message,omitempty"`
+	MetadataID     string `json:"metadata_id,omitempty"`
+	AIEnrichmentID string `json:"ai_enrichment_id,omitempty"`
 }
 
 // NewEnrichGoodreadsHandler returns a worker.Func that fetches Goodreads
