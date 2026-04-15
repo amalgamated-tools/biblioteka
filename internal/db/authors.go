@@ -54,6 +54,7 @@ func (authorListQuery) orderBy(d *DB) string {
 	return d.dialectOrderBy("name", "ASC")
 }
 
+// scanAuthor scans an author row into an Author struct.
 func scanAuthor(row interface{ Scan(...any) error }) (*Author, error) {
 	return scanRow(row, func(a *Author) []any {
 		return []any{&a.ID, &a.Name, &a.GoodreadsID, &a.HardcoverID, &a.GoogleBooksID, &a.ImageURL, &a.CreatedAt, &a.UpdatedAt}
@@ -76,7 +77,7 @@ func (d *DB) CreateAuthor(ctx context.Context, name string, goodreadsID, hardcov
 
 // GetAuthor retrieves an author by its UUID. Returns sql.ErrNoRows if not found.
 func (d *DB) GetAuthor(ctx context.Context, id string) (*Author, error) {
-	slog.DebugContext(ctx, "db: fetching author", slog.String(otelkeys.AuthorID, id))
+	slog.DebugContext(ctx, "fetching author", slog.String(otelkeys.AuthorID, id))
 	return scanAuthor(d.QueryRowContext(ctx,
 		`SELECT `+authorColumns+` FROM authors WHERE id = $1`,
 		id,
@@ -87,7 +88,7 @@ func (d *DB) GetAuthor(ctx context.Context, id string) (*Author, error) {
 // The stored name preserves the original capitalization provided by the caller.
 func (d *DB) GetAuthorByName(ctx context.Context, name string) (*Author, error) {
 	name = NormalizeAuthorName(name)
-	slog.DebugContext(ctx, "db: fetching author by name", slog.String(otelkeys.Name, name))
+	slog.DebugContext(ctx, "fetching author by name", slog.String(otelkeys.Name, name))
 	return scanAuthor(d.QueryRowContext(ctx,
 		`SELECT `+authorColumns+` FROM authors WHERE LOWER(name) = LOWER($1)`,
 		name,
@@ -96,13 +97,13 @@ func (d *DB) GetAuthorByName(ctx context.Context, name string) (*Author, error) 
 
 // ListAuthors returns all authors ordered by name.
 func (d *DB) ListAuthors(ctx context.Context) ([]Author, error) {
-	slog.DebugContext(ctx, "db: listing authors")
+	slog.DebugContext(ctx, "listing authors")
 	return listAll(ctx, d, authorListQuery{}, scanAuthor)
 }
 
 // ListAuthorsPaginated returns authors ordered by name with pagination and total count.
 func (d *DB) ListAuthorsPaginated(ctx context.Context, limit, offset int) ([]Author, int, error) {
-	slog.DebugContext(ctx, "db: listing authors paginated",
+	slog.DebugContext(ctx, "listing authors paginated",
 		slog.Int(otelkeys.Limit, limit),
 		slog.Int(otelkeys.Offset, offset),
 	)
@@ -139,6 +140,6 @@ func (d *DB) FindOrCreateAuthor(ctx context.Context, name string) (*Author, erro
 // DeleteAuthor removes the author with the given ID. Returns sql.ErrNoRows if
 // no matching author exists.
 func (d *DB) DeleteAuthor(ctx context.Context, id string) error {
-	slog.DebugContext(ctx, "db: deleting author", slog.String(otelkeys.AuthorID, id))
+	slog.DebugContext(ctx, "deleting author", slog.String(otelkeys.AuthorID, id))
 	return d.execAffected(ctx, `DELETE FROM authors WHERE id = $1`, id)
 }

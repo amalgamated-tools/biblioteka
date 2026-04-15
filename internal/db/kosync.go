@@ -59,6 +59,7 @@ type ReadingProgress struct {
 
 const readingProgressColumns = `id, user_id, document, progress, percentage, device, device_id, created_at, updated_at`
 
+// scanReadingProgress scans a reading progress row into a ReadingProgress struct.
 func scanReadingProgress(row interface{ Scan(...any) error }) (*ReadingProgress, error) {
 	return scanRow(row, func(p *ReadingProgress) []any {
 		return []any{&p.ID, &p.UserID, &p.Document, &p.Progress, &p.Percentage, &p.Device, &p.DeviceID, &p.CreatedAt, &p.UpdatedAt}
@@ -67,7 +68,7 @@ func scanReadingProgress(row interface{ Scan(...any) error }) (*ReadingProgress,
 
 // GetReadingProgress returns the reading progress for a user and document, or sql.ErrNoRows if not found.
 func (d *DB) GetReadingProgress(ctx context.Context, userID, document string) (*ReadingProgress, error) {
-	slog.DebugContext(ctx, "db: fetching reading progress",
+	slog.DebugContext(ctx, "fetching reading progress",
 		slog.String(otelkeys.UserID, userID),
 		slog.String(otelkeys.Document, document),
 	)
@@ -79,7 +80,7 @@ func (d *DB) GetReadingProgress(ctx context.Context, userID, document string) (*
 
 // UpsertReadingProgress creates or updates the reading progress for a user and document.
 func (d *DB) UpsertReadingProgress(ctx context.Context, userID, document, progress string, percentage float64, device, deviceID *string) (*ReadingProgress, error) {
-	slog.DebugContext(ctx, "db: upserting reading progress",
+	slog.DebugContext(ctx, "upserting reading progress",
 		slog.String(otelkeys.UserID, userID),
 		slog.String(otelkeys.Document, document),
 	)
