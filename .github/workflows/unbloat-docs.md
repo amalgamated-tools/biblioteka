@@ -110,7 +110,7 @@ This will help you avoid re-cleaning files that were recently processed.
 Scan the repository for markdown documentation files. **Only target files in the `docs/` subdirectory** — root-level `.md` files (README.md, CONTRIBUTING.md, CLAUDE.md, AGENTS.md, GEMINI.md, SECURITY.md, CHANGELOG.md, CLA.md, etc.) are out of scope.
 
 ```bash
-find docs/ -maxdepth 2 -name "*.md" | sort
+find docs/ -name '*.md'
 ```
 
 **IMPORTANT**: Exclude these types of files:
@@ -118,7 +118,7 @@ find docs/ -maxdepth 2 -name "*.md" | sort
 - Changelog files
 - License files
 - Code of conduct files
-- **Files with `disable-agentic-editing: true` in frontmatter** — these files are explicitly protected from automated editing
+- **Files containing `disable-agentic-editing: true`** — these files are explicitly protected from automated editing
 - Files under 150 lines (too small to contain meaningful bloat)
 - Files modified within the last 3 days (avoid conflicting with active development)
 
@@ -143,16 +143,16 @@ Look for documentation files with clear, objective bloat signals (see section 4)
 - Auto-generated documentation (e.g., swagger, generated API docs)
 - Changelog or release notes
 - License or legal files
-- **Files with `disable-agentic-editing: true` in frontmatter** — these files are explicitly protected from automated editing
+- **Files containing `disable-agentic-editing: true`** — these files are explicitly protected from automated editing
 - Files outside the `docs/` directory
 - Files under 150 lines
 - Files modified within the last 3 days
 - **Files already in cleaned-files.txt cache** — skip recently cleaned files
 
-Before selecting a file, check its frontmatter to ensure it doesn't have `disable-agentic-editing: true`:
+Before selecting a file, check whether it is protected from automated editing:
 ````bash
-# Check if a file has disable-agentic-editing set to true
-head -20 <filename> | grep -A1 "^---" | grep "disable-agentic-editing: true"
+# Check if a file has disable-agentic-editing set
+head -20 <filename> | grep -n "disable-agentic-editing: true"
 # If this returns a match, SKIP this file - it's protected
 ````
 
@@ -168,8 +168,8 @@ Choose the file most in need of improvement based on **objective bloat signals**
 
 **First, verify the file is editable**:
 ````bash
-# Check frontmatter for disable-agentic-editing flag
-head -20 <filename> | grep -A1 "^---" | grep "disable-agentic-editing: true"
+# Check for disable-agentic-editing flag
+head -20 <filename> | grep -n "disable-agentic-editing: true"
 ````
 
 If this command returns a match, **STOP** — the file is protected. Select a different file.
