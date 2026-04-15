@@ -71,11 +71,11 @@
     </div>
     <div class="flex items-center gap-2">
       <Button onclick={onApplyAll} size="sm">
-        <Check class="w-3 h-3 mr-1 inline" aria-hidden="true" />
+        <Check class="w-3 h-3 mr-1" aria-hidden="true" />
         Apply All
       </Button>
       <Button variant="secondary" onclick={onDismiss} size="sm">
-        <X class="w-3 h-3 mr-1 inline" aria-hidden="true" />
+        <X class="w-3 h-3 mr-1" aria-hidden="true" />
         Dismiss
       </Button>
     </div>

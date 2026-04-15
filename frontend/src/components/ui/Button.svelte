@@ -39,7 +39,7 @@
   {type}
   {disabled}
   {onclick}
-  class="inline-flex items-center font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed {sizeClasses[
+  class="inline-flex items-center justify-center font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed {sizeClasses[
     size
   ]} {variantClasses[variant]} {extraClass ?? ''}"
 >
