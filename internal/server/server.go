@@ -87,6 +87,7 @@ type Server struct {
 	statsHandler           *handlers.StatsHandler
 	readingProgressHandler *handlers.ReadingProgressHandler
 	calibreImportHandler   *handlers.CalibreImportHandler
+	recommendationHandler  *handlers.RecommendationHandler
 	requireAuth            func(http.Handler) http.Handler
 	requireJWTAuth         func(http.Handler) http.Handler
 	requireAdmin           func(http.Handler) http.Handler
@@ -238,6 +239,7 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	s.koboHandler.RegisterRoutes()
 	s.groupHandler = &handlers.GroupHandler{DB: s.DB}
 	s.statsHandler = &handlers.StatsHandler{DB: s.DB}
+	s.recommendationHandler = &handlers.RecommendationHandler{DB: s.DB}
 	s.requireKoboAuth = auth.KoboTokenAuthMiddleware(&koboDBAdapter{db: s.DB})
 	protocolCredAdapter := &protocolCredDBAdapter{db: s.DB}
 	s.requireOPDSAuth = auth.OPDSBasicAuthMiddleware(protocolCredAdapter)
