@@ -72,6 +72,15 @@ func (h *BookHandler) HandleBookRoutes(w http.ResponseWriter, r *http.Request) {
 		default:
 			writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
 		}
+	case "tags":
+		switch r.Method {
+		case http.MethodGet:
+			h.getBookTags(w, r, id)
+		case http.MethodPut:
+			h.putBookTags(w, r, id)
+		default:
+			writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
+		}
 	default:
 		// Metadata is a nested sub-resource with its own action paths
 		// (e.g. metadata/fetch, metadata/events). extractPathSegments returns

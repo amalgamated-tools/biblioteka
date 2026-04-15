@@ -20,6 +20,8 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/handlers"
 	"github.com/amalgamated-tools/biblioteka/internal/handlers/middleware"
+	"github.com/amalgamated-tools/biblioteka/internal/llm"
+	"github.com/amalgamated-tools/biblioteka/internal/llm/ollama"
 	"github.com/amalgamated-tools/biblioteka/internal/otel"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/amalgamated-tools/biblioteka/internal/pubsub"
@@ -79,6 +81,7 @@ type Server struct {
 	bookFileHandler        *handlers.BookFileHandler
 	auditLogHandler        *handlers.AuditLogHandler
 	apiKeyHandler          *handlers.APIKeyHandler
+	tagHandler             *handlers.TagHandler
 	opdsHandler            *handlers.OPDSHandler
 	opdsCredentialHandler  *handlers.OPDSCredentialHandler
 	koboHandler            *handlers.KoboHandler
@@ -226,7 +229,36 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 			metadataHandler.Subscriber = psClient
 		}
 	}
+
+	// Wire up the LLM provider if configured in settings.
+	// NOTE: LLM config is read once at startup. Changes via /api/config/llm
+	// require a server restart to take effect (communicated via restart_required
+	// in the PUT response).
+	if llmEnabledStr, err := s.DB.GetSetting(ctx, db.SettingLLMEnabled); err == nil && llmEnabledStr == "true" {
+		llmProviderName, _ := s.DB.GetSetting(ctx, db.SettingLLMProvider)
+		llmEndpoint, _ := s.DB.GetSetting(ctx, db.SettingLLMEndpoint)
+		llmModel, _ := s.DB.GetSetting(ctx, db.SettingLLMModel)
+		if llmEndpoint != "" {
+			factories := map[string]llm.Factory{
+				llm.ProviderOllama: func(endpoint, model string) llm.Provider { return ollama.New(endpoint, model) },
+			}
+			p, name, err := llm.NewProvider(llmProviderName, llmEndpoint, llmModel, factories)
+			if err != nil {
+				slog.WarnContext(ctx, "unsupported LLM provider, AI enrichment disabled",
+					slog.String(otelkeys.Source, llmProviderName),
+				)
+			} else {
+				metadataHandler.LLMProvider = p
+				slog.InfoContext(ctx, "LLM provider configured",
+					slog.String(otelkeys.Source, name),
+					slog.String(otelkeys.URL, llmEndpoint),
+				)
+			}
+		}
+	}
+
 	s.bookHandler.MetadataHandler = metadataHandler
+	s.tagHandler = &handlers.TagHandler{DB: s.DB}
 	s.bookFileHandler = &handlers.BookFileHandler{DB: s.DB, Secrets: secretEncrypter}
 	s.auditLogHandler = &handlers.AuditLogHandler{DB: s.DB}
 	s.opdsHandler = &handlers.OPDSHandler{DB: s.DB}

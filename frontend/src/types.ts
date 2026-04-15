@@ -326,6 +326,7 @@ export interface MetadataProgressEvent {
   step?: string;
   message?: string;
   metadata_id?: string;
+  ai_enrichment_id?: string;
 }
 
 // Statistics
