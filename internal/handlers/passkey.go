@@ -97,7 +97,7 @@ func loadWebAuthnCredentials(ctx context.Context, creds []db.PasskeyCredential) 
 }
 
 // storeChallenge JSON-encodes the session data and persists it. Returns the session ID.
-func (h *PasskeyHandler) storeChallenge(r *http.Request, userID *string, sd *webauthn.SessionData, name string) (string, error) {
+func (h *PasskeyHandler) storeChallenge(ctx context.Context, userID *string, sd *webauthn.SessionData, name string) (string, error) {
 	data := passkeyChallengeData{
 		SessionData: *sd,
 		Name:        name,
@@ -108,7 +108,7 @@ func (h *PasskeyHandler) storeChallenge(r *http.Request, userID *string, sd *web
 	}
 
 	expiresAt := time.Now().UTC().Add(passkeyChallengeExpiry)
-	challenge, err := h.DB.CreatePasskeyChallenge(r.Context(), userID, string(enc), expiresAt)
+	challenge, err := h.DB.CreatePasskeyChallenge(ctx, userID, string(enc), expiresAt)
 	if err != nil {
 		return "", fmt.Errorf("store challenge: %w", err)
 	}
@@ -286,7 +286,7 @@ func (h *PasskeyHandler) HandleBeginRegistration(w http.ResponseWriter, r *http.
 	}
 
 	uid := userID
-	sessionID, err := h.storeChallenge(r, &uid, sd, req.Name)
+	sessionID, err := h.storeChallenge(r.Context(), &uid, sd, req.Name)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to store passkey challenge",
 			slog.String(otelkeys.UserID, userID),
@@ -461,7 +461,7 @@ func (h *PasskeyHandler) HandleBeginAuthentication(w http.ResponseWriter, r *htt
 		return
 	}
 
-	sessionID, err := h.storeChallenge(r, nil, sd, "")
+	sessionID, err := h.storeChallenge(r.Context(), nil, sd, "")
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to store passkey login challenge", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to store challenge")
