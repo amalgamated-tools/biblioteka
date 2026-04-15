@@ -5,6 +5,7 @@ import type { Book } from "../../types";
 vi.mock("lucide-svelte", () => ({
   BookOpen: () => {},
   ArrowLeft: () => {},
+  Download: () => {},
   Pencil: () => {},
   FileText: () => {},
   User: () => {},
@@ -16,8 +17,12 @@ vi.mock("../../stores/router.svelte", () => ({
 }));
 
 const mockGetBook = vi.fn();
+const mockBookFileDownloadUrl = vi.fn(
+  (id: string) => `/api/book-files/${id}/download`,
+);
 vi.mock("../../lib/api", () => ({
   getBook: (...args: unknown[]) => mockGetBook(...args),
+  bookFileDownloadUrl: (...args: [string]) => mockBookFileDownloadUrl(...args),
 }));
 
 import BookDetail from "./BookDetail.svelte";
@@ -54,9 +59,42 @@ const fakeBook: Book = {
   updated_at: "2026-01-01T00:00:00Z",
 };
 
+const fakeBookWithFiles: Book = {
+  ...fakeBook,
+  files: [
+    {
+      id: "f1",
+      book_id: "b1",
+      file_type: "epub",
+      file_name: "the-hobbit.epub",
+      file_size: 12345,
+      file_hash: null,
+      file_path: "/library/the-hobbit.epub",
+      download_count: 0,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    },
+    {
+      id: "f2",
+      book_id: "b1",
+      file_type: "pdf",
+      file_name: "the-hobbit.pdf",
+      file_size: 56789,
+      file_hash: null,
+      file_path: "/library/the-hobbit.pdf",
+      download_count: 0,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    },
+  ],
+};
+
 describe("BookDetail", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockBookFileDownloadUrl.mockImplementation(
+      (id: string) => `/api/book-files/${id}/download`,
+    );
   });
 
   afterEach(() => cleanup());
@@ -125,5 +163,22 @@ describe("BookDetail", () => {
     await waitFor(() => {
       expect(mockGetBook).toHaveBeenCalledWith("b1");
     });
+  });
+
+  it("renders descriptive aria-labels for file download links", async () => {
+    mockGetBook.mockResolvedValue(fakeBookWithFiles);
+    render(BookDetail, { bookId: "b1" });
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("link", {
+          name: "Download the-hobbit.epub (EPUB)",
+        }),
+      ).toBeInTheDocument();
+    });
+
+    expect(
+      screen.getByRole("link", { name: "Download the-hobbit.pdf (PDF)" }),
+    ).toBeInTheDocument();
   });
 });
