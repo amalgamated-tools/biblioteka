@@ -384,6 +384,63 @@ func TestListReadingListBooks(t *testing.T) {
 	require.Len(t, books, 2)
 }
 
+func TestListReadingListBooks_OrderedByAddedAtThenBookID(t *testing.T) {
+	d := newTestDB(t)
+	userID := createTestUserForRL(t, d, "user@example.com")
+
+	rl, err := d.CreateReadingList(t.Context(), userID, "My List", nil)
+	require.NoError(t, err)
+	book1, err := d.CreateBook(t.Context(), BookInput{Title: "Dune"})
+	require.NoError(t, err)
+	book2, err := d.CreateBook(t.Context(), BookInput{Title: "Foundation"})
+	require.NoError(t, err)
+	book3, err := d.CreateBook(t.Context(), BookInput{Title: "Hyperion"})
+	require.NoError(t, err)
+
+	_, err = d.AddBookToReadingList(t.Context(), rl.ID, userID, book1.ID)
+	require.NoError(t, err)
+	_, err = d.AddBookToReadingList(t.Context(), rl.ID, userID, book2.ID)
+	require.NoError(t, err)
+	_, err = d.AddBookToReadingList(t.Context(), rl.ID, userID, book3.ID)
+	require.NoError(t, err)
+
+	_, err = d.ExecContext(t.Context(),
+		`UPDATE reading_list_books
+         SET added_at = $1
+         WHERE reading_list_id = $2 AND book_id = $3`,
+		"2026-01-03 00:00:00", rl.ID, book1.ID,
+	)
+	require.NoError(t, err)
+	_, err = d.ExecContext(t.Context(),
+		`UPDATE reading_list_books
+         SET added_at = $1
+         WHERE reading_list_id = $2 AND book_id = $3`,
+		"2026-01-02 00:00:00", rl.ID, book2.ID,
+	)
+	require.NoError(t, err)
+	_, err = d.ExecContext(t.Context(),
+		`UPDATE reading_list_books
+         SET added_at = $1
+         WHERE reading_list_id = $2 AND book_id = $3`,
+		"2026-01-02 00:00:00", rl.ID, book3.ID,
+	)
+	require.NoError(t, err)
+
+	books, total, err := d.ListReadingListBooks(t.Context(), rl.ID, userID, 50, 0)
+	require.NoError(t, err)
+	require.Equal(t, 3, total)
+	require.Len(t, books, 3)
+
+	require.Equal(t, "Dune", books[2].Title)
+	if book2.ID < book3.ID {
+		require.Equal(t, "Foundation", books[0].Title)
+		require.Equal(t, "Hyperion", books[1].Title)
+	} else {
+		require.Equal(t, "Hyperion", books[0].Title)
+		require.Equal(t, "Foundation", books[1].Title)
+	}
+}
+
 func TestListReadingListBooks_ListNotFound(t *testing.T) {
 	d := newTestDB(t)
 	userID := createTestUserForRL(t, d, "user@example.com")
