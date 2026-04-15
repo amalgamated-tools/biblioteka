@@ -546,13 +546,12 @@ Stores user-curated ordered lists of books. Each reading list is owned by a sing
 
 ### `reading_list_books` (join table)
 
-Associates books with reading lists and tracks their order and insertion time.
+Associates books with reading lists and tracks insertion time.
 
 | Column            | Type     | Nullable | Default | Description                                   |
 |-------------------|----------|----------|---------|-----------------------------------------------|
 | `reading_list_id` | TEXT     | NOT NULL | —       | FK → `reading_lists.id` ON DELETE CASCADE     |
 | `book_id`         | TEXT     | NOT NULL | —       | FK → `books.id` ON DELETE CASCADE             |
-| `position`        | INTEGER  | NOT NULL | `0`     | Display order (ascending); ties broken by `added_at` |
 | `added_at`        | DATETIME | NOT NULL | `now()` | When the book was added to this list          |
 
 **Primary key:** `(reading_list_id, book_id)`

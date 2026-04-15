@@ -1,5 +1,5 @@
-// Package storage defines an abstract file-storage interface and a local
-// filesystem implementation. It is the foundation for future S3 support:
+// Package storage defines an abstract file-storage interface.
+// It is the foundation for future storage backends such as S3:
 // callers that depend on Storage can switch backends without code changes.
 package storage
 
@@ -19,8 +19,8 @@ type FileInfo struct {
 }
 
 // Storage is an abstract interface over a file-storage backend.
-// LocalStorage implements it for the local filesystem; an S3 implementation
-// will follow.
+// Concrete implementations (e.g. a local filesystem or an S3-compatible
+// object store) satisfy this interface.
 //
 // All methods accept a context.Context for cancellation and deadline
 // propagation. Implementations must be safe for concurrent use by multiple
