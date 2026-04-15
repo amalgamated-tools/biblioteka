@@ -54,6 +54,7 @@ func (authorListQuery) orderBy(d *DB) string {
 	return d.dialectOrderBy("name", "ASC")
 }
 
+// scanAuthor scans an author row into an Author struct.
 func scanAuthor(row interface{ Scan(...any) error }) (*Author, error) {
 	return scanRow(row, func(a *Author) []any {
 		return []any{&a.ID, &a.Name, &a.GoodreadsID, &a.HardcoverID, &a.GoogleBooksID, &a.ImageURL, &a.CreatedAt, &a.UpdatedAt}

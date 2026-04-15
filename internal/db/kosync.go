@@ -59,6 +59,7 @@ type ReadingProgress struct {
 
 const readingProgressColumns = `id, user_id, document, progress, percentage, device, device_id, created_at, updated_at`
 
+// scanReadingProgress scans a reading progress row into a ReadingProgress struct.
 func scanReadingProgress(row interface{ Scan(...any) error }) (*ReadingProgress, error) {
 	return scanRow(row, func(p *ReadingProgress) []any {
 		return []any{&p.ID, &p.UserID, &p.Document, &p.Progress, &p.Percentage, &p.Device, &p.DeviceID, &p.CreatedAt, &p.UpdatedAt}

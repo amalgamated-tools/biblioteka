@@ -30,17 +30,17 @@ type ImportOptions struct {
 // ImportResult summarises the outcome of an import run.
 type ImportResult struct {
 	// Total is the total number of Calibre books examined.
-	Total int
+	Total int `json:"total"`
 
 	// Imported is the number of books successfully written to the database.
-	Imported int
+	Imported int `json:"imported"`
 
 	// Skipped is the number of books not written because they were already
 	// present (detected by file path).
-	Skipped int
+	Skipped int `json:"skipped"`
 
 	// Errors is the number of books that could not be imported due to errors.
-	Errors int
+	Errors int `json:"errors"`
 }
 
 // Import reads the Calibre metadata.db at opts.LibraryPath/metadata.db and
