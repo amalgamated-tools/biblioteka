@@ -258,3 +258,168 @@ func TestGetReadingStreak_OldActivityReturnsZero(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 0, streak)
 }
+
+// ---- ComputeLongestStreak tests ----
+
+func TestComputeLongestStreak_Empty(t *testing.T) {
+	require.Equal(t, 0, ComputeLongestStreak(nil))
+	require.Equal(t, 0, ComputeLongestStreak([]time.Time{}))
+}
+
+func TestComputeLongestStreak_SingleDay(t *testing.T) {
+	ts := []time.Time{time.Now().UTC()}
+	require.Equal(t, 1, ComputeLongestStreak(ts))
+}
+
+func TestComputeLongestStreak_DuplicateSameDay(t *testing.T) {
+	now := time.Now().UTC()
+	ts := []time.Time{now, now.Add(time.Hour)}
+	require.Equal(t, 1, ComputeLongestStreak(ts))
+}
+
+func TestComputeLongestStreak_Consecutive(t *testing.T) {
+	now := time.Now().UTC().Truncate(24 * time.Hour)
+	ts := []time.Time{now, now.Add(24 * time.Hour), now.Add(48 * time.Hour)}
+	require.Equal(t, 3, ComputeLongestStreak(ts))
+}
+
+func TestComputeLongestStreak_WithGap(t *testing.T) {
+	// 3 consecutive days, gap, then 2 consecutive days → longest = 3
+	base := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	ts := []time.Time{
+		base,
+		base.Add(24 * time.Hour),
+		base.Add(48 * time.Hour),
+		base.Add(96 * time.Hour), // gap: day 4 missing
+		base.Add(120 * time.Hour),
+	}
+	require.Equal(t, 3, ComputeLongestStreak(ts))
+}
+
+// ---- GetYearInBooks tests ----
+
+func TestGetYearInBooks_EmptyData(t *testing.T) {
+	d := newTestDB(t)
+	user := createTestUserForReadingProgress(t, d, "yib-empty@example.com")
+
+	yib, err := d.GetYearInBooks(t.Context(), user.ID, time.Now().UTC().Year())
+	require.NoError(t, err)
+	require.Equal(t, 0, yib.BooksFinished)
+	require.Equal(t, 0, yib.ActiveDays)
+	require.Equal(t, 0, yib.LongestStreak)
+	require.Equal(t, 0, yib.TotalDownloads)
+}
+
+func TestGetYearInBooks_CountsCurrentYear(t *testing.T) {
+	d := newTestDB(t)
+	user := createTestUserForReadingProgress(t, d, "yib-current@example.com")
+	ctx := t.Context()
+	thisYear := time.Now().UTC().Year()
+
+	// Finished book this year.
+	_, err := d.UpsertReadingProgress(ctx, user.ID, "book-done", "/p[100]", 1.0, nil, nil)
+	require.NoError(t, err)
+
+	// In-progress book this year (should NOT count as finished).
+	_, err = d.UpsertReadingProgress(ctx, user.ID, "book-mid", "/p[50]", 0.5, nil, nil)
+	require.NoError(t, err)
+
+	// Finished book from a prior year (should NOT be counted in current year).
+	priorYear := time.Date(thisYear-1, 6, 15, 12, 0, 0, 0, time.UTC).Format("2006-01-02 15:04:05")
+	_, err = d.ExecContext(ctx,
+		`INSERT INTO reading_progress (user_id, document, progress, percentage, updated_at)
+		 VALUES ($1, 'old-finished', '/p[100]', 1.0, $2)`,
+		user.ID, priorYear,
+	)
+	require.NoError(t, err)
+
+	yib, err := d.GetYearInBooks(ctx, user.ID, thisYear)
+	require.NoError(t, err)
+	require.Equal(t, 1, yib.BooksFinished, "only current-year finished books")
+	require.Equal(t, thisYear, yib.Year)
+}
+
+func TestGetYearInBooks_ActiveDays(t *testing.T) {
+	d := newTestDB(t)
+	user := createTestUserForReadingProgress(t, d, "yib-days@example.com")
+	ctx := t.Context()
+	thisYear := time.Now().UTC().Year()
+
+	// Insert two entries for different days this year.
+	today := time.Now().UTC().Format("2006-01-02 15:04:05")
+	yesterday := time.Now().UTC().AddDate(0, 0, -1).Format("2006-01-02 15:04:05")
+	for i, ts := range []string{today, today, yesterday} {
+		doc := time.Now().UnixNano() + int64(i)
+		_, err := d.ExecContext(ctx,
+			`INSERT INTO reading_progress (user_id, document, progress, percentage, updated_at)
+			 VALUES ($1, $2, '/p[1]', 0.1, $3)`,
+			user.ID, doc, ts,
+		)
+		require.NoError(t, err)
+	}
+
+	yib, err := d.GetYearInBooks(ctx, user.ID, thisYear)
+	require.NoError(t, err)
+	// today + yesterday = 2 distinct days
+	require.Equal(t, 2, yib.ActiveDays)
+}
+
+func TestGetYearInBooks_LongestStreak(t *testing.T) {
+	d := newTestDB(t)
+	user := createTestUserForReadingProgress(t, d, "yib-streak@example.com")
+	ctx := t.Context()
+	thisYear := time.Now().UTC().Year()
+
+	// Three consecutive days: today, yesterday, 2 days ago.
+	for i := 0; i < 3; i++ {
+		day := time.Now().UTC().AddDate(0, 0, -i).Format("2006-01-02 15:04:05")
+		_, err := d.ExecContext(ctx,
+			`INSERT INTO reading_progress (user_id, document, progress, percentage, updated_at)
+			 VALUES ($1, $2, '/p[1]', 0.2, $3)`,
+			user.ID, "book-"+day, day,
+		)
+		require.NoError(t, err)
+	}
+
+	yib, err := d.GetYearInBooks(ctx, user.ID, thisYear)
+	require.NoError(t, err)
+	require.Equal(t, 3, yib.LongestStreak)
+}
+
+func TestGetYearInBooks_TotalDownloads(t *testing.T) {
+	d := newTestDB(t)
+	user := createTestUserForReadingProgress(t, d, "yib-dl@example.com")
+	ctx := t.Context()
+	thisYear := time.Now().UTC().Year()
+
+	book, err := d.CreateBook(ctx, BookInput{Title: "Download Book"})
+	require.NoError(t, err)
+	bf, err := d.CreateBookFile(ctx, book.ID, "epub", "dl.epub", 1024, nil, "/books/dl.epub")
+	require.NoError(t, err)
+
+	require.NoError(t, d.RecordBookDownload(ctx, bf.ID, user.ID))
+	require.NoError(t, d.RecordBookDownload(ctx, bf.ID, user.ID))
+
+	yib, err := d.GetYearInBooks(ctx, user.ID, thisYear)
+	require.NoError(t, err)
+	require.Equal(t, 2, yib.TotalDownloads)
+}
+
+func TestGetYearInBooks_IsolatedByUser(t *testing.T) {
+	d := newTestDB(t)
+	user1 := createTestUserForReadingProgress(t, d, "yib-u1@example.com")
+	user2 := createTestUserForReadingProgress(t, d, "yib-u2@example.com")
+	ctx := t.Context()
+	thisYear := time.Now().UTC().Year()
+
+	// Finished book for user1.
+	_, err := d.UpsertReadingProgress(ctx, user1.ID, "book-done", "/p[100]", 1.0, nil, nil)
+	require.NoError(t, err)
+
+	// user2 should see no data.
+	yib, err := d.GetYearInBooks(ctx, user2.ID, thisYear)
+	require.NoError(t, err)
+	require.Equal(t, 0, yib.BooksFinished)
+	require.Equal(t, 0, yib.ActiveDays)
+	require.Equal(t, 0, yib.TotalDownloads)
+}

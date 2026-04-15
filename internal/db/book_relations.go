@@ -38,7 +38,7 @@ type BookSeriesInput struct {
 
 // GetBookAuthors returns all authors for a book.
 func (d *DB) GetBookAuthors(ctx context.Context, bookID string) ([]Author, error) {
-	slog.DebugContext(ctx, "db: fetching book authors", slog.String(otelkeys.BookID, bookID))
+	slog.DebugContext(ctx, "fetching book authors", slog.String(otelkeys.BookID, bookID))
 	rows, err := d.QueryContext(ctx,
 		`SELECT a.id, a.name, a.goodreads_id, a.hardcover_id, a.google_books_id, a.image_url, a.created_at, a.updated_at FROM authors a INNER JOIN book_authors ba ON ba.author_id = a.id WHERE ba.book_id = $1 ORDER BY a.name ASC`,
 		bookID,
@@ -52,7 +52,7 @@ func (d *DB) GetBookAuthors(ctx context.Context, bookID string) ([]Author, error
 // SetBookAuthors replaces all author associations for a book.
 // Duplicate author IDs are silently deduplicated.
 func (d *DB) SetBookAuthors(ctx context.Context, bookID string, authorIDs []string) error {
-	slog.DebugContext(ctx, "db: setting book authors",
+	slog.DebugContext(ctx, "setting book authors",
 		slog.String(otelkeys.BookID, bookID),
 		slog.Int(otelkeys.AuthorCount, len(authorIDs)),
 	)
@@ -86,7 +86,7 @@ func (d *DB) SetBookAuthors(ctx context.Context, bookID string, authorIDs []stri
 
 // GetBookSeries returns all series entries for a book.
 func (d *DB) GetBookSeries(ctx context.Context, bookID string) ([]BookSeriesEntry, error) {
-	slog.DebugContext(ctx, "db: fetching book series", slog.String(otelkeys.BookID, bookID))
+	slog.DebugContext(ctx, "fetching book series", slog.String(otelkeys.BookID, bookID))
 	rows, err := d.QueryContext(ctx,
 		`SELECT s.id, s.name, s.goodreads_id, s.hardcover_id, s.google_books_id, s.created_at, s.updated_at, bs.position FROM series s INNER JOIN book_series bs ON bs.series_id = s.id WHERE bs.book_id = $1 ORDER BY s.name ASC`,
 		bookID,
@@ -97,6 +97,7 @@ func (d *DB) GetBookSeries(ctx context.Context, bookID string) ([]BookSeriesEntr
 	return collectRows(rows, scanBookSeriesEntry)
 }
 
+// scanBookSeriesEntry scans a book series entry row into a BookSeriesEntry struct.
 func scanBookSeriesEntry(row interface{ Scan(...any) error }) (*BookSeriesEntry, error) {
 	return scanRow(row, func(entry *BookSeriesEntry) []any {
 		return []any{&entry.Series.ID, &entry.Series.Name, &entry.Series.GoodreadsID, &entry.Series.HardcoverID, &entry.Series.GoogleBooksID, &entry.Series.CreatedAt, &entry.Series.UpdatedAt, &entry.Position}
@@ -106,7 +107,7 @@ func scanBookSeriesEntry(row interface{ Scan(...any) error }) (*BookSeriesEntry,
 // SetBookSeries replaces all series associations for a book.
 // Duplicate series IDs are silently deduplicated (last position wins).
 func (d *DB) SetBookSeries(ctx context.Context, bookID string, entries []BookSeriesInput) error {
-	slog.DebugContext(ctx, "db: setting book series",
+	slog.DebugContext(ctx, "setting book series",
 		slog.String(otelkeys.BookID, bookID),
 		slog.Int(otelkeys.SeriesCount, len(entries)),
 	)
@@ -143,7 +144,7 @@ func (d *DB) GetAuthorsForBooks(ctx context.Context, bookIDs []string) (map[stri
 	if len(bookIDs) == 0 {
 		return nil, nil
 	}
-	slog.DebugContext(ctx, "db: batch fetching authors for books", slog.Int(otelkeys.BookCount, len(bookIDs)))
+	slog.DebugContext(ctx, "batch fetching authors for books", slog.Int(otelkeys.BookCount, len(bookIDs)))
 
 	placeholders := make([]string, len(bookIDs))
 	args := make([]any, len(bookIDs))

@@ -18,7 +18,7 @@ type MonthlyDownloadCount struct {
 // file and user. The error is non-critical and callers should log and continue
 // rather than surfacing it to the end user.
 func (d *DB) RecordBookDownload(ctx context.Context, bookFileID, userID string) error {
-	slog.DebugContext(ctx, "db: recording book download",
+	slog.DebugContext(ctx, "recording book download",
 		slog.String(otelkeys.BookFileID, bookFileID),
 		slog.String(otelkeys.UserID, userID),
 	)
@@ -29,12 +29,19 @@ func (d *DB) RecordBookDownload(ctx context.Context, bookFileID, userID string) 
 	return err
 }
 
+// scanMonthlyDownloadCount scans a single MonthlyDownloadCount row.
+func scanMonthlyDownloadCount(row interface{ Scan(...any) error }) (*MonthlyDownloadCount, error) {
+	return scanRow(row, func(m *MonthlyDownloadCount) []any {
+		return []any{&m.Month, &m.Count}
+	})
+}
+
 // GetMonthlyDownloads returns the download counts per calendar month for the
 // authenticated user over the last `months` calendar months (including the
 // current month). Results are ordered oldest-first and always contain an entry
 // for every month in the window, even if the count is zero.
 func (d *DB) GetMonthlyDownloads(ctx context.Context, userID string, months int) ([]MonthlyDownloadCount, error) {
-	slog.DebugContext(ctx, "db: fetching monthly download counts",
+	slog.DebugContext(ctx, "fetching monthly download counts",
 		slog.String(otelkeys.UserID, userID),
 		slog.Int(otelkeys.Limit, months),
 	)
@@ -96,15 +103,12 @@ ORDER BY ms.month ASC`
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	result := make([]MonthlyDownloadCount, 0)
-	for rows.Next() {
-		var m MonthlyDownloadCount
-		if err := rows.Scan(&m.Month, &m.Count); err != nil {
-			return nil, err
-		}
-		result = append(result, m)
+	result, err := collectRows(rows, scanMonthlyDownloadCount)
+	if err != nil {
+		return nil, err
 	}
-	return result, rows.Err()
+	if result == nil {
+		return []MonthlyDownloadCount{}, nil
+	}
+	return result, nil
 }

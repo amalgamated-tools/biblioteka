@@ -43,7 +43,7 @@ func Test_HandleNameErr(t *testing.T) {
 		},
 		{
 			name:        "wrapped errInvalid yields 400",
-			err:         fmt.Errorf("db: %w", errInvalid),
+			err:         fmt.Errorf("context: %w", errInvalid),
 			resourceArt: "a series",
 			wantHandled: true,
 			wantCode:    http.StatusBadRequest,
@@ -51,7 +51,7 @@ func Test_HandleNameErr(t *testing.T) {
 		},
 		{
 			name:        "wrapped errExists yields 409",
-			err:         fmt.Errorf("db: %w", errExists),
+			err:         fmt.Errorf("context: %w", errExists),
 			resourceArt: "an author",
 			wantHandled: true,
 			wantCode:    http.StatusConflict,
@@ -193,7 +193,7 @@ func Test_HandleUpdateErr(t *testing.T) {
 		},
 		{
 			name:        "wrapped not found yields 404",
-			err:         fmt.Errorf("db: %w", sql.ErrNoRows),
+			err:         fmt.Errorf("context: %w", sql.ErrNoRows),
 			resourceArt: "a series",
 			resource:    "series",
 			id:          "ser-1",
