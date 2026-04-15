@@ -11,6 +11,9 @@ import (
 // Audit action constants for all tracked operations.
 const (
 	AuditActionAdminUpdated            = "user.admin_updated"
+	AuditActionAnnotationCreated       = "annotation.created"
+	AuditActionAnnotationDeleted       = "annotation.deleted"
+	AuditActionAnnotationUpdated       = "annotation.updated"
 	AuditActionAPIKeyCreated           = "api_key.created"
 	AuditActionAPIKeyDeleted           = "api_key.deleted"
 	AuditActionAuthorCreated           = "author.created"
@@ -24,6 +27,13 @@ const (
 	AuditActionBookUpdated             = "book.updated"
 	AuditActionBookUploaded            = "book.uploaded"
 	AuditActionFTSRebuilt              = "fts.rebuilt"
+	AuditActionGroupCreated            = "group.created"
+	AuditActionGroupDeleted            = "group.deleted"
+	AuditActionGroupListShared         = "group.list_shared"
+	AuditActionGroupListUnshared       = "group.list_unshared"
+	AuditActionGroupMemberAdded        = "group.member_added"
+	AuditActionGroupMemberRemoved      = "group.member_removed"
+	AuditActionGroupUpdated            = "group.updated"
 	AuditActionKoboTokenCreated        = "kobo_token.created"
 	AuditActionKoboTokenDeleted        = "kobo_token.deleted"
 	AuditActionKOSyncCredentialDeleted = "kosync_credential.deleted"
