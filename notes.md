@@ -1,7 +1,7 @@
 # Test Improver Memory — biblioteka
 
 ## Last Updated
-2026-04-14
+2026-04-15
 
 ## Build/Test/Coverage Commands
 
@@ -63,19 +63,26 @@ Key untested internal helpers (tested only via high-level integration):
 - 2026-04-12 run 3: Tasks 2, 3, 7 (auth_origin CSRF helpers PR; new monthly issue)
 - 2026-04-13: Tasks 3, 7 (OIDC password change guard test PR; new monthly issue #1793 had been closed)
 - 2026-04-14: Tasks 4, 6, 7 (no open Test Improver PRs; books reading-lists handler PR; new monthly issue)
-- Next run: Task 1 (re-validate commands), Task 2 (identify new opportunities), Task 5 (comment on testing issues), Task 7
+- 2026-04-15: Tasks 2, 3, 7 (BuildEnrichPrompt tests PR; new monthly issue #1944 closed by maintainer)
+- Next run: Tasks 4, 5, 6, 7 (maintain PRs, comment on testing issues, test infrastructure)
 
 ## Testing Backlog (prioritized)
 
-1. **organize path-escape defense-in-depth test** — the `filepath.Rel` escape guard in organize.go has no test. Likely unreachable in practice. Low value.
-2. **smtp/send.go** — no tests for newClientWithContext or Send. These require real TCP connections, making unit tests difficult. Could use a test server.
-3. **pathparser internal helpers** — isLikelyPersonName, stripTrailingAuthor have no direct tests. Covered via ParseBookPath table tests. Medium value if direct tests would catch regressions in heuristics.
+1. **db/ai_enrichments.go** — No direct DB-level test file for ApplyAIEnrichment (complex transactional logic). Covered indirectly via handler tests. Medium value.
+2. **db/reading_group_lists.go** — ShareListWithGroup, UnshareListFromGroup, ListGroupReadingLists have no direct DB-level tests. Covered via handler tests. Low-medium value.
+3. **smtp/send.go** — no tests for newClientWithContext or Send. These require real TCP connections. Could use a test server.
+4. **pathparser internal helpers** — isLikelyPersonName, stripTrailingAuthor have no direct tests. Covered via ParseBookPath table tests. Low-medium value.
+5. **organize path-escape defense-in-depth test** — the filepath.Rel escape guard in organize.go has no test. Likely unreachable in practice. Low value.
 
 ## Maintainer Priorities
-- Previous monthly issues #1690, #1793, #1846 were all closed by veverkap as "completed"
-- Signals positive reception; maintainer is actively merging Test Improver PRs (merged: #1689, #1771, #1792, #1845)
+- All 5 previous monthly issues closed by veverkap as "completed"
+- Signals strong positive reception; maintainer is actively merging Test Improver PRs (merged: #1689, #1771, #1792, #1845, #1943)
 
 ## Completed Work
+
+### 2026-04-15
+- New monthly activity issue created (prior #1944 closed by maintainer)
+- Submitted PR on branch `test-assist/llm-prompt-tests`: 7 unit tests for BuildEnrichPrompt — covers HTML escaping, author fallback, description fallback, multiple authors, XML structure preservation
 
 ### 2026-04-14
 - New monthly activity issue created (prior #1846 closed by maintainer)
