@@ -249,17 +249,15 @@ func (h *ReadingListHandler) addBookToReadingList(w http.ResponseWriter, r *http
 
 	userID := auth.UserIDFromContext(ctx)
 	added, err := h.DB.AddBookToReadingList(ctx, listID, userID, req.BookID)
-	if err != nil {
-		if errors.Is(err, db.ErrBookNotFound) {
-			writeError(ctx, w, http.StatusNotFound, "book not found")
-			return
-		}
-		if handleReadingListOpErr(ctx, w, err, "failed to add book to reading list",
-			slog.String(otelkeys.ReadingListID, listID),
-			slog.String(otelkeys.BookID, req.BookID),
-		) {
-			return
-		}
+	if errors.Is(err, db.ErrBookNotFound) {
+		writeError(ctx, w, http.StatusNotFound, "book not found")
+		return
+	}
+	if handleReadingListOpErr(ctx, w, err, "failed to add book to reading list",
+		slog.String(otelkeys.ReadingListID, listID),
+		slog.String(otelkeys.BookID, req.BookID),
+	) {
+		return
 	}
 
 	if added {
