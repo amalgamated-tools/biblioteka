@@ -412,6 +412,24 @@ describe("Dashboard", () => {
     });
   });
 
+  it("uses accessible contrast classes for tracked documents text", async () => {
+    vi.mocked(libraryStore).loaded = true;
+    vi.mocked(libraryStore).libraries = libWithOne;
+    vi.mocked(getReadingProgressStats).mockResolvedValue({
+      current_streak: 0,
+      total_tracked: 2,
+      total_finished: 0,
+      in_progress: [],
+    });
+    render(Dashboard);
+
+    await waitFor(() => {
+      const tracked = screen.getByText(/documents tracked/i);
+      expect(tracked).toHaveClass("text-ink-500");
+      expect(tracked).toHaveClass("dark:text-ink-300");
+    });
+  });
+
   it("shows Currently Reading list with document names", async () => {
     vi.mocked(libraryStore).loaded = true;
     vi.mocked(libraryStore).libraries = libWithOne;

@@ -91,4 +91,15 @@ describe("DownloadsHistogram", () => {
     expect(id2).toBeTruthy();
     expect(id1).not.toBe(id2);
   });
+
+  it("uses an accessible dark-mode class for month labels", () => {
+    const { container } = render(DownloadsHistogram, {
+      data: dataWithDownloads,
+    });
+    const monthLabels = container.querySelectorAll(".truncate");
+    expect(monthLabels.length).toBe(dataWithDownloads.length);
+    monthLabels.forEach((label) => {
+      expect(label).toHaveClass("dark:text-ink-300");
+    });
+  });
 });
