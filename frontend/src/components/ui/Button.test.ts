@@ -98,4 +98,25 @@ describe("Button", () => {
     });
     expect(screen.getByRole("button").className).toContain("my-extra-class");
   });
+
+  it("applies md size classes by default", () => {
+    render(Button, { children: makeChildren("Default") });
+    const btn = screen.getByRole("button");
+    expect(btn.className).toContain("px-4");
+    expect(btn.className).toContain("py-2");
+    expect(btn.className).toContain("text-sm");
+  });
+
+  it("applies sm size classes when size='sm'", () => {
+    render(Button, { children: makeChildren("Small"), size: "sm" });
+    const btn = screen.getByRole("button");
+    expect(btn.className).toContain("px-3");
+    expect(btn.className).toContain("py-1.5");
+    expect(btn.className).toContain("text-xs");
+  });
+
+  it("includes justify-center for centered content", () => {
+    render(Button, { children: makeChildren("Centered") });
+    expect(screen.getByRole("button").className).toContain("justify-center");
+  });
 });
