@@ -118,7 +118,12 @@ The importer checks whether a book is already indexed by looking up each format'
 
 This means the command is safe to run multiple times. Only genuinely new books are imported on subsequent runs.
 
-> **Path stability:** Deduplication is based on the absolute file path of each book format. If you move or reorganize your Calibre library to a new location after the first import, the original paths will no longer match and affected books will be re-imported as new records (the old records remain). Run the import from the same path each time, or clean up duplicate records manually afterward.
+> **Path stability:** Deduplication is based on the absolute file path of each
+> book format. If you move or reorganize your Calibre library to a new
+> location after the first import, the original paths will no longer match and
+> affected books will be re-imported as new records (the old records remain).
+> Run the import from the same path each time, or clean up duplicate records
+> manually afterward.
 
 ---
 
@@ -142,8 +147,8 @@ Common causes of per-book errors:
 If `Errors` is non-zero, check the application logs before re-running:
 
 ```bash
-# If running via Docker Compose, filter for import-related errors
-docker compose logs biblioteka | jq 'select(.level == "ERROR" or .level == "WARN")'
+# If running via Docker Compose, filter for errors and warnings (covers import failures)
+docker compose logs --no-log-prefix biblioteka | jq 'select(.level == "ERROR" or .level == "WARN")'
 ```
 
 For **transient errors** (e.g. a momentary database lock), re-running the command is sufficient — already-imported books are skipped and only failed books are retried. For **permanent errors** (e.g. a database constraint violation), re-running will produce the same failure; investigate the logged error message to determine whether the conflicting record needs to be removed or the Calibre data corrected before retrying.
