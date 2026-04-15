@@ -30,6 +30,11 @@ export interface User {
   is_admin: boolean;
 }
 
+export interface AuthResponse {
+  token: string;
+  user: User;
+}
+
 export interface Library {
   id: string;
   name: string;
@@ -326,6 +331,11 @@ export interface MetadataProgressEvent {
   step?: string;
   message?: string;
   metadata_id?: string;
+}
+
+export interface MetadataFetchResponse {
+  task_id?: string;
+  status: "enqueued" | "already_exists" | "already_running";
 }
 
 // Statistics

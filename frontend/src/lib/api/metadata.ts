@@ -1,14 +1,13 @@
-import type { RemoteMetadata } from "../../types";
+import type { MetadataFetchResponse, RemoteMetadata } from "../../types";
 import { request } from "./core";
 
-export async function fetchMetadata(bookId: string): Promise<{
-  task_id?: string;
-  status: "enqueued" | "already_exists" | "already_running";
-}> {
-  return request<{
-    task_id?: string;
-    status: "enqueued" | "already_exists" | "already_running";
-  }>("POST", `/api/books/${bookId}/metadata/fetch`);
+export async function fetchMetadata(
+  bookId: string,
+): Promise<MetadataFetchResponse> {
+  return request<MetadataFetchResponse>(
+    "POST",
+    `/api/books/${bookId}/metadata/fetch`,
+  );
 }
 
 export async function getMetadata(bookId: string): Promise<RemoteMetadata> {
