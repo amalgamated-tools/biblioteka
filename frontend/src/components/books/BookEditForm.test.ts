@@ -111,6 +111,11 @@ describe("BookEditForm", () => {
     expect(screen.queryByAltText("Cover preview")).not.toBeInTheDocument();
   });
 
+  it("does not show cover image preview when coverImageUrl is whitespace only", () => {
+    renderForm({ fields: makeFields({ coverImageUrl: "   " }) });
+    expect(screen.queryByAltText("Cover preview")).not.toBeInTheDocument();
+  });
+
   it("disables all inputs and buttons when saving is true", () => {
     renderForm({ saving: true });
 
