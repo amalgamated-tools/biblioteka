@@ -118,7 +118,7 @@ func listPaginated[T any](
 	if err != nil {
 		return nil, 0, err
 	}
-	items, err := collectRows(rows, scan)
+	items, err := collectRowsWithCap(rows, scan, limit)
 	if err != nil {
 		return nil, 0, err
 	}
