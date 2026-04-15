@@ -66,7 +66,7 @@ func (h *ConfigHandler) handleSetLLMConfig(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if req.Enabled && req.Endpoint == "" {
+	if req.Enabled && strings.TrimSpace(req.Endpoint) == "" {
 		writeError(r.Context(), w, http.StatusBadRequest, "endpoint is required when LLM is enabled")
 		return
 	}
