@@ -19,19 +19,26 @@ type BootstrapResult struct {
 	ModelName    string
 }
 
+// BootstrapSettings holds the database setting-key names used to configure the LLM provider.
+type BootstrapSettings struct {
+	Enabled  string
+	Provider string
+	Endpoint string
+	Model    string
+}
+
 // Bootstrap reads LLM settings and constructs a Provider using the given
 // factories. It returns a nil Provider when LLM is not enabled or the
-// endpoint is empty. settingKeys should contain the four setting key
-// constants: [enabled, provider, endpoint, model].
-func Bootstrap(ctx context.Context, settings SettingsReader, settingKeys [4]string, factories map[string]Factory) BootstrapResult {
-	enabledStr, err := settings.GetSetting(ctx, settingKeys[0])
+// endpoint is empty.
+func Bootstrap(ctx context.Context, settings SettingsReader, keys BootstrapSettings, factories map[string]Factory) BootstrapResult {
+	enabledStr, err := settings.GetSetting(ctx, keys.Enabled)
 	if err != nil || enabledStr != "true" {
 		return BootstrapResult{}
 	}
 
-	providerName, _ := settings.GetSetting(ctx, settingKeys[1])
-	endpoint, _ := settings.GetSetting(ctx, settingKeys[2])
-	modelName, _ := settings.GetSetting(ctx, settingKeys[3])
+	providerName, _ := settings.GetSetting(ctx, keys.Provider)
+	endpoint, _ := settings.GetSetting(ctx, keys.Endpoint)
+	modelName, _ := settings.GetSetting(ctx, keys.Model)
 
 	if endpoint == "" {
 		return BootstrapResult{ProviderName: providerName, ModelName: modelName}

@@ -130,7 +130,12 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 		factories := map[string]llm.Factory{
 			llm.ProviderOllama: func(endpoint, model string) llm.Provider { return ollama.New(endpoint, model) },
 		}
-		llmResult := llm.Bootstrap(cancelCtx, database, [4]string{db.SettingLLMEnabled, db.SettingLLMProvider, db.SettingLLMEndpoint, db.SettingLLMModel}, factories)
+		llmResult := llm.Bootstrap(cancelCtx, database, llm.BootstrapSettings{
+			Enabled:  db.SettingLLMEnabled,
+			Provider: db.SettingLLMProvider,
+			Endpoint: db.SettingLLMEndpoint,
+			Model:    db.SettingLLMModel,
+		}, factories)
 		w.Register(cancelCtx, jobs.JobEnrichAI, jobs.NewEnrichAIHandler(database, llmResult.Provider, llmResult.ProviderName, llmResult.ModelName, publisher))
 
 		if _, err := w.RegisterSchedule("@every 24h", jobs.JobScanLibraries, struct{}{}); err != nil {
