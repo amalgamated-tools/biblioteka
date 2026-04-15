@@ -4,29 +4,25 @@
   import { routerStore } from "../stores/router.svelte";
   import type { BookSummary } from "../types";
 
+  let { limit = 10 }: { limit?: number } = $props();
+
   let books = $state<BookSummary[]>([]);
   let loading = $state(true);
   let error = $state<string | null>(null);
 
-  let fetched = false;
   $effect(() => {
-    if (!fetched) {
-      fetched = true;
-      getRecommendations(10)
-        .then((data) => {
-          books = data;
-        })
-        .catch((err) => {
-          console.error("Failed to fetch recommendations:", err);
-          error =
-            err instanceof Error
-              ? err.message
-              : "Failed to load recommendations";
-        })
-        .finally(() => {
-          loading = false;
-        });
-    }
+    getRecommendations(limit)
+      .then((data) => {
+        books = data;
+      })
+      .catch((err) => {
+        console.error("Failed to fetch recommendations:", err);
+        error =
+          err instanceof Error ? err.message : "Failed to load recommendations";
+      })
+      .finally(() => {
+        loading = false;
+      });
   });
 </script>
 
