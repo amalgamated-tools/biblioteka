@@ -12,8 +12,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/buger/jsonparser"
+
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
 // SearchByISBN searches Goodreads for books matching the given ISBN and returns a list of search results.
@@ -97,7 +98,7 @@ type autocompleteEntry struct {
 // and enriches results via concurrent GraphQL lookups.
 func (c *Client) parseISBNSearchResponse(ctx context.Context, bodyText []byte) ([]BookResult, error) {
 	// Phase 1: Parse all entries from the JSON array without making any network calls.
-	entries, err := parseAutocompleteEntries(ctx, bodyText)
+	entries, err := parseAutocompleteEntries(bodyText)
 	if err != nil {
 		// If the context was cancelled, surface that directly instead of
 		// masking it as a JSON-parse error.
@@ -108,7 +109,6 @@ func (c *Client) parseISBNSearchResponse(ctx context.Context, bodyText []byte) (
 	}
 
 	if len(entries) == 0 {
-		slog.DebugContext(ctx, "parsed Goodreads ISBN search response", slog.Int(otelkeys.Count, 0))
 		return []BookResult{}, nil
 	}
 
@@ -155,9 +155,7 @@ func (c *Client) parseISBNSearchResponse(ctx context.Context, bodyText []byte) (
 			}
 
 			// Fallback: build a partial result from the autocomplete data.
-			slog.ErrorContext(
-				ctx,
-				"failed to get book by legacy ID, returning partial result",
+			slog.WarnContext(ctx, "failed to get book by legacy ID, returning partial result",
 				slog.Int64(otelkeys.BookLegacyID, e.bookID),
 				slog.Any(otelkeys.Error, err),
 			)
@@ -185,81 +183,52 @@ func (c *Client) parseISBNSearchResponse(ctx context.Context, bodyText []byte) (
 		}
 	}
 
-	slog.DebugContext(
-		ctx,
-		"parsed Goodreads ISBN search response",
-		slog.Int(otelkeys.Count, len(results)),
-	)
 	return results, nil
 }
 
 // parseAutocompleteEntries extracts structured entries from the Goodreads
 // auto_complete JSON response without making any network calls.
-func parseAutocompleteEntries(ctx context.Context, bodyText []byte) ([]autocompleteEntry, error) {
+func parseAutocompleteEntries(bodyText []byte) ([]autocompleteEntry, error) {
 	var entries []autocompleteEntry
 
 	_, err := jsonparser.ArrayEach(bodyText, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
 		if err != nil {
-			slog.DebugContext(ctx, "failed to parse Goodreads ISBN search result", slog.Any(otelkeys.Error, err))
 			return
 		}
 
 		bookIDStr, err := jsonparser.GetString(value, "bookId")
 		if err != nil {
-			slog.DebugContext(ctx, "failed to get bookId from Goodreads ISBN search result", slog.Any(otelkeys.Error, err))
 			return
 		}
 
 		bookID, err := strconv.ParseInt(bookIDStr, 10, 64)
 		if err != nil {
-			slog.DebugContext(ctx, "failed to parse bookId from Goodreads ISBN search result", slog.Any(otelkeys.Error, err))
 			return
 		}
 
 		workIDStr, err := jsonparser.GetString(value, "workId")
 		if err != nil {
-			slog.DebugContext(ctx, "failed to get workId from Goodreads ISBN search result", slog.Any(otelkeys.Error, err))
 			return
 		}
 
 		workID, err := strconv.ParseInt(workIDStr, 10, 64)
 		if err != nil {
-			slog.DebugContext(ctx, "failed to parse workId from Goodreads ISBN search result", slog.Any(otelkeys.Error, err))
 			return
 		}
 
 		title, err := jsonparser.GetString(value, "title")
 		if err != nil {
-			slog.DebugContext(ctx, "failed to get title from Goodreads ISBN search result", slog.Any(otelkeys.Error, err))
 			return
 		}
 
 		// Guard against semantically invalid zero IDs and empty titles.
 		if workID == 0 || bookID == 0 || title == "" {
-			slog.DebugContext(
-				ctx,
-				"missing required fields in Goodreads ISBN search result",
-				slog.Int64(otelkeys.BookLegacyID, bookID),
-				slog.Int64(otelkeys.WorkLegacyID, workID),
-				slog.String(otelkeys.Title, title),
-			)
 			return
 		}
 
-		imageURL, err := jsonparser.GetString(value, "imageUrl")
-		if err != nil {
-			slog.DebugContext(ctx, "missing imageUrl in Goodreads search result", slog.Any(otelkeys.Error, err))
-		}
-
-		authorID, err := jsonparser.GetInt(value, "author", "id")
-		if err != nil {
-			slog.DebugContext(ctx, "missing author ID in Goodreads search result", slog.Any(otelkeys.Error, err))
-		}
-
-		authorName, err := jsonparser.GetString(value, "author", "name")
-		if err != nil {
-			slog.DebugContext(ctx, "missing author name in Goodreads search result", slog.Any(otelkeys.Error, err))
-		}
+		imageURL, _ := jsonparser.GetString(value, "imageUrl")
+		authorID, _ := jsonparser.GetInt(value, "author", "id")
+		authorName, _ := jsonparser.GetString(value, "author", "name")
 
 		entries = append(entries, autocompleteEntry{
 			bookID:     bookID,
