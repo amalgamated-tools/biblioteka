@@ -26,7 +26,9 @@ func BuildEnrichPrompt(title string, authors []string, existingDescription strin
 
 Return ONLY valid JSON with no additional text, explanation, or markdown.
 
-Book title: %s
-Author(s): %s
-Existing description: %s`, title, authorStr, desc)
+<book>
+<title>%s</title>
+<authors>%s</authors>
+<description>%s</description>
+</book>`, title, authorStr, desc)
 }
