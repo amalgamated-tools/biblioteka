@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
+	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/stretchr/testify/require"
 )
 
@@ -237,4 +239,96 @@ func TestHandleSetAdmin_InvalidPath(t *testing.T) {
 	h.HandleSetAdmin(w, r)
 
 	require.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+// --- HandleFTSRebuild ---
+
+func TestHandleFTSRebuild_AdminSuccess(t *testing.T) {
+	h, adminID, _ := setupAdminHandler(t)
+
+	r := httptest.NewRequest(http.MethodPost, "/api/admin/search/reindex", nil)
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleFTSRebuild(w, r)
+
+	require.Equal(t, http.StatusAccepted, w.Code)
+	var resp map[string]string
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	require.Equal(t, "search index rebuild started", resp["message"])
+}
+
+func TestHandleFTSRebuild_NonAdminForbidden(t *testing.T) {
+	h, _, regularID := setupAdminHandler(t)
+
+	r := httptest.NewRequest(http.MethodPost, "/api/admin/search/reindex", nil)
+	r = withUserID(r, regularID)
+	w := httptest.NewRecorder()
+
+	h.HandleFTSRebuild(w, r)
+
+	require.Equal(t, http.StatusForbidden, w.Code)
+}
+
+func TestHandleFTSRebuild_MethodNotAllowed(t *testing.T) {
+	h, adminID, _ := setupAdminHandler(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/api/admin/search/reindex", nil)
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleFTSRebuild(w, r)
+
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
+}
+
+func TestHandleFTSRebuild_DBError(t *testing.T) {
+	h, adminID, _ := setupAdminHandler(t)
+	require.NoError(t, h.DB.Close(), "close db")
+
+	r := httptest.NewRequest(http.MethodPost, "/api/admin/search/reindex", nil)
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleFTSRebuild(w, r)
+
+	// With a closed DB the admin check fails before the async rebuild starts.
+	require.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+func TestHandleFTSRebuild_RebuildPreservesSearchResults(t *testing.T) {
+	h, adminID, _ := setupAdminHandler(t)
+
+	_, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Foundation"})
+	require.NoError(t, err, "CreateBook()")
+
+	r := httptest.NewRequest(http.MethodPost, "/api/admin/search/reindex", nil)
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleFTSRebuild(w, r)
+
+	require.Equal(t, http.StatusAccepted, w.Code)
+
+	// Wait for the async rebuild goroutine to complete.
+	require.Eventually(t, func() bool {
+		books, total, err := h.DB.SearchBooks(t.Context(), "Foundation", 10, 0)
+		return err == nil && total == 1 && len(books) == 1
+	}, 5*time.Second, 50*time.Millisecond, "SearchBooks() after rebuild")
+
+	// The rebuild goroutine also writes an audit log entry after the rebuild.
+	// Wait for it so test cleanup does not close the DB while the goroutine
+	// is still running.
+	require.Eventually(t, func() bool {
+		logs, _, err := h.DB.ListAuditLogs(t.Context(), 10, 0)
+		if err != nil {
+			return false
+		}
+		for _, l := range logs {
+			if l.Action == db.AuditActionFTSRebuilt {
+				return true
+			}
+		}
+		return false
+	}, 5*time.Second, 50*time.Millisecond, "fts.rebuilt audit log after rebuild")
 }
