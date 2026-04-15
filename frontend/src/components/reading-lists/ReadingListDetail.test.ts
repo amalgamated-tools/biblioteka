@@ -77,7 +77,7 @@ describe("ReadingListDetail", () => {
   beforeEach(() => {
     vi.mocked(readingListStore).loaded = true;
     vi.mocked(readingListStore).loading = false;
-    vi.mocked(readingListStore).loadError = null as string | null;
+    vi.mocked(readingListStore).loadError = null;
     vi.mocked(readingListStore).lists = [fakeList] as ReadingList[];
     vi.mocked(readingListStore).load = vi.fn().mockResolvedValue(undefined);
     vi.mocked(readingListStore).update = vi.fn().mockResolvedValue(fakeList);
@@ -150,6 +150,26 @@ describe("ReadingListDetail", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("surfaces save API errors in the edit form", async () => {
+    const user = userEvent.setup();
+    vi.mocked(readingListStore).update = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("Name already taken"));
+
+    render(ReadingListDetail, { props: { listId: fakeList.id } });
+    await tick();
+
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Name already taken",
+    );
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Edit Reading List" }),
+    ).toBeInTheDocument();
+  });
+
   it("cancels editing and restores original values when editing is restarted", async () => {
     const user = userEvent.setup();
 
@@ -177,7 +197,10 @@ describe("ReadingListDetail", () => {
     await user.click(screen.getByRole("button", { name: "Delete" }));
     expect(screen.getByText("Delete this list?")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Yes, delete" }));
+    const confirmButton = screen.getByRole("button", { name: "Yes, delete" });
+    expect(confirmButton).toHaveFocus();
+
+    await user.click(confirmButton);
 
     await waitFor(() => {
       expect(readingListStore.remove).toHaveBeenCalledWith(fakeList.id);
@@ -208,6 +231,9 @@ describe("ReadingListDetail", () => {
     const user = userEvent.setup();
 
     vi.mocked(listReadingListBooks).mockImplementation(
+      // total: 50 → 3 pages at pageSize=24 (ceil(50/24)=3); book_count on
+      // fakeList is intentionally left at 26 to verify the header uses the
+      // store value, not the API total.
       async (listId: string, limit = 24, offset = 0) => ({
         books: [
           {
