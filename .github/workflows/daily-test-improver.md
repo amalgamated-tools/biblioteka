@@ -29,7 +29,7 @@ network:
   - python
   - rust
   - java
-  - go  
+  - go
 
 safe-outputs:
   add-comment:

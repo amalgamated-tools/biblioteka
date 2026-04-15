@@ -17,7 +17,7 @@ network:
   allowed:
     - defaults
     - github
-    - go    
+    - go
 
 safe-outputs:
   create-pull-request:
