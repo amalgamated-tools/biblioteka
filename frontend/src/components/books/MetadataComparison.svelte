@@ -70,15 +70,11 @@
       </span>
     </div>
     <div class="flex items-center gap-2">
-      <Button onclick={onApplyAll} class="px-3 py-1.5 text-xs">
+      <Button onclick={onApplyAll} size="sm">
         <Check class="w-3 h-3 mr-1 inline" aria-hidden="true" />
         Apply All
       </Button>
-      <Button
-        variant="secondary"
-        onclick={onDismiss}
-        class="px-3 py-1.5 text-xs"
-      >
+      <Button variant="secondary" onclick={onDismiss} size="sm">
         <X class="w-3 h-3 mr-1 inline" aria-hidden="true" />
         Dismiss
       </Button>
