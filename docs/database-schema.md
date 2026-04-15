@@ -1,6 +1,4 @@
----
-disable-agentic-editing: true
----
+<!-- disable-agentic-editing: true -->
 
 # Database Schema
 
