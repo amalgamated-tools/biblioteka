@@ -248,7 +248,6 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 				)
 			} else {
 				metadataHandler.LLMProvider = p
-				metadataHandler.LLMProviderName = name
 				slog.InfoContext(ctx, "LLM provider configured",
 					slog.String(otelkeys.Source, name),
 					slog.String(otelkeys.URL, llmEndpoint),

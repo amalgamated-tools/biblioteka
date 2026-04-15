@@ -197,20 +197,7 @@ func (h *MetadataHandler) applyAIEnrichment(w http.ResponseWriter, r *http.Reque
 	}
 
 	if (book.Description == nil || *book.Description == "") && enrichment.GeneratedDescription != nil && *enrichment.GeneratedDescription != "" {
-		applyInput.BookUpdate = &db.BookInput{
-			Title:           book.Title,
-			Description:     enrichment.GeneratedDescription,
-			ASIN:            book.ASIN,
-			ISBN10:          book.ISBN10,
-			ISBN13:          book.ISBN13,
-			GoodreadsID:     book.GoodreadsID,
-			HardcoverID:     book.HardcoverID,
-			GoogleBooksID:   book.GoogleBooksID,
-			PublicationDate: book.PublicationDate,
-			Publisher:       book.Publisher,
-			Language:        book.Language,
-			CoverImageURL:   book.CoverImageURL,
-		}
+		applyInput.Description = enrichment.GeneratedDescription
 	}
 
 	updated, err := h.DB.ApplyAIEnrichment(r.Context(), applyInput)

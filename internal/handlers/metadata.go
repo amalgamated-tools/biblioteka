@@ -21,11 +21,10 @@ import (
 
 // MetadataHandler handles metadata fetch, review, and apply endpoints for books.
 type MetadataHandler struct {
-	DB              *db.DB
-	Enqueuer        jobs.Enqueuer
-	Subscriber      pubsub.Subscriber
-	LLMProvider     llm.Provider
-	LLMProviderName string
+	DB          *db.DB
+	Enqueuer    jobs.Enqueuer
+	Subscriber  pubsub.Subscriber
+	LLMProvider llm.Provider
 }
 
 // HandleBookMetadata dispatches /api/books/{id}/metadata and its sub-paths.
