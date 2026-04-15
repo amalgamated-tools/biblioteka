@@ -103,7 +103,7 @@ describe("Button", () => {
     render(Button, { children: makeChildren("Default") });
     const btn = screen.getByRole("button");
     expect(btn.className).toContain("px-4");
-    expect(btn.className).toContain("py-2");
+    expect(btn.className).toContain("py-2.5");
     expect(btn.className).toContain("text-sm");
   });
 
