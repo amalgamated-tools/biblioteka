@@ -16,7 +16,6 @@ func newBenchDB(b *testing.B) *DB {
 	b.Setenv("BIBLIOTEKA_ENV", "test")
 	sqlDB, err := sql.Open("sqlite", ":memory:")
 	require.NoError(b, err, "newBenchDB: open")
-	sqlDB.SetMaxOpenConns(1)
 	b.Cleanup(func() { _ = sqlDB.Close() })
 
 	require.NoError(b, sqlDB.Ping(), "newBenchDB: ping")
