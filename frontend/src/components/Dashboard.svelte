@@ -25,6 +25,7 @@
   } from "../types";
   import AlertBanner from "./ui/AlertBanner.svelte";
   import DownloadsHistogram from "./ui/DownloadsHistogram.svelte";
+  import Recommendations from "./Recommendations.svelte";
 
   let totalBooks = $state<number | null>(null);
   let countError: string | null = $state(null);
@@ -432,5 +433,7 @@
         </div>
       </div>
     {/if}
+
+    <Recommendations />
   {/if}
 </div>
