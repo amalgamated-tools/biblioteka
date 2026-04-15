@@ -158,6 +158,7 @@ Entries are returned newest-first. `limit` defaults to `50` (maximum `200`); `of
 | `kosync_credential.updated` | `kosync_credential` | `username`                           | `PUT /api/kosync/credentials`           |
 | `kosync_credential.deleted` | `kosync_credential` | `username`                           | `DELETE /api/kosync/credentials`        |
 | `smtp.config_updated`  | `config`      | `host`, `from`                                   | `PUT /api/config/smtp`                  |
+| `fts.rebuilt`          | `fts`         | —                                                | `POST /api/admin/search/reindex`        |
 | `watch_folder.config_updated` | `config` | `path`, `library_id`                             | `PUT /api/config/watch-folder`          |
 
 **Notes:** `user_id` is the actor who performed the action (`null` for system/background actions). Entries are append-only and never modified. Book files created by the background scanner do **not** currently produce an audit entry — only files created via the API are audited. Background imports run without an authenticated user context (there is no actor to attribute the action to), so they cannot be represented in the same audit model as user-initiated writes.
@@ -482,6 +483,31 @@ curl -sf http://localhost:8080/api/health
 ```
 
 This endpoint requires no authentication and is suitable for liveness/readiness probes.
+
+---
+
+## Search Index Maintenance (SQLite)
+
+Biblioteka uses an [FTS5](https://www.sqlite.org/fts5.html) virtual table (`books_fts`) to accelerate full-text search on SQLite. The index is **maintained automatically** by database triggers on every insert, update, and delete. No routine maintenance is needed.
+
+### Startup integrity check
+
+At startup, Biblioteka runs an FTS5 integrity check. If corruption is detected (which can happen after running SQLite's `VACUUM` command, because `VACUUM` may remap the implicit rowids that the content-table index relies on), the server automatically rebuilds the index and logs a warning. Startup is never aborted due to an FTS failure, but startup may take longer while the rebuild runs. If the rebuild does not succeed, search requests may fail because the `books_fts` table remains broken.
+
+### Manual rebuild
+
+Admins can trigger a rebuild on demand via the API:
+
+```bash
+curl -sf -X POST http://localhost:8080/api/admin/search/reindex \
+  -H "Authorization: Bearer <admin-jwt>"
+# → 202 Accepted
+# → {"message":"search index rebuild started"}
+```
+
+This is useful if you have run `VACUUM` on the database file outside of normal server operation, or if you suspect the index is out of sync. The endpoint returns `202 Accepted` immediately and runs the rebuild in the background. A successful rebuild emits an audit log entry with action `fts.rebuilt` (`entity_type: fts`).
+
+> **PostgreSQL:** The pg_trgm GIN indexes used for search on PostgreSQL are maintained automatically by the database engine. On PostgreSQL instances, this endpoint returns `200 OK` with a message indicating no rebuild is required and does not emit an audit log entry.
 
 ---
 
