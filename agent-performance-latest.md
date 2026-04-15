@@ -1,32 +1,26 @@
-# Agent Performance — 2026-04-14 (Evening)
-**Run:** 2026-04-14T23:44Z
+# Agent Performance — 2026-04-15
+**Run:** 2026-04-15T23:44Z
 
 ## Snapshot
-- 54 workflows registered; all Copilot engine; all compiled
-- Copilot PR merge rate (28 closed sample): 89% (avg 15.1h)
-- Bot (amalgamated-bot) PR merge rate (17 closed sample): 88% (avg 7.9h)
-- Open issues: 29 (20 agent-created today, 7 [aw] failure)
-- Open PRs: 23 (9 bot, 13 Copilot, 1 human release)
-- **PR backlog surge: 22 agent PRs open (up from ~10 yesterday)**
+- 54 workflows, all Copilot, all compiled
+- PR merge rate (30 recent): 96% (bot: 100%, Copilot: 90%)
+- Open issues: 18 (↓ from 29), open PRs: 9 (↓ from 22)
+- [aw] failures: 2 today (ci-doctor, contribution-check); 4 open issues
 
 ## Top Performers
-- **discussion-task-miner**: 3 actionable issues closed today (#1942, #1939, #1938) → led to Copilot PRs #1968, #1964, #1965 — excellent quality chain
-- **daily-accessibility-review**: 4 a11y issues closed, PRs merged in v0.13.0 — high quality and completion
-- **daily-qa**: PR #1988 fix: otelkeys.Limit and ISBN fix — precise, targeted, merged quickly
-- **daily-perf-improver**: PR #1982 parallelize LoadBookRelations — valid perf improvement
-- **repository-quality-improver**: Issue #1990 API-Frontend type contract analysis — thorough, cross-codebase
-- **tech-content-editorial-board**: Issue #1978 migration accuracy review — high signal-to-noise
+- **discussion-task-miner**: 5 issues → 4 PRs merged same day
+- **amalgamated-bot**: 16/16 PRs merged (100%)
+- **daily-accessibility-review**: Consistent; work in v0.13.0
+- **daily-perf-improver**: PR #2051 FK indexes — targeted
 
 ## Critical Issues
-1. **daily-doc-updater**: TRIPLE DUPLICATE — PRs #1994, #1980, #1976 all identical "docs(background-jobs): add scan:watch-folder" — 3 open at once (CRITICAL, 3rd consecutive day)
-2. **Workflow Failure Surge**: 6 new [aw] failures today (contribution-check, daily-repo-chronicle, markdown-linter, issue-triage, update-docs, contribution-guidelines-checker)
-3. **contribution-check**: Issue #1947 open with "lgtm" label — zero-finding report still created (MEDIUM)
-4. **PR Backlog**: 22 open agent PRs — review bandwidth concern, up from ~10 on Apr 13
+1. **ci-doctor**: Engine fail + unsafe env token enumeration (#2059) — CRITICAL
+2. **contribution-check**: 3+ days recurring failure (#2027) — HIGH
+3. **Status issue accumulation**: 5+ open issues/day from report workflows — MEDIUM
 
-## Alerts Updated
-- daily-doc-updater duplicate PR issue escalated to CRITICAL (3 identical PRs)
-- New [aw] failures: 6 workflows failing daily (elevated concern)
-- PR backlog now at 22 open (raised threshold alert)
+## Resolved Since Apr 14
+- daily-doc-updater triple-dup: No new duplicates ✅
+- PR backlog: 22→9 ✅
 
 ## Discussion Created
-Agent Performance Report — Week of 2026-04-14
+"Agent Performance Report — Week of 2026-04-15"

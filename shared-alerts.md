@@ -1,38 +1,33 @@
 # Shared Alerts
-**Updated:** 2026-04-14T23:44Z by agent-performance-analyzer
+**Updated:** 2026-04-15T23:44Z by agent-performance-analyzer
 
 ## Active Alerts
 
-### CRITICAL: daily-doc-updater Triple Duplicate PRs
-- PRs #1994, #1980, #1976 identical: "docs(background-jobs): add scan:watch-folder"
-- 3rd consecutive day with duplicate PRs — deduplication urgently needed
-- Fix: Add `skip-if-match` or check for open PRs with same title before creating
+### CRITICAL: ci-doctor Engine Failure + Unsafe Behavior
+- Issue #2059 — engine terminated; last output shows `env | grep token` (unsafe)
+- Fix: Remove token-enumeration from prompt; use MCP-only auth
 
-### CRITICAL: Elevated Workflow Failure Rate (11% today)
-- 6 [aw] failures Apr 14: contribution-check, daily-repo-chronicle, markdown-linter, issue-triage, update-docs, contribution-guidelines-checker
-- Total open [aw] failures: 7 open issues (#1981, #1972, #1958, #1957, #1956, #1950, #1733)
-- Investigate shared root cause (MCP server? auth?) across all failures
+### HIGH: contribution-check Recurring Failure
+- Issue #2027 — 3+ consecutive days; root cause undiagnosed
 
-### HIGH: PR Backlog Surge
-- 22 open agent PRs (9 bot + 13 Copilot) vs ~10 yesterday
-- PR merge rate healthy (89%) but reviewer bandwidth may be strained
-- Alert threshold: throttle agents if backlog exceeds 25
+### HIGH: dependabot-bundler API Block
+- Issue #2028 — blocked by API permissions; needs token scope fix
 
-### MEDIUM: contribution-check Over-Creation
-- Creates issues even on "lgtm" runs — #1947 is zero-finding report
-- Fix: Add `skip-if-match` or no-findings skip condition
+### MEDIUM: Daily Status Issues Accumulating
+- repo-status, team-status, daily-plan, perf-improver, test-improver = 5+ open issues/day
+- Fix: Switch to discussions or auto-close predecessors
 
-### MEDIUM: unbloat-docs Low Merge Rate
-- PR #1967 open to improve scope criteria — wait for merge before next cycle
+### LOW: [aw] No-Op Runs (#1733) — persistent, needs triage
 
-### LOW: Rapid Ecosystem Growth
-- 24 → 54 workflows in 10 days (+125%) — quality controls may lag
-
-## Resolved Since Apr 13
-- A11y: 4 more issues resolved (#1904, #1902, #1900, #1898 merged in v0.13.0)
-- duplicate-code-detector (Codex): no new failures — likely removed
+## Resolved
+- daily-doc-updater triple-dup: No new duplicates Apr 15 ✅
+- PR backlog (22→9 open PRs): Resolved Apr 15 ✅
 
 ## For Campaign Manager
-- Task-miner → Copilot PR chain active: #1968, #1964, #1965 from task-miner issues
-- Large feature PRs open: #1974 (AI enrichment), #1973 (recommendations), #1963 (groups)
-- v0.13.0 release PR #1959 open
+- task-miner → Copilot PR chain highly effective this week
+- v0.13.0 shipped Apr 15 (WebAuthn, AI enrichment, Calibre, groups, S3 groundwork)
+- Large features open: #1971 (multi-tenant), #1832 (browser ext), #1531 (S3)
+
+## For Workflow Health Manager
+- ci-doctor: unsafe env enumeration in prompt — fix urgently
+- contribution-check: recurring failure needs root cause diagnosis
