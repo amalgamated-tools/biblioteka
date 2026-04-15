@@ -46,35 +46,43 @@
     return fallback;
   }
 
-  async function loadTotalBooksCount(): Promise<void> {
+  async function loadTotalBooksCount(cancelled: () => boolean): Promise<void> {
     try {
-      totalBooks = await getTotalBooksCount();
+      const count = await getTotalBooksCount();
+      if (!cancelled()) totalBooks = count;
     } catch (error) {
+      if (cancelled()) return;
       countError = getErrorMessage(error, "Failed to load book count");
       totalBooks = 0;
     }
   }
 
-  async function loadDownloadStats(): Promise<void> {
+  async function loadDownloadStats(cancelled: () => boolean): Promise<void> {
     try {
-      monthlyDownloads = await getDownloadsPerMonth(12);
+      const data = await getDownloadsPerMonth(12);
+      if (!cancelled()) monthlyDownloads = data;
     } catch (error) {
+      if (cancelled()) return;
       downloadsError = getErrorMessage(error, "Failed to load download stats");
     }
   }
 
-  async function loadReadingStats(): Promise<void> {
+  async function loadReadingStats(cancelled: () => boolean): Promise<void> {
     try {
-      readingStats = await getReadingProgressStats();
+      const stats = await getReadingProgressStats();
+      if (!cancelled()) readingStats = stats;
     } catch (error) {
+      if (cancelled()) return;
       readingError = getErrorMessage(error, "Failed to load reading stats");
     }
   }
 
-  async function loadYearInBooksStats(): Promise<void> {
+  async function loadYearInBooksStats(cancelled: () => boolean): Promise<void> {
     try {
-      yearInBooks = await getYearInBooks();
+      const data = await getYearInBooks();
+      if (!cancelled()) yearInBooks = data;
     } catch (error) {
+      if (cancelled()) return;
       yearInBooksError = getErrorMessage(
         error,
         "Failed to load year-in-books stats",
@@ -83,13 +91,20 @@
   }
 
   onMount(() => {
+    let isCancelled = false;
+    const cancelled = () => isCancelled;
+
     if (!libraryStore.loaded) {
       libraryStore.load();
     }
-    void loadTotalBooksCount();
-    void loadDownloadStats();
-    void loadReadingStats();
-    void loadYearInBooksStats();
+    void loadTotalBooksCount(cancelled);
+    void loadDownloadStats(cancelled);
+    void loadReadingStats(cancelled);
+    void loadYearInBooksStats(cancelled);
+
+    return () => {
+      isCancelled = true;
+    };
   });
 
   const stats = $derived([
@@ -357,8 +372,8 @@
           {/if}
         {/if}
       </div>
-    {:else}
-      <!-- Fallback while reading stats are still loading or unavailable -->
+    {:else if !readingError}
+      <!-- Fallback while reading stats are still loading -->
       <div
         class="mt-8 bg-white dark:bg-ink-900 rounded-2xl p-6 shadow-sm border border-ink-100 dark:border-ink-800 animate-fade-in"
       >
