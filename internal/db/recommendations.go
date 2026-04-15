@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
@@ -12,20 +13,20 @@ import (
 //
 // Scoring weights:
 //   - +3 per shared author with a read/reading book
-//   - +5 per series continuation (book is the logical next in a series the user is reading)
+//   - +5 per series continuation (book is the immediate next in a series the user is reading)
 //   - +1 if the publisher matches any publisher from the user's read books
 //   - +download_count/100 as a popularity tiebreaker
 //
 // When the user has no reading history, all candidate books score 0 and are
 // returned ordered by created_at DESC (most-recently-added first), which acts
 // as a natural fallback.
-const recommendationsQuery = `
+var recommendationsQuery = fmt.Sprintf(`
 WITH
 user_reads AS (
     SELECT book_id
     FROM kobo_reading_states
     WHERE user_id = $1
-      AND status IN ('Reading', 'Finished')
+      AND status IN ('%s', '%s')
 ),
 user_authors AS (
     SELECT DISTINCT ba.author_id
@@ -45,37 +46,50 @@ series_progress AS (
     WHERE bs.position IS NOT NULL
     GROUP BY bs.series_id
 ),
+author_pts AS (
+    SELECT ba.book_id, CAST(COUNT(*) AS REAL) * 3.0 AS pts
+    FROM book_authors ba
+    INNER JOIN user_authors ua ON ua.author_id = ba.author_id
+    GROUP BY ba.book_id
+),
+series_pts AS (
+    SELECT bs.book_id, CAST(COUNT(DISTINCT bs.series_id) AS REAL) * 5.0 AS pts
+    FROM book_series bs
+    INNER JOIN series_progress sp ON sp.series_id = bs.series_id
+    WHERE bs.position IS NOT NULL
+      AND bs.position > sp.max_position
+      AND NOT EXISTS (
+          SELECT 1
+          FROM book_series bs2
+          WHERE bs2.series_id = bs.series_id
+            AND bs2.position > sp.max_position
+            AND bs2.position < bs.position
+      )
+    GROUP BY bs.book_id
+),
+publisher_pts AS (
+    SELECT DISTINCT b.id AS book_id, 1.0 AS pts
+    FROM books b
+    INNER JOIN user_publishers up ON b.publisher = up.publisher
+),
+download_pts AS (
+    SELECT bf.book_id, SUM(CAST(bf.download_count AS REAL)) / 100.0 AS pts
+    FROM book_files bf
+    GROUP BY bf.book_id
+),
 candidate_scores AS (
     SELECT
         b.id,
-        COALESCE((
-            SELECT CAST(COUNT(*) AS REAL) * 3.0
-            FROM book_authors ba2
-            INNER JOIN user_authors ua ON ua.author_id = ba2.author_id
-            WHERE ba2.book_id = b.id
-        ), 0.0)
-        + COALESCE((
-            SELECT CAST(COUNT(DISTINCT bs2.series_id) AS REAL) * 5.0
-            FROM book_series bs2
-            INNER JOIN series_progress sp ON sp.series_id = bs2.series_id
-            WHERE bs2.book_id = b.id
-              AND bs2.position IS NOT NULL
-              AND bs2.position > sp.max_position
-        ), 0.0)
-        + COALESCE((
-            SELECT 1.0
-            FROM user_publishers up
-            WHERE b.publisher = up.publisher
-            LIMIT 1
-        ), 0.0)
-        + COALESCE((
-            SELECT SUM(CAST(bf.download_count AS REAL)) / 100.0
-            FROM book_files bf
-            WHERE bf.book_id = b.id
-        ), 0.0)
-        AS score
+        COALESCE(ap.pts, 0.0)
+        + COALESCE(sp.pts, 0.0)
+        + COALESCE(pp.pts, 0.0)
+        + COALESCE(dp.pts, 0.0) AS score
     FROM books b
-    WHERE b.id NOT IN (SELECT book_id FROM user_reads)
+    LEFT JOIN author_pts ap ON ap.book_id = b.id
+    LEFT JOIN series_pts sp ON sp.book_id = b.id
+    LEFT JOIN publisher_pts pp ON pp.book_id = b.id
+    LEFT JOIN download_pts dp ON dp.book_id = b.id
+    WHERE NOT EXISTS (SELECT 1 FROM user_reads ur WHERE ur.book_id = b.id)
 )
 SELECT b.id, b.title, b.description, b.asin, b.isbn10, b.isbn13,
        b.goodreads_id, b.hardcover_id, b.google_books_id,
@@ -84,7 +98,7 @@ SELECT b.id, b.title, b.description, b.asin, b.isbn10, b.isbn13,
 FROM candidate_scores cs
 INNER JOIN books b ON b.id = cs.id
 ORDER BY cs.score DESC, b.created_at DESC
-LIMIT $2`
+LIMIT $2`, StatusReading, StatusFinished)
 
 // GetRecommendations returns up to limit books recommended for the given user,
 // scored by author overlap, series continuation, publisher match, and download

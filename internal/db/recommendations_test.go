@@ -54,7 +54,7 @@ func TestGetRecommendations_ExcludesReadBooks(t *testing.T) {
 	unread, err := d.CreateBook(t.Context(), BookInput{Title: "Unread Book"})
 	require.NoError(t, err)
 
-	_, err = d.UpsertKoboReadingState(t.Context(), user.ID, read.ID, "Finished", nil, nil, nil, nil)
+	_, err = d.UpsertKoboReadingState(t.Context(), user.ID, read.ID, StatusFinished, nil, nil, nil, nil)
 	require.NoError(t, err)
 
 	books, err := d.GetRecommendations(t.Context(), user.ID, 10)
@@ -78,7 +78,7 @@ func TestGetRecommendations_AuthorOverlapScoresHigher(t *testing.T) {
 	readBook, err := d.CreateBook(t.Context(), BookInput{Title: "The Left Hand of Darkness"})
 	require.NoError(t, err)
 	require.NoError(t, d.SetBookAuthors(t.Context(), readBook.ID, []string{author.ID}))
-	_, err = d.UpsertKoboReadingState(t.Context(), user.ID, readBook.ID, "Finished", nil, nil, nil, nil)
+	_, err = d.UpsertKoboReadingState(t.Context(), user.ID, readBook.ID, StatusFinished, nil, nil, nil, nil)
 	require.NoError(t, err)
 
 	// Same-author book — should score higher.
@@ -111,7 +111,7 @@ func TestGetRecommendations_SeriesContinuationScoresHighest(t *testing.T) {
 	b1, err := d.CreateBook(t.Context(), BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err)
 	require.NoError(t, d.SetBookSeries(t.Context(), b1.ID, []BookSeriesInput{{SeriesID: series.ID, Position: &pos1}}))
-	_, err = d.UpsertKoboReadingState(t.Context(), user.ID, b1.ID, "Finished", nil, nil, nil, nil)
+	_, err = d.UpsertKoboReadingState(t.Context(), user.ID, b1.ID, StatusFinished, nil, nil, nil, nil)
 	require.NoError(t, err)
 
 	// Book 2 in series: should score highest as series continuation.
@@ -128,6 +128,51 @@ func TestGetRecommendations_SeriesContinuationScoresHighest(t *testing.T) {
 	require.Len(t, books, 2)
 	require.Equal(t, b2.ID, books[0].ID, "series continuation should rank first")
 	require.Equal(t, unrelated.ID, books[1].ID)
+}
+
+func TestGetRecommendations_SeriesContinuationOnlyNextBook(t *testing.T) {
+	d := newTestDB(t)
+	user := createTestUser(t, d)
+
+	series, err := d.CreateSeries(t.Context(), "Wheel of Time", nil, nil, nil)
+	require.NoError(t, err)
+
+	pos1 := 1.0
+	pos2 := 2.0
+	pos3 := 3.0
+	pos5 := 5.0
+
+	// Book 1: user has read.
+	b1, err := d.CreateBook(t.Context(), BookInput{Title: "Eye of the World"})
+	require.NoError(t, err)
+	require.NoError(t, d.SetBookSeries(t.Context(), b1.ID, []BookSeriesInput{{SeriesID: series.ID, Position: &pos1}}))
+	_, err = d.UpsertKoboReadingState(t.Context(), user.ID, b1.ID, StatusFinished, nil, nil, nil, nil)
+	require.NoError(t, err)
+
+	// Book 2: immediate next — should get series bonus.
+	b2, err := d.CreateBook(t.Context(), BookInput{Title: "The Great Hunt"})
+	require.NoError(t, err)
+	require.NoError(t, d.SetBookSeries(t.Context(), b2.ID, []BookSeriesInput{{SeriesID: series.ID, Position: &pos2}}))
+
+	// Book 3: NOT the immediate next — should NOT get series bonus.
+	b3, err := d.CreateBook(t.Context(), BookInput{Title: "The Dragon Reborn"})
+	require.NoError(t, err)
+	require.NoError(t, d.SetBookSeries(t.Context(), b3.ID, []BookSeriesInput{{SeriesID: series.ID, Position: &pos3}}))
+
+	// Book 5: much later — should NOT get series bonus.
+	b5, err := d.CreateBook(t.Context(), BookInput{Title: "Fires of Heaven"})
+	require.NoError(t, err)
+	require.NoError(t, d.SetBookSeries(t.Context(), b5.ID, []BookSeriesInput{{SeriesID: series.ID, Position: &pos5}}))
+
+	books, err := d.GetRecommendations(t.Context(), user.ID, 10)
+	require.NoError(t, err)
+	require.Len(t, books, 3)
+	// Book 2 should rank first due to series continuation bonus.
+	require.Equal(t, b2.ID, books[0].ID, "only the immediate next book should get series bonus")
+	// Books 3 and 5 should both be returned but without the bonus (same score, ordered by created_at DESC).
+	remainingIDs := []string{books[1].ID, books[2].ID}
+	require.Contains(t, remainingIDs, b3.ID)
+	require.Contains(t, remainingIDs, b5.ID)
 }
 
 func TestGetRecommendations_PublisherOverlapAddsScore(t *testing.T) {
@@ -167,7 +212,7 @@ func TestGetRecommendations_LimitRespected(t *testing.T) {
 	require.Len(t, books, 3, "limit should be respected")
 }
 
-func TestGetRecommendations_ReadyToReadExcluded(t *testing.T) {
+func TestGetRecommendations_ReadyToReadIncluded(t *testing.T) {
 	d := newTestDB(t)
 	user := createTestUser(t, d)
 
@@ -175,7 +220,7 @@ func TestGetRecommendations_ReadyToReadExcluded(t *testing.T) {
 	// read/reading, so it remains a candidate.
 	b, err := d.CreateBook(t.Context(), BookInput{Title: "Want To Read"})
 	require.NoError(t, err)
-	_, err = d.UpsertKoboReadingState(t.Context(), user.ID, b.ID, "ReadyToRead", nil, nil, nil, nil)
+	_, err = d.UpsertKoboReadingState(t.Context(), user.ID, b.ID, StatusReadyToRead, nil, nil, nil, nil)
 	require.NoError(t, err)
 
 	books, err := d.GetRecommendations(t.Context(), user.ID, 10)

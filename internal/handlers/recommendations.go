@@ -3,7 +3,6 @@ package handlers
 import (
 	"log/slog"
 	"net/http"
-	"strconv"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -42,16 +41,7 @@ func (h *RecommendationHandler) HandleRecommendations(w http.ResponseWriter, r *
 		return
 	}
 
-	limit := defaultRecommendationLimit
-	if s := r.URL.Query().Get("limit"); s != "" {
-		v, err := strconv.Atoi(s)
-		if err == nil && v >= 1 {
-			if v > maxRecommendationLimit {
-				v = maxRecommendationLimit
-			}
-			limit = v
-		}
-	}
+	limit, _ := parseLimitOffset(r, defaultRecommendationLimit, maxRecommendationLimit)
 
 	ctx := r.Context()
 	userID := auth.UserIDFromContext(ctx)
