@@ -25,6 +25,7 @@ var allowedListTables = map[string]bool{
 	"authors":   true,
 	"libraries": true,
 	"series":    true,
+	"tags":      true,
 	"users":     true,
 }
 
