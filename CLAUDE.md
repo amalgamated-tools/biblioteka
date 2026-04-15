@@ -229,7 +229,23 @@ For list and delete, continue using `listEntities` (or `listUserEntities`) and `
 
 ### Deleting a resource
 
-For DELETE handlers, use the generic `deleteResource` helper instead of hand-rolling the fetch-delete-audit pattern:
+For DELETE handlers, use the generic `deleteResource` helper from `internal/handlers/crud.go` (not `internal/handlers/helpers.go`) instead of hand-rolling the fetch-delete-audit pattern:
+
+```go
+func deleteResource[T any](
+    d *db.DB,
+    w http.ResponseWriter,
+    r *http.Request,
+    id string,
+    resource string,
+    auditEntityType string,
+    idKey string,
+    get func(context.Context, string) (T, error),
+    del func(context.Context, string) error,
+    auditAction string,
+    auditMeta func(T) map[string]any,
+)
+```
 
 ```go
 deleteResource(h.DB, w, r, id, "author", "author", otelkeys.AuthorID,
@@ -244,6 +260,22 @@ deleteResource(h.DB, w, r, id, "author", "author", otelkeys.AuthorID,
 ### Deleting a user-owned resource
 
 For user-owned resources (such as API keys and Kobo tokens) where the get and delete functions accept both a resource ID and a user ID, use `deleteUserOwnedResource` instead:
+
+```go
+func deleteUserOwnedResource[T any](
+    d *db.DB,
+    w http.ResponseWriter,
+    r *http.Request,
+    id string,
+    resource string,
+    auditEntityType string,
+    idKey string,
+    get func(context.Context, string, string) (T, error),
+    del func(context.Context, string, string) error,
+    auditAction string,
+    auditMeta func(T) map[string]any,
+)
+```
 
 ```go
 deleteUserOwnedResource(h.DB, w, r, id, "API key", "api_key", otelkeys.APIKeyID,
