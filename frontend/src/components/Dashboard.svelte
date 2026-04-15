@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import {
     LayoutDashboard,
     Library,
@@ -34,76 +35,75 @@
   let monthlyDownloads = $state<MonthlyDownloads[]>([]);
   let downloadsError: string | null = $state(null);
   let readingStats = $state<ReadingProgressStats | null>(null);
+  let readingError: string | null = $state(null);
   let yearInBooks = $state<YearInBooks | null>(null);
+  let yearInBooksError: string | null = $state(null);
 
-  $effect(() => {
+  function getErrorMessage(error: unknown, fallback: string): string {
+    if (error instanceof Error && error.message.trim().length > 0) {
+      return error.message;
+    }
+    return fallback;
+  }
+
+  async function loadTotalBooksCount(cancelled: () => boolean): Promise<void> {
+    try {
+      const count = await getTotalBooksCount();
+      if (!cancelled()) totalBooks = count;
+    } catch (error) {
+      if (cancelled()) return;
+      countError = getErrorMessage(error, "Failed to load book count");
+      totalBooks = 0;
+    }
+  }
+
+  async function loadDownloadStats(cancelled: () => boolean): Promise<void> {
+    try {
+      const data = await getDownloadsPerMonth(12);
+      if (!cancelled()) monthlyDownloads = data;
+    } catch (error) {
+      if (cancelled()) return;
+      downloadsError = getErrorMessage(error, "Failed to load download stats");
+    }
+  }
+
+  async function loadReadingStats(cancelled: () => boolean): Promise<void> {
+    try {
+      const stats = await getReadingProgressStats();
+      if (!cancelled()) readingStats = stats;
+    } catch (error) {
+      if (cancelled()) return;
+      readingError = getErrorMessage(error, "Failed to load reading stats");
+    }
+  }
+
+  async function loadYearInBooksStats(cancelled: () => boolean): Promise<void> {
+    try {
+      const data = await getYearInBooks();
+      if (!cancelled()) yearInBooks = data;
+    } catch (error) {
+      if (cancelled()) return;
+      yearInBooksError = getErrorMessage(
+        error,
+        "Failed to load year-in-books stats",
+      );
+    }
+  }
+
+  onMount(() => {
+    let isCancelled = false;
+    const cancelled = () => isCancelled;
+
     if (!libraryStore.loaded) {
       libraryStore.load();
     }
-  });
+    void loadTotalBooksCount(cancelled);
+    void loadDownloadStats(cancelled);
+    void loadReadingStats(cancelled);
+    void loadYearInBooksStats(cancelled);
 
-  let countFetched = false;
-  $effect(() => {
-    if (!countFetched) {
-      countFetched = true;
-      getTotalBooksCount()
-        .then((count) => {
-          totalBooks = count;
-        })
-        .catch((err) => {
-          console.error("Failed to fetch total books count:", err);
-          countError =
-            err instanceof Error ? err.message : "Failed to load book count";
-          totalBooks = 0;
-        });
-    }
-  });
-
-  let downloadsFetched = false;
-  $effect(() => {
-    if (!downloadsFetched) {
-      downloadsFetched = true;
-      getDownloadsPerMonth(12)
-        .then((data) => {
-          monthlyDownloads = data;
-        })
-        .catch((err) => {
-          console.error("Failed to fetch download stats:", err);
-          downloadsError =
-            err instanceof Error
-              ? err.message
-              : "Failed to load download stats";
-        });
-    }
-  });
-
-  let statsFetched = false;
-  $effect(() => {
-    if (!statsFetched) {
-      statsFetched = true;
-      getReadingProgressStats()
-        .then((stats) => {
-          readingStats = stats;
-        })
-        .catch((err) => {
-          console.error("Failed to fetch reading stats:", err);
-          // Non-fatal: the reading activity section will simply not appear.
-        });
-    }
-  });
-
-  $effect(() => {
-    let cancelled = false;
-    getYearInBooks()
-      .then((data) => {
-        if (!cancelled) yearInBooks = data;
-      })
-      .catch((err) => {
-        console.error("Failed to fetch year-in-books stats:", err);
-        // Non-fatal: the section will simply not appear.
-      });
     return () => {
-      cancelled = true;
+      isCancelled = true;
     };
   });
 
@@ -252,6 +252,9 @@
     {/if}
 
     <!-- Reading Activity section -->
+    {#if readingError}
+      <AlertBanner variant="error" class="mt-5">{readingError}</AlertBanner>
+    {/if}
     {#if readingStats !== null}
       <div
         class="mt-8 bg-white dark:bg-ink-900 rounded-2xl p-6 shadow-sm border border-ink-100 dark:border-ink-800 animate-fade-in"
@@ -369,8 +372,8 @@
           {/if}
         {/if}
       </div>
-    {:else}
-      <!-- Fallback while reading stats are still loading or unavailable -->
+    {:else if !readingError}
+      <!-- Fallback while reading stats are still loading -->
       <div
         class="mt-8 bg-white dark:bg-ink-900 rounded-2xl p-6 shadow-sm border border-ink-100 dark:border-ink-800 animate-fade-in"
       >
@@ -384,6 +387,10 @@
           library.
         </p>
       </div>
+    {/if}
+
+    {#if yearInBooksError}
+      <AlertBanner variant="error" class="mt-5">{yearInBooksError}</AlertBanner>
     {/if}
 
     <!-- Year in Books section -->
