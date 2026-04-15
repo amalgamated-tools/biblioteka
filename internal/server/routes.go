@@ -94,6 +94,7 @@ func (s *Server) setupRoutes(ctx context.Context) {
 
 	// Protected stats routes
 	s.mux.Handle("/api/stats/downloads-per-month", s.requireAuth(http.HandlerFunc(s.statsHandler.HandleDownloadsPerMonth)))
+	s.mux.Handle("/api/stats/year-in-books", s.requireAuth(http.HandlerFunc(s.statsHandler.HandleYearInBooks)))
 
 	// OPDS credential management (JWT-only: credential management)
 	s.mux.Handle("/api/opds/credentials", s.requireJWTAuth(http.HandlerFunc(s.opdsCredentialHandler.HandleOPDSCredentials)))

@@ -144,4 +144,5 @@ const (
 	WebAuthnRPName       string = "webauthn.rp_name"
 	WorkID               string = "work_id"
 	WorkLegacyID         string = "work_legacy_id"
+	Year                 string = "year"
 )
