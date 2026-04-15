@@ -118,16 +118,21 @@ find docs/ -name '*.md'
 - Changelog files
 - License files
 - Code of conduct files
-- **Files containing `disable-agentic-editing: true`** — these files are explicitly protected from automated editing
+- **Files with `<!-- disable-agentic-editing: true -->` in the first 20 lines** — these files are explicitly protected from automated editing
 - Files under 150 lines (too small to contain meaningful bloat)
 - Files modified within the last 3 days (avoid conflicting with active development)
+
+Check line count with:
+```bash
+wc -l <filename>
+```
 
 Check modification date with:
 ```bash
 git log -1 --format="%ai" -- <filename>
 ```
 
-Skip files modified more recently than 3 days ago.
+Skip files under 150 lines or modified more recently than 3 days ago.
 
 Look for documentation files with clear, objective bloat signals (see section 4).
 
@@ -143,13 +148,13 @@ Look for documentation files with clear, objective bloat signals (see section 4)
 - Auto-generated documentation (e.g., swagger, generated API docs)
 - Changelog or release notes
 - License or legal files
-- **Files containing `disable-agentic-editing: true`** — these files are explicitly protected from automated editing
+- **Files with `<!-- disable-agentic-editing: true -->` in the first 20 lines** — these files are explicitly protected from automated editing
 - Files outside the `docs/` directory
 - Files under 150 lines
 - Files modified within the last 3 days
 - **Files already in cleaned-files.txt cache** — skip recently cleaned files
 
-Before selecting a file, check whether it is protected from automated editing:
+Before selecting a file, check whether it is protected from automated editing (marker must be in the first 20 lines):
 ````bash
 # Check if a file has disable-agentic-editing set
 head -20 <filename> | grep -n "disable-agentic-editing: true"
@@ -166,7 +171,7 @@ Choose the file most in need of improvement based on **objective bloat signals**
 
 ### 4. Analyze the File
 
-**First, verify the file is editable**:
+**First, verify the file is editable** (marker must be in the first 20 lines):
 ````bash
 # Check for disable-agentic-editing flag
 head -20 <filename> | grep -n "disable-agentic-editing: true"
