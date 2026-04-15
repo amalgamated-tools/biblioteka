@@ -27,10 +27,19 @@ type BootstrapSettings struct {
 	Model    string
 }
 
+// valid reports whether all required setting-key names are populated.
+func (s BootstrapSettings) valid() bool {
+	return s.Enabled != "" && s.Provider != "" && s.Endpoint != "" && s.Model != ""
+}
+
 // Bootstrap reads LLM settings and constructs a Provider using the given
 // factories. It returns a nil Provider when LLM is not enabled or the
 // endpoint is empty.
 func Bootstrap(ctx context.Context, settings SettingsReader, keys BootstrapSettings, factories map[string]Factory) BootstrapResult {
+	if !keys.valid() {
+		slog.WarnContext(ctx, "invalid LLM bootstrap settings, AI enrichment disabled")
+		return BootstrapResult{}
+	}
 	enabledStr, err := settings.GetSetting(ctx, keys.Enabled)
 	if err != nil || enabledStr != "true" {
 		return BootstrapResult{}
