@@ -39,9 +39,7 @@
       class="w-5 h-5 text-accent-600 dark:text-accent-400"
       aria-hidden="true"
     />
-    <h2
-      class="text-xl font-display font-bold text-ink-900 dark:text-cream-100"
-    >
+    <h2 class="text-xl font-display font-bold text-ink-900 dark:text-cream-100">
       You Might Also Like
     </h2>
   </div>
