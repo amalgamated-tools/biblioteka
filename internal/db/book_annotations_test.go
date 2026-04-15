@@ -103,7 +103,8 @@ func TestListAnnotationsForBook_MemberSeesGroupAnnotations(t *testing.T) {
 
 	g, err := d.CreateGroup(t.Context(), ownerID, "Book Club", nil)
 	require.NoError(t, err)
-	require.NoError(t, d.AddGroupMember(t.Context(), g.ID, ownerID, memberID))
+	_, err = d.AddGroupMember(t.Context(), g.ID, ownerID, memberID)
+	require.NoError(t, err)
 
 	// Owner creates a group-shared annotation.
 	_, err = d.CreateAnnotation(t.Context(), ownerID, bookID, "Group note", nil, &g.ID)

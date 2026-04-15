@@ -262,7 +262,8 @@ func (h *GroupHandler) addGroupMember(w http.ResponseWriter, r *http.Request, gr
 	}
 
 	userID := auth.UserIDFromContext(ctx)
-	if err := h.DB.AddGroupMember(ctx, groupID, userID, req.UserID); err != nil {
+	added, err := h.DB.AddGroupMember(ctx, groupID, userID, req.UserID)
+	if err != nil {
 		if errors.Is(err, db.ErrMemberUserNotFound) {
 			writeError(ctx, w, http.StatusNotFound, "user not found")
 			return
@@ -278,9 +279,11 @@ func (h *GroupHandler) addGroupMember(w http.ResponseWriter, r *http.Request, gr
 		return
 	}
 
-	logAudit(ctx, h.DB, userID, db.AuditActionGroupMemberAdded, "group", groupID,
-		map[string]any{"member_user_id": req.UserID},
-	)
+	if added {
+		logAudit(ctx, h.DB, userID, db.AuditActionGroupMemberAdded, "group", groupID,
+			map[string]any{"member_user_id": req.UserID},
+		)
+	}
 	w.WriteHeader(http.StatusNoContent)
 }
 

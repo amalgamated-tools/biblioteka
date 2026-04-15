@@ -166,13 +166,19 @@ func TestAddGroupMember(t *testing.T) {
 	g, err := d.CreateGroup(t.Context(), ownerID, "Book Club", nil)
 	require.NoError(t, err)
 
-	err = d.AddGroupMember(t.Context(), g.ID, ownerID, memberID)
+	added, err := d.AddGroupMember(t.Context(), g.ID, ownerID, memberID)
 	require.NoError(t, err)
+	require.True(t, added)
 
 	// Member should now see the group.
 	fetched, err := d.GetGroup(t.Context(), g.ID, memberID)
 	require.NoError(t, err)
 	require.Equal(t, 2, fetched.MemberCount)
+
+	// Adding same member again is idempotent.
+	added, err = d.AddGroupMember(t.Context(), g.ID, ownerID, memberID)
+	require.NoError(t, err)
+	require.False(t, added)
 }
 
 func TestAddGroupMember_NonOwnerCannotAdd(t *testing.T) {
@@ -184,11 +190,11 @@ func TestAddGroupMember_NonOwnerCannotAdd(t *testing.T) {
 	g, err := d.CreateGroup(t.Context(), ownerID, "Book Club", nil)
 	require.NoError(t, err)
 
-	err = d.AddGroupMember(t.Context(), g.ID, ownerID, memberID)
+	_, err = d.AddGroupMember(t.Context(), g.ID, ownerID, memberID)
 	require.NoError(t, err)
 
 	// Member (not owner) cannot add others.
-	err = d.AddGroupMember(t.Context(), g.ID, memberID, thirdID)
+	_, err = d.AddGroupMember(t.Context(), g.ID, memberID, thirdID)
 	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
@@ -199,7 +205,7 @@ func TestAddGroupMember_InvalidUser(t *testing.T) {
 	g, err := d.CreateGroup(t.Context(), ownerID, "Book Club", nil)
 	require.NoError(t, err)
 
-	err = d.AddGroupMember(t.Context(), g.ID, ownerID, "nonexistent-user-id")
+	_, err = d.AddGroupMember(t.Context(), g.ID, ownerID, "nonexistent-user-id")
 	require.ErrorIs(t, err, ErrMemberUserNotFound)
 }
 
@@ -210,7 +216,8 @@ func TestRemoveGroupMember_OwnerCanRemoveMember(t *testing.T) {
 
 	g, err := d.CreateGroup(t.Context(), ownerID, "Book Club", nil)
 	require.NoError(t, err)
-	require.NoError(t, d.AddGroupMember(t.Context(), g.ID, ownerID, memberID))
+	_, err = d.AddGroupMember(t.Context(), g.ID, ownerID, memberID)
+	require.NoError(t, err)
 
 	err = d.RemoveGroupMember(t.Context(), g.ID, ownerID, memberID)
 	require.NoError(t, err)
@@ -227,7 +234,8 @@ func TestRemoveGroupMember_MemberCanRemoveSelf(t *testing.T) {
 
 	g, err := d.CreateGroup(t.Context(), ownerID, "Book Club", nil)
 	require.NoError(t, err)
-	require.NoError(t, d.AddGroupMember(t.Context(), g.ID, ownerID, memberID))
+	_, err = d.AddGroupMember(t.Context(), g.ID, ownerID, memberID)
+	require.NoError(t, err)
 
 	err = d.RemoveGroupMember(t.Context(), g.ID, memberID, memberID)
 	require.NoError(t, err)
@@ -252,8 +260,10 @@ func TestRemoveGroupMember_MemberCannotRemoveOther(t *testing.T) {
 
 	g, err := d.CreateGroup(t.Context(), ownerID, "Book Club", nil)
 	require.NoError(t, err)
-	require.NoError(t, d.AddGroupMember(t.Context(), g.ID, ownerID, member1ID))
-	require.NoError(t, d.AddGroupMember(t.Context(), g.ID, ownerID, member2ID))
+	_, err = d.AddGroupMember(t.Context(), g.ID, ownerID, member1ID)
+	require.NoError(t, err)
+	_, err = d.AddGroupMember(t.Context(), g.ID, ownerID, member2ID)
+	require.NoError(t, err)
 
 	// Non-owner member cannot remove another member.
 	err = d.RemoveGroupMember(t.Context(), g.ID, member1ID, member2ID)
@@ -267,7 +277,8 @@ func TestListGroupMembers(t *testing.T) {
 
 	g, err := d.CreateGroup(t.Context(), ownerID, "Book Club", nil)
 	require.NoError(t, err)
-	require.NoError(t, d.AddGroupMember(t.Context(), g.ID, ownerID, memberID))
+	_, err = d.AddGroupMember(t.Context(), g.ID, ownerID, memberID)
+	require.NoError(t, err)
 
 	members, err := d.ListGroupMembers(t.Context(), g.ID, ownerID)
 	require.NoError(t, err)
@@ -293,7 +304,8 @@ func TestListGroupMemberProgress_IncludesMembersWithoutReadingState(t *testing.T
 
 	g, err := d.CreateGroup(t.Context(), ownerID, "Book Club", nil)
 	require.NoError(t, err)
-	require.NoError(t, d.AddGroupMember(t.Context(), g.ID, ownerID, memberID))
+	_, err = d.AddGroupMember(t.Context(), g.ID, ownerID, memberID)
+	require.NoError(t, err)
 
 	b, err := d.CreateBook(t.Context(), BookInput{Title: "Test Book"})
 	require.NoError(t, err)

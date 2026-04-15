@@ -139,7 +139,8 @@ func TestUpdateGroup_NonOwner404(t *testing.T) {
 
 	other, err := h.DB.CreateUser(t.Context(), "Other", "other@example.com", "pw")
 	require.NoError(t, err)
-	require.NoError(t, h.DB.AddGroupMember(t.Context(), g.ID, userID, other.ID))
+	_, err = h.DB.AddGroupMember(t.Context(), g.ID, userID, other.ID)
+	require.NoError(t, err)
 
 	body := mustMarshal(t, groupRequest{Name: "Hacked"})
 	r := httptest.NewRequest(http.MethodPut, "/api/groups/"+g.ID, bytes.NewReader(body))
@@ -231,7 +232,8 @@ func TestRemoveGroupMember_Handler(t *testing.T) {
 
 	member, err := h.DB.CreateUser(t.Context(), "Member", "member@example.com", "pw")
 	require.NoError(t, err)
-	require.NoError(t, h.DB.AddGroupMember(t.Context(), g.ID, userID, member.ID))
+	_, err = h.DB.AddGroupMember(t.Context(), g.ID, userID, member.ID)
+	require.NoError(t, err)
 
 	r := httptest.NewRequest(http.MethodDelete, "/api/groups/"+g.ID+"/members/"+member.ID, nil)
 	r = withUserID(r, userID)
@@ -261,7 +263,8 @@ func TestListGroupMembers_Handler(t *testing.T) {
 
 	member, err := h.DB.CreateUser(t.Context(), "Member", "member@example.com", "pw")
 	require.NoError(t, err)
-	require.NoError(t, h.DB.AddGroupMember(t.Context(), g.ID, userID, member.ID))
+	_, err = h.DB.AddGroupMember(t.Context(), g.ID, userID, member.ID)
+	require.NoError(t, err)
 
 	r := httptest.NewRequest(http.MethodGet, "/api/groups/"+g.ID+"/members", nil)
 	r = withUserID(r, userID)
