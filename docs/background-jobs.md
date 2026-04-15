@@ -23,6 +23,7 @@ Biblioteka uses [asynq](https://github.com/hibiken/asynq), a Redis-backed task q
                                      │  scan:path         │
                                      │  process:file      │
                                      │  enrich:goodreads  │
+                                     │  enrich:ai         │
                                      │  scan:watch-folder │
                                      └────────────────────┘
 ```
