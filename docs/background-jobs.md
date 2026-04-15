@@ -228,9 +228,9 @@ The resulting `goodreads_metadata` record stores the Goodreads book title, ident
 | **Trigger** | Scheduled every 1 minute (`@every 1m`) |
 | **Payload** | _none (empty struct)_ |
 
-Reads the `watch_folder_path` and `watch_folder_library_id` settings from the database. If both are configured and non-empty, delegates to `ScanDirectory` to walk the watch folder and enqueue a `process:file` job for each supported file found (`.epub`, `.mobi`, `.azw3`, `.pdf`).
+Reads the `watch_folder_path` and `watch_folder_library_id` settings from the database. If both are configured and non-empty, delegates to `ScanDirectory` to walk the watch folder and enqueue a `process:file` job for each supported file found (`.epub`, `.mobi`, `.pdf`, `.azw3`).
 
-The watch folder path is used as the scan root. `library_root` is intentionally left empty so that files stay in their original location by default; if the target library uses a `book_per_folder` or `book_per_file` organization type, `process:file` will reorganize files into the library's first configured path.
+The watch folder path is used as the scan root. `library_root` is intentionally left empty, so watch-folder imports keep files in their original location and `process:file` does not reorganize them into the library's configured storage path.
 
 If the watch folder is not configured (no `watch_folder_path` setting, or the path is empty), the job exits cleanly with a debug log and no work is performed. If the library ID is missing, the job logs a warning and exits — scanning without a target library would produce orphaned book records.
 
