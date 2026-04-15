@@ -230,6 +230,9 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	}
 
 	// Wire up the LLM provider if configured in settings.
+	// NOTE: LLM config is read once at startup. Changes via /api/config/llm
+	// require a server restart to take effect (communicated via restart_required
+	// in the PUT response).
 	if llmEnabledStr, err := s.DB.GetSetting(ctx, db.SettingLLMEnabled); err == nil && llmEnabledStr == "true" {
 		llmProvider, _ := s.DB.GetSetting(ctx, db.SettingLLMProvider)
 		llmEndpoint, _ := s.DB.GetSetting(ctx, db.SettingLLMEndpoint)

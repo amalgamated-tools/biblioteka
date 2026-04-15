@@ -15,10 +15,11 @@ import (
 
 // LLMConfig is the response/request body for the LLM configuration endpoint.
 type LLMConfig struct {
-	Provider string `json:"provider"`
-	Endpoint string `json:"endpoint"`
-	Model    string `json:"model"`
-	Enabled  bool   `json:"enabled"`
+	Provider        string `json:"provider"`
+	Endpoint        string `json:"endpoint"`
+	Model           string `json:"model"`
+	Enabled         bool   `json:"enabled"`
+	RestartRequired bool   `json:"restart_required,omitempty"`
 }
 
 // HandleLLMConfig handles GET and PUT /api/config/llm (admin-only).
@@ -70,11 +71,19 @@ func (h *ConfigHandler) handleSetLLMConfig(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	if req.Enabled && strings.TrimSpace(req.Model) == "" {
+		writeError(r.Context(), w, http.StatusBadRequest, "model is required when LLM is enabled")
+		return
+	}
+
 	if req.Enabled && req.Provider != "" && !llm.IsSupported(req.Provider) {
 		writeError(r.Context(), w, http.StatusBadRequest,
 			fmt.Sprintf("unsupported provider %q; supported: %s", req.Provider, strings.Join(llm.SupportedProviders, ", ")))
 		return
 	}
+
+	req.Model = strings.TrimSpace(req.Model)
+	req.Endpoint = strings.TrimSpace(req.Endpoint)
 
 	settings := []db.Setting{
 		{Key: db.SettingLLMProvider, Value: req.Provider},
@@ -94,5 +103,11 @@ func (h *ConfigHandler) handleSetLLMConfig(w http.ResponseWriter, r *http.Reques
 	userID := auth.UserIDFromContext(r.Context())
 	logAudit(r.Context(), h.DB, userID, db.AuditActionLLMConfigUpdated, "config", "llm", nil)
 
-	writeJSON(r.Context(), w, http.StatusOK, req)
+	writeJSON(r.Context(), w, http.StatusOK, LLMConfig{
+		Provider:        req.Provider,
+		Endpoint:        req.Endpoint,
+		Model:           req.Model,
+		Enabled:         req.Enabled,
+		RestartRequired: true,
+	})
 }
