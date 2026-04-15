@@ -168,12 +168,14 @@ type ApplyAIEnrichmentInput struct {
 	BookID       string
 	UserID       string
 	EnrichmentID string
-	TagIDs       []string // union-merged tag IDs to set on the book
+	NewTagIDs    []string // tag IDs to union-merge with existing book tags (inside the transaction)
 	Description  *string  // non-nil when description should be set (only if book has none)
 }
 
-// ApplyAIEnrichment atomically sets book tags, optionally updates the book
-// description, and marks the enrichment as applied within a single transaction.
+// ApplyAIEnrichment atomically union-merges new tags with the book's existing
+// tags, optionally updates the book description, and marks the enrichment as
+// applied within a single transaction. Reading existing tags inside the
+// transaction prevents concurrent tag updates from being silently lost.
 // It returns the updated AIEnrichment record.
 func (d *DB) ApplyAIEnrichment(ctx context.Context, input ApplyAIEnrichmentInput) (*AIEnrichment, error) {
 	slog.DebugContext(ctx, "db: applying AI enrichment",
@@ -184,16 +186,36 @@ func (d *DB) ApplyAIEnrichment(ctx context.Context, input ApplyAIEnrichmentInput
 
 	var result *AIEnrichment
 	err := d.WithTx(ctx, func(tx *sql.Tx) error {
-		// 1. Set book tags (delete + re-insert).
+		// 1. Read existing book tags inside the transaction to prevent races.
+		rows, err := tx.QueryContext(ctx,
+			`SELECT tag_id FROM book_tags WHERE book_id = $1`, input.BookID)
+		if err != nil {
+			return fmt.Errorf("read existing book tags: %w", err)
+		}
+		defer rows.Close()
+
+		tagIDSet := make(map[string]struct{})
+		for rows.Next() {
+			var id string
+			if err := rows.Scan(&id); err != nil {
+				return fmt.Errorf("scan existing tag id: %w", err)
+			}
+			tagIDSet[id] = struct{}{}
+		}
+		if err := rows.Err(); err != nil {
+			return fmt.Errorf("iterate existing tag ids: %w", err)
+		}
+
+		// Union-merge new tag IDs.
+		for _, id := range input.NewTagIDs {
+			tagIDSet[id] = struct{}{}
+		}
+
+		// Replace book tags with the union set.
 		if _, err := tx.ExecContext(ctx, `DELETE FROM book_tags WHERE book_id = $1`, input.BookID); err != nil {
 			return fmt.Errorf("delete book tags: %w", err)
 		}
-		seen := make(map[string]struct{}, len(input.TagIDs))
-		for _, tagID := range input.TagIDs {
-			if _, ok := seen[tagID]; ok {
-				continue
-			}
-			seen[tagID] = struct{}{}
+		for tagID := range tagIDSet {
 			if _, err := tx.ExecContext(ctx, `INSERT INTO book_tags (book_id, tag_id) VALUES ($1, $2)`, input.BookID, tagID); err != nil {
 				return fmt.Errorf("insert book tag: %w", err)
 			}

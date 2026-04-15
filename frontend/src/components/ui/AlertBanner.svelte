@@ -4,12 +4,20 @@
   interface Props {
     variant: "error" | "success";
     children: Snippet;
+    id?: string;
     role?: string;
     testId?: string;
     class?: string;
   }
 
-  let { variant, children, role, testId, class: extraClass }: Props = $props();
+  let {
+    variant,
+    children,
+    id,
+    role,
+    testId,
+    class: extraClass,
+  }: Props = $props();
 
   const resolvedRole = $derived(
     role ?? (variant === "error" ? "alert" : "status"),
@@ -27,6 +35,7 @@
 </script>
 
 <div
+  {id}
   class="px-4 py-3 rounded-xl text-sm animate-scale-in {styles[
     variant
   ]} {extraClass ?? ''}"

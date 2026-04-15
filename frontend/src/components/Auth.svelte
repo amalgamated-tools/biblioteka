@@ -24,6 +24,8 @@
   let passkeyEnabled = $state(false);
   let initError: string | null = $state(null);
   let passkeyLoading = $state(false);
+  let loginErrorVisible = $derived(!!error && isLogin);
+  let signupErrorVisible = $derived(!!error && !isLogin);
 
   function handleTabKeydown(event: KeyboardEvent) {
     if (loading) return;
@@ -295,6 +297,10 @@
               class="w-full py-3"
               placeholder="you@example.com"
               disabled={loading}
+              aria-invalid={loginErrorVisible}
+              aria-describedby={loginErrorVisible
+                ? "login-auth-error"
+                : undefined}
             />
           </div>
 
@@ -313,12 +319,19 @@
               class="w-full py-3"
               placeholder="••••••••"
               disabled={loading}
+              aria-invalid={loginErrorVisible}
+              aria-describedby={loginErrorVisible
+                ? "login-auth-error"
+                : undefined}
             />
           </div>
 
-          {#if error && isLogin}
-            <AlertBanner variant="error" testId="auth-error" role="alert"
-              >{error}</AlertBanner
+          {#if loginErrorVisible}
+            <AlertBanner
+              id="login-auth-error"
+              variant="error"
+              testId="auth-error"
+              role="alert">{error}</AlertBanner
             >
           {/if}
 
@@ -355,6 +368,10 @@
                 class="w-full py-3"
                 placeholder="Your name"
                 disabled={loading}
+                aria-invalid={signupErrorVisible}
+                aria-describedby={signupErrorVisible
+                  ? "signup-auth-error"
+                  : undefined}
               />
             </div>
 
@@ -373,6 +390,10 @@
                 class="w-full py-3"
                 placeholder="you@example.com"
                 disabled={loading}
+                aria-invalid={signupErrorVisible}
+                aria-describedby={signupErrorVisible
+                  ? "signup-auth-error"
+                  : undefined}
               />
             </div>
 
@@ -391,12 +412,19 @@
                 class="w-full py-3"
                 placeholder="••••••••"
                 disabled={loading}
+                aria-invalid={signupErrorVisible}
+                aria-describedby={signupErrorVisible
+                  ? "signup-auth-error"
+                  : undefined}
               />
             </div>
 
-            {#if error && !isLogin}
-              <AlertBanner variant="error" testId="auth-error" role="alert"
-                >{error}</AlertBanner
+            {#if signupErrorVisible}
+              <AlertBanner
+                id="signup-auth-error"
+                variant="error"
+                testId="auth-error"
+                role="alert">{error}</AlertBanner
               >
             {/if}
 

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
-import { cleanup, render, screen } from "@testing-library/svelte";
+import { cleanup, render, screen, within } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { tick } from "svelte";
 
@@ -151,5 +151,26 @@ describe("Auth", () => {
         screen.getByText("Unable to reach the server to load auth settings"),
       ).toBeInTheDocument();
     });
+  });
+
+  it("marks login fields invalid and associates them with the error banner", async () => {
+    const user = userEvent.setup();
+    await renderAuth();
+
+    await user.click(screen.getByRole("button", { name: "Sign In" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveAttribute("id", "login-auth-error");
+
+    const loginPanel = screen.getByRole("tabpanel", { name: "Login" });
+    const loginEmail = within(loginPanel).getByLabelText("Email");
+    const loginPassword = within(loginPanel).getByLabelText("Password");
+    expect(loginEmail).toHaveAttribute("aria-invalid", "true");
+    expect(loginEmail).toHaveAttribute("aria-describedby", "login-auth-error");
+    expect(loginPassword).toHaveAttribute("aria-invalid", "true");
+    expect(loginPassword).toHaveAttribute(
+      "aria-describedby",
+      "login-auth-error",
+    );
   });
 });

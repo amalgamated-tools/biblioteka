@@ -1,10 +1,5 @@
-import type { User } from "../../types";
+import type { AuthResponse, User } from "../../types";
 import { clearToken, request, setToken } from "./core";
-
-interface AuthResponse {
-  token: string;
-  user: User;
-}
 
 export async function signup(
   name: string,

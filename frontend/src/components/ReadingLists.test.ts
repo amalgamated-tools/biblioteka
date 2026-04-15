@@ -142,6 +142,31 @@ describe("ReadingLists", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("marks the create name field invalid after a create error", async () => {
+    vi.mocked(readingListStore).loaded = true;
+    vi.mocked(readingListStore).create = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("Name is required"));
+    render(ReadingLists);
+    await tick();
+
+    await fireEvent.click(screen.getByRole("button", { name: /New List/i }));
+    await fireEvent.input(screen.getByLabelText(/Name/i), {
+      target: { value: "My list" },
+    });
+    await fireEvent.click(screen.getByRole("button", { name: /^Create$/i }));
+    await tick();
+
+    expect(screen.getByLabelText(/Name/i)).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    );
+    expect(screen.getByLabelText(/Name/i)).toHaveAttribute(
+      "aria-describedby",
+      "create-reading-list-error",
+    );
+  });
+
   it("hides the form after Cancel", async () => {
     vi.mocked(readingListStore).loaded = true;
     render(ReadingLists);
