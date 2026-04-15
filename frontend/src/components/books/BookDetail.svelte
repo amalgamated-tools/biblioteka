@@ -247,6 +247,7 @@
                   <a
                     href={api.bookFileDownloadUrl(file.id)}
                     class="shrink-0 inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg bg-accent-600 text-white hover:bg-accent-700 transition-colors"
+                    aria-label={`Download ${file.file_name} (${file.file_type.toUpperCase()})`}
                     download
                   >
                     <Download class="w-4 h-4" aria-hidden="true" />
