@@ -211,7 +211,7 @@ docker compose up -d --force-recreate biblioteka-worker
 - [API keys](../README.md#api-keys) (`bib_…`) and **Kobo sync tokens** are **not** affected — they authenticate via independent mechanisms and remain valid after rotation.
 - **Encrypted settings become unreadable.** Re-enter the SMTP password and OIDC client secret in the admin UI (*Settings → Email / SMTP* and *Settings → OIDC / SSO*) after rotation.
 
-> **OIDC sessions:** Rotating `JWT_SECRET` does not invalidate users' sessions with their identity provider. Users are redirected through the OIDC login flow, but most providers will silently reuse an existing IdP session without prompting for credentials again.
+> **OIDC sessions:** Rotating `JWT_SECRET` does not invalidate users' sessions with their identity provider. Users are redirected through the OIDC login flow, but most providers will silently reuse an existing IdP session without prompting for credentials again. Any OIDC login or account-link flow already in progress at rotation time will fail and must be restarted (OIDC `state` validation is derived from `JWT_SECRET`).
 
 ## Reverse Proxy Setup
 
