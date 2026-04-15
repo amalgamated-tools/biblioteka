@@ -187,65 +187,41 @@ func (d *DB) GetYearInBooks(ctx context.Context, userID string, year int) (YearI
 
 	result := YearInBooks{Year: year}
 
-	var finishedQuery, activeDaysQuery, downloadsQuery string
-	if d.Dialect == DialectPostgres {
-		finishedQuery = `
-			SELECT COUNT(*) FROM reading_progress
-			WHERE user_id = $1
-			  AND percentage >= 0.99
-			  AND EXTRACT(YEAR FROM updated_at AT TIME ZONE 'UTC') = $2`
-		activeDaysQuery = `
-			SELECT COUNT(DISTINCT DATE_TRUNC('day', updated_at AT TIME ZONE 'UTC'))
-			FROM reading_progress
-			WHERE user_id = $1
-			  AND EXTRACT(YEAR FROM updated_at AT TIME ZONE 'UTC') = $2`
-		downloadsQuery = `
-			SELECT COUNT(*) FROM book_downloads
-			WHERE user_id = $1
-			  AND EXTRACT(YEAR FROM downloaded_at AT TIME ZONE 'UTC') = $2`
-	} else {
-		finishedQuery = `
-			SELECT COUNT(*) FROM reading_progress
-			WHERE user_id = $1
-			  AND percentage >= 0.99
-			  AND strftime('%Y', updated_at) = $2`
-		activeDaysQuery = `
-			SELECT COUNT(DISTINCT strftime('%Y-%m-%d', updated_at))
-			FROM reading_progress
-			WHERE user_id = $1
-			  AND strftime('%Y', updated_at) = $2`
-		downloadsQuery = `
-			SELECT COUNT(*) FROM book_downloads
-			WHERE user_id = $1
-			  AND strftime('%Y', downloaded_at) = $2`
-	}
+	// Use explicit UTC date range for index-friendly filtering across both dialects.
+	yearStart := fmt.Sprintf("%04d-01-01T00:00:00Z", year)
+	yearEnd := fmt.Sprintf("%04d-01-01T00:00:00Z", year+1)
 
-	yearStr := fmt.Sprintf("%04d", year)
+	finishedQuery := `
+		SELECT COUNT(*) FROM reading_progress
+		WHERE user_id = $1
+		  AND percentage >= 0.99
+		  AND updated_at >= $2 AND updated_at < $3`
+	activeDaysQuery := `
+		SELECT COUNT(DISTINCT DATE(updated_at))
+		FROM reading_progress
+		WHERE user_id = $1
+		  AND updated_at >= $2 AND updated_at < $3`
+	downloadsQuery := `
+		SELECT COUNT(*) FROM book_downloads
+		WHERE user_id = $1
+		  AND downloaded_at >= $2 AND downloaded_at < $3`
 
-	if err := d.QueryRowContext(ctx, finishedQuery, userID, yearStr).Scan(&result.BooksFinished); err != nil {
+	if err := d.QueryRowContext(ctx, finishedQuery, userID, yearStart, yearEnd).Scan(&result.BooksFinished); err != nil {
 		return YearInBooks{}, fmt.Errorf("query books finished: %w", err)
 	}
-	if err := d.QueryRowContext(ctx, activeDaysQuery, userID, yearStr).Scan(&result.ActiveDays); err != nil {
+	if err := d.QueryRowContext(ctx, activeDaysQuery, userID, yearStart, yearEnd).Scan(&result.ActiveDays); err != nil {
 		return YearInBooks{}, fmt.Errorf("query active days: %w", err)
 	}
-	if err := d.QueryRowContext(ctx, downloadsQuery, userID, yearStr).Scan(&result.TotalDownloads); err != nil {
+	if err := d.QueryRowContext(ctx, downloadsQuery, userID, yearStart, yearEnd).Scan(&result.TotalDownloads); err != nil {
 		return YearInBooks{}, fmt.Errorf("query total downloads: %w", err)
 	}
 
 	// Compute longest streak from reading progress timestamps within the year.
-	var tsQuery string
-	if d.Dialect == DialectPostgres {
-		tsQuery = `
-			SELECT updated_at FROM reading_progress
-			WHERE user_id = $1
-			  AND EXTRACT(YEAR FROM updated_at AT TIME ZONE 'UTC') = $2`
-	} else {
-		tsQuery = `
-			SELECT updated_at FROM reading_progress
-			WHERE user_id = $1
-			  AND strftime('%Y', updated_at) = $2`
-	}
-	rows, err := d.QueryContext(ctx, tsQuery, userID, yearStr)
+	tsQuery := `
+		SELECT updated_at FROM reading_progress
+		WHERE user_id = $1
+		  AND updated_at >= $2 AND updated_at < $3`
+	rows, err := d.QueryContext(ctx, tsQuery, userID, yearStart, yearEnd)
 	if err != nil {
 		return YearInBooks{}, fmt.Errorf("query timestamps for streak: %w", err)
 	}

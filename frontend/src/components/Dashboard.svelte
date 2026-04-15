@@ -89,19 +89,19 @@
     }
   });
 
-  let yearInBooksFetched = false;
   $effect(() => {
-    if (!yearInBooksFetched) {
-      yearInBooksFetched = true;
-      getYearInBooks()
-        .then((data) => {
-          yearInBooks = data;
-        })
-        .catch((err) => {
-          console.error("Failed to fetch year-in-books stats:", err);
-          // Non-fatal: the section will simply not appear.
-        });
-    }
+    let cancelled = false;
+    getYearInBooks()
+      .then((data) => {
+        if (!cancelled) yearInBooks = data;
+      })
+      .catch((err) => {
+        console.error("Failed to fetch year-in-books stats:", err);
+        // Non-fatal: the section will simply not appear.
+      });
+    return () => {
+      cancelled = true;
+    };
   });
 
   const stats = $derived([
@@ -392,7 +392,8 @@
               {yearInBooks.longest_streak}
             </span>
             <span class="text-xs text-ink-500 dark:text-ink-400 text-center">
-              day longest streak
+              {yearInBooks.longest_streak === 1 ? "day" : "days"} longest
+              streak
             </span>
           </div>
 

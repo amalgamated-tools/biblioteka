@@ -95,7 +95,7 @@ func (h *StatsHandler) HandleYearInBooks(w http.ResponseWriter, r *http.Request)
 	year := time.Now().UTC().Year()
 	if s := r.URL.Query().Get("year"); s != "" {
 		v, err := strconv.Atoi(s)
-		if err != nil || v < 1 {
+		if err != nil || v < 1 || v > time.Now().UTC().Year()+1 {
 			writeError(r.Context(), w, http.StatusBadRequest, "invalid year")
 			return
 		}
