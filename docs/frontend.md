@@ -25,7 +25,7 @@ frontend/
       Books.svelte        Book listing and detail view; includes a debounced search input that persists the search term in the URL hash query string (`#books?query=tolkien`); reads `initialOffset` from the URL and writes page changes back via `routerStore.setQueryParam`
       NotFound.svelte     404 page rendered when the router encounters an unknown hash path
       Dashboard.svelte    Home screen; shows an empty-state onboarding card only after libraries are loaded and the list is empty; otherwise renders a two-card stats grid (Total Books, Libraries), a downloads-per-month histogram (via `DownloadsHistogram.svelte`), and a "Welcome to Biblioteka" prose panel (`<h2>` + `<p>`); in the stats-grid branch, Total Books is fetched from the API via `getTotalBooksCount()` on first render and shows "…" while the request is in flight (falls back to `0` on error, surfacing an `AlertBanner` with the error message); the histogram is fetched via `getDownloadsPerMonth(12)` and is hidden until data arrives (an `AlertBanner` is shown on error); Libraries reflects the live `libraryStore.libraries.length`; each stat card uses a `<dl>/<dt>/<dd>` description-list structure so that screen readers can announce the label–value relationship correctly (WCAG 1.3.1)
-      Libraries.svelte    Library management view
+      Libraries.svelte    Library management view; dispatches to sub-components based on `routerStore.subPath`: `"new"` → `LibraryForm` (create mode), `"edit/{id}"` → `LibraryForm` (edit mode), `"setup"` → `FirstLibraryWizard` (first-library onboarding wizard), `"{id}"` → `LibraryView`, or empty → list / empty state; a `$effect` redirects away from `"setup"` automatically if the user already has at least one library
       MyLibrary.svelte    Placeholder for a planned per-user personal library feature; currently shows an empty state
       Settings.svelte     Settings shell; owns shared admin state; renders one tab at a time
       Sidebar.svelte      Navigation sidebar; fetches and displays the running server version; uses `<a href>` anchor links for all navigation items; the brand name is rendered as `<p>` (not `<h1>`) to avoid duplicate top-level headings (WCAG 1.3.1); icon-only action links (Create library, Library settings) carry `aria-label`, and the Create-library icon explicitly carries `aria-hidden="true"` (WCAG 4.1.2); the Library-settings link aria-label includes the library name (e.g. "Library settings for Fiction") so each link has a unique, descriptive name (WCAG 2.4.6); the Library-settings link always carries at least `opacity-30` so it is visible when focused via keyboard (WCAG 2.4.7); nav link clusters are wrapped in `role="group"` containers labelled by `<h2>` group headings (WCAG 1.3.1)
@@ -36,6 +36,7 @@ frontend/
         MetadataComparison.svelte   Side-by-side comparison of current and fetched remote metadata; lets the user selectively apply individual fields
         MetadataFetchPanel.svelte   Panel that triggers a remote metadata fetch, streams progress events, and renders `MetadataComparison` once results arrive
       libraries/          Reusable sub-components for the Libraries view
+        FirstLibraryWizard.svelte  Four-step onboarding wizard shown at `#libraries/setup` when the user has no libraries; guides the user through naming the library (step 1), choosing folder paths (step 2), selecting file-organization type and monitoring toggle (step 3), and reviewing settings before creation (step 4); a "Skip for now" button in the header calls `onboardingStore.skip()` and navigates to the dashboard; the step progress bar uses a `role="group"` container with an `aria-label` of `"Progress: step N of 4"` and a `role="status"` live region below it so screen readers announce the current step title without moving focus (WCAG 4.1.3); name and folder inputs carry `aria-invalid` and `aria-describedby` wired to inline `role="alert"` error messages (WCAG 1.3.1, 3.3.1); the monitor toggle uses `role="switch"` with explicit `aria-checked` (WCAG 4.1.2)
         LibraryForm.svelte   Create / edit library form; required fields carry `aria-required={true}` and a visible legend ("Fields marked with an asterisk are required") uses `aria-hidden` on the visual `*` and a `sr-only` span for the spoken label (WCAG 3.3.2); the "Monitor for new content" toggle uses `role="switch"` and explicit `aria-checked` to communicate on/off state to assistive technologies (WCAG 4.1.2); delete library action uses the `DeleteConfirmation` component for an accessible inline confirmation with keyboard-focus management and Escape-to-dismiss (WCAG 4.1.2)
         LibraryView.svelte   Library detail with book listing
       settings/           Tab sub-components for the Settings page (see Settings component architecture below)
@@ -191,6 +192,7 @@ For stores with additional state beyond basic CRUD (e.g. scan tracking in `libra
 | `authors.svelte.ts` | `authorStore` | Author CRUD; cached after first load |
 | `series.svelte.ts` | `seriesStore` | Series CRUD; cached after first load |
 | `reading-lists.svelte.ts` | `readingListStore` | Reading list CRUD and book membership; cached after first load |
+| `onboarding.svelte.ts` | `onboardingStore` | Tracks whether the first-library setup wizard has been dismissed per user; persisted to `localStorage` |
 
 ### `libraryStore` — scanning state API
 
@@ -254,6 +256,39 @@ Both `addBook` and `removeBook` call `reload()` after the backend write to keep 
 {#each readingListStore.lists as list}
   <p>{list.name} — {list.book_count} books</p>
 {/each}
+```
+
+### `onboardingStore` — first-library wizard skip state
+
+`onboardingStore` tracks whether the user has dismissed the first-library setup wizard. The skip flag is stored in `localStorage` under a per-user key (`biblioteka_onboarding_skipped_{userId}`) so the wizard does not reappear after a page reload.
+
+| Member | Signature | Description |
+|--------|-----------|-------------|
+| `isSkipped(userId)` | `(userId: string \| undefined) => boolean` | Returns `true` when the wizard has been dismissed for the given user. Returns `false` while `userId` is `undefined` (e.g. during auth initialisation). Reactive: callers re-evaluate when `skip()` or `clearSkip()` is called. |
+| `skip(userId)` | `(userId: string \| undefined) => void` | Persists the skip flag for this user. Called by `FirstLibraryWizard` when the user clicks "Skip for now". Silently ignores `localStorage` errors (e.g. in private-browsing mode). |
+| `clearSkip(userId)` | `(userId: string \| undefined) => void` | Removes the skip flag. Called after the user successfully creates their first library so the wizard can resurface if they later remove all libraries. |
+
+**Typical usage in `Dashboard.svelte`:**
+
+```svelte
+<script lang="ts">
+  import { onboardingStore } from "../stores/onboarding.svelte";
+  import { authStore } from "../stores/auth.svelte";
+  import { libraryStore } from "../stores/libraries.svelte";
+  import { routerStore } from "../stores/router.svelte";
+
+  // Navigate to the first-library wizard if the user has no libraries
+  // and has not already dismissed it.
+  $effect(() => {
+    if (
+      libraryStore.loaded &&
+      libraryStore.libraries.length === 0 &&
+      !onboardingStore.isSkipped(authStore.user?.id)
+    ) {
+      routerStore.navigate("libraries/setup");
+    }
+  });
+</script>
 ```
 
 ### Using a store in a component
@@ -352,6 +387,7 @@ Views that need their own internal navigation use `routerStore.subPath`. The con
 |------|------------------|---------|
 | `libraries` | *(empty)* | List / empty state |
 | `libraries` | `new` | Create-library form |
+| `libraries` | `setup` | First-library setup wizard (redirects away if libraries exist) |
 | `libraries` | `{id}` | View a library's books |
 | `libraries` | `edit/{id}` | Edit-library form |
 | `reading-lists` | *(empty)* | List all reading lists + create form |
@@ -375,6 +411,7 @@ let mode = $derived.by(() => {
   const sp = routerStore.subPath;
   if (sp === "new")              return "create";
   if (sp.startsWith("edit/"))   return "edit";
+  if (sp === "setup")            return "setup";   // first-library wizard
   if (sp !== "")                return "view";   // {id} → show books
   return "empty";
 });
@@ -2634,6 +2671,52 @@ Accessibility regressions are locked in by dedicated test files. Keep all of the
 
 > **Testing note:** Each test calls `await tick()` after `render()` to flush Svelte 5 reactive state before asserting. `afterEach(cleanup)` removes the rendered component from JSDOM between tests.
 
+#### `FirstLibraryWizard.test.ts`
+
+`frontend/src/components/libraries/FirstLibraryWizard.test.ts` verifies the step-by-step flow, validation, accessibility, and skip behavior of the first-library setup wizard. Tests are organized in five `describe` blocks.
+
+**"FirstLibraryWizard – step 1 (name)" — eight tests:**
+
+1. **`renders the wizard with data-testid`** — asserts the root element carries `data-testid="first-library-wizard"`.
+2. **`renders step 1 heading 'Name your library'`** — asserts the `<h1>` heading text matches the step title.
+3. **`renders the 'Skip for now' button on step 1`** — asserts the skip button is visible on the first step.
+4. **`renders a 'Next' button on step 1`** — asserts the Next navigation button is present.
+5. **`does not render a 'Back' button on step 1`** — asserts Back is absent on the first step (no previous step).
+6. **`'Next' on step 1 with empty name shows a validation error`** — clicks Next with an empty name field; asserts the inline error message is rendered.
+7. **`name input carries aria-invalid when validation fails`** — after a failed Next click, asserts `aria-invalid="true"` on the name input so screen readers surface the error.
+8. **`'Next' with a valid name advances to step 2`** — types a name, clicks Next; asserts the step-2 heading `"Choose folders"` appears.
+
+**"FirstLibraryWizard – step 2 (paths)" — four tests:**
+
+1. **`renders the folder path input on step 2`** — asserts a text input labelled `"Folder path"` is present.
+2. **`'Next' on step 2 with no paths shows a validation error`** — submits an empty path; asserts the `"At least one folder is required"` error.
+3. **`'Back' returns to step 1`** — clicks Back; asserts the step-1 heading reappears.
+4. **`'Next' with a valid path advances to step 3`** — types a path, clicks Next; asserts the step-3 heading `"Configure options"` appears.
+
+**"FirstLibraryWizard – step 3 (options)" — three tests:**
+
+1. **`renders the organization type select on step 3`** — asserts the file-organization `<select>` is present.
+2. **`renders the monitor toggle on step 3`** — asserts the "Monitor for new content" toggle input is present.
+3. **`'Next' on step 3 advances to step 4 (review)`** — clicks Next; asserts the step-4 heading `"Review & create"` appears.
+
+**"FirstLibraryWizard – step 4 (review & create)" — nine tests:**
+
+1. **`shows the review step heading`** — asserts the `"Review & create"` `<h1>` is present.
+2. **`shows the library name in the review`** — asserts the entered name is rendered in the review `<dl>`.
+3. **`shows the folder path in the review`** — asserts the entered path is rendered.
+4. **`shows the 'Create Library' button`** — asserts the Create Library submit button is visible.
+5. **`does not show a 'Next' button on step 4`** — asserts Next is absent on the last step.
+6. **`calls libraryStore.add with the correct args on create`** — clicks Create Library; asserts `libraryStore.add` is called with `{ name, paths, organization_type, monitored }`.
+7. **`navigates to the new library after successful creation`** — `libraryStore.add` resolves with a fixture library; asserts `routerStore.navigate` is called with `"libraries/lib-new"`.
+8. **`shows an error banner and stays on step 4 when creation fails`** — `libraryStore.add` rejects with `Error("server error")`; asserts an `AlertBanner` with the error text is rendered and the step does not advance.
+
+**"FirstLibraryWizard – skip" — two tests:**
+
+1. **`'Skip for now' calls onboardingStore.skip with the userId`** — clicks Skip; asserts `onboardingStore.skip` is called with `"user-1"`.
+2. **`'Skip for now' navigates to dashboard`** — clicks Skip; asserts `routerStore.navigate` is called with `"dashboard"`.
+
+> **Mocking note:** The test file mocks `libraryStore`, `routerStore`, `authStore` (user with `id: "user-1"`), `onboardingStore`, and all `lucide-svelte` icon components. `afterEach(cleanup)` prevents DOM leakage between tests.
+
 #### `TextInput.test.ts`
 
 `frontend/src/components/ui/TextInput.test.ts` verifies ARIA forwarding and accessibility-critical styling on the reusable text input (WCAG 1.4.3, 4.1.2). The key accessibility test:
@@ -2891,6 +2974,28 @@ The following test suites cover reactive stores and the API client. Unlike the a
 1. **`removes the library from the store and clears its scanning state`** — adds and marks a library as scanning, then calls `remove(id)`; asserts the library is gone from `libraries` and `scanningIds`.
 
 > **Setup:** `beforeEach` resets the store by setting `libraries = []`, `loading = false`, `loaded = false`, and calling `clearAllScanning()`. Fake timers are used to control the 5-minute scanning timeout without real waits.
+
+---
+
+### `onboarding.test.ts`
+
+`frontend/src/stores/onboarding.test.ts` exercises `onboardingStore`, the per-user first-library wizard skip-state store. `localStorage` is replaced with a fake in-memory implementation before each test. Tests are organized in three `describe` blocks.
+
+**`isSkipped` (three tests):**
+
+1. **`returns false when userId is undefined`** — asserts `isSkipped(undefined)` returns `false` (safe default during auth initialisation).
+2. **`returns false when localStorage has no entry for the user`** — asserts `isSkipped("user-1")` returns `false` on a clean store.
+3. **`returns true after skip() is called for the user`** — calls `skip("user-1")` and asserts `isSkipped("user-1")` is `true`.
+
+**`skip` (two tests):**
+
+1. **`persists the flag to localStorage`** — calls `skip("user-2")`; asserts `localStorage.getItem("biblioteka_onboarding_skipped_user-2")` equals `"1"`.
+2. **`does not throw when localStorage is unavailable`** — replaces `localStorage.setItem` with a function that throws `DOMException`; asserts `skip()` does not propagate the error.
+
+**`clearSkip` (two tests):**
+
+1. **`removes the flag from localStorage`** — calls `skip("user-3")` then `clearSkip("user-3")`; asserts `localStorage.getItem(...)` returns `null`.
+2. **`does not throw when localStorage is unavailable`** — replaces `localStorage.removeItem` with a function that throws; asserts `clearSkip()` does not propagate the error.
 
 ---
 
