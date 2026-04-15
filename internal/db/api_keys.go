@@ -20,6 +20,7 @@ type APIKey struct {
 
 const apiKeyColumns = `id, user_id, name, key_hash, key_prefix, last_used_at, created_at`
 
+// scanAPIKey scans an API key row into an APIKey struct.
 func scanAPIKey(row interface{ Scan(...any) error }) (*APIKey, error) {
 	return scanRow(row, func(k *APIKey) []any {
 		return []any{&k.ID, &k.UserID, &k.Name, &k.KeyHash, &k.KeyPrefix, &k.LastUsedAt, &k.CreatedAt}
