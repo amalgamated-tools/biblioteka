@@ -15,6 +15,15 @@ import (
 // previewLimit is the maximum number of books returned in a Preview.
 const previewLimit = 25
 
+// Sentinel errors returned by WebImport for error classification.
+var (
+	// ErrLibraryNotFound is returned when the specified library_id does not exist.
+	ErrLibraryNotFound = errors.New("library not found")
+
+	// ErrLoadCalibreBooks is returned when the Calibre database cannot be read.
+	ErrLoadCalibreBooks = errors.New("could not read Calibre books")
+)
+
 // PreviewSeriesEntry is one series membership included in a preview book.
 type PreviewSeriesEntry struct {
 	Name     string  `json:"name"`
@@ -125,7 +134,7 @@ func WebImport(ctx context.Context, biblDB *db.DB, calibreDB *DB, opts WebImport
 	if opts.LibraryID != "" {
 		if _, err := biblDB.GetLibrary(ctx, opts.LibraryID); err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				return nil, fmt.Errorf("library %q not found", opts.LibraryID)
+				return nil, fmt.Errorf("%w: %q", ErrLibraryNotFound, opts.LibraryID)
 			}
 			return nil, fmt.Errorf("validate library %q: %w", opts.LibraryID, err)
 		}
@@ -133,7 +142,7 @@ func WebImport(ctx context.Context, biblDB *db.DB, calibreDB *DB, opts WebImport
 
 	books, err := calibreDB.LoadBooks(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("load calibre books: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrLoadCalibreBooks, err)
 	}
 
 	result := &ImportResult{Total: len(books)}

@@ -235,27 +235,6 @@ func TestHandleCalibrePreview_MissingFile(t *testing.T) {
 	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
-func TestHandleCalibrePreview_NonAdminForbidden(t *testing.T) {
-	d := newTestDB(t)
-	h := &CalibreImportHandler{DB: d}
-
-	// First user is auto-admin; create a second non-admin user.
-	_, err := d.CreateUser(t.Context(), "Admin", "admin@example.com", "password1")
-	require.NoError(t, err)
-	user, err := d.CreateUser(t.Context(), "User", "u@example.com", "password1")
-	require.NoError(t, err)
-
-	filePath, _ := newTestCalibreFile(t)
-
-	r := makeCalibreRequest(t, "/api/calibre-import/preview", filePath, nil)
-	r = withUserID(r, user.ID)
-	w := httptest.NewRecorder()
-
-	h.HandlePreview(w, r)
-
-	require.Equal(t, http.StatusForbidden, w.Code)
-}
-
 func TestHandleCalibrePreview_MethodNotAllowed(t *testing.T) {
 	d := newTestDB(t)
 	h := &CalibreImportHandler{DB: d}
@@ -425,24 +404,187 @@ func TestHandleCalibreImport_MethodNotAllowed(t *testing.T) {
 	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
-func TestHandleCalibreImport_NonAdminForbidden(t *testing.T) {
+// makeCalibrePathRequest builds a JSON POST request for the server-path mode.
+func makeCalibrePathRequest(t *testing.T, url string, body map[string]string) *http.Request {
+	t.Helper()
+	jsonBody, err := json.Marshal(body)
+	require.NoError(t, err)
+	r := httptest.NewRequest(http.MethodPost, url, bytes.NewReader(jsonBody))
+	r.Header.Set("Content-Type", "application/json")
+	return r
+}
+
+// --- HandlePreview server-path tests ----------------------------------------
+
+func TestHandleCalibrePreview_ServerPath(t *testing.T) {
 	d := newTestDB(t)
 	h := &CalibreImportHandler{DB: d}
 
-	// First user is auto-admin; create a second non-admin user.
-	_, err := d.CreateUser(t.Context(), "Admin", "admin@example.com", "password1")
+	user, err := d.CreateUser(t.Context(), "Admin", "u@example.com", "password1")
 	require.NoError(t, err)
-	user, err := d.CreateUser(t.Context(), "User", "u@example.com", "password1")
-	require.NoError(t, err)
+	require.NoError(t, d.SetAdmin(t.Context(), user.ID, true))
 
 	filePath, rawDB := newTestCalibreFile(t)
 	insertCalibreBookRow(t, rawDB, "Dune")
+	insertCalibreBookRow(t, rawDB, "Foundation")
 
-	r := makeCalibreRequest(t, "/api/calibre-import/confirm", filePath, nil)
+	r := makeCalibrePathRequest(t, "/api/calibre-import/preview", map[string]string{
+		"path": filePath,
+	})
+	r = withUserID(r, user.ID)
+	w := httptest.NewRecorder()
+
+	h.HandlePreview(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var preview calibre.Preview
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &preview))
+	require.Equal(t, 2, preview.Total)
+	require.Len(t, preview.Books, 2)
+}
+
+func TestHandleCalibrePreview_ServerPath_NotFound(t *testing.T) {
+	d := newTestDB(t)
+	h := &CalibreImportHandler{DB: d}
+
+	user, err := d.CreateUser(t.Context(), "Admin", "u@example.com", "password1")
+	require.NoError(t, err)
+	require.NoError(t, d.SetAdmin(t.Context(), user.ID, true))
+
+	r := makeCalibrePathRequest(t, "/api/calibre-import/preview", map[string]string{
+		"path": "/nonexistent/metadata.db",
+	})
+	r = withUserID(r, user.ID)
+	w := httptest.NewRecorder()
+
+	h.HandlePreview(w, r)
+
+	require.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestHandleCalibrePreview_ServerPath_EmptyPath(t *testing.T) {
+	d := newTestDB(t)
+	h := &CalibreImportHandler{DB: d}
+
+	user, err := d.CreateUser(t.Context(), "Admin", "u@example.com", "password1")
+	require.NoError(t, err)
+	require.NoError(t, d.SetAdmin(t.Context(), user.ID, true))
+
+	r := makeCalibrePathRequest(t, "/api/calibre-import/preview", map[string]string{
+		"path": "",
+	})
+	r = withUserID(r, user.ID)
+	w := httptest.NewRecorder()
+
+	h.HandlePreview(w, r)
+
+	require.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestHandleCalibrePreview_ServerPath_RelativePath(t *testing.T) {
+	d := newTestDB(t)
+	h := &CalibreImportHandler{DB: d}
+
+	user, err := d.CreateUser(t.Context(), "Admin", "u@example.com", "password1")
+	require.NoError(t, err)
+	require.NoError(t, d.SetAdmin(t.Context(), user.ID, true))
+
+	r := makeCalibrePathRequest(t, "/api/calibre-import/preview", map[string]string{
+		"path": "relative/path/metadata.db",
+	})
+	r = withUserID(r, user.ID)
+	w := httptest.NewRecorder()
+
+	h.HandlePreview(w, r)
+
+	require.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestHandleCalibrePreview_UnsupportedContentType(t *testing.T) {
+	d := newTestDB(t)
+	h := &CalibreImportHandler{DB: d}
+
+	user, err := d.CreateUser(t.Context(), "Admin", "u@example.com", "password1")
+	require.NoError(t, err)
+	require.NoError(t, d.SetAdmin(t.Context(), user.ID, true))
+
+	r := httptest.NewRequest(http.MethodPost, "/api/calibre-import/preview",
+		bytes.NewReader([]byte("plain text")))
+	r.Header.Set("Content-Type", "text/plain")
+	r = withUserID(r, user.ID)
+	w := httptest.NewRecorder()
+
+	h.HandlePreview(w, r)
+
+	require.Equal(t, http.StatusUnsupportedMediaType, w.Code)
+}
+
+// --- HandleImport server-path tests -----------------------------------------
+
+func TestHandleCalibreImport_ServerPath_Basic(t *testing.T) {
+	d := newTestDB(t)
+	h := &CalibreImportHandler{DB: d}
+
+	user, err := d.CreateUser(t.Context(), "Admin", "u@example.com", "password1")
+	require.NoError(t, err)
+	require.NoError(t, d.SetAdmin(t.Context(), user.ID, true))
+
+	filePath, rawDB := newTestCalibreFile(t)
+	bookID := insertCalibreBookRow(t, rawDB, "Dune")
+	insertCalibreIdentifierRow(t, rawDB, bookID, "isbn13", "9780441013593")
+
+	r := makeCalibrePathRequest(t, "/api/calibre-import/confirm", map[string]string{
+		"path": filePath,
+	})
 	r = withUserID(r, user.ID)
 	w := httptest.NewRecorder()
 
 	h.HandleImport(w, r)
 
-	require.Equal(t, http.StatusForbidden, w.Code)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var result calibre.ImportResult
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result))
+	require.Equal(t, 1, result.Total)
+	require.Equal(t, 1, result.Imported)
+	require.Equal(t, 0, result.Skipped)
+	require.Equal(t, 0, result.Errors)
+
+	books, err := d.ListBooks(t.Context())
+	require.NoError(t, err)
+	require.Len(t, books, 1)
+	require.Equal(t, "Dune", books[0].Title)
+}
+
+func TestHandleCalibreImport_ServerPath_WithLibrary(t *testing.T) {
+	d := newTestDB(t)
+	h := &CalibreImportHandler{DB: d}
+
+	user, err := d.CreateUser(t.Context(), "Admin", "u@example.com", "password1")
+	require.NoError(t, err)
+	require.NoError(t, d.SetAdmin(t.Context(), user.ID, true))
+
+	lib, err := d.CreateLibrary(t.Context(), "My Library", "/books", "none", false)
+	require.NoError(t, err)
+
+	filePath, rawDB := newTestCalibreFile(t)
+	bookID := insertCalibreBookRow(t, rawDB, "Dune")
+	insertCalibreIdentifierRow(t, rawDB, bookID, "isbn13", "9780441013593")
+
+	r := makeCalibrePathRequest(t, "/api/calibre-import/confirm", map[string]string{
+		"path":       filePath,
+		"library_id": lib.ID,
+	})
+	r = withUserID(r, user.ID)
+	w := httptest.NewRecorder()
+
+	h.HandleImport(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+
+	libBooks, err := d.ListBooksByLibrary(t.Context(), lib.ID)
+	require.NoError(t, err)
+	require.Len(t, libBooks, 1)
+	require.Equal(t, "Dune", libBooks[0].Title)
 }
