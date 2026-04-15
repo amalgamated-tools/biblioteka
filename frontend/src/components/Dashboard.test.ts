@@ -22,6 +22,24 @@ vi.mock("../stores/router.svelte", () => ({
   },
 }));
 
+vi.mock("../stores/auth.svelte", () => ({
+  authStore: {
+    user: {
+      id: "user-1",
+      name: "Test User",
+      email: "test@example.com",
+      oidc_linked: false,
+      is_admin: false,
+    },
+  },
+}));
+
+vi.mock("../stores/onboarding.svelte", () => ({
+  onboardingStore: {
+    isSkipped: vi.fn().mockReturnValue(false),
+  },
+}));
+
 vi.mock("../lib/api", () => ({
   getTotalBooksCount: vi.fn().mockResolvedValue(0),
   getDownloadsPerMonth: vi.fn().mockResolvedValue([]),
@@ -57,6 +75,7 @@ vi.mock("lucide-svelte", () => ({
 import Dashboard from "./Dashboard.svelte";
 import { libraryStore } from "../stores/libraries.svelte";
 import { routerStore } from "../stores/router.svelte";
+import { onboardingStore } from "../stores/onboarding.svelte";
 import {
   getTotalBooksCount,
   getDownloadsPerMonth,
@@ -69,6 +88,7 @@ describe("Dashboard", () => {
   beforeEach(() => {
     vi.mocked(libraryStore).loaded = false;
     vi.mocked(libraryStore).libraries = [];
+    vi.mocked(onboardingStore).isSkipped = vi.fn().mockReturnValue(false);
     vi.mocked(getTotalBooksCount).mockResolvedValue(0);
     vi.mocked(getDownloadsPerMonth).mockResolvedValue([]);
     vi.mocked(getReadingProgressStats).mockResolvedValue({
@@ -121,7 +141,7 @@ describe("Dashboard", () => {
     ).toBeInTheDocument();
   });
 
-  it("navigates to libraries/new when the onboarding button is clicked", async () => {
+  it("navigates to libraries/setup when the onboarding button is clicked", async () => {
     vi.mocked(libraryStore).loaded = true;
     vi.mocked(libraryStore).libraries = [];
     render(Dashboard);
@@ -130,7 +150,7 @@ describe("Dashboard", () => {
     await fireEvent.click(
       screen.getByRole("button", { name: /Add Your First Library/i }),
     );
-    expect(routerStore.navigate).toHaveBeenCalledWith("libraries/new");
+    expect(routerStore.navigate).toHaveBeenCalledWith("libraries/setup");
   });
 
   it("shows stats grid when libraries exist", async () => {
@@ -582,5 +602,68 @@ describe("Dashboard", () => {
         expect(screen.getByText("download")).toBeInTheDocument();
       });
     });
+  });
+
+  // ---- Onboarding / skip-state ----
+
+  it("shows 'Add Your First Library' button when libraries are empty and not skipped", async () => {
+    vi.mocked(libraryStore).loaded = true;
+    vi.mocked(libraryStore).libraries = [];
+    vi.mocked(onboardingStore).isSkipped = vi.fn().mockReturnValue(false);
+    render(Dashboard);
+    await tick();
+
+    expect(
+      screen.getByRole("button", { name: /Add Your First Library/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows 'No libraries yet' heading when libraries are empty and skipped", async () => {
+    vi.mocked(libraryStore).loaded = true;
+    vi.mocked(libraryStore).libraries = [];
+    vi.mocked(onboardingStore).isSkipped = vi.fn().mockReturnValue(true);
+    render(Dashboard);
+    await tick();
+
+    expect(
+      screen.getByRole("heading", { name: /No libraries yet/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows 'Set up your first library' button in skipped state", async () => {
+    vi.mocked(libraryStore).loaded = true;
+    vi.mocked(libraryStore).libraries = [];
+    vi.mocked(onboardingStore).isSkipped = vi.fn().mockReturnValue(true);
+    render(Dashboard);
+    await tick();
+
+    expect(
+      screen.getByRole("button", { name: /Set up your first library/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("navigates to libraries/setup from the skipped-state button", async () => {
+    vi.mocked(libraryStore).loaded = true;
+    vi.mocked(libraryStore).libraries = [];
+    vi.mocked(onboardingStore).isSkipped = vi.fn().mockReturnValue(true);
+    render(Dashboard);
+    await tick();
+
+    await fireEvent.click(
+      screen.getByRole("button", { name: /Set up your first library/i }),
+    );
+    expect(routerStore.navigate).toHaveBeenCalledWith("libraries/setup");
+  });
+
+  it("does not show the 'Get started' wizard card in skipped state", async () => {
+    vi.mocked(libraryStore).loaded = true;
+    vi.mocked(libraryStore).libraries = [];
+    vi.mocked(onboardingStore).isSkipped = vi.fn().mockReturnValue(true);
+    render(Dashboard);
+    await tick();
+
+    expect(
+      screen.queryByRole("heading", { name: /Get started with Biblioteka/i }),
+    ).toBeNull();
   });
 });
