@@ -130,7 +130,7 @@
         bind:value={fields.description}
         placeholder="Book description"
         rows="3"
-        class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 dark:placeholder-ink-500 transition-all resize-y"
+        class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent focus-visible:outline-none dark:bg-ink-800 dark:text-cream-100 dark:placeholder-ink-500 transition-all resize-y"
         disabled={saving}
       ></textarea>
     </div>
