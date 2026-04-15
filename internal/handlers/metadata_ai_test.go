@@ -267,6 +267,27 @@ func TestRejectAIEnrichment_NoPending(t *testing.T) {
 	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
+func TestApplyAIEnrichment_SkipsBlankTags(t *testing.T) {
+	h, _, userID := setupMetadataHandler(t)
+	book := createTestBook(t, h.DB, "Test Book")
+
+	// Create enrichment with blank/whitespace-only tags mixed in.
+	_, err := h.DB.CreateAIEnrichment(t.Context(), userID, &book.ID, "ollama", "llama3", []string{"valid-tag", "", "  ", "another-valid"}, nil, nil, "{}")
+	require.NoError(t, err)
+
+	r := httptest.NewRequest(http.MethodPost, "/api/books/"+book.ID+"/metadata/ai-apply", nil)
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleBookMetadata(w, r, book.ID)
+
+	require.Equal(t, http.StatusOK, w.Code)
+
+	tags, err := h.DB.GetBookTags(t.Context(), book.ID)
+	require.NoError(t, err)
+	require.Len(t, tags, 2, "should only have the two valid tags, blank ones skipped")
+}
+
 // stubLLMProvider is a no-op llm.Provider for handler tests that only need
 // a non-nil provider to pass the availability check.
 type stubLLMProvider struct{}
