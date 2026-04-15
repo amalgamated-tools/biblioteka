@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/go-webauthn/webauthn/webauthn"
 )
@@ -107,9 +108,10 @@ func (h *PasskeyHandler) HandleFinishAuthentication(w http.ResponseWriter, r *ht
 		return
 	}
 
-	// authedUserID is captured from the handler closure during FinishPasskeyLogin.
+	// authedUserID and authedUser are captured from the handler closure during FinishPasskeyLogin.
 	var authedUserID string
 	var authedCredentialID string
+	var authedUser *db.User
 
 	handler := webauthn.DiscoverableUserHandler(func(rawID, userHandle []byte) (webauthn.User, error) {
 		credID := base64.RawURLEncoding.EncodeToString(rawID)
@@ -132,18 +134,17 @@ func (h *PasskeyHandler) HandleFinishAuthentication(w http.ResponseWriter, r *ht
 
 		authedUserID = user.ID
 		authedCredentialID = credID
+		authedUser = user
 
 		return &passkeyUser{user: user, credentials: waCreds}, nil
 	})
 
-	updatedCred, authedUser, err := h.WebAuthn.FinishPasskeyLogin(handler, challengeData.SessionData, r)
+	updatedCred, _, err := h.WebAuthn.FinishPasskeyLogin(handler, challengeData.SessionData, r)
 	if err != nil {
 		slog.WarnContext(r.Context(), "passkey login verification failed", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusUnauthorized, "authentication failed")
 		return
 	}
-
-	_ = authedUser // user ID is captured in authedUserID
 
 	// Persist updated credential data (sign count may have incremented).
 	updatedData, err := json.Marshal(updatedCred)
@@ -169,15 +170,9 @@ func (h *PasskeyHandler) HandleFinishAuthentication(w http.ResponseWriter, r *ht
 		}
 	}
 
-	user, err := h.DB.GetUserByID(r.Context(), authedUserID)
-	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to fetch user after passkey login",
-			slog.String(otelkeys.UserID, authedUserID),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to complete login")
-		return
-	}
+	// authedUser was captured in the discoverable handler closure,
+	// so no extra DB query is needed here.
+	user := authedUser
 
 	token, err := h.JWT.CreateToken(r.Context(), authedUserID)
 	if err != nil {
