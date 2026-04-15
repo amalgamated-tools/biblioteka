@@ -1,6 +1,7 @@
 package db
 
 import (
+	"database/sql"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -162,5 +163,5 @@ func TestDeleteAnnotation_OtherUserCannotDelete(t *testing.T) {
 	require.NoError(t, err)
 
 	err = d.DeleteAnnotation(t.Context(), a.ID, otherID)
-	require.Error(t, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }

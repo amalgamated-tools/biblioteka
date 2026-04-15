@@ -43,7 +43,6 @@ type groupMemberDTO struct {
 	GroupID  string       `json:"group_id"`
 	UserID   string       `json:"user_id"`
 	UserName string       `json:"user_name"`
-	Email    string       `json:"email"`
 	Role     string       `json:"role"`
 	JoinedAt db.Timestamp `json:"joined_at"`
 }
@@ -72,7 +71,6 @@ func toGroupMemberDTO(m *db.ReadingGroupMember) groupMemberDTO {
 		GroupID:  m.GroupID,
 		UserID:   m.UserID,
 		UserName: m.UserName,
-		Email:    m.Email,
 		Role:     m.Role,
 		JoinedAt: m.JoinedAt,
 	}
