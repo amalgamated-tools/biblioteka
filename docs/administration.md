@@ -456,7 +456,7 @@ curl -X PUT http://localhost:8080/api/config/llm \
 
 | Field | Required when `enabled` | Description |
 |-------|------------------------|-------------|
-| `provider` | No | LLM provider name. Currently only `"ollama"` is accepted. Required when `enabled` is `true`. |
+| `provider` | No | LLM provider name. Currently only `"ollama"` is accepted. Defaults to `"ollama"` when omitted. |
 | `endpoint` | Yes | Base URL of the Ollama server (e.g. `"http://localhost:11434"`). |
 | `model` | Yes | Ollama model name (e.g. `"llama3"`, `"mistral"`, `"gemma3"`). The model must already be pulled on the Ollama server. |
 | `enabled` | — | `true` to activate AI enrichment; `false` to disable it. |
