@@ -1,13 +1,13 @@
 {
-  "last_run": "2026-04-14T20:32:57Z",
-  "tasks_run": ["task3", "task4", "task7"],
+  "last_run": "2026-04-15T20:38:00Z",
+  "tasks_run": ["task2", "task3", "task7"],
   "commands": {
     "build": "make build (requires frontend first)",
-    "test": "GOTOOLCHAIN=local go test ./... (note: go.mod requires 1.26.1 but only 1.24.13 available)",
+    "test": "go test ./... (Go 1.26.1 auto-downloaded; internal/jobs failures are pre-existing)",
     "lint": "make lint",
     "fmt": "make fmt && make hardfmt",
-    "bench": "GOTOOLCHAIN=local go test -bench=. -benchmem ./internal/db/",
-    "note": "Go 1.26.1 download is blocked by firewall - use GOTOOLCHAIN=local to use installed 1.24.13. GONOSUMCHECK=* GOFLAGS=-mod=mod allows build to succeed with 1.24.13."
+    "bench": "go test -bench=. -benchmem ./internal/db/",
+    "note": "Go 1.26.1 is auto-downloaded when needed (not using GOTOOLCHAIN=local). internal/jobs tests have pre-existing failures unrelated to DB/index changes."
   },
   "backlog": [
     {
@@ -55,27 +55,34 @@
       "merged_by": "veverkap"
     },
     {
-      "id": "get-reading-streak-extra-db-call",
-      "status": "already_done",
-      "description": "HandleReadingProgressStats already derives all values from single ListReadingProgress call - no extra DB round-trip",
+      "id": "load-book-relations-parallel",
+      "status": "merged",
+      "description": "LoadBookRelations now runs 3 DB queries concurrently with errgroup. Also added BenchmarkLoadBookRelations.",
       "impact": "low"
     },
     {
-      "id": "load-book-relations-parallel",
+      "id": "book-tags-tag-id-index",
       "status": "pr_created",
-      "description": "LoadBookRelations makes 3 sequential DB queries (GetAuthorsForBooks, GetFilesForBooks, GetSeriesForBooks) - now runs concurrently with errgroup",
+      "description": "Add idx_book_tags_tag_id ON book_tags(tag_id): prevents SCAN on cascade delete; enables future books-by-tag queries",
       "impact": "low",
-      "pr_branch": "perf-assist/parallel-load-book-relations",
-      "note": "Also added BenchmarkLoadBookRelations to bench_test.go. SQLite WAL mode allows concurrent reads."
+      "pr_branch": "perf-assist/missing-fk-indexes"
+    },
+    {
+      "id": "goodreads-metadata-user-book-status-index",
+      "status": "pr_created",
+      "description": "Add idx_goodreads_metadata_user_book_status ON (user_id, book_id, status, created_at DESC, id DESC): tightens GetLatestGoodreadsMetadataForBook from (user_id, status) scan to (user_id, book_id, status) point lookup",
+      "impact": "medium",
+      "pr_branch": "perf-assist/missing-fk-indexes",
+      "evidence": "EXPLAIN QUERY PLAN: before=SEARCH USING INDEX ...(user_id=? AND status=?), after=SEARCH USING INDEX ...(user_id=? AND book_id=? AND status=?)"
     },
     {
       "id": "reading-list-books-position-index",
-      "status": "identified",
-      "description": "ListReadingListBooks queries ORDER BY position ASC, added_at ASC; PK (reading_list_id, book_id) covers filter but not sort order. Impact low since reading lists are typically small.",
-      "impact": "low"
+      "status": "superseded",
+      "description": "Position column dropped (migration 20260415151000_drop_reading_list_books_position.sql) - no longer relevant",
+      "impact": "none"
     }
   ],
   "monthly_activity_issue_number": null,
-  "monthly_activity_issue_note": "Issue #1877 closed as completed by veverkap on 2026-04-14; new issue created (aw_monthly temporary_id) in this run",
+  "monthly_activity_issue_note": "Need to create April 2026 issue this run",
   "checked_off_items": []
 }
