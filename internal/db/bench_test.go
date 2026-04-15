@@ -27,6 +27,13 @@ func newBenchDB(b *testing.B) *DB {
 	`)
 	require.NoError(b, err, "newBenchDB: pragmas")
 
+	// In-memory SQLite databases are connection-scoped: each new connection
+	// from the pool gets its own empty database.  Pinning to a single
+	// connection ensures migrations and subsequent queries all see the same
+	// schema, which is required by benchmarks that use errgroup-based
+	// concurrency (e.g. BenchmarkLoadBookRelations).
+	sqlDB.SetMaxOpenConns(1)
+
 	d := &DB{DB: sqlDB, Dialect: DialectSQLite}
 
 	require.NoError(b, runMigrations(b.Context(), d), "newBenchDB: migrations")
