@@ -24,11 +24,11 @@
 
   let { currentView, subPath = "", open, onClose }: Props = $props();
   let version = $state("");
-  let innerWidth = $state<number | undefined>(undefined);
-
-  let hideSidebar = $derived(
-    !open && innerWidth !== undefined && innerWidth < 768,
+  let innerWidth = $state<number>(
+    typeof window !== "undefined" ? window.innerWidth : 0,
   );
+
+  let hideSidebar = $derived(!open && innerWidth < 768);
 
   $effect(() => {
     if (authStore.user && !libraryStore.loaded) {

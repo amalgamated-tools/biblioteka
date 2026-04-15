@@ -37,6 +37,8 @@ vi.mock("lucide-svelte", () => ({
 
 import Sidebar from "./Sidebar.svelte";
 
+const originalInnerWidth = window.innerWidth;
+
 function setViewportWidth(width: number) {
   Object.defineProperty(window, "innerWidth", {
     configurable: true,
@@ -49,6 +51,11 @@ function setViewportWidth(width: number) {
 describe("Sidebar navigation accessibility", () => {
   afterEach(() => {
     cleanup();
+    Object.defineProperty(window, "innerWidth", {
+      configurable: true,
+      writable: true,
+      value: originalInnerWidth,
+    });
   });
 
   it("renders Dashboard, All Books, and Settings as links with correct hrefs", () => {
