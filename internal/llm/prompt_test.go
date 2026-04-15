@@ -1,7 +1,6 @@
 package llm
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -19,10 +18,9 @@ func TestBuildEnrichPrompt_BasicPromptContents(t *testing.T) {
 }
 
 func TestBuildEnrichPrompt_NoAuthors(t *testing.T) {
-	prompt := BuildEnrichPrompt("Unknown Origin", []string{}, "")
-	require.Contains(t, prompt, "Unknown")
-	// Empty slice → fallback to "Unknown"
-	require.NotContains(t, prompt, "[]")
+	prompt := BuildEnrichPrompt("Some Book Title", []string{}, "")
+	// Empty slice → fallback to "Unknown" in the authors section.
+	require.Contains(t, prompt, "<authors>Unknown</authors>")
 }
 
 func TestBuildEnrichPrompt_MultipleAuthors(t *testing.T) {
@@ -67,9 +65,9 @@ func TestBuildEnrichPrompt_HTMLEscaping(t *testing.T) {
 func TestBuildEnrichPrompt_StructurePreserved(t *testing.T) {
 	prompt := BuildEnrichPrompt("Title", []string{"Author"}, "Desc")
 	// The <book> XML wrapper must remain intact after escaping.
-	require.True(t, strings.Contains(prompt, "<book>"), "expected <book> opening tag")
-	require.True(t, strings.Contains(prompt, "</book>"), "expected </book> closing tag")
-	require.True(t, strings.Contains(prompt, "<title>"), "expected <title> tag")
-	require.True(t, strings.Contains(prompt, "<authors>"), "expected <authors> tag")
-	require.True(t, strings.Contains(prompt, "<description>"), "expected <description> tag")
+	require.Contains(t, prompt, "<book>", "expected <book> opening tag")
+	require.Contains(t, prompt, "</book>", "expected </book> closing tag")
+	require.Contains(t, prompt, "<title>", "expected <title> tag")
+	require.Contains(t, prompt, "<authors>", "expected <authors> tag")
+	require.Contains(t, prompt, "<description>", "expected <description> tag")
 }
