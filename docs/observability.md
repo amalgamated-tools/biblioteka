@@ -87,7 +87,7 @@ The request ID is:
 1. Added to the request context so every log line emitted while handling the request carries the same `request_id` field.
 2. Echoed back to the client in the `X-Request-ID` **response header**.
 
-When reporting a bug or investigating an incident, include the `X-Request-ID` value from the response to correlate all server-side log entries for that request.
+When reporting a bug or investigating an incident, include the `X-Request-ID` value from the response to correlate all server-side log entries for that request. See [Useful `jq` queries](#useful-jq-queries-local-development) for ready-made one-liners to filter logs by `request_id`.
 
 ### Example: forwarding request IDs from nginx
 
@@ -151,13 +151,50 @@ docker compose logs biblioteka \
   | jq 'select(.library_id == "<library-id>")'
 ```
 
+## Alerting Guidance
+
+The table below lists the conditions most worth alerting on in production. All of them can be expressed as queries against the structured JSON log stream.
+
+| Condition | Field(s) to check | Recommended threshold | Severity |
+|-----------|-------------------|-----------------------|----------|
+| High error rate | `level == "ERROR"` | > 5 errors / minute | 🔴 Critical |
+| Slow HTTP responses | `duration > 2000000000` (> 2 s) | Sustained for > 2 minutes | 🟡 Warning |
+| Background job failures | `level == "ERROR"` + `msg` matches `scan|process|job|file` | Any single occurrence | 🔴 Critical |
+| Authentication failures (rate-limiting) | `level == "INFO"` + `msg` matches `rate limit exceeded` | > 20 / minute per IP | 🟡 Warning |
+| Sidecar write failures | `level == "WARN"` + `msg` matches `sidecar|cover|opf` | > 10 / minute | 🟡 Warning |
+| Startup / migration errors | `level == "ERROR"` during first 30 s after start | Any single occurrence | 🔴 Critical |
+
+### Example alert queries
+
+Use these alongside the [jq snippets above](#useful-jq-queries-local-development) to build alert rules in your log aggregator (Loki `LogQL`, Elasticsearch DSL, Datadog logs, etc.).
+
+```bash
+# Count ERROR-level entries in the last minute
+docker compose logs --since 60s --no-log-prefix biblioteka \
+  | jq -c 'select(.level == "ERROR")' | wc -l
+
+# Count requests slower than 2 s in the last 5 minutes
+docker compose logs --since 300s --no-log-prefix biblioteka \
+  | jq -c 'select(.duration != null and .duration > 2000000000)' | wc -l
+
+# Alert on any background-job error (pipe to pagerduty/slack webhook as needed)
+docker compose logs -f --no-log-prefix biblioteka \
+  | jq -c --unbuffered 'select(.level == "ERROR" and (.msg | test("scan|process|job|file"; "i")))'
+```
+
+> **Tip:** When using Loki, use `{container="biblioteka"} | json | level = "ERROR"` as a starting point and layer on additional label filters. See the [Log Aggregation](#log-aggregation) section for platform integration options.
+
 ## Distributed Tracing
 
-Biblioteka includes OpenTelemetry trace context propagation (`TraceMiddleware`) that wraps every incoming HTTP request in an OTel span. The global tracer provider is used, which defaults to a **no-op provider** — no spans are exported and there is no overhead beyond the middleware call.
+Biblioteka has **built-in support for distributed tracing** via OpenTelemetry. Tracing is **opt-in** — the infrastructure is present in every build, but no spans are exported by default.
 
-The standard binary does not include a built-in OTLP exporter or read `OTEL_EXPORTER_OTLP_ENDPOINT` at runtime. Span export requires building from source and registering a `TracerProvider` that includes an exporter (e.g. `go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc` or `otlptracehttp`) before calling `server.NewServer`. The span names follow the pattern `METHOD /path` (e.g. `GET /api/books`).
+### How it works
 
-> Most deployments are well-served by structured log correlation via `request_id` alone. Distributed tracing is an advanced integration point that requires custom builds.
+`TraceMiddleware` wraps every incoming HTTP request in an OTel span. The global tracer provider defaults to a **no-op provider**, so the runtime overhead remains minimal and no spans leave the process until you register an exporter.
+
+The standard binary does not ship a built-in OTLP exporter or read `OTEL_EXPORTER_OTLP_ENDPOINT` at runtime. To enable span export, build from source and register a `TracerProvider` (e.g. using `go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc` or `otlptracehttp`) before calling `server.NewServer`. Span names follow the pattern `METHOD /path` (e.g. `GET /api/books`).
+
+> **For most deployments**, structured log correlation via `request_id` is sufficient. Distributed tracing is an advanced, opt-in integration for environments that already operate an OTLP endpoint (often via an OpenTelemetry Collector) to send traces to Jaeger, Tempo, Zipkin, or similar backends.
 
 ---
 

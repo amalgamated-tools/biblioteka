@@ -27,7 +27,7 @@ type BookRelations struct {
 // The three queries run concurrently to reduce latency on the book detail
 // endpoint; SQLite WAL mode allows concurrent readers on separate connections.
 func (d *DB) LoadBookRelations(ctx context.Context, bookID string) (*BookRelations, error) {
-	slog.DebugContext(ctx, "db: loading book relations", slog.String(otelkeys.BookID, bookID))
+	slog.DebugContext(ctx, "loading book relations", slog.String(otelkeys.BookID, bookID))
 
 	ids := []string{bookID}
 

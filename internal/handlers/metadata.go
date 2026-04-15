@@ -13,6 +13,7 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/jobs"
+	"github.com/amalgamated-tools/biblioteka/internal/llm"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/amalgamated-tools/biblioteka/internal/pubsub"
 	"github.com/hibiken/asynq"
@@ -20,9 +21,10 @@ import (
 
 // MetadataHandler handles metadata fetch, review, and apply endpoints for books.
 type MetadataHandler struct {
-	DB         *db.DB
-	Enqueuer   jobs.Enqueuer
-	Subscriber pubsub.Subscriber
+	DB          *db.DB
+	Enqueuer    jobs.Enqueuer
+	Subscriber  pubsub.Subscriber
+	LLMProvider llm.Provider
 }
 
 // HandleBookMetadata dispatches /api/books/{id}/metadata and its sub-paths.
@@ -68,6 +70,30 @@ func (h *MetadataHandler) HandleBookMetadata(w http.ResponseWriter, r *http.Requ
 			return
 		}
 		h.rejectMetadata(w, r, bookID)
+	case "ai-fetch":
+		if r.Method != http.MethodPost {
+			writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
+			return
+		}
+		h.fetchAIEnrichment(w, r, bookID)
+	case "ai-apply":
+		if r.Method != http.MethodPost {
+			writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
+			return
+		}
+		h.applyAIEnrichment(w, r, bookID)
+	case "ai-reject":
+		if r.Method != http.MethodPost {
+			writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
+			return
+		}
+		h.rejectAIEnrichment(w, r, bookID)
+	case "ai":
+		if r.Method != http.MethodGet {
+			writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
+			return
+		}
+		h.getPendingAIEnrichment(w, r, bookID)
 	default:
 		writeError(r.Context(), w, http.StatusNotFound, "not found")
 	}

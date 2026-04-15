@@ -7,6 +7,8 @@
     Flame,
     BookOpen,
     CheckCheck,
+    CalendarDays,
+    Download,
   } from "lucide-svelte";
   import { libraryStore } from "../stores/libraries.svelte";
   import { routerStore } from "../stores/router.svelte";
@@ -14,16 +16,23 @@
     getTotalBooksCount,
     getDownloadsPerMonth,
     getReadingProgressStats,
+    getYearInBooks,
   } from "../lib/api";
-  import type { MonthlyDownloads, ReadingProgressStats } from "../types";
+  import type {
+    MonthlyDownloads,
+    ReadingProgressStats,
+    YearInBooks,
+  } from "../types";
   import AlertBanner from "./ui/AlertBanner.svelte";
   import DownloadsHistogram from "./ui/DownloadsHistogram.svelte";
+  import Recommendations from "./Recommendations.svelte";
 
   let totalBooks = $state<number | null>(null);
   let countError: string | null = $state(null);
   let monthlyDownloads = $state<MonthlyDownloads[]>([]);
   let downloadsError: string | null = $state(null);
   let readingStats = $state<ReadingProgressStats | null>(null);
+  let yearInBooks = $state<YearInBooks | null>(null);
 
   $effect(() => {
     if (!libraryStore.loaded) {
@@ -79,6 +88,21 @@
           // Non-fatal: the reading activity section will simply not appear.
         });
     }
+  });
+
+  $effect(() => {
+    let cancelled = false;
+    getYearInBooks()
+      .then((data) => {
+        if (!cancelled) yearInBooks = data;
+      })
+      .catch((err) => {
+        console.error("Failed to fetch year-in-books stats:", err);
+        // Non-fatal: the section will simply not appear.
+      });
+    return () => {
+      cancelled = true;
+    };
   });
 
   const stats = $derived([
@@ -322,5 +346,94 @@
         </p>
       </div>
     {/if}
+
+    <!-- Year in Books section -->
+    {#if yearInBooks !== null && (yearInBooks.books_finished > 0 || yearInBooks.active_days > 0 || yearInBooks.total_downloads > 0)}
+      <div
+        class="mt-8 bg-white dark:bg-ink-900 rounded-2xl p-6 shadow-sm border border-ink-100 dark:border-ink-800 animate-fade-in"
+        data-testid="year-in-books-card"
+      >
+        <h2
+          class="text-xl font-display font-bold text-ink-900 dark:text-cream-100 mb-1"
+        >
+          {yearInBooks.year} in Books
+        </h2>
+        <p class="text-sm text-ink-400 dark:text-ink-500 mb-5">
+          Your reading year at a glance
+        </p>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div
+            class="flex flex-col items-center gap-1.5 p-4 bg-accent-50 dark:bg-accent-900/20 rounded-xl"
+          >
+            <CheckCheck
+              class="w-5 h-5 text-accent-600 dark:text-accent-400"
+              aria-hidden="true"
+            />
+            <span
+              class="text-2xl font-display font-bold text-ink-900 dark:text-cream-100"
+            >
+              {yearInBooks.books_finished}
+            </span>
+            <span class="text-xs text-ink-500 dark:text-ink-400 text-center">
+              {yearInBooks.books_finished === 1 ? "book" : "books"} finished
+            </span>
+          </div>
+
+          <div
+            class="flex flex-col items-center gap-1.5 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl"
+          >
+            <Flame
+              class="w-5 h-5 text-orange-500 dark:text-orange-400"
+              aria-hidden="true"
+            />
+            <span
+              class="text-2xl font-display font-bold text-ink-900 dark:text-cream-100"
+            >
+              {yearInBooks.longest_streak}
+            </span>
+            <span class="text-xs text-ink-500 dark:text-ink-400 text-center">
+              {yearInBooks.longest_streak === 1 ? "day" : "days"} longest streak
+            </span>
+          </div>
+
+          <div
+            class="flex flex-col items-center gap-1.5 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl"
+          >
+            <CalendarDays
+              class="w-5 h-5 text-blue-500 dark:text-blue-400"
+              aria-hidden="true"
+            />
+            <span
+              class="text-2xl font-display font-bold text-ink-900 dark:text-cream-100"
+            >
+              {yearInBooks.active_days}
+            </span>
+            <span class="text-xs text-ink-500 dark:text-ink-400 text-center">
+              days reading
+            </span>
+          </div>
+
+          <div
+            class="flex flex-col items-center gap-1.5 p-4 bg-green-50 dark:bg-green-900/20 rounded-xl"
+          >
+            <Download
+              class="w-5 h-5 text-green-500 dark:text-green-400"
+              aria-hidden="true"
+            />
+            <span
+              class="text-2xl font-display font-bold text-ink-900 dark:text-cream-100"
+            >
+              {yearInBooks.total_downloads}
+            </span>
+            <span class="text-xs text-ink-500 dark:text-ink-400 text-center">
+              {yearInBooks.total_downloads === 1 ? "download" : "downloads"}
+            </span>
+          </div>
+        </div>
+      </div>
+    {/if}
+
+    <Recommendations />
   {/if}
 </div>
