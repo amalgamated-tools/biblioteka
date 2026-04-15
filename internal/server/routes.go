@@ -96,6 +96,10 @@ func (s *Server) setupRoutes(ctx context.Context) {
 	s.mux.Handle("/api/stats/downloads-per-month", s.requireAuth(http.HandlerFunc(s.statsHandler.HandleDownloadsPerMonth)))
 	s.mux.Handle("/api/stats/year-in-books", s.requireAuth(http.HandlerFunc(s.statsHandler.HandleYearInBooks)))
 
+	// Protected Calibre import routes (admin only)
+	s.mux.Handle("/api/calibre-import/preview", s.requireAdmin(http.HandlerFunc(s.calibreImportHandler.HandlePreview)))
+	s.mux.Handle("/api/calibre-import/confirm", s.requireAdmin(http.HandlerFunc(s.calibreImportHandler.HandleImport)))
+
 	// OPDS credential management (JWT-only: credential management)
 	s.mux.Handle("/api/opds/credentials", s.requireJWTAuth(http.HandlerFunc(s.opdsCredentialHandler.HandleOPDSCredentials)))
 
