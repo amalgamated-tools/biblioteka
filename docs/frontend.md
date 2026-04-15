@@ -22,7 +22,7 @@ frontend/
     types.ts            Shared TypeScript interfaces for API entities
     components/         Page-level Svelte components (PascalCase)
       Auth.svelte         Login and signup forms; wraps all form content in a `<main>` landmark (WCAG 1.3.6); the Login/Sign Up toggle uses the ARIA tablist/tab/tabpanel pattern with roving tabindex and keyboard navigation (WCAG 4.1.2)
-      Books.svelte        Book listing and detail view; includes a debounced search input that persists the search term in the URL hash query string (`#books?query=tolkien&offset=0`); reads `initialOffset` from the URL and writes page changes back via `routerStore.setQueryParam`
+      Books.svelte        Book listing and detail view; includes a debounced search input that persists the search term in the URL hash query string (`#books?query=tolkien`); reads `initialOffset` from the URL and writes page changes back via `routerStore.setQueryParam`
       NotFound.svelte     404 page rendered when the router encounters an unknown hash path
       Dashboard.svelte    Home screen; shows an empty-state onboarding card only after libraries are loaded and the list is empty; otherwise renders a two-card stats grid (Total Books, Libraries), a downloads-per-month histogram (via `DownloadsHistogram.svelte`), and a "Welcome to Biblioteka" prose panel (`<h2>` + `<p>`); in the stats-grid branch, Total Books is fetched from the API via `getTotalBooksCount()` on first render and shows "…" while the request is in flight (falls back to `0` on error, surfacing an `AlertBanner` with the error message); the histogram is fetched via `getDownloadsPerMonth(12)` and is hidden until data arrives (an `AlertBanner` is shown on error); Libraries reflects the live `libraryStore.libraries.length`; each stat card uses a `<dl>/<dt>/<dd>` description-list structure so that screen readers can announce the label–value relationship correctly (WCAG 1.3.1)
       Libraries.svelte    Library management view
@@ -1046,10 +1046,20 @@ A self-contained paginated book browser. It fetches a page of books via a caller
   import BookList from "./ui/BookList.svelte";
   import * as api from "../lib/api";
 
+  let raw = $state("");
   let query = $state("");
+
+  // Debounce search input to avoid excessive API calls (see Books.svelte for the production pattern)
+  $effect(() => {
+    const timeout = window.setTimeout(() => {
+      query = raw;
+    }, 300);
+
+    return () => window.clearTimeout(timeout);
+  });
 </script>
 
-<input bind:value={query} placeholder="Search books…" />
+<input bind:value={raw} placeholder="Search books…" />
 <BookList fetchBooks={api.listBooks} {query} />
 ```
 
