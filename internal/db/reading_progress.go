@@ -187,24 +187,37 @@ func (d *DB) GetYearInBooks(ctx context.Context, userID string, year int) (YearI
 
 	result := YearInBooks{Year: year}
 
-	// Use explicit UTC date range for index-friendly filtering across both dialects.
-	yearStart := fmt.Sprintf("%04d-01-01T00:00:00Z", year)
-	yearEnd := fmt.Sprintf("%04d-01-01T00:00:00Z", year+1)
+	// Use explicit UTC date range in SQLite DATETIME text format so string
+	// comparisons remain correct at year boundaries.
+	yearStart := fmt.Sprintf("%04d-01-01 00:00:00", year)
+	yearEnd := fmt.Sprintf("%04d-01-01 00:00:00", year+1)
 
 	finishedQuery := `
 		SELECT COUNT(*) FROM reading_progress
 		WHERE user_id = $1
 		  AND percentage >= 0.99
 		  AND updated_at >= $2 AND updated_at < $3`
-	activeDaysQuery := `
-		SELECT COUNT(DISTINCT DATE(updated_at))
-		FROM reading_progress
-		WHERE user_id = $1
-		  AND updated_at >= $2 AND updated_at < $3`
 	downloadsQuery := `
 		SELECT COUNT(*) FROM book_downloads
 		WHERE user_id = $1
 		  AND downloaded_at >= $2 AND downloaded_at < $3`
+
+	// Postgres TIMESTAMPTZ needs explicit UTC cast for correct day boundaries;
+	// SQLite stores text so plain DATE() is fine.
+	var activeDaysQuery string
+	if d.Dialect == DialectPostgres {
+		activeDaysQuery = `
+			SELECT COUNT(DISTINCT DATE(updated_at AT TIME ZONE 'UTC'))
+			FROM reading_progress
+			WHERE user_id = $1
+			  AND updated_at >= $2 AND updated_at < $3`
+	} else {
+		activeDaysQuery = `
+			SELECT COUNT(DISTINCT DATE(updated_at))
+			FROM reading_progress
+			WHERE user_id = $1
+			  AND updated_at >= $2 AND updated_at < $3`
+	}
 
 	if err := d.QueryRowContext(ctx, finishedQuery, userID, yearStart, yearEnd).Scan(&result.BooksFinished); err != nil {
 		return YearInBooks{}, fmt.Errorf("query books finished: %w", err)
