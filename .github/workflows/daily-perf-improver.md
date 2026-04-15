@@ -33,6 +33,7 @@ network:
   - python
   - rust
   - java
+  - go  
 
 safe-outputs:
   add-comment:
