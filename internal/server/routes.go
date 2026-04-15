@@ -25,6 +25,19 @@ func (s *Server) setupRoutes(ctx context.Context) {
 	// Public informational endpoints (not rate-limited, read-only)
 	s.mux.HandleFunc("/api/auth/signup/enabled", s.handleSignupEnabled)
 	s.mux.HandleFunc("/api/auth/oidc/enabled", s.handleOIDCEnabled)
+	s.mux.HandleFunc("/api/auth/passkey/enabled", s.passkeyHandler.HandlePasskeyEnabled)
+
+	// Passkey registration (JWT-only: adding a passkey requires an authenticated session)
+	s.mux.Handle("/api/auth/passkey/register/begin", s.requireJWTAuth(http.HandlerFunc(s.passkeyHandler.HandleBeginRegistration)))
+	s.mux.Handle("/api/auth/passkey/register/finish", s.requireJWTAuth(http.HandlerFunc(s.passkeyHandler.HandleFinishRegistration)))
+
+	// Passkey authentication (rate-limited, public: no auth needed to log in with a passkey)
+	s.mux.HandleFunc("/api/auth/passkey/login/begin", s.authLimiter.Limit(s.passkeyHandler.HandleBeginAuthentication))
+	s.mux.HandleFunc("/api/auth/passkey/login/finish", s.authLimiter.Limit(s.passkeyHandler.HandleFinishAuthentication))
+
+	// Passkey credential management (JWT-only: same constraint as API keys)
+	s.mux.Handle("/api/auth/passkey/credentials", s.requireJWTAuth(http.HandlerFunc(s.passkeyHandler.HandlePasskeyCredentials)))
+	s.mux.Handle("/api/auth/passkey/credentials/", s.requireJWTAuth(http.HandlerFunc(s.passkeyHandler.HandlePasskeyCredential)))
 
 	// OIDC auth routes — always registered, check handler at request time
 	s.mux.HandleFunc("/api/auth/oidc/login", s.authLimiter.Limit(s.oidcRoute((*handlers.OIDCHandler).Login)))
@@ -38,6 +51,7 @@ func (s *Server) setupRoutes(ctx context.Context) {
 
 	// Protected config routes (JWT-only: sensitive server configuration)
 	s.mux.Handle("/api/config/status", s.requireJWTAuth(http.HandlerFunc(s.configHandler.HandleConfigStatus)))
+	s.mux.Handle("/api/config/llm", s.requireJWTAuth(http.HandlerFunc(s.configHandler.HandleLLMConfig)))
 	s.mux.Handle("/api/config/oidc", s.requireJWTAuth(http.HandlerFunc(s.configHandler.HandleOIDCConfig)))
 	s.mux.Handle("/api/config/smtp", s.requireJWTAuth(http.HandlerFunc(s.configHandler.HandleSMTPConfig)))
 	s.mux.Handle("/api/config/smtp/test", s.requireJWTAuth(s.authLimiter.Limit(s.configHandler.HandleSMTPTest)))
@@ -60,9 +74,17 @@ func (s *Server) setupRoutes(ctx context.Context) {
 	s.mux.Handle("/api/series", s.requireAuth(http.HandlerFunc(s.seriesHandler.HandleSeriesList)))
 	s.mux.Handle("/api/series/", s.requireAuth(http.HandlerFunc(s.seriesHandler.HandleSeries)))
 
+	// Protected tag routes
+	s.mux.Handle("/api/tags", s.requireAuth(http.HandlerFunc(s.tagHandler.HandleTags)))
+	s.mux.Handle("/api/tags/", s.requireAuth(http.HandlerFunc(s.tagHandler.HandleTag)))
+
 	// Protected reading list routes
 	s.mux.Handle("/api/reading-lists", s.requireAuth(http.HandlerFunc(s.readingListHandler.HandleReadingLists)))
 	s.mux.Handle("/api/reading-lists/", s.requireAuth(http.HandlerFunc(s.readingListHandler.HandleReadingListRoutes)))
+
+	// Protected reading group routes
+	s.mux.Handle("/api/groups", s.requireAuth(http.HandlerFunc(s.groupHandler.HandleGroups)))
+	s.mux.Handle("/api/groups/", s.requireAuth(http.HandlerFunc(s.groupHandler.HandleGroupRoutes)))
 
 	// Protected book routes
 	s.mux.Handle("/api/books/upload", s.requireAuth(http.HandlerFunc(s.bookHandler.HandleUpload)))
@@ -77,6 +99,14 @@ func (s *Server) setupRoutes(ctx context.Context) {
 
 	// Protected stats routes
 	s.mux.Handle("/api/stats/downloads-per-month", s.requireAuth(http.HandlerFunc(s.statsHandler.HandleDownloadsPerMonth)))
+	s.mux.Handle("/api/stats/year-in-books", s.requireAuth(http.HandlerFunc(s.statsHandler.HandleYearInBooks)))
+
+	// Protected Calibre import routes (admin only)
+	s.mux.Handle("/api/calibre-import/preview", s.requireAdmin(http.HandlerFunc(s.calibreImportHandler.HandlePreview)))
+	s.mux.Handle("/api/calibre-import/confirm", s.requireAdmin(http.HandlerFunc(s.calibreImportHandler.HandleImport)))
+
+	// Recommendations (authenticated)
+	s.mux.Handle("/api/recommendations", s.requireAuth(http.HandlerFunc(s.recommendationHandler.HandleRecommendations)))
 
 	// OPDS credential management (JWT-only: credential management)
 	s.mux.Handle("/api/opds/credentials", s.requireJWTAuth(http.HandlerFunc(s.opdsCredentialHandler.HandleOPDSCredentials)))

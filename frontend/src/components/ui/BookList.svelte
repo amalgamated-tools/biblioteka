@@ -26,6 +26,10 @@
     pollingInterval?: number;
     /** Called the first time books are found (useful for clearing scanning state). */
     onBooksFound?: () => void;
+    /** Primary message shown when no books are found. */
+    emptyMessage?: string;
+    /** Secondary message shown below emptyMessage when no books are found. */
+    emptySubMessage?: string;
   }
 
   const MAX_PAGE_SIZE = 200;
@@ -38,7 +42,19 @@
     onPageChange,
     pollingInterval,
     onBooksFound,
+    emptyMessage: emptyMessageProp = undefined,
+    emptySubMessage: emptySubMessageProp = undefined,
   }: Props = $props();
+
+  let emptyMessage = $derived(
+    emptyMessageProp ?? (query ? "No books found." : "No books yet."),
+  );
+  let emptySubMessage = $derived(
+    emptySubMessageProp ??
+      (query
+        ? "Try a different search term."
+        : "Books will appear here once they are added to your libraries."),
+  );
 
   let effectivePageSize = $derived(
     Math.max(1, Math.min(pageSize, MAX_PAGE_SIZE)),
@@ -219,17 +235,10 @@
           class="w-12 h-12 text-ink-200 dark:text-ink-700 mx-auto mb-4"
           aria-hidden="true"
         />
-        {#if query}
-          <p class="text-ink-500 dark:text-ink-300 text-lg">No books found.</p>
-          <p class="text-ink-500 dark:text-ink-300 text-sm mt-1">
-            Try a different search term.
-          </p>
-        {:else}
-          <p class="text-ink-500 dark:text-ink-300 text-lg">No books yet.</p>
-          <p class="text-ink-500 dark:text-ink-300 text-sm mt-1">
-            Books will appear here once they are added to your libraries.
-          </p>
-        {/if}
+        <p class="text-ink-500 dark:text-ink-300 text-lg">{emptyMessage}</p>
+        <p class="text-ink-500 dark:text-ink-300 text-sm mt-1">
+          {emptySubMessage}
+        </p>
       {/if}
     </div>
   </div>

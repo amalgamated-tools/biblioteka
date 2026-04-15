@@ -24,6 +24,7 @@ type BookFile struct {
 
 const bookFileColumns = `id, book_id, file_type, file_name, file_size, file_hash, file_path, download_count, created_at, updated_at`
 
+// scanBookFile scans a book file row into a BookFile struct.
 func scanBookFile(row interface{ Scan(...any) error }) (*BookFile, error) {
 	return scanRow(row, func(bf *BookFile) []any {
 		return []any{&bf.ID, &bf.BookID, &bf.FileType, &bf.FileName, &bf.FileSize, &bf.FileHash, &bf.FilePath, &bf.DownloadCount, &bf.CreatedAt, &bf.UpdatedAt}

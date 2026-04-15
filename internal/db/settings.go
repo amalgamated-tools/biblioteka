@@ -11,8 +11,12 @@ import (
 
 // Well-known setting keys shared across packages.
 const (
-	SettingWatchFolderPath      = "watch_folder_path"
+	SettingLLMEnabled           = "llm_enabled"
+	SettingLLMEndpoint          = "llm_endpoint"
+	SettingLLMModel             = "llm_model"
+	SettingLLMProvider          = "llm_provider"
 	SettingWatchFolderLibraryID = "watch_folder_library_id"
+	SettingWatchFolderPath      = "watch_folder_path"
 )
 
 // Setting holds a configuration key-value pair for bulk saves.
