@@ -140,15 +140,19 @@ describe("EmailBookModal", () => {
         ok: true,
         status: 200,
         headers: new Headers({ "content-type": "application/json" }),
-        json: vi.fn().mockResolvedValue(fakeBook),
-        text: vi.fn(),
+        json: vi.fn(),
+        text: vi.fn().mockResolvedValue(JSON.stringify(fakeBook)),
       } as unknown as Response)
       .mockResolvedValueOnce({
         ok: true,
         status: 200,
         headers: new Headers({ "content-type": "application/json" }),
-        json: vi.fn().mockResolvedValue({ message: "Email sent successfully" }),
-        text: vi.fn(),
+        json: vi.fn(),
+        text: vi
+          .fn()
+          .mockResolvedValue(
+            JSON.stringify({ message: "Email sent successfully" }),
+          ),
       } as unknown as Response);
 
     const user = userEvent.setup();
@@ -171,16 +175,18 @@ describe("EmailBookModal", () => {
         ok: true,
         status: 200,
         headers: new Headers({ "content-type": "application/json" }),
-        json: vi.fn().mockResolvedValue(fakeBook),
-        text: vi.fn(),
+        json: vi.fn(),
+        text: vi.fn().mockResolvedValue(JSON.stringify(fakeBook)),
       } as unknown as Response)
       .mockResolvedValueOnce({
         ok: false,
         status: 502,
         statusText: "Bad Gateway",
         headers: new Headers({ "content-type": "application/json" }),
-        json: vi.fn().mockResolvedValue({ error: "failed to send email" }),
-        text: vi.fn(),
+        json: vi.fn(),
+        text: vi
+          .fn()
+          .mockResolvedValue(JSON.stringify({ error: "failed to send email" })),
       } as unknown as Response);
 
     const user = userEvent.setup();

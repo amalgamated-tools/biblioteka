@@ -111,3 +111,99 @@ func TestHandleDownloadsPerMonth_MethodNotAllowed(t *testing.T) {
 
 	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
+
+// ---- HandleYearInBooks tests ----
+
+func TestHandleYearInBooks_Default(t *testing.T) {
+	h, userID := setupStatsHandler(t)
+
+	expectedYear := time.Now().UTC().Year()
+	r := httptest.NewRequest(http.MethodGet, "/api/stats/year-in-books", nil)
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleYearInBooks(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var yib db.YearInBooks
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &yib))
+	require.Equal(t, expectedYear, yib.Year)
+	require.Equal(t, 0, yib.BooksFinished)
+	require.Equal(t, 0, yib.ActiveDays)
+	require.Equal(t, 0, yib.LongestStreak)
+	require.Equal(t, 0, yib.TotalDownloads)
+}
+
+func TestHandleYearInBooks_CustomYear(t *testing.T) {
+	h, userID := setupStatsHandler(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/api/stats/year-in-books?year=2023", nil)
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleYearInBooks(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var yib db.YearInBooks
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &yib))
+	require.Equal(t, 2023, yib.Year)
+}
+
+func TestHandleYearInBooks_InvalidYear(t *testing.T) {
+	h, userID := setupStatsHandler(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/api/stats/year-in-books?year=notanumber", nil)
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleYearInBooks(w, r)
+
+	require.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestHandleYearInBooks_MethodNotAllowed(t *testing.T) {
+	h, userID := setupStatsHandler(t)
+
+	r := httptest.NewRequest(http.MethodPost, "/api/stats/year-in-books", nil)
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleYearInBooks(w, r)
+
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
+}
+
+func TestHandleYearInBooks_WithData(t *testing.T) {
+	h, userID := setupStatsHandler(t)
+	ctx := t.Context()
+	thisYear := time.Now().UTC().Year()
+
+	// Upsert a finished book.
+	_, err := h.DB.UpsertReadingProgress(ctx, userID, "finished.epub", "/p[100]", 1.0, nil, nil)
+	require.NoError(t, err)
+
+	// Record a download.
+	book, err := h.DB.CreateBook(ctx, db.BookInput{Title: "YIB Test Book"})
+	require.NoError(t, err)
+	bf, err := h.DB.CreateBookFile(ctx, book.ID, "epub", "yib.epub", 2048, nil, "/books/yib.epub")
+	require.NoError(t, err)
+	require.NoError(t, h.DB.RecordBookDownload(ctx, bf.ID, userID))
+
+	r := httptest.NewRequest(http.MethodGet, "/api/stats/year-in-books", nil)
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleYearInBooks(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var yib db.YearInBooks
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &yib))
+	require.Equal(t, thisYear, yib.Year)
+	require.Equal(t, 1, yib.BooksFinished)
+	require.Equal(t, 1, yib.TotalDownloads)
+	require.GreaterOrEqual(t, yib.ActiveDays, 1)
+	require.GreaterOrEqual(t, yib.LongestStreak, 1)
+}

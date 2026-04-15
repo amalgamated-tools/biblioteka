@@ -326,6 +326,7 @@ export interface MetadataProgressEvent {
   step?: string;
   message?: string;
   metadata_id?: string;
+  ai_enrichment_id?: string;
 }
 
 // Statistics
@@ -333,6 +334,14 @@ export interface MetadataProgressEvent {
 export interface MonthlyDownloads {
   month: string; // "YYYY-MM"
   count: number;
+}
+
+export interface YearInBooks {
+  year: number;
+  books_finished: number;
+  active_days: number;
+  longest_streak: number;
+  total_downloads: number;
 }
 
 // Audit Logs
@@ -354,6 +363,15 @@ export interface PaginatedAuditLogs {
   total: number;
   limit: number;
   offset: number;
+}
+
+// Passkeys
+
+export interface PasskeyCredential {
+  id: string;
+  name: string;
+  aaguid: string;
+  created_at: string;
 }
 
 // Reading Lists
@@ -385,4 +403,35 @@ export interface CurrentValues {
   hardcover_id: string | null;
   google_books_id: string | null;
   cover_image_url: string | null;
+}
+
+// Calibre Import
+
+export interface CalibrePreviewSeriesEntry {
+  name: string;
+  position: number;
+}
+
+export interface CalibrePreviewBook {
+  calibre_id: number;
+  title: string;
+  authors: string[];
+  series: CalibrePreviewSeriesEntry[];
+  publisher?: string;
+  publication_date?: string;
+  isbn13?: string;
+  isbn10?: string;
+  formats: string[];
+}
+
+export interface CalibrePreview {
+  total: number;
+  books: CalibrePreviewBook[];
+}
+
+export interface CalibreImportResult {
+  total: number;
+  imported: number;
+  skipped: number;
+  errors: number;
 }

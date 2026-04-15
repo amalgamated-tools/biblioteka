@@ -36,6 +36,7 @@ const (
 	readingListBaseFrom = `FROM reading_lists rl LEFT JOIN reading_list_books rlb ON rlb.reading_list_id = rl.id`
 )
 
+// scanReadingList scans a reading list row into a ReadingList struct.
 func scanReadingList(row interface{ Scan(...any) error }) (*ReadingList, error) {
 	return scanRow(row, func(r *ReadingList) []any {
 		return []any{&r.ID, &r.UserID, &r.Name, &r.Description, &r.BookCount, &r.CreatedAt, &r.UpdatedAt}
