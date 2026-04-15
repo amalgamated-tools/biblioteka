@@ -116,7 +116,9 @@ func (d *DB) GetPendingAIEnrichmentByBook(ctx context.Context, userID, bookID st
 }
 
 // UpdateAIEnrichmentStatus updates the status of an AI enrichment record.
+// Only enrichments in pending status can be updated.
 // Returns ErrInvalidAIEnrichmentStatus for unknown status values.
+// Returns ErrAIEnrichmentNotPending if the enrichment is no longer pending.
 func (d *DB) UpdateAIEnrichmentStatus(ctx context.Context, userID, id, status string) (*AIEnrichment, error) {
 	switch status {
 	case AIEnrichmentStatusPending, AIEnrichmentStatusApplied, AIEnrichmentStatusRejected:
@@ -128,10 +130,17 @@ func (d *DB) UpdateAIEnrichmentStatus(ctx context.Context, userID, id, status st
 		slog.String(otelkeys.UserID, userID),
 		slog.String(otelkeys.Status, status),
 	)
-	return scanAIEnrichment(d.QueryRowContext(ctx,
-		`UPDATE ai_enrichments SET status = $1, updated_at = `+d.now()+` WHERE id = $2 AND user_id = $3 RETURNING `+aiEnrichmentColumns,
+	e, err := scanAIEnrichment(d.QueryRowContext(ctx,
+		`UPDATE ai_enrichments SET status = $1, updated_at = `+d.now()+` WHERE id = $2 AND user_id = $3 AND status = 'pending' RETURNING `+aiEnrichmentColumns,
 		status, id, userID,
 	))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrAIEnrichmentNotPending
+		}
+		return nil, err
+	}
+	return e, nil
 }
 
 // DeleteAIEnrichment deletes an AI enrichment record by ID for the given user.

@@ -240,6 +240,10 @@ func (h *MetadataHandler) rejectAIEnrichment(w http.ResponseWriter, r *http.Requ
 	}
 
 	if _, err := h.DB.UpdateAIEnrichmentStatus(r.Context(), userID, enrichment.ID, db.AIEnrichmentStatusRejected); err != nil {
+		if errors.Is(err, db.ErrAIEnrichmentNotPending) {
+			writeError(r.Context(), w, http.StatusConflict, "enrichment is no longer pending")
+			return
+		}
 		slog.ErrorContext(r.Context(), "failed to reject AI enrichment",
 			slog.String(otelkeys.AIEnrichmentID, enrichment.ID),
 			slog.Any(otelkeys.Error, err),
