@@ -131,12 +131,22 @@ describe("App", () => {
     expect(main.inert).toBe(false);
     expect(header.inert).toBe(false);
 
-    const openMenuButton = screen.getByRole("button", { name: "Open menu" });
+    const openMenuButton = screen.getByRole("button", {
+      name: "Open menu",
+    }) as HTMLElement;
+    expect(openMenuButton).toHaveAttribute("aria-expanded", "false");
+    expect(openMenuButton).toHaveAttribute("aria-controls", "main-sidebar");
+
     await user.click(openMenuButton);
     await tick();
 
     expect(main.inert).toBe(true);
     expect(header.inert).toBe(true);
+
+    const closeMenuButton = screen.getByRole("button", {
+      name: "Close menu",
+    });
+    expect(closeMenuButton).toHaveAttribute("aria-expanded", "true");
   });
 
   it("hides the decorative spinner from screen readers and exposes the loading message as a status", async () => {

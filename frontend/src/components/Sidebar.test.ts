@@ -37,6 +37,15 @@ vi.mock("lucide-svelte", () => ({
 
 import Sidebar from "./Sidebar.svelte";
 
+function setViewportWidth(width: number) {
+  Object.defineProperty(window, "innerWidth", {
+    configurable: true,
+    writable: true,
+    value: width,
+  });
+  window.dispatchEvent(new Event("resize"));
+}
+
 describe("Sidebar navigation accessibility", () => {
   afterEach(() => {
     cleanup();
@@ -176,5 +185,29 @@ describe("Sidebar navigation accessibility", () => {
 
     await fireEvent.keyDown(window, { key: "Escape" });
     expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("hides the sidebar from assistive technology when closed on mobile", () => {
+    setViewportWidth(375);
+    const { container } = render(Sidebar, {
+      props: { currentView: "dashboard", open: false, onClose: () => {} },
+    });
+
+    const aside = container.querySelector("aside") as HTMLElement;
+    expect(aside).toHaveAttribute("id", "main-sidebar");
+    expect(aside).toHaveAttribute("aria-hidden", "true");
+    expect(aside.inert).toBe(true);
+  });
+
+  it("keeps the sidebar accessible on desktop even when closed", () => {
+    setViewportWidth(1024);
+    const { container } = render(Sidebar, {
+      props: { currentView: "dashboard", open: false, onClose: () => {} },
+    });
+
+    const aside = container.querySelector("aside") as HTMLElement;
+    expect(aside).toHaveAttribute("id", "main-sidebar");
+    expect(aside).not.toHaveAttribute("aria-hidden");
+    expect(aside.inert).toBe(false);
   });
 });
