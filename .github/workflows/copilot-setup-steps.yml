@@ -23,6 +23,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        
+      - name: Install gh-aw extension
+        uses: github/gh-aw-actions/setup-cli@ba90f2186d7ad780ec640f364005fa24e797b360 # v0.68.3
+        with:
+          version: v0.68.3
 
       # ── Go ────────────────────────────────────────────────────────────────
       - name: Set up Go
