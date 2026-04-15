@@ -84,7 +84,7 @@
     <div class="flex gap-1 mt-1 w-full" aria-hidden="true">
       {#each data as item (item.month)}
         <div
-          class="flex-1 text-center text-[10px] text-ink-600 dark:text-ink-400 truncate"
+          class="flex-1 text-center text-[10px] text-ink-600 dark:text-ink-300 truncate"
         >
           {monthLabel(item.month)}
         </div>

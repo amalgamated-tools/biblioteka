@@ -259,7 +259,7 @@
               </div>
             {/if}
 
-            <span class="text-sm text-ink-400 dark:text-ink-500">
+            <span class="text-sm text-ink-500 dark:text-ink-300">
               {readingStats.total_tracked}
               {readingStats.total_tracked === 1 ? "document" : "documents"} tracked
             </span>
