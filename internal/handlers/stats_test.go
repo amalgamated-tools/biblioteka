@@ -117,6 +117,7 @@ func TestHandleDownloadsPerMonth_MethodNotAllowed(t *testing.T) {
 func TestHandleYearInBooks_Default(t *testing.T) {
 	h, userID := setupStatsHandler(t)
 
+	expectedYear := time.Now().UTC().Year()
 	r := httptest.NewRequest(http.MethodGet, "/api/stats/year-in-books", nil)
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
@@ -127,7 +128,7 @@ func TestHandleYearInBooks_Default(t *testing.T) {
 
 	var yib db.YearInBooks
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &yib))
-	require.Equal(t, time.Now().UTC().Year(), yib.Year)
+	require.Equal(t, expectedYear, yib.Year)
 	require.Equal(t, 0, yib.BooksFinished)
 	require.Equal(t, 0, yib.ActiveDays)
 	require.Equal(t, 0, yib.LongestStreak)
