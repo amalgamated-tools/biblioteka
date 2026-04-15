@@ -237,7 +237,12 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	factories := map[string]llm.Factory{
 		llm.ProviderOllama: func(endpoint, model string) llm.Provider { return ollama.New(endpoint, model) },
 	}
-	llmResult := llm.Bootstrap(ctx, s.DB, [4]string{db.SettingLLMEnabled, db.SettingLLMProvider, db.SettingLLMEndpoint, db.SettingLLMModel}, factories)
+	llmResult := llm.Bootstrap(ctx, s.DB, llm.BootstrapSettings{
+		Enabled:  db.SettingLLMEnabled,
+		Provider: db.SettingLLMProvider,
+		Endpoint: db.SettingLLMEndpoint,
+		Model:    db.SettingLLMModel,
+	}, factories)
 	if llmResult.Provider != nil {
 		metadataHandler.LLMProvider = llmResult.Provider
 		slog.InfoContext(ctx, "LLM provider configured",
