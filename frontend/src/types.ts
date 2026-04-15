@@ -335,6 +335,14 @@ export interface MonthlyDownloads {
   count: number;
 }
 
+export interface YearInBooks {
+  year: number;
+  books_finished: number;
+  active_days: number;
+  longest_streak: number;
+  total_downloads: number;
+}
+
 // Audit Logs
 
 export interface AuditLog {
