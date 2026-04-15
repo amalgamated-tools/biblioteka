@@ -30,6 +30,13 @@ func newTestDB(t *testing.T) *DB {
 	`)
 	require.NoError(t, err, "newTestDB: pragmas")
 
+	// In-memory SQLite databases are connection-scoped: each new connection
+	// from the pool gets its own empty database.  Pinning to a single
+	// connection ensures migrations and subsequent queries all see the same
+	// schema, which is required by tests that use errgroup-based concurrency
+	// (e.g. LoadBookRelations).
+	sqlDB.SetMaxOpenConns(1)
+
 	d := &DB{DB: sqlDB, Dialect: DialectSQLite}
 
 	err = runMigrations(t.Context(), d)
