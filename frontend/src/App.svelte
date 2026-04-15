@@ -138,9 +138,11 @@
       inert={sidebarOpen}
     >
       <button
-        onclick={() => (sidebarOpen = true)}
+        onclick={() => (sidebarOpen = !sidebarOpen)}
         class="p-1.5 rounded-lg text-ink-500 dark:text-ink-300 hover:bg-ink-100 dark:hover:bg-ink-800 transition-colors"
-        aria-label="Open menu"
+        aria-label={sidebarOpen ? "Close menu" : "Open menu"}
+        aria-expanded={sidebarOpen}
+        aria-controls="main-sidebar"
       >
         <Menu class="w-6 h-6" aria-hidden="true" />
       </button>

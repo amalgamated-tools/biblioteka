@@ -24,6 +24,11 @@
 
   let { currentView, subPath = "", open, onClose }: Props = $props();
   let version = $state("");
+  let innerWidth = $state<number>(
+    typeof window !== "undefined" ? window.innerWidth : 0,
+  );
+
+  let hideSidebar = $derived(!open && innerWidth < 768);
 
   $effect(() => {
     if (authStore.user && !libraryStore.loaded) {
@@ -47,6 +52,7 @@
 </script>
 
 <svelte:window
+  bind:innerWidth
   onkeydown={(e) => {
     if (open && e.key === "Escape") onClose();
   }}
@@ -62,7 +68,10 @@
 {/if}
 
 <aside
+  id="main-sidebar"
   aria-label="Main menu"
+  aria-hidden={hideSidebar || undefined}
+  inert={hideSidebar}
   class="fixed inset-y-0 left-0 z-50 w-64 bg-ink-950 text-white flex flex-col transition-transform duration-200 ease-in-out {open
     ? 'translate-x-0'
     : '-translate-x-full'} md:translate-x-0"
