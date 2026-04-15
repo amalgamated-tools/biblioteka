@@ -22,7 +22,7 @@ frontend/
     types.ts            Shared TypeScript interfaces for API entities
     components/         Page-level Svelte components (PascalCase)
       Auth.svelte         Login and signup forms; wraps all form content in a `<main>` landmark (WCAG 1.3.6); the Login/Sign Up toggle uses the ARIA tablist/tab/tabpanel pattern with roving tabindex and keyboard navigation (WCAG 4.1.2)
-      Books.svelte        Book listing and detail view; reads `initialOffset` from the URL hash query string (`#books?offset=48`) and writes page changes back via `routerStore.setQueryParam`
+      Books.svelte        Book listing and detail view; includes a debounced search input that persists the search term in the URL hash query string (`#books?query=tolkien`); reads `initialOffset` from the URL and writes page changes back via `routerStore.setQueryParam`
       NotFound.svelte     404 page rendered when the router encounters an unknown hash path
       Dashboard.svelte    Home screen; shows an empty-state onboarding card only after libraries are loaded and the list is empty; otherwise renders a two-card stats grid (Total Books, Libraries), a downloads-per-month histogram (via `DownloadsHistogram.svelte`), and a "Welcome to Biblioteka" prose panel (`<h2>` + `<p>`); in the stats-grid branch, Total Books is fetched from the API via `getTotalBooksCount()` on first render and shows "…" while the request is in flight (falls back to `0` on error, surfacing an `AlertBanner` with the error message); the histogram is fetched via `getDownloadsPerMonth(12)` and is hidden until data arrives (an `AlertBanner` is shown on error); Libraries reflects the live `libraryStore.libraries.length`; each stat card uses a `<dl>/<dt>/<dd>` description-list structure so that screen readers can announce the label–value relationship correctly (WCAG 1.3.1)
       Libraries.svelte    Library management view
@@ -1021,7 +1021,8 @@ A self-contained paginated book browser. It fetches a page of books via a caller
 
 | Prop | Type | Required | Default | Description |
 |------|------|----------|---------|-------------|
-| `fetchBooks` | `(limit: number, offset: number) => Promise<PaginatedBooks>` | ✓ | — | Called whenever the page or page size changes. Use `api.listBooks` or `api.listLibraryBooks` as the value. |
+| `fetchBooks` | `(limit: number, offset: number, query?: string) => Promise<PaginatedBooks>` | ✓ | — | Called whenever the page, page size, or search query changes. Use `api.listBooks` or wrap `api.listLibraryBooks` in an arrow function. The optional `query` argument is forwarded from the `query` prop. |
+| `query` | `string` | | — | Optional search query forwarded as the third argument to `fetchBooks` on every load. Changing this prop resets `offset` to `0` automatically. |
 | `pageSize` | `number` | | `24` | Number of books per page. Clamped to `[1, 200]` at runtime. |
 | `initialOffset` | `number` | | `0` | Starting page offset read **once** on mount. Use this to restore a bookmarked page (e.g., from the URL query string). Changes after mount are ignored. |
 | `onPageChange` | `(offset: number) => void` | | — | Called after each page turn (not on the initial mount). Use this to write the new offset back to the URL via `routerStore.setQueryParam`. |
@@ -1038,7 +1039,31 @@ A self-contained paginated book browser. It fetches a page of books via a caller
 | `error` | `string \| null` | Error message from the most recent failed fetch |
 | `viewMode` | `"grid" \| "table"` | User-selected display mode; toggle buttons are rendered by the component |
 
-**Usage — all books:**
+**Usage — all books with search:**
+
+```svelte
+<script lang="ts">
+  import BookList from "./ui/BookList.svelte";
+  import * as api from "../lib/api";
+
+  let raw = $state("");
+  let query = $state("");
+
+  // Debounce search input to avoid excessive API calls (see Books.svelte for the production pattern)
+  $effect(() => {
+    const timeout = window.setTimeout(() => {
+      query = raw;
+    }, 300);
+
+    return () => window.clearTimeout(timeout);
+  });
+</script>
+
+<input bind:value={raw} placeholder="Search books…" />
+<BookList fetchBooks={api.listBooks} {query} />
+```
+
+**Usage — all books (no search):**
 
 ```svelte
 <script lang="ts">
@@ -1066,7 +1091,7 @@ A self-contained paginated book browser. It fetches a page of books via a caller
 
 #### Pagination behaviour
 
-- On mount and whenever `fetchBooks` or `pageSize` changes, `offset` resets to `0` and a fresh fetch is triggered.
+- On mount and whenever `fetchBooks`, `pageSize`, or `query` changes, `offset` resets to `0` and a fresh fetch is triggered.
 - If items are deleted and the current page becomes empty (but earlier pages still have items), `BookList` automatically clamps back to the last valid page.
 - Stale responses from superseded fetches are silently discarded via an internal request-ID counter.
 
