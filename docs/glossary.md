@@ -112,6 +112,12 @@ A library organization layout that leaves imported book files in place — no fi
 
 **Open Packaging Format.** An XML metadata format (OPF 2.0, Dublin Core) used by Biblioteka for sidecar files. When a book file is imported, Biblioteka writes a `metadata.opf` file alongside it containing title, author, identifier, language, publication date, publisher, and description. See also [sidecar files](#sidecar-files).
 
+## Reading List
+
+A user-curated named collection of books. Reading lists are user-scoped — each user manages their own lists independently. Each list has a required name (unique per user after normalization), an optional description, and a `book_count` computed at read time. Books are added and removed individually; both operations are idempotent.
+
+Reading lists are managed via the REST API at `/api/reading-lists` and `/api/reading-lists/{id}/books`. The `GET /api/books/{id}/reading-lists` endpoint returns the lists that contain a specific book. Frontend state is managed by `readingListStore` and the feature is accessible from the **Reading Lists** sidebar entry. See [API Reference](api-reference.md).
+
 ## Runes
 
 Svelte 5's compiler-level reactivity primitives, written as `$`-prefixed keywords (`$state`, `$derived`, `$effect`, `$props`, `$derived.by`). Runes replace Svelte 4's `writable`/`readable` store API and `$:` reactive statements with explicit, fine-grained reactive declarations. All Biblioteka frontend code uses runes mode exclusively. See also [`$state`](#state), [`$derived`](#derived), [`$effect`](#effect), [`$props`](#props).
