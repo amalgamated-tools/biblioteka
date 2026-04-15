@@ -21,7 +21,7 @@ function base64urlToBuffer(value: string): Uint8Array {
 
 /**
  * Convert JSON-serialized PublicKeyCredentialCreationOptions (base64url strings)
- * into the form expected by navigator.credentials.create() (ArrayBuffer fields).
+ * into the form expected by navigator.credentials.create() (BufferSource fields).
  */
 export function prepareCreationOptions(
   options: Record<string, unknown>,
@@ -63,7 +63,7 @@ export function prepareCreationOptions(
 
 /**
  * Convert JSON-serialized PublicKeyCredentialRequestOptions (base64url strings)
- * into the form expected by navigator.credentials.get() (ArrayBuffer fields).
+ * into the form expected by navigator.credentials.get() (BufferSource fields).
  */
 export function prepareRequestOptions(
   options: Record<string, unknown>,
