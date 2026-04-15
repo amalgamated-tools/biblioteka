@@ -51,6 +51,7 @@ func (s *Server) setupRoutes(ctx context.Context) {
 
 	// Protected config routes (JWT-only: sensitive server configuration)
 	s.mux.Handle("/api/config/status", s.requireJWTAuth(http.HandlerFunc(s.configHandler.HandleConfigStatus)))
+	s.mux.Handle("/api/config/llm", s.requireJWTAuth(http.HandlerFunc(s.configHandler.HandleLLMConfig)))
 	s.mux.Handle("/api/config/oidc", s.requireJWTAuth(http.HandlerFunc(s.configHandler.HandleOIDCConfig)))
 	s.mux.Handle("/api/config/smtp", s.requireJWTAuth(http.HandlerFunc(s.configHandler.HandleSMTPConfig)))
 	s.mux.Handle("/api/config/smtp/test", s.requireJWTAuth(s.authLimiter.Limit(s.configHandler.HandleSMTPTest)))
@@ -72,6 +73,10 @@ func (s *Server) setupRoutes(ctx context.Context) {
 	// Protected series routes
 	s.mux.Handle("/api/series", s.requireAuth(http.HandlerFunc(s.seriesHandler.HandleSeriesList)))
 	s.mux.Handle("/api/series/", s.requireAuth(http.HandlerFunc(s.seriesHandler.HandleSeries)))
+
+	// Protected tag routes
+	s.mux.Handle("/api/tags", s.requireAuth(http.HandlerFunc(s.tagHandler.HandleTags)))
+	s.mux.Handle("/api/tags/", s.requireAuth(http.HandlerFunc(s.tagHandler.HandleTag)))
 
 	// Protected reading list routes
 	s.mux.Handle("/api/reading-lists", s.requireAuth(http.HandlerFunc(s.readingListHandler.HandleReadingLists)))
