@@ -99,9 +99,11 @@ describe("ReadingListDetail", () => {
     render(ReadingListDetail, { props: { listId: fakeList.id } });
     await tick();
 
-    expect(
-      screen.getByRole("heading", { level: 1, name: fakeList.name }),
-    ).toBeInTheDocument();
+    const listHeading = screen.getByRole("heading", {
+      level: 1,
+      name: fakeList.name,
+    });
+    expect(listHeading).toBeInTheDocument();
     expect(screen.getByText("26 books")).toBeInTheDocument();
     expect(screen.getByText(fakeList.description!)).toBeInTheDocument();
   });
@@ -114,6 +116,7 @@ describe("ReadingListDetail", () => {
 
     await waitFor(() => {
       expect(readingListStore.load).toHaveBeenCalledTimes(1);
+      expect(readingListStore.load).toHaveBeenCalledWith();
     });
   });
 
@@ -196,18 +199,20 @@ describe("ReadingListDetail", () => {
     await user.click(screen.getByRole("button", { name: "Yes, delete" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Delete failed");
-    expect(screen.queryByRole("button", { name: "Yes, delete" })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Yes, delete" }),
+    ).not.toBeInTheDocument();
   });
 
   it("renders paginated books and requests the next page", async () => {
     const user = userEvent.setup();
 
     vi.mocked(listReadingListBooks).mockImplementation(
-      async (_listId: string, limit = 24, offset = 0) => ({
+      async (listId: string, limit = 24, offset = 0) => ({
         books: [
           {
             ...fakeBook,
-            id: `book-${offset}`,
+            id: `${listId}-${offset}`,
             title: `Book ${offset + 1}`,
           },
         ],
