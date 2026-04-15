@@ -32,6 +32,7 @@ The following endpoints use a stricter JWT-only check and **do not accept API ke
 | `GET /api/config/oidc`, `PUT /api/config/oidc` | Sensitive server config; admin only |
 | `GET /api/config/smtp`, `PUT /api/config/smtp`, `POST /api/config/smtp/test` | Sensitive server config; admin only |
 | `GET /api/config/watch-folder`, `PUT /api/config/watch-folder` | Sensitive server config; admin only |
+| `GET /api/config/llm`, `PUT /api/config/llm` | Sensitive server config; admin only |
 | `GET /api/admin/users`, `PUT /api/admin/users/{id}` | User management; admin only |
 | `GET /api/opds/credentials`, `PUT /api/opds/credentials`, `DELETE /api/opds/credentials` | Credential management requires a JWT |
 | `GET /api/api-keys`, `POST /api/api-keys`, `DELETE /api/api-keys/{id}` | API key management requires a JWT to prevent key self-escalation |
@@ -689,6 +690,85 @@ Update (or clear) the watch folder configuration. The watch folder is a director
 
 ---
 
+### `GET /api/config/llm` 🔒 **Admin** · **JWT only**
+
+Return the current LLM configuration used for AI metadata enrichment.
+
+**Response body (`200`):**
+
+```json
+{
+  "provider": "ollama",
+  "endpoint": "http://localhost:11434",
+  "model": "llama3.2",
+  "enabled": true
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `provider` | string | LLM provider name (currently only `"ollama"` is supported); may be an empty string when not configured |
+| `endpoint` | string | Base URL of the LLM server (e.g. `"http://localhost:11434"`); may be an empty string when not configured |
+| `model` | string | Model name used for generation (e.g. `"llama3.2"`); may be an empty string when not configured |
+| `enabled` | boolean | Stored setting for whether AI enrichment is enabled; `true` does not by itself guarantee enrichment is currently active at runtime |
+
+| Status | Description |
+|--------|-------------|
+| `200 OK` | Current LLM configuration |
+| `401 Unauthorized` | Missing or invalid JWT |
+| `403 Forbidden` | Caller is not an admin |
+| `500 Internal Server Error` | Database error |
+
+---
+
+### `PUT /api/config/llm` 🔒 **Admin** · **JWT only**
+
+Save the LLM configuration. **A server restart is required for changes to take effect.**
+
+**Request body:**
+
+```json
+{
+  "provider": "ollama",
+  "endpoint": "http://localhost:11434",
+  "model": "llama3.2",
+  "enabled": true
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `provider` | string | | LLM provider name. Currently only `"ollama"` is supported. Defaults to `"ollama"` when omitted and `enabled` is `true`. |
+| `endpoint` | string | when `enabled` | Base URL of the LLM server. Required when `enabled` is `true`. |
+| `model` | string | when `enabled` | Model name. Required when `enabled` is `true`. |
+| `enabled` | boolean | | `true` to activate AI enrichment; `false` to disable it. |
+
+**Response body (`200`):**
+
+```json
+{
+  "provider": "ollama",
+  "endpoint": "http://localhost:11434",
+  "model": "llama3.2",
+  "enabled": true,
+  "restart_required": true
+}
+```
+
+The response always includes `"restart_required": true` — the server must be restarted for any LLM configuration change to take effect.
+
+> A successful update is recorded in the audit log as `llm.config_updated`.
+
+| Status | Description |
+|--------|-------------|
+| `200 OK` | Configuration saved; restart required |
+| `400 Bad Request` | `endpoint` or `model` missing when `enabled` is `true`; unsupported `provider` value |
+| `401 Unauthorized` | Missing or invalid JWT |
+| `403 Forbidden` | Caller is not an admin |
+| `500 Internal Server Error` | Database error |
+
+---
+
 ## Admin
 
 ### `GET /api/admin/users` 🔒 **Admin** · **JWT only**
@@ -839,6 +919,10 @@ Return a paginated list of all audit log entries. Each entry records an action p
 | `metadata.fetch_requested` | `book`   | Metadata enrichment job enqueued via `POST /api/books/{id}/metadata/fetch` |
 | `metadata.applied`     | `book`        | Pending metadata applied to a book via `POST /api/books/{id}/metadata/apply` |
 | `metadata.rejected`    | `book`        | Pending metadata discarded via `POST /api/books/{id}/metadata/reject` |
+| `ai_enrichment.fetch_requested` | `book` | AI enrichment job enqueued via `POST /api/books/{id}/metadata/ai-fetch` |
+| `ai_enrichment.applied` | `book`       | Pending AI enrichment applied via `POST /api/books/{id}/metadata/ai-apply` |
+| `ai_enrichment.rejected` | `book`      | Pending AI enrichment discarded via `POST /api/books/{id}/metadata/ai-reject` |
+| `llm.config_updated`   | `config`      | LLM settings saved via `PUT /api/config/llm` |
 
 | Status | Description |
 |--------|-------------|
@@ -1560,7 +1644,7 @@ This endpoint is **idempotent**: if a pending candidate already exists for the u
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `task_id` | string | Background task ID (empty string when `status` is `"already_exists"` or `"already_running"`) |
+| `task_id` | string | Background task ID; **omitted** when `status` is `"already_exists"` or `"already_running"` |
 | `status` | string | `"enqueued"` — job queued; `"already_exists"` — pending candidate already exists; `"already_running"` — job is already in the queue |
 
 > A successful enqueue is recorded in the audit log as `metadata.fetch_requested`.
@@ -1663,6 +1747,137 @@ Discard the pending metadata candidate without modifying the book. The candidate
 | `204 No Content` | Candidate rejected |
 | `401 Unauthorized` | Missing or invalid token |
 | `404 Not Found` | Book not found, or no pending metadata candidate for this user |
+| `500 Internal Server Error` | Database error |
+
+---
+
+### `GET /api/books/{id}/metadata/ai` 🔒
+
+Return the most recent pending AI enrichment candidate for a book. AI enrichment candidates are created by the background job triggered via [`POST /api/books/{id}/metadata/ai-fetch`](#post-apibooksidmetadataai-fetch-).
+
+**Path parameter:** `{id}` — book ID.
+
+**Response body (`200`):**
+
+```json
+{
+  "id": "a1b2c3...",
+  "book_id": "b1c2d3...",
+  "status": "pending",
+  "provider": "ollama",
+  "model": "llama3.2",
+  "suggested_tags": ["Science Fiction", "Space Opera", "Classic"],
+  "reading_level": "adult",
+  "generated_description": "A sweeping interstellar epic...",
+  "created_at": "2026-03-14T02:00:00Z",
+  "updated_at": "2026-03-14T02:00:00Z"
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Opaque enrichment record ID |
+| `book_id` | string? | ID of the parent book; `null` if the book was deleted |
+| `status` | string | Always `"pending"` for this endpoint (`"applied"` or `"rejected"` records are not returned) |
+| `provider` | string | LLM provider that generated this enrichment (e.g. `"ollama"`) |
+| `model` | string | Model name used for generation (e.g. `"llama3.2"`) |
+| `suggested_tags` | string[] | Tags suggested by the model; never `null` (empty array when none) |
+| `reading_level` | string? | One of `"children"`, `"young_adult"`, `"adult"`, `"academic"`; `null` when not determined |
+| `generated_description` | string? | 2–3 sentence catalog description; `null` when the model did not return one |
+| `created_at` | string | Timestamp when the record was created (ISO 8601) |
+| `updated_at` | string | Timestamp when the record was last updated (ISO 8601) |
+
+> **User isolation:** Only enrichment records owned by the authenticated user are returned.
+
+| Status | Description |
+|--------|-------------|
+| `200 OK` | Pending AI enrichment candidate |
+| `401 Unauthorized` | Missing or invalid token |
+| `404 Not Found` | No pending AI enrichment exists for this book and user |
+| `500 Internal Server Error` | Database error |
+
+---
+
+### `POST /api/books/{id}/metadata/ai-fetch` 🔒
+
+Enqueue a background `enrich:ai` job that calls the configured LLM provider to generate metadata for this book. When the job completes, the result appears as a pending candidate retrievable via [`GET /api/books/{id}/metadata/ai`](#get-apibooksidmetadataai-). Progress events are published to the same SSE stream used by Goodreads enrichment ([`GET /api/books/{id}/metadata/events`](#get-apibooksidmetadataevents-)).
+
+This endpoint is **idempotent**: if a pending AI enrichment already exists for the user, or if the job is already running, the server returns `202` without enqueueing a duplicate job.
+
+**Requires** a configured and enabled LLM provider (see [`PUT /api/config/llm`](#put-apiconfigllm--admin--jwt-only)). Returns `503` when the LLM provider or background worker is not available.
+
+**Path parameter:** `{id}` — book ID.
+
+**Request body:** none
+
+**Response body (`202`):**
+
+```json
+{ "task_id": "abc123...", "status": "enqueued" }
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `task_id` | string | Background task ID; **omitted** when `status` is `"already_exists"` or `"already_running"` |
+| `status` | string | `"enqueued"` — job queued; `"already_exists"` — pending candidate already exists; `"already_running"` — job is already in the queue |
+
+> A successful enqueue is recorded in the audit log as `ai_enrichment.fetch_requested`.
+
+| Status | Description |
+|--------|-------------|
+| `202 Accepted` | Job enqueued or already in progress |
+| `401 Unauthorized` | Missing or invalid token |
+| `404 Not Found` | Book not found |
+| `500 Internal Server Error` | Failed to enqueue job or check existing state |
+| `503 Service Unavailable` | LLM provider not configured, or background worker not available |
+
+---
+
+### `POST /api/books/{id}/metadata/ai-apply` 🔒
+
+Apply the pending AI enrichment candidate to the book. The apply logic:
+
+- **Tags**: union-merges `suggested_tags` with the book's existing tags. New tags are created via `FindOrCreate` if they do not yet exist; no existing tags are removed.
+- **Description**: sets `description` only when the book has no existing description and the enrichment has a `generated_description`.
+
+After a successful apply, the candidate's `status` changes to `"applied"` and it no longer appears in [`GET /api/books/{id}/metadata/ai`](#get-apibooksidmetadataai-).
+
+**Path parameter:** `{id}` — book ID.
+
+**Request body:** none
+
+**Response body (`200`):** The updated AI enrichment record (same schema as [`GET /api/books/{id}/metadata/ai`](#get-apibooksidmetadataai-), with `status` set to `"applied"`).
+
+> A successful apply is recorded in the audit log as `ai_enrichment.applied`.
+
+| Status | Description |
+|--------|-------------|
+| `200 OK` | Enrichment applied; updated record returned |
+| `401 Unauthorized` | Missing or invalid token |
+| `404 Not Found` | Book not found, or no pending AI enrichment for this user |
+| `409 Conflict` | Enrichment is no longer pending (already applied or rejected) |
+| `500 Internal Server Error` | Failed to find or create tags, update book, or mark enrichment as applied |
+
+---
+
+### `POST /api/books/{id}/metadata/ai-reject` 🔒
+
+Discard the pending AI enrichment candidate without modifying the book. The candidate's `status` changes to `"rejected"`.
+
+**Path parameter:** `{id}` — book ID.
+
+**Request body:** none
+
+**Response:** `204 No Content`
+
+> A successful rejection is recorded in the audit log as `ai_enrichment.rejected`.
+
+| Status | Description |
+|--------|-------------|
+| `204 No Content` | Enrichment rejected |
+| `401 Unauthorized` | Missing or invalid token |
+| `404 Not Found` | No pending AI enrichment for this book and user |
+| `409 Conflict` | Enrichment is no longer pending (already applied or rejected) |
 | `500 Internal Server Error` | Database error |
 
 ---
