@@ -12,6 +12,18 @@ vi.mock("../lib/api", async () => {
   };
 });
 
+vi.mock("./onboarding.svelte", () => ({
+  onboardingStore: {
+    clearSkip: vi.fn(),
+  },
+}));
+
+vi.mock("./auth.svelte", () => ({
+  authStore: {
+    user: { id: "user-1" },
+  },
+}));
+
 const fakeLibrary: Library = {
   id: "lib1",
   name: "Test Library",
@@ -81,6 +93,20 @@ describe("library store", () => {
 
       expect(result).toEqual(fakeLibrary);
       expect(libraryStore.libraries).toEqual([fakeLibrary]);
+    });
+
+    it("clears the onboarding skip flag on successful add", async () => {
+      const { onboardingStore } = await import("./onboarding.svelte");
+      vi.mocked(api.createLibrary).mockResolvedValue(fakeLibrary);
+
+      await libraryStore.add({
+        name: "Test Library",
+        paths: ["/books"],
+        organization_type: "book_per_folder",
+        monitored: false,
+      });
+
+      expect(onboardingStore.clearSkip).toHaveBeenCalledWith("user-1");
     });
 
     it("marks the newly added library as scanning", async () => {
