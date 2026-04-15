@@ -707,10 +707,10 @@ Return the current LLM configuration used for AI metadata enrichment.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `provider` | string | LLM provider name (currently only `"ollama"` is supported) |
-| `endpoint` | string | Base URL of the LLM server (e.g. `"http://localhost:11434"`) |
-| `model` | string | Model name used for generation (e.g. `"llama3.2"`) |
-| `enabled` | boolean | `true` when AI enrichment is active |
+| `provider` | string | LLM provider name (currently only `"ollama"` is supported); may be an empty string when not configured |
+| `endpoint` | string | Base URL of the LLM server (e.g. `"http://localhost:11434"`); may be an empty string when not configured |
+| `model` | string | Model name used for generation (e.g. `"llama3.2"`); may be an empty string when not configured |
+| `enabled` | boolean | Stored setting for whether AI enrichment is enabled; `true` does not by itself guarantee enrichment is currently active at runtime |
 
 | Status | Description |
 |--------|-------------|
@@ -1644,7 +1644,7 @@ This endpoint is **idempotent**: if a pending candidate already exists for the u
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `task_id` | string | Background task ID (empty string when `status` is `"already_exists"` or `"already_running"`) |
+| `task_id` | string | Background task ID; **omitted** when `status` is `"already_exists"` or `"already_running"` |
 | `status` | string | `"enqueued"` — job queued; `"already_exists"` — pending candidate already exists; `"already_running"` — job is already in the queue |
 
 > A successful enqueue is recorded in the audit log as `metadata.fetch_requested`.
@@ -1804,7 +1804,7 @@ Enqueue a background `enrich:ai` job that calls the configured LLM provider to g
 
 This endpoint is **idempotent**: if a pending AI enrichment already exists for the user, or if the job is already running, the server returns `202` without enqueueing a duplicate job.
 
-**Requires** a configured and enabled LLM provider (see [`PUT /api/config/llm`](#put-apiconfigllm-)). Returns `503` when the LLM provider or background worker is not available.
+**Requires** a configured and enabled LLM provider (see [`PUT /api/config/llm`](#put-apiconfigllm--admin--jwt-only)). Returns `503` when the LLM provider or background worker is not available.
 
 **Path parameter:** `{id}` — book ID.
 
@@ -1818,7 +1818,7 @@ This endpoint is **idempotent**: if a pending AI enrichment already exists for t
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `task_id` | string | Background task ID (empty string when `status` is `"already_exists"` or `"already_running"`) |
+| `task_id` | string | Background task ID; **omitted** when `status` is `"already_exists"` or `"already_running"` |
 | `status` | string | `"enqueued"` — job queued; `"already_exists"` — pending candidate already exists; `"already_running"` — job is already in the queue |
 
 > A successful enqueue is recorded in the audit log as `ai_enrichment.fetch_requested`.
