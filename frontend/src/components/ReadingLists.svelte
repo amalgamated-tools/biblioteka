@@ -13,6 +13,7 @@
   let newDescription = $state("");
   let creating = $state(false);
   let createError: string | null = $state(null);
+  let createNameInvalid = $derived(!!createError);
 
   $effect(() => {
     if (!readingListStore.loaded && !readingListStore.loading) {
@@ -98,7 +99,11 @@
           Create Reading List
         </h2>
         {#if createError}
-          <AlertBanner variant="error" class="mb-3">{createError}</AlertBanner>
+          <AlertBanner
+            id="create-reading-list-error"
+            variant="error"
+            class="mb-3">{createError}</AlertBanner
+          >
         {/if}
         <div class="space-y-3">
           <div>
@@ -113,6 +118,10 @@
               bind:value={newName}
               placeholder="e.g. To Read, Favorites…"
               disabled={creating}
+              aria-invalid={createNameInvalid}
+              aria-describedby={createNameInvalid
+                ? "create-reading-list-error"
+                : undefined}
             />
           </div>
           <div>

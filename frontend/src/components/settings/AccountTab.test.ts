@@ -111,6 +111,14 @@ describe("AccountTab display name", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(
       "Display name is required",
     );
+    expect(screen.getByLabelText("Name")).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    );
+    expect(screen.getByLabelText("Name")).toHaveAttribute(
+      "aria-describedby",
+      "display-name-error",
+    );
   });
 
   it("shows error banner when updateProfile rejects", async () => {
@@ -151,6 +159,18 @@ describe("AccountTab password change", () => {
 
     expect(screen.getByRole("alert")).toHaveTextContent(
       "Current password is required",
+    );
+    expect(screen.getByLabelText("Current Password")).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    );
+    expect(screen.getByLabelText("Current Password")).toHaveAttribute(
+      "aria-describedby",
+      "password-change-error",
+    );
+    expect(screen.getByLabelText("New Password")).not.toHaveAttribute(
+      "aria-invalid",
+      "true",
     );
   });
 

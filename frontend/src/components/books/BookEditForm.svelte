@@ -38,6 +38,7 @@
   }: Props = $props();
 
   let formError: string | null = $state(null);
+  let titleErrorVisible = $derived(formError === "Title is required");
 
   async function handleSave(e: SubmitEvent) {
     e.preventDefault();
@@ -85,7 +86,9 @@
   class="bg-white dark:bg-ink-900 rounded-2xl shadow-sm border border-ink-100 dark:border-ink-800 p-6"
 >
   {#if formError}
-    <AlertBanner variant="error" class="mb-4">{formError}</AlertBanner>
+    <AlertBanner id="book-edit-form-error" variant="error" class="mb-4"
+      >{formError}</AlertBanner
+    >
   {/if}
 
   <form onsubmit={handleSave} class="space-y-5">
@@ -108,6 +111,10 @@
         class="w-full py-2.5"
         disabled={saving}
         aria-required={true}
+        aria-invalid={titleErrorVisible}
+        aria-describedby={titleErrorVisible
+          ? "book-edit-form-error"
+          : undefined}
       />
     </div>
 
