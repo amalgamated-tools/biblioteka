@@ -11,6 +11,7 @@ Biblioteka uses [asynq](https://github.com/hibiken/asynq), a Redis-backed task q
 │  POST /api/libraries ─────┼──────▶ │  "default"    │
 │  POST /api/books ─────────┼──────▶ │   queue       │
 │  Scheduled (every 24 h) ──┼──────▶ │               │
+│  Scheduled (every  1 m) ──┼──────▶ │               │
 └───────────────────────────┘        └───────┬───────┘
                                              │
                                      ┌───────▼───────────┐
@@ -20,6 +21,7 @@ Biblioteka uses [asynq](https://github.com/hibiken/asynq), a Redis-backed task q
                                      │  scan:libraries    │
                                      │  scan:library      │
                                      │  scan:path         │
+                                     │  scan:watch-folder │
                                      │  process:file      │
                                      │  enrich:goodreads  │
                                      └────────────────────┘
@@ -194,6 +196,29 @@ Cover data URLs are capped at **20 MB** of decoded bytes; inputs exceeding this 
 
 **Failure handling:** both the cover write and the OPF write are best-effort. A failure in either step is logged at `WARN` level and does **not** fail the `process:file` job. The book record committed to the database is not affected.
 
+### `scan:watch-folder`
+
+| | |
+|---|---|
+| **Source** | `internal/jobs/scan_watch_folder.go` — `NewScanWatchFolderHandler` |
+| **Trigger** | Scheduled every 1 minute |
+| **Payload** | _none (empty struct)_ |
+
+Reads the watch-folder settings (`watch_folder_path` and `watch_folder_library_id`) from the database and, if both are configured and non-empty, delegates to `ScanDirectory` to walk the path and enqueue a `process:file` job for every supported file found. The `library_root` is left empty, so files stay in the watch folder unless the target library has an organization type configured, in which case `process:file` will reorganize them into the library's first configured path.
+
+**Settings:**
+
+| Setting key | Description |
+|-------------|-------------|
+| `watch_folder_path` | Filesystem path to the directory to scan. If absent or empty, the job exits without error. |
+| `watch_folder_library_id` | UUID of the library to associate discovered files with. If absent or empty after a valid `watch_folder_path` is found, the job logs a warning and exits. |
+
+Configure these settings via **Settings → Watch Folder** in the web UI or via `PUT /api/settings`.
+
+**Failure handling:** if the path setting is absent (`sql.ErrNoRows`) the job exits cleanly with a debug log. If the library ID setting is absent or empty, the job exits with a warning log. Any other error from the settings lookup is returned to asynq for retry.
+
+> **Note:** The `scan:watch-folder` job is registered and scheduled only when the process runs in `worker` or `all` mode and Redis is available.
+
 ### `enrich:goodreads`
 
 | | |
@@ -229,6 +254,14 @@ scan:libraries
            └─▶ process:file  (one per supported file found)
 ```
 
+The watch-folder scanner runs on a separate 1-minute schedule and feeds directly into the same file-processing pipeline:
+
+```
+scheduler (@every 1m)
+ └─▶ scan:watch-folder
+      └─▶ process:file  (one per supported file found)
+```
+
 Book creation also triggers a parallel enrichment job:
 
 ```
@@ -240,9 +273,10 @@ POST /api/books
 
 Periodic jobs are registered with the asynq scheduler at startup in `cmd/server/main.go`, **but only when the process is running in `worker` or `all` mode**:
 
-```go
-w.RegisterSchedule("@every 24h", jobs.JobScanLibraries, struct{}{})
-```
+| Job | Schedule | Source |
+|-----|----------|--------|
+| `scan:libraries` | `@every 24h` | `internal/jobs/scan_libraries.go` |
+| `scan:watch-folder` | `@every 1m` | `internal/jobs/scan_watch_folder.go` |
 
 The cron specification follows the format accepted by asynq — both classic cron expressions (`0 3 * * *`) and convenience shortcuts (`@every 24h`, `@daily`) are supported.
 
@@ -268,9 +302,13 @@ Jobs enter the queue in two ways:
 
    Both are subject to the 24-hour deduplication window described above.
 
-2. **Scheduled** — The asynq scheduler fires `scan:libraries` every 24 hours. The `scan:libraries` trigger itself is issued directly by the asynq scheduler (not through `Worker.Enqueue`) and carries no deduplication. However, when the `scan:libraries` handler runs, it calls `Worker.Enqueue` to create `scan:library` jobs, which cascade into `scan:path` and `process:file` jobs — all of which go through `Worker.Enqueue` and therefore benefit from the 24-hour deduplication window.
+2. **Scheduled** — The asynq scheduler fires two periodic jobs:
+   - `scan:libraries` every 24 hours.
+   - `scan:watch-folder` every 1 minute.
 
-API-triggered jobs call `Worker.Enqueue`, which serialises the payload to JSON and pushes an asynq task onto the `"default"` queue with the configured deduplication options. The root `scan:libraries` scheduled trigger is created directly by the asynq scheduler and does not go through `Worker.Enqueue`.
+   Both scheduled triggers are issued directly by the asynq scheduler (not through `Worker.Enqueue`) and carry no deduplication. However, when `scan:libraries` runs, it calls `Worker.Enqueue` to create `scan:library` jobs, which cascade into `scan:path` and `process:file` jobs — all of which go through `Worker.Enqueue` and benefit from the 24-hour deduplication window. Similarly, `scan:watch-folder` enqueues `process:file` jobs via `Worker.Enqueue`, so those downstream jobs are also deduplicated.
+
+API-triggered jobs call `Worker.Enqueue`, which serialises the payload to JSON and pushes an asynq task onto the `"default"` queue with the configured deduplication options. The scheduled `scan:libraries` and `scan:watch-folder` triggers are created directly by the asynq scheduler and do not go through `Worker.Enqueue`.
 
 ### Deduplication
 
@@ -312,6 +350,7 @@ internal/
     scan_path.go               # scan:path handler (NewScanPathHandler → ScanDirectory)
     scan_libraries.go          # scan:libraries handler (scans all monitored libraries)
     scan_library.go            # scan:library handler (scans a single library)
+    scan_watch_folder.go       # scan:watch-folder handler — reads watch-folder settings and delegates to ScanDirectory
     process_file.go            # process:file handler — deserializes payload, delegates to ProcessBookFile
     process_book_file.go       # ProcessBookFile public entry point
     book_metadata_helpers.go   # deriveTitle, extractBookMetadata, resolveAuthorAndTitle
