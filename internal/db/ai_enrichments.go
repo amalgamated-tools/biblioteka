@@ -21,6 +21,9 @@ const (
 // ErrInvalidAIEnrichmentStatus is returned when an invalid status is passed.
 var ErrInvalidAIEnrichmentStatus = errors.New("db: invalid ai_enrichment status")
 
+// ErrAIEnrichmentNotPending is returned when an enrichment is no longer in pending status.
+var ErrAIEnrichmentNotPending = errors.New("db: ai_enrichment is not in pending status")
+
 // AIEnrichment represents a row in the ai_enrichments table.
 type AIEnrichment struct {
 	ID                   string    `json:"id"`
@@ -187,24 +190,27 @@ func (d *DB) ApplyAIEnrichment(ctx context.Context, input ApplyAIEnrichmentInput
 			}
 		}
 
-		// 2. Optionally update book description.
+		// 2. Optionally update book description (only if still empty to avoid overwriting concurrent edits).
 		if input.BookUpdate != nil {
 			bi := input.BookUpdate
 			if _, err := tx.ExecContext(ctx,
-				`UPDATE books SET title = $1, description = $2, asin = $3, isbn10 = $4, isbn13 = $5, goodreads_id = $6, hardcover_id = $7, google_books_id = $8, publication_date = $9, publisher = $10, language = $11, cover_image_url = $12, updated_at = `+d.now()+` WHERE id = $13`,
+				`UPDATE books SET title = $1, description = $2, asin = $3, isbn10 = $4, isbn13 = $5, goodreads_id = $6, hardcover_id = $7, google_books_id = $8, publication_date = $9, publisher = $10, language = $11, cover_image_url = $12, updated_at = `+d.now()+` WHERE id = $13 AND (description IS NULL OR description = '')`,
 				bi.Title, bi.Description, bi.ASIN, bi.ISBN10, bi.ISBN13, bi.GoodreadsID, bi.HardcoverID, bi.GoogleBooksID, bi.PublicationDate, bi.Publisher, bi.Language, bi.CoverImageURL, input.BookID,
 			); err != nil {
 				return fmt.Errorf("update book: %w", err)
 			}
 		}
 
-		// 3. Mark enrichment as applied.
+		// 3. Mark enrichment as applied (only if still pending).
 		row := tx.QueryRowContext(ctx,
-			`UPDATE ai_enrichments SET status = $1, updated_at = `+d.now()+` WHERE id = $2 AND user_id = $3 RETURNING `+aiEnrichmentColumns,
-			AIEnrichmentStatusApplied, input.EnrichmentID, input.UserID,
+			`UPDATE ai_enrichments SET status = $1, updated_at = `+d.now()+` WHERE id = $2 AND user_id = $3 AND status = $4 RETURNING `+aiEnrichmentColumns,
+			AIEnrichmentStatusApplied, input.EnrichmentID, input.UserID, AIEnrichmentStatusPending,
 		)
 		enrichment, err := scanAIEnrichment(row)
 		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return ErrAIEnrichmentNotPending
+			}
 			return fmt.Errorf("update enrichment status: %w", err)
 		}
 		result = enrichment

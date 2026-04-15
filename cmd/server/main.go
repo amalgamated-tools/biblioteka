@@ -135,16 +135,17 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 			llmModelName, _ = database.GetSetting(cancelCtx, db.SettingLLMModel)
 			llmProviderName, _ = database.GetSetting(cancelCtx, db.SettingLLMProvider)
 			if llmEndpoint != "" {
-				switch llmProviderName {
-				case llm.ProviderOllama, "":
-					llmProvider = ollama.New(llmEndpoint, llmModelName)
-					if llmProviderName == "" {
-						llmProviderName = llm.ProviderOllama
-					}
-				default:
+				factories := map[string]llm.Factory{
+					llm.ProviderOllama: func(endpoint, model string) llm.Provider { return ollama.New(endpoint, model) },
+				}
+				p, name, err := llm.NewProvider(llmProviderName, llmEndpoint, llmModelName, factories)
+				if err != nil {
 					slog.WarnContext(cancelCtx, "unsupported LLM provider, AI enrichment disabled",
 						slog.String(otelkeys.Source, llmProviderName),
 					)
+				} else {
+					llmProvider = p
+					llmProviderName = name
 				}
 			}
 		}
