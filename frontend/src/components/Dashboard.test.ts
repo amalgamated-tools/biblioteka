@@ -521,7 +521,7 @@ describe("Dashboard", () => {
       expect(screen.getByText("20")).toBeInTheDocument();
       expect(screen.getByText("days reading")).toBeInTheDocument();
       expect(screen.getByText("5")).toBeInTheDocument();
-      expect(screen.getByText("day longest streak")).toBeInTheDocument();
+      expect(screen.getByText("days longest streak")).toBeInTheDocument();
       expect(screen.getByText("8")).toBeInTheDocument();
       expect(screen.getByText("downloads")).toBeInTheDocument();
     });
