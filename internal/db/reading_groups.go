@@ -208,7 +208,9 @@ func (d *DB) ListGroupMembers(ctx context.Context, groupID, requesterID string) 
 }
 
 // AddGroupMember adds a user to a group. Only the owner can add members.
-func (d *DB) AddGroupMember(ctx context.Context, groupID, ownerID, memberUserID string) error {
+// Returns (true, nil) when the member was newly added and (false, nil) when
+// the user is already a member (idempotent — ON CONFLICT DO NOTHING).
+func (d *DB) AddGroupMember(ctx context.Context, groupID, ownerID, memberUserID string) (bool, error) {
 	slog.DebugContext(ctx, "db: adding group member",
 		slog.String(otelkeys.GroupID, groupID),
 		slog.String(otelkeys.UserID, memberUserID),
@@ -216,24 +218,28 @@ func (d *DB) AddGroupMember(ctx context.Context, groupID, ownerID, memberUserID 
 	var existingOwnerID string
 	err := d.QueryRowContext(ctx, `SELECT owner_id FROM reading_groups WHERE id = $1`, groupID).Scan(&existingOwnerID)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if existingOwnerID != ownerID {
-		return sql.ErrNoRows
+		return false, sql.ErrNoRows
 	}
 
-	_, err = d.ExecContext(ctx,
+	res, err := d.ExecContext(ctx,
 		`INSERT INTO reading_group_members (group_id, user_id, role) VALUES ($1, $2, 'member')
 		 ON CONFLICT (group_id, user_id) DO NOTHING`,
 		groupID, memberUserID,
 	)
 	if err != nil {
 		if isForeignKeyViolation(err) {
-			return ErrMemberUserNotFound
+			return false, ErrMemberUserNotFound
 		}
-		return err
+		return false, err
 	}
-	return nil
+	n, err := res.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	return n > 0, nil
 }
 
 // RemoveGroupMember removes a member from a group. Owner can remove anyone; members can remove themselves.
@@ -285,6 +291,12 @@ type GroupMemberProgress struct {
 	UpdatedAt  *Timestamp `json:"updated_at"`
 }
 
+func scanGroupMemberProgress(row interface{ Scan(...any) error }) (*GroupMemberProgress, error) {
+	return scanRow(row, func(p *GroupMemberProgress) []any {
+		return []any{&p.UserID, &p.UserName, &p.Percentage, &p.UpdatedAt}
+	})
+}
+
 // ListGroupMemberProgress returns reading progress for all group members on a specific book.
 func (d *DB) ListGroupMemberProgress(ctx context.Context, groupID, bookID, requesterID string) ([]GroupMemberProgress, error) {
 	slog.DebugContext(ctx, "db: listing group member progress",
@@ -311,20 +323,5 @@ func (d *DB) ListGroupMemberProgress(ctx context.Context, groupID, bookID, reque
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-	var results []GroupMemberProgress
-	for rows.Next() {
-		var p GroupMemberProgress
-		if err := rows.Scan(&p.UserID, &p.UserName, &p.Percentage, &p.UpdatedAt); err != nil {
-			return nil, err
-		}
-		results = append(results, p)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	if results == nil {
-		results = []GroupMemberProgress{}
-	}
-	return results, nil
+	return collectRows(rows, scanGroupMemberProgress)
 }
