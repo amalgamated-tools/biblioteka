@@ -1,6 +1,95 @@
 import type { PasskeyCredential } from "../../types";
 import { request, setToken } from "./core";
 
+/**
+ * Decode a base64url string to a Uint8Array.
+ * The WebAuthn JSON wire format uses base64url for binary fields, but the
+ * browser API expects ArrayBuffer / ArrayBufferView objects.
+ */
+function base64urlToBuffer(value: string): Uint8Array {
+  // base64url → base64
+  const base64 = value.replace(/-/g, "+").replace(/_/g, "/");
+  const pad =
+    base64.length % 4 === 0 ? "" : "=".repeat(4 - (base64.length % 4));
+  const binary = atob(base64 + pad);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
+/**
+ * Convert JSON-serialized PublicKeyCredentialCreationOptions (base64url strings)
+ * into the form expected by navigator.credentials.create() (ArrayBuffer fields).
+ */
+export function prepareCreationOptions(
+  options: Record<string, unknown>,
+): PublicKeyCredentialCreationOptions {
+  const publicKey = (options as { publicKey: Record<string, unknown> })
+    .publicKey;
+  const prepared = { ...publicKey } as Record<string, unknown>;
+
+  // challenge must be a BufferSource
+  if (typeof prepared.challenge === "string") {
+    prepared.challenge = base64urlToBuffer(prepared.challenge);
+  }
+
+  // user.id must be a BufferSource
+  if (
+    prepared.user &&
+    typeof (prepared.user as Record<string, unknown>).id === "string"
+  ) {
+    prepared.user = {
+      ...(prepared.user as Record<string, unknown>),
+      id: base64urlToBuffer(
+        (prepared.user as Record<string, unknown>).id as string,
+      ),
+    };
+  }
+
+  // excludeCredentials[].id must be BufferSource
+  if (Array.isArray(prepared.excludeCredentials)) {
+    prepared.excludeCredentials = (
+      prepared.excludeCredentials as Record<string, unknown>[]
+    ).map((c) => ({
+      ...c,
+      id: typeof c.id === "string" ? base64urlToBuffer(c.id) : c.id,
+    }));
+  }
+
+  return prepared as unknown as PublicKeyCredentialCreationOptions;
+}
+
+/**
+ * Convert JSON-serialized PublicKeyCredentialRequestOptions (base64url strings)
+ * into the form expected by navigator.credentials.get() (ArrayBuffer fields).
+ */
+export function prepareRequestOptions(
+  options: Record<string, unknown>,
+): PublicKeyCredentialRequestOptions {
+  const publicKey = (options as { publicKey: Record<string, unknown> })
+    .publicKey;
+  const prepared = { ...publicKey } as Record<string, unknown>;
+
+  // challenge must be a BufferSource
+  if (typeof prepared.challenge === "string") {
+    prepared.challenge = base64urlToBuffer(prepared.challenge);
+  }
+
+  // allowCredentials[].id must be BufferSource
+  if (Array.isArray(prepared.allowCredentials)) {
+    prepared.allowCredentials = (
+      prepared.allowCredentials as Record<string, unknown>[]
+    ).map((c) => ({
+      ...c,
+      id: typeof c.id === "string" ? base64urlToBuffer(c.id) : c.id,
+    }));
+  }
+
+  return prepared as unknown as PublicKeyCredentialRequestOptions;
+}
+
 export async function getPasskeyEnabled(): Promise<boolean> {
   const resp = await request<{ enabled: boolean }>(
     "GET",
