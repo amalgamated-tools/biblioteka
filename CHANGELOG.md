@@ -1,5 +1,50 @@
 # Changelog
 
+## [0.13.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.12.0...v0.13.0) (2026-04-15)
+
+
+### Features
+
+* **auth:** add WebAuthn passkey support ([#1966](https://github.com/amalgamated-tools/biblioteka/issues/1966)) ([6150e5d](https://github.com/amalgamated-tools/biblioteka/commit/6150e5d90ed7e10f6f3d2026eb8232e07c449d6f))
+* **calibre:** web UI Calibre import wizard ([#1960](https://github.com/amalgamated-tools/biblioteka/issues/1960)) ([b905c7a](https://github.com/amalgamated-tools/biblioteka/commit/b905c7a3cf1d942987a5680dc03968c19e95df0a))
+* **daily-doc-updater:** add file-based deduplication guard ([#1932](https://github.com/amalgamated-tools/biblioteka/issues/1932)) ([892ccde](https://github.com/amalgamated-tools/biblioteka/commit/892ccde570b57c83072c26911ebe53995a73c07d))
+* **db:** add PostgreSQL integration tests for SearchBooks ([#1908](https://github.com/amalgamated-tools/biblioteka/issues/1908)) ([7018c5a](https://github.com/amalgamated-tools/biblioteka/commit/7018c5a2540670a9d1d8d904393a194212e41697))
+* **db:** converge multi-word search semantics across SQLite and PostgreSQL ([#1906](https://github.com/amalgamated-tools/biblioteka/issues/1906)) ([900f7c4](https://github.com/amalgamated-tools/biblioteka/commit/900f7c44bbf97037cb56941d2e27ddcc1044489a))
+* **frontend:** add skippable first-library onboarding wizard ([#2012](https://github.com/amalgamated-tools/biblioteka/issues/2012)) ([8324bda](https://github.com/amalgamated-tools/biblioteka/commit/8324bda3a153159c5bb1d5ad64523782a8545ae1))
+* **frontend:** wire up book search UI with debouncing and URL persistence ([#1965](https://github.com/amalgamated-tools/biblioteka/issues/1965)) ([ebf0ce9](https://github.com/amalgamated-tools/biblioteka/commit/ebf0ce93edfa18b7415af8434b9389648e164663))
+* **groups:** shared reading groups foundation — migrations, DB layer, group handler ([#1963](https://github.com/amalgamated-tools/biblioteka/issues/1963)) ([3d94cd6](https://github.com/amalgamated-tools/biblioteka/commit/3d94cd68c7ff747e741dc46e2d280585b2233862))
+* **makefile:** add frontend formatting command to Makefile ([a1087cd](https://github.com/amalgamated-tools/biblioteka/commit/a1087cdad59f6a778b25b1446883ee2510e964a0))
+* provider-agnostic AI metadata enrichment with tags system and Ollama support ([#1974](https://github.com/amalgamated-tools/biblioteka/issues/1974)) ([74bee8a](https://github.com/amalgamated-tools/biblioteka/commit/74bee8a73705c0514036a4c21fa7fa0edad9df5c))
+* **recommendations:** add local book recommender endpoint and UI ([#1973](https://github.com/amalgamated-tools/biblioteka/issues/1973)) ([df80064](https://github.com/amalgamated-tools/biblioteka/commit/df800645d8380eafbfd9bd4b9569c80deddf6bee))
+* **search:** FTS5 index health check, startup auto-rebuild, and admin reindex endpoint ([#1909](https://github.com/amalgamated-tools/biblioteka/issues/1909)) ([a6cb1ae](https://github.com/amalgamated-tools/biblioteka/commit/a6cb1aee0c024bf3731f404a1c0192d02372e499))
+* **stats:** add Year in Books analytics endpoint and dashboard card ([#1946](https://github.com/amalgamated-tools/biblioteka/issues/1946)) ([7065e51](https://github.com/amalgamated-tools/biblioteka/commit/7065e51fe7ee651e39b679de4a14feb846b31d32))
+* **storage:** define Storage interface and LocalStorage filesystem implementation ([#1920](https://github.com/amalgamated-tools/biblioteka/issues/1920)) ([d2b7b7c](https://github.com/amalgamated-tools/biblioteka/commit/d2b7b7c36785a13057a73bf3d695c8367cd64391))
+* **workflows:** throttle daily-doc-updater with open-PR gate and lower per-run cap ([#1931](https://github.com/amalgamated-tools/biblioteka/issues/1931)) ([0092e8b](https://github.com/amalgamated-tools/biblioteka/commit/0092e8b7f8a9076eb6a1b88438f74b6f006e7835))
+
+
+### Bug Fixes
+
+* **accessibility:** associate validation errors to invalid form controls ([#2003](https://github.com/amalgamated-tools/biblioteka/issues/2003)) ([d479f59](https://github.com/amalgamated-tools/biblioteka/commit/d479f59bc266904c72be0320bc79502fd0ed65ff))
+* **accessibility:** expose mobile menu state and remove closed sidebar from AT tree ([#2001](https://github.com/amalgamated-tools/biblioteka/issues/2001)) ([16c6f50](https://github.com/amalgamated-tools/biblioteka/commit/16c6f50833c9ab44c8251a627c1c359f673af524))
+* **accessibility:** make BookDetail file download links uniquely descriptive to assistive tech ([#2004](https://github.com/amalgamated-tools/biblioteka/issues/2004)) ([6934553](https://github.com/amalgamated-tools/biblioteka/commit/69345536e58c453ee89d0e2b17b8ac7e94a18f4e))
+* **accessibility:** replace DownloadsHistogram listitem tabindex pattern with semantic data table ([#1905](https://github.com/amalgamated-tools/biblioteka/issues/1905)) ([1f73e66](https://github.com/amalgamated-tools/biblioteka/commit/1f73e660a0530d4959829baa23e15a464ca4fb13))
+* **accessibility:** restore focus when ReadingListDetail delete confirmation mounts ([#1903](https://github.com/amalgamated-tools/biblioteka/issues/1903)) ([1aa9dfd](https://github.com/amalgamated-tools/biblioteka/commit/1aa9dfd5d24d9ffbeb933aa7e295b56a44350260))
+* **accessibility:** restore native link semantics in BookList table view ([#1907](https://github.com/amalgamated-tools/biblioteka/issues/1907)) ([f847ce7](https://github.com/amalgamated-tools/biblioteka/commit/f847ce72f91f3c5ec5a9441ca5d796605a0e7e0b))
+* **accessibility:** use semantic table structure in MetadataComparison ([#1901](https://github.com/amalgamated-tools/biblioteka/issues/1901)) ([4c4696c](https://github.com/amalgamated-tools/biblioteka/commit/4c4696c5ecb3ddc98dc97b8f6c0dd203f4158f2b))
+* **ai:** address PR [#1974](https://github.com/amalgamated-tools/biblioteka/issues/1974) review comments ([#2011](https://github.com/amalgamated-tools/biblioteka/issues/2011)) ([a90afcd](https://github.com/amalgamated-tools/biblioteka/commit/a90afcdd45ec4df509fdb627490dc588e8575df2))
+* **calibre:** downgrade tags advisory log from Info to Debug ([#1962](https://github.com/amalgamated-tools/biblioteka/issues/1962)) ([f0ea21e](https://github.com/amalgamated-tools/biblioteka/commit/f0ea21e68b6f008ebe4410001456c8ecf11eb6ce))
+* **frontend:** raise dashboard and histogram label contrast to meet WCAG 1.4.3 ([#2006](https://github.com/amalgamated-tools/biblioteka/issues/2006)) ([9674d65](https://github.com/amalgamated-tools/biblioteka/commit/9674d65bd44797007e88ca66a5c23c164c184289))
+* **goodreads:** use http.MethodGet constant instead of string literal ([#1928](https://github.com/amalgamated-tools/biblioteka/issues/1928)) ([1cc05f4](https://github.com/amalgamated-tools/biblioteka/commit/1cc05f401c9d66bc2369eb14e0778cfdacc6b362))
+* remove double-logging in goodreads, fix otelkeys.Count→Limit, wire search query ([#1951](https://github.com/amalgamated-tools/biblioteka/issues/1951)) ([0853827](https://github.com/amalgamated-tools/biblioteka/commit/08538270460caa9aa1bfbb56e0265059398bde17))
+* **repo assist:** refactor(frontend): move AuthResponse and MetadataFetchResponse to types.ts ([#2007](https://github.com/amalgamated-tools/biblioteka/issues/2007)) ([c9368e3](https://github.com/amalgamated-tools/biblioteka/commit/c9368e3342dcedd767824373efb74ddb3531f7e1))
+* **stats:** use otelkeys.Limit instead of otelkeys.Count for monthly download window ([#1964](https://github.com/amalgamated-tools/biblioteka/issues/1964)) ([7430886](https://github.com/amalgamated-tools/biblioteka/commit/743088626ec12fbb98d8a1b59b02fe59fc3074d1))
+
+
+### Performance Improvements
+
+* **handlers:** eliminate extra GetReadingStats DB query in reading progress stats ([#1912](https://github.com/amalgamated-tools/biblioteka/issues/1912)) ([13f8f93](https://github.com/amalgamated-tools/biblioteka/commit/13f8f939afab9053f2cee1202b05d44b57ade157))
+* parallelize LoadBookRelations queries with errgroup ([#1982](https://github.com/amalgamated-tools/biblioteka/issues/1982)) ([8f25abe](https://github.com/amalgamated-tools/biblioteka/commit/8f25abea17910ee45817cd3be208cf94024f6537))
+
 ## [0.12.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.11.0...v0.12.0) (2026-04-14)
 
 
