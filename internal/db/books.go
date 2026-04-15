@@ -2,6 +2,9 @@ package db
 
 import (
 	"context"
+	"database/sql"
+	"errors"
+	"fmt"
 	"log/slog"
 	"strconv"
 	"strings"
@@ -121,6 +124,55 @@ func (d *DB) GetBook(ctx context.Context, id string) (*Book, error) {
 		`SELECT `+bookColumns+` FROM books WHERE id = $1`,
 		id,
 	))
+}
+
+// FindBookByExternalID returns the first book that matches any of the given
+// external identifiers, checked in priority order: ISBN-13, ISBN-10, ASIN,
+// Goodreads ID. Returns sql.ErrNoRows when no match is found.
+func (d *DB) FindBookByExternalID(ctx context.Context, isbn13, isbn10, asin, goodreadsID *string) (*Book, error) {
+	valueOrEmpty := func(v *string) string {
+		if v == nil {
+			return ""
+		}
+		return *v
+	}
+
+	isbn13Value := valueOrEmpty(isbn13)
+	isbn10Value := valueOrEmpty(isbn10)
+	asinValue := valueOrEmpty(asin)
+	goodreadsIDValue := valueOrEmpty(goodreadsID)
+
+	// Skip the query entirely when no identifiers are provided.
+	if isbn13Value == "" && isbn10Value == "" && asinValue == "" && goodreadsIDValue == "" {
+		return nil, sql.ErrNoRows
+	}
+
+	book, err := scanBook(d.QueryRowContext(ctx,
+		`SELECT `+bookColumns+` FROM books
+		WHERE ($1 <> '' AND isbn13 = $1)
+			OR ($2 <> '' AND isbn10 = $2)
+			OR ($3 <> '' AND asin = $3)
+			OR ($4 <> '' AND goodreads_id = $4)
+		ORDER BY CASE
+			WHEN $1 <> '' AND isbn13 = $1 THEN 1
+			WHEN $2 <> '' AND isbn10 = $2 THEN 2
+			WHEN $3 <> '' AND asin = $3 THEN 3
+			WHEN $4 <> '' AND goodreads_id = $4 THEN 4
+			ELSE 5
+		END
+		LIMIT 1`,
+		isbn13Value,
+		isbn10Value,
+		asinValue,
+		goodreadsIDValue,
+	))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, err
+		}
+		return nil, fmt.Errorf("find book by external id: %w", err)
+	}
+	return book, nil
 }
 
 // ListBooks returns all books ordered by title.

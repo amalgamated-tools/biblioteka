@@ -14,3 +14,4 @@ export * from "./api/stats";
 export * from "./api/reading-progress";
 export * from "./api/reading-lists";
 export * from "./api/passkeys";
+export * from "./api/calibre";
