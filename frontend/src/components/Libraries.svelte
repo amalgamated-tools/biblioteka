@@ -5,14 +5,16 @@
   import AlertBanner from "./ui/AlertBanner.svelte";
   import LibraryView from "./libraries/LibraryView.svelte";
   import LibraryForm from "./libraries/LibraryForm.svelte";
+  import FirstLibraryWizard from "./libraries/FirstLibraryWizard.svelte";
 
   let error: string | null = $state(null);
 
-  // Determine mode from subPath: "new", "edit/{id}", "{id}" (view), or empty
-  let mode: "create" | "edit" | "view" | "empty" = $derived.by(() => {
+  // Determine mode from subPath: "new", "edit/{id}", "setup", "{id}" (view), or empty
+  let mode: "create" | "edit" | "view" | "setup" | "empty" = $derived.by(() => {
     const sp = routerStore.subPath;
     if (sp === "new") return "create";
     if (sp.startsWith("edit/")) return "edit";
+    if (sp === "setup") return "setup";
     if (sp !== "") return "view";
     return "empty";
   });
@@ -25,7 +27,8 @@
 
   let viewId: string = $derived.by(() => {
     const sp = routerStore.subPath;
-    if (sp === "new" || sp.startsWith("edit/") || sp === "") return "";
+    if (sp === "new" || sp.startsWith("edit/") || sp === "setup" || sp === "")
+      return "";
     return sp;
   });
 
@@ -45,6 +48,17 @@
       })();
     }
   });
+
+  // Redirect away from setup wizard if the user already has libraries.
+  $effect(() => {
+    if (
+      mode === "setup" &&
+      libraryStore.loaded &&
+      libraryStore.libraries.length > 0
+    ) {
+      routerStore.navigate("libraries");
+    }
+  });
 </script>
 
 <div>
@@ -56,6 +70,8 @@
     <LibraryView library={viewLibrary} libraryId={viewId} {error} />
   {:else if mode === "create" || mode === "edit"}
     <LibraryForm {mode} {editId} />
+  {:else if mode === "setup"}
+    <FirstLibraryWizard />
   {:else}
     <div
       class="flex flex-col items-center justify-center py-24 animate-fade-in"

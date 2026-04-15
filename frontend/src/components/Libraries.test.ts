@@ -20,6 +20,7 @@ vi.mock("../stores/router.svelte", () => ({
 vi.mock("./ui/AlertBanner.svelte", () => ({ default: () => {} }));
 vi.mock("./libraries/LibraryView.svelte", () => ({ default: () => {} }));
 vi.mock("./libraries/LibraryForm.svelte", () => ({ default: () => {} }));
+vi.mock("./libraries/FirstLibraryWizard.svelte", () => ({ default: () => {} }));
 
 vi.mock("lucide-svelte", () => ({
   Plus: () => {},
@@ -119,5 +120,68 @@ describe("Libraries", () => {
     await tick();
 
     expect(libraryStore.load).not.toHaveBeenCalled();
+  });
+});
+
+describe("Libraries – setup mode", () => {
+  const mockLib = {
+    id: "lib-1",
+    name: "Fiction",
+    paths: ["/books"],
+    organization_type: "book_per_folder" as const,
+    monitored: false,
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  };
+
+  beforeEach(() => {
+    vi.mocked(libraryStore).loaded = false;
+    vi.mocked(libraryStore).libraries = [];
+    vi.mocked(routerStore).subPath = "setup";
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+  });
+
+  it("does not show the 'Add A Library' button in setup mode", async () => {
+    vi.mocked(libraryStore).loaded = true;
+    vi.mocked(libraryStore).libraries = [];
+    vi.mocked(routerStore).subPath = "setup";
+    render(Libraries);
+    await tick();
+
+    expect(screen.queryByRole("button", { name: /Add A Library/i })).toBeNull();
+  });
+
+  it("redirects to 'libraries' when setup mode is active but libraries already exist", async () => {
+    vi.mocked(libraryStore).loaded = true;
+    vi.mocked(libraryStore).libraries = [mockLib];
+    vi.mocked(routerStore).subPath = "setup";
+    render(Libraries);
+    await tick();
+
+    expect(vi.mocked(routerStore).navigate).toHaveBeenCalledWith("libraries");
+  });
+
+  it("does not redirect when setup mode is active and no libraries exist", async () => {
+    vi.mocked(libraryStore).loaded = true;
+    vi.mocked(libraryStore).libraries = [];
+    vi.mocked(routerStore).subPath = "setup";
+    render(Libraries);
+    await tick();
+
+    expect(vi.mocked(routerStore).navigate).not.toHaveBeenCalled();
+  });
+
+  it("does not redirect when setup mode is active but libraries are not yet loaded", async () => {
+    vi.mocked(libraryStore).loaded = false;
+    vi.mocked(libraryStore).libraries = [mockLib];
+    vi.mocked(routerStore).subPath = "setup";
+    render(Libraries);
+    await tick();
+
+    expect(vi.mocked(routerStore).navigate).not.toHaveBeenCalled();
   });
 });
