@@ -14,7 +14,7 @@ imports:
 network:
   allowed:
     - defaults
-    - javascript
+    - node
     - python
     - go
 tools:

@@ -33,7 +33,7 @@ steps:
       persist-credentials: false
 
   - name: Super-linter
-    uses: super-linter/super-linter@v8.6.0
+    uses: super-linter/super-linter@v9e863354e3ff62e0727d37183162c4a88873df41
     id: super-linter
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
