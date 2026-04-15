@@ -11,6 +11,9 @@ import (
 // Audit action constants for all tracked operations.
 const (
 	AuditActionAdminUpdated            = "user.admin_updated"
+	AuditActionAnnotationCreated       = "annotation.created"
+	AuditActionAnnotationDeleted       = "annotation.deleted"
+	AuditActionAnnotationUpdated       = "annotation.updated"
 	AuditActionAPIKeyCreated           = "api_key.created"
 	AuditActionAPIKeyDeleted           = "api_key.deleted"
 	AuditActionAuthorCreated           = "author.created"
@@ -18,11 +21,20 @@ const (
 	AuditActionAuthorUpdated           = "author.updated"
 	AuditActionBookCreated             = "book.created"
 	AuditActionBookDeleted             = "book.deleted"
+	AuditActionCalibreImported         = "calibre.imported"
 	AuditActionBookFileCreated         = "book_file.created"
 	AuditActionBookFileDeleted         = "book_file.deleted"
 	AuditActionBookFileEmailed         = "book_file.emailed"
 	AuditActionBookUpdated             = "book.updated"
 	AuditActionBookUploaded            = "book.uploaded"
+	AuditActionFTSRebuilt              = "fts.rebuilt"
+	AuditActionGroupCreated            = "group.created"
+	AuditActionGroupDeleted            = "group.deleted"
+	AuditActionGroupListShared         = "group.list_shared"
+	AuditActionGroupListUnshared       = "group.list_unshared"
+	AuditActionGroupMemberAdded        = "group.member_added"
+	AuditActionGroupMemberRemoved      = "group.member_removed"
+	AuditActionGroupUpdated            = "group.updated"
 	AuditActionKoboTokenCreated        = "kobo_token.created"
 	AuditActionKoboTokenDeleted        = "kobo_token.deleted"
 	AuditActionKOSyncCredentialDeleted = "kosync_credential.deleted"
@@ -35,6 +47,8 @@ const (
 	AuditActionMetadataRejected        = "metadata.rejected"
 	AuditActionOPDSCredentialDeleted   = "opds_credential.deleted"
 	AuditActionOPDSCredentialUpdated   = "opds_credential.updated"
+	AuditActionPasskeyCreated          = "passkey.created"
+	AuditActionPasskeyDeleted          = "passkey.deleted"
 	AuditActionPasswordChanged         = "user.password_changed"
 	AuditActionReadingListBookAdded    = "reading_list.book_added"
 	AuditActionReadingListBookRemoved  = "reading_list.book_removed"
@@ -78,7 +92,7 @@ func scanAuditLogAndTotal(row interface{ Scan(...any) error }) (*AuditLog, int, 
 // to JSON; a nil map stores a NULL metadata value. The userID may be empty for
 // system-initiated actions.
 func (d *DB) CreateAuditLog(ctx context.Context, userID, action, entityType, entityID string, metadata map[string]any) error {
-	slog.DebugContext(ctx, "db: creating audit log",
+	slog.DebugContext(ctx, "creating audit log",
 		slog.String(otelkeys.Action, action),
 		slog.String(otelkeys.EntityType, entityType),
 		slog.String(otelkeys.EntityID, entityID),
@@ -113,7 +127,7 @@ func (d *DB) CreateAuditLog(ctx context.Context, userID, action, entityType, ent
 // produce no total; in that case a standalone COUNT(*) is issued instead and an
 // empty slice is returned with the correct total.
 func (d *DB) ListAuditLogs(ctx context.Context, limit, offset int) ([]AuditLog, int, error) {
-	slog.DebugContext(ctx, "db: listing audit logs",
+	slog.DebugContext(ctx, "listing audit logs",
 		slog.Int(otelkeys.Limit, limit),
 		slog.Int(otelkeys.Offset, offset),
 	)

@@ -20,6 +20,7 @@ type APIKey struct {
 
 const apiKeyColumns = `id, user_id, name, key_hash, key_prefix, last_used_at, created_at`
 
+// scanAPIKey scans an API key row into an APIKey struct.
 func scanAPIKey(row interface{ Scan(...any) error }) (*APIKey, error) {
 	return scanRow(row, func(k *APIKey) []any {
 		return []any{&k.ID, &k.UserID, &k.Name, &k.KeyHash, &k.KeyPrefix, &k.LastUsedAt, &k.CreatedAt}
@@ -28,7 +29,7 @@ func scanAPIKey(row interface{ Scan(...any) error }) (*APIKey, error) {
 
 // CreateAPIKey inserts a new API key and returns it.
 func (d *DB) CreateAPIKey(ctx context.Context, userID, name, keyHash, keyPrefix string) (*APIKey, error) {
-	slog.DebugContext(ctx, "db: creating api key",
+	slog.DebugContext(ctx, "creating api key",
 		slog.String(otelkeys.UserID, userID),
 		slog.String(otelkeys.Name, name),
 	)
@@ -40,7 +41,7 @@ func (d *DB) CreateAPIKey(ctx context.Context, userID, name, keyHash, keyPrefix 
 
 // ListAPIKeys returns all API keys for a user, ordered by creation time (newest first).
 func (d *DB) ListAPIKeys(ctx context.Context, userID string) ([]APIKey, error) {
-	slog.DebugContext(ctx, "db: listing api keys", slog.String(otelkeys.UserID, userID))
+	slog.DebugContext(ctx, "listing api keys", slog.String(otelkeys.UserID, userID))
 	rows, err := d.QueryContext(ctx,
 		`SELECT `+apiKeyColumns+` FROM api_keys WHERE user_id = $1 ORDER BY created_at DESC, id DESC`,
 		userID,
@@ -53,7 +54,7 @@ func (d *DB) ListAPIKeys(ctx context.Context, userID string) ([]APIKey, error) {
 
 // GetAPIKey returns a single API key by ID and user ID.
 func (d *DB) GetAPIKey(ctx context.Context, id, userID string) (*APIKey, error) {
-	slog.DebugContext(ctx, "db: fetching api key", slog.String(otelkeys.APIKeyID, id))
+	slog.DebugContext(ctx, "fetching api key", slog.String(otelkeys.APIKeyID, id))
 	return scanAPIKey(d.QueryRowContext(ctx,
 		`SELECT `+apiKeyColumns+` FROM api_keys WHERE id = $1 AND user_id = $2`,
 		id, userID,
@@ -63,7 +64,7 @@ func (d *DB) GetAPIKey(ctx context.Context, id, userID string) (*APIKey, error) 
 // DeleteAPIKey removes an API key by ID, scoped to the given user.
 // Returns sql.ErrNoRows if the key doesn't exist or doesn't belong to the user.
 func (d *DB) DeleteAPIKey(ctx context.Context, id, userID string) error {
-	slog.DebugContext(ctx, "db: deleting api key",
+	slog.DebugContext(ctx, "deleting api key",
 		slog.String(otelkeys.APIKeyID, id),
 		slog.String(otelkeys.UserID, userID),
 	)
@@ -72,7 +73,7 @@ func (d *DB) DeleteAPIKey(ctx context.Context, id, userID string) error {
 
 // GetAPIKeyByHash returns an API key by its SHA-256 hash. Used during authentication.
 func (d *DB) GetAPIKeyByHash(ctx context.Context, keyHash string) (*APIKey, error) {
-	slog.DebugContext(ctx, "db: looking up api key by hash")
+	slog.DebugContext(ctx, "looking up api key by hash")
 	return scanAPIKey(d.QueryRowContext(ctx,
 		`SELECT `+apiKeyColumns+` FROM api_keys WHERE key_hash = $1`,
 		keyHash,
