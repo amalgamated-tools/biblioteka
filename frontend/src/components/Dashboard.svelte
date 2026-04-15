@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import {
     LayoutDashboard,
     Library,
@@ -34,77 +35,61 @@
   let monthlyDownloads = $state<MonthlyDownloads[]>([]);
   let downloadsError: string | null = $state(null);
   let readingStats = $state<ReadingProgressStats | null>(null);
+  let readingError: string | null = $state(null);
   let yearInBooks = $state<YearInBooks | null>(null);
+  let yearInBooksError: string | null = $state(null);
 
-  $effect(() => {
+  function getErrorMessage(error: unknown, fallback: string): string {
+    if (error instanceof Error && error.message.trim().length > 0) {
+      return error.message;
+    }
+    return fallback;
+  }
+
+  async function loadTotalBooksCount(): Promise<void> {
+    try {
+      totalBooks = await getTotalBooksCount();
+    } catch (error) {
+      countError = getErrorMessage(error, "Failed to load book count");
+      totalBooks = 0;
+    }
+  }
+
+  async function loadDownloadStats(): Promise<void> {
+    try {
+      monthlyDownloads = await getDownloadsPerMonth(12);
+    } catch (error) {
+      downloadsError = getErrorMessage(error, "Failed to load download stats");
+    }
+  }
+
+  async function loadReadingStats(): Promise<void> {
+    try {
+      readingStats = await getReadingProgressStats();
+    } catch (error) {
+      readingError = getErrorMessage(error, "Failed to load reading stats");
+    }
+  }
+
+  async function loadYearInBooksStats(): Promise<void> {
+    try {
+      yearInBooks = await getYearInBooks();
+    } catch (error) {
+      yearInBooksError = getErrorMessage(
+        error,
+        "Failed to load year-in-books stats",
+      );
+    }
+  }
+
+  onMount(() => {
     if (!libraryStore.loaded) {
       libraryStore.load();
     }
-  });
-
-  let countFetched = false;
-  $effect(() => {
-    if (!countFetched) {
-      countFetched = true;
-      getTotalBooksCount()
-        .then((count) => {
-          totalBooks = count;
-        })
-        .catch((err) => {
-          console.error("Failed to fetch total books count:", err);
-          countError =
-            err instanceof Error ? err.message : "Failed to load book count";
-          totalBooks = 0;
-        });
-    }
-  });
-
-  let downloadsFetched = false;
-  $effect(() => {
-    if (!downloadsFetched) {
-      downloadsFetched = true;
-      getDownloadsPerMonth(12)
-        .then((data) => {
-          monthlyDownloads = data;
-        })
-        .catch((err) => {
-          console.error("Failed to fetch download stats:", err);
-          downloadsError =
-            err instanceof Error
-              ? err.message
-              : "Failed to load download stats";
-        });
-    }
-  });
-
-  let statsFetched = false;
-  $effect(() => {
-    if (!statsFetched) {
-      statsFetched = true;
-      getReadingProgressStats()
-        .then((stats) => {
-          readingStats = stats;
-        })
-        .catch((err) => {
-          console.error("Failed to fetch reading stats:", err);
-          // Non-fatal: the reading activity section will simply not appear.
-        });
-    }
-  });
-
-  $effect(() => {
-    let cancelled = false;
-    getYearInBooks()
-      .then((data) => {
-        if (!cancelled) yearInBooks = data;
-      })
-      .catch((err) => {
-        console.error("Failed to fetch year-in-books stats:", err);
-        // Non-fatal: the section will simply not appear.
-      });
-    return () => {
-      cancelled = true;
-    };
+    void loadTotalBooksCount();
+    void loadDownloadStats();
+    void loadReadingStats();
+    void loadYearInBooksStats();
   });
 
   const stats = $derived([
@@ -252,6 +237,9 @@
     {/if}
 
     <!-- Reading Activity section -->
+    {#if readingError}
+      <AlertBanner variant="error" class="mt-5">{readingError}</AlertBanner>
+    {/if}
     {#if readingStats !== null}
       <div
         class="mt-8 bg-white dark:bg-ink-900 rounded-2xl p-6 shadow-sm border border-ink-100 dark:border-ink-800 animate-fade-in"
@@ -384,6 +372,10 @@
           library.
         </p>
       </div>
+    {/if}
+
+    {#if yearInBooksError}
+      <AlertBanner variant="error" class="mt-5">{yearInBooksError}</AlertBanner>
     {/if}
 
     <!-- Year in Books section -->
