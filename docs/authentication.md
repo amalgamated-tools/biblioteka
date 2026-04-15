@@ -296,6 +296,148 @@ If a user signs in via OIDC and no existing account has that `sub` claim, the se
 
 ---
 
+## Passkeys (WebAuthn)
+
+Passkeys provide a phishing-resistant, passwordless way to log in to Biblioteka. A passkey is a cryptographic credential stored on your device — a hardware security key, a fingerprint reader, Face ID, or a platform authenticator (Windows Hello, macOS Touch ID, or a mobile device). Once registered, a passkey replaces the username/password login flow with a local biometric or PIN gesture.
+
+> **Optional feature:** Passkeys are disabled by default. An operator must configure the WebAuthn environment variables before users can register or use passkeys. If a passkey button does not appear on the login screen, the server is not configured for passkeys.
+
+### Enabling passkeys (server configuration)
+
+Set these environment variables before starting the server:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `WEBAUTHN_RP_ID` | `localhost` | Relying party ID — must be a valid domain name that matches the hostname your users access Biblioteka from (e.g. `books.example.com`). |
+| `WEBAUTHN_RP_ORIGINS` | `http://localhost:8080` | Comma-separated list of fully-qualified origins allowed to use passkeys (e.g. `https://books.example.com`). Must include the scheme and port when non-standard. |
+| `WEBAUTHN_RP_NAME` | `Biblioteka` | Human-readable name shown in the browser's passkey dialog. |
+
+```bash
+WEBAUTHN_RP_ID=books.example.com
+WEBAUTHN_RP_ORIGINS=https://books.example.com
+WEBAUTHN_RP_NAME=My Biblioteka
+```
+
+> **Production requirement:** `WEBAUTHN_RP_ID` must exactly match the effective domain of your Biblioteka instance. For example, if your instance is at `https://books.example.com`, set `WEBAUTHN_RP_ID=books.example.com`. Setting this to `localhost` in production will cause all passkey ceremonies to fail. On startup, `WebAuthn passkeys enabled` is logged at `INFO` level confirming the RP ID and name.
+
+The `GET /api/auth/passkey/enabled` endpoint returns `{"enabled": true}` when passkeys are configured, and `{"enabled": false}` otherwise. The frontend uses this to conditionally show the passkey login button.
+
+### Registering a passkey
+
+A passkey can only be registered by an authenticated user (the registration flow requires a valid JWT session). After logging in with your password or OIDC, go to **Settings → Passkeys** and click **Add passkey**. Give the passkey a descriptive name (e.g. `"MacBook Touch ID"` or `"YubiKey 5"`), then follow the browser prompt to authenticate with your device.
+
+**Via the API:**
+
+1. **Begin registration** — send a `POST /api/auth/passkey/register/begin` request with a name for the new passkey:
+
+   ```bash
+   curl -X POST http://localhost:8080/api/auth/passkey/register/begin \
+     -H "Authorization: Bearer <jwt>" \
+     -H "Content-Type: application/json" \
+     -d '{"name": "YubiKey 5"}'
+   ```
+
+   Response:
+
+   ```json
+   {
+     "session_id": "<session-id>",
+     "options": { ... }   // PublicKeyCredentialCreationOptions — pass to navigator.credentials.create()
+   }
+   ```
+
+   The `session_id` is a short-lived server-side challenge (valid for 5 minutes) that must accompany the finish request.
+
+2. **Finish registration** — after the authenticator responds, send the `PublicKeyCredential` to `POST /api/auth/passkey/register/finish?session_id=<session-id>`:
+
+   ```bash
+   curl -X POST "http://localhost:8080/api/auth/passkey/register/finish?session_id=<session-id>" \
+     -H "Authorization: Bearer <jwt>" \
+     -H "Content-Type: application/json" \
+     -d '<raw PublicKeyCredential JSON from navigator.credentials.create()>'
+   ```
+
+   A `201 Created` response returns the stored credential:
+
+   ```json
+   {
+     "id": "<credential-id>",
+     "name": "YubiKey 5",
+     "aaguid": "<aaguid>",
+     "created_at": "2026-04-15T12:00:00Z"
+   }
+   ```
+
+A passkey is excluded from future registration options once registered, preventing duplicate entries for the same authenticator.
+
+### Logging in with a passkey
+
+Passkey login uses discoverable credentials — no username is required.
+
+1. **Begin login** — `POST /api/auth/passkey/login/begin` (no body required):
+
+   ```bash
+   curl -X POST http://localhost:8080/api/auth/passkey/login/begin
+   ```
+
+   Response:
+
+   ```json
+   {
+     "session_id": "<session-id>",
+     "options": { ... }   // PublicKeyCredentialRequestOptions — pass to navigator.credentials.get()
+   }
+   ```
+
+2. **Finish login** — `POST /api/auth/passkey/login/finish?session_id=<session-id>` with the credential from `navigator.credentials.get()`:
+
+   A `200 OK` response returns a JWT and user object (same shape as the password login response):
+
+   ```json
+   {
+     "token": "<jwt>",
+     "user": { ... }
+   }
+   ```
+
+Both login endpoints are rate-limited (5 requests/second, burst 10) and do not require authentication.
+
+### Managing passkey credentials
+
+Each user can hold multiple passkeys — one per device is recommended.
+
+#### List passkeys
+
+```bash
+curl http://localhost:8080/api/auth/passkey/credentials \
+  -H "Authorization: Bearer <jwt>"
+```
+
+Returns an array of registered passkeys (IDs, names, and creation timestamps). Raw credential data is never returned.
+
+#### Delete a passkey
+
+```bash
+curl -X DELETE http://localhost:8080/api/auth/passkey/credentials/<credential-id> \
+  -H "Authorization: Bearer <jwt>"
+```
+
+Returns `204 No Content`. Deleting your last passkey does not affect password or OIDC login.
+
+### Security model
+
+| Property | Detail |
+|----------|--------|
+| Ceremony | WebAuthn Level 2 (FIDO2) using the [`go-webauthn/webauthn`](https://github.com/go-webauthn/webauthn) library |
+| Challenge storage | Server-side, short-lived (5-minute TTL); expired challenges are pruned on each ceremony begin |
+| Credential storage | Credential ID and serialized `webauthn.Credential` (public key + sign counter) stored in `passkey_credentials` table; private key never leaves the authenticator |
+| Sign counter | Updated on every successful authentication to detect cloned authenticators |
+| Discoverable login | Registration uses resident/discoverable credentials; no username hint is required at login time |
+| Rate limiting | Login begin/finish endpoints share the global auth rate limiter (5 req/s, burst 10 per IP) |
+| Audit trail | Passkey registration (`passkey.created`) and deletion (`passkey.deleted`) are recorded in the audit log |
+
+---
+
 ## API Keys
 
 API keys provide a convenient way to authenticate programmatic access to Biblioteka without requiring you to store your password or manage JWT expiry.
