@@ -7,6 +7,7 @@ A self-hosted personal book library manager. Scan local files, extract metadata,
 - **Multi-format support** — EPUB, MOBI, AZW3, and PDF
 - **Automatic metadata extraction** — title, author, ISBN, description, publisher, language, and publication date via [ExifTool](https://exiftool.org/)
 - **Remote metadata lookup** — fetch, review, and selectively apply metadata from Goodreads before committing changes
+- **AI metadata enrichment** — generate genres, themes, mood, reading level, tags, and a catalog description via a local Ollama LLM (optional, admin-configured)
 - **Path-based metadata** — derives author, title, series name, and position from directory structure
 - **File organization** — configurable layouts: `book_per_folder`, `book_per_file`, or `none`
 - **Book upload** — upload books directly through the web UI or `POST /api/books/upload`
