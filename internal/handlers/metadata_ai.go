@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -145,9 +146,12 @@ func (h *MetadataHandler) applyAIEnrichment(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Find or create tags for each suggested tag.
+	// Find or create tags for each suggested tag, skipping blank entries.
 	newTagIDs := make([]string, 0, len(enrichment.SuggestedTags))
 	for _, tagName := range enrichment.SuggestedTags {
+		if strings.TrimSpace(tagName) == "" {
+			continue
+		}
 		tag, err := h.DB.FindOrCreateTag(r.Context(), tagName)
 		if err != nil {
 			slog.ErrorContext(r.Context(), "failed to find or create tag",
@@ -160,29 +164,6 @@ func (h *MetadataHandler) applyAIEnrichment(w http.ResponseWriter, r *http.Reque
 		newTagIDs = append(newTagIDs, tag.ID)
 	}
 
-	// Get current book tags and union with new ones.
-	currentTags, err := h.DB.GetBookTags(r.Context(), bookID)
-	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to get current book tags",
-			slog.String(otelkeys.BookID, bookID),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to get current book tags")
-		return
-	}
-
-	tagIDSet := make(map[string]struct{})
-	for _, t := range currentTags {
-		tagIDSet[t.ID] = struct{}{}
-	}
-	for _, id := range newTagIDs {
-		tagIDSet[id] = struct{}{}
-	}
-	unionIDs := make([]string, 0, len(tagIDSet))
-	for id := range tagIDSet {
-		unionIDs = append(unionIDs, id)
-	}
-
 	// Set description if book has none and enrichment has one.
 	book, err := h.DB.GetBook(r.Context(), bookID)
 	if handleDBErr(r.Context(), w, err, "book") {
@@ -193,7 +174,7 @@ func (h *MetadataHandler) applyAIEnrichment(w http.ResponseWriter, r *http.Reque
 		BookID:       bookID,
 		UserID:       userID,
 		EnrichmentID: enrichment.ID,
-		TagIDs:       unionIDs,
+		NewTagIDs:    newTagIDs,
 	}
 
 	if (book.Description == nil || *book.Description == "") && enrichment.GeneratedDescription != nil && *enrichment.GeneratedDescription != "" {
