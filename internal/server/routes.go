@@ -25,6 +25,19 @@ func (s *Server) setupRoutes(ctx context.Context) {
 	// Public informational endpoints (not rate-limited, read-only)
 	s.mux.HandleFunc("/api/auth/signup/enabled", s.handleSignupEnabled)
 	s.mux.HandleFunc("/api/auth/oidc/enabled", s.handleOIDCEnabled)
+	s.mux.HandleFunc("/api/auth/passkey/enabled", s.passkeyHandler.HandlePasskeyEnabled)
+
+	// Passkey registration (JWT-only: adding a passkey requires an authenticated session)
+	s.mux.Handle("/api/auth/passkey/register/begin", s.requireJWTAuth(http.HandlerFunc(s.passkeyHandler.HandleBeginRegistration)))
+	s.mux.Handle("/api/auth/passkey/register/finish", s.requireJWTAuth(http.HandlerFunc(s.passkeyHandler.HandleFinishRegistration)))
+
+	// Passkey authentication (rate-limited, public: no auth needed to log in with a passkey)
+	s.mux.HandleFunc("/api/auth/passkey/login/begin", s.authLimiter.Limit(s.passkeyHandler.HandleBeginAuthentication))
+	s.mux.HandleFunc("/api/auth/passkey/login/finish", s.authLimiter.Limit(s.passkeyHandler.HandleFinishAuthentication))
+
+	// Passkey credential management (JWT-only: same constraint as API keys)
+	s.mux.Handle("/api/auth/passkey/credentials", s.requireJWTAuth(http.HandlerFunc(s.passkeyHandler.HandlePasskeyCredentials)))
+	s.mux.Handle("/api/auth/passkey/credentials/", s.requireJWTAuth(http.HandlerFunc(s.passkeyHandler.HandlePasskeyCredential)))
 
 	// OIDC auth routes — always registered, check handler at request time
 	s.mux.HandleFunc("/api/auth/oidc/login", s.authLimiter.Limit(s.oidcRoute((*handlers.OIDCHandler).Login)))
