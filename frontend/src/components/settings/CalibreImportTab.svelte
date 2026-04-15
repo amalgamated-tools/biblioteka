@@ -2,6 +2,8 @@
   import {
     previewCalibreImport,
     confirmCalibreImport,
+    previewCalibreImportFromPath,
+    confirmCalibreImportFromPath,
     listLibraries,
   } from "../../lib/api";
   import type {
@@ -14,13 +16,23 @@
   import AlertBanner from "../ui/AlertBanner.svelte";
 
   type Step = "upload" | "preview" | "result";
+  type ImportSource = "upload" | "path";
+
+  const steps: Step[] = ["upload", "preview", "result"];
+  const stepLabels: Record<Step, string> = {
+    upload: "Upload",
+    preview: "Preview",
+    result: "Done",
+  };
 
   let step: Step = $state("upload");
   let loading = $state(false);
   let error: string | null = $state(null);
 
   // Upload step state
+  let importSource: ImportSource = $state("upload");
   let selectedFile: File | null = $state(null);
+  let serverPath = $state("");
   let selectedLibraryId = $state("");
   let libraries: Library[] = $state([]);
 
@@ -48,16 +60,27 @@
 
   async function handlePreview(e: SubmitEvent) {
     e.preventDefault();
-    if (!selectedFile) {
-      error = "Please select a Calibre metadata.db file.";
-      return;
+
+    if (importSource === "path") {
+      if (!serverPath.trim()) {
+        error = "Please enter a server path to metadata.db.";
+        return;
+      }
+    } else {
+      if (!selectedFile) {
+        error = "Please select a Calibre metadata.db file.";
+        return;
+      }
     }
 
     error = null;
     loading = true;
 
     try {
-      preview = await previewCalibreImport(selectedFile);
+      preview =
+        importSource === "path"
+          ? await previewCalibreImportFromPath(serverPath.trim())
+          : await previewCalibreImport(selectedFile!);
       step = "preview";
     } catch (err) {
       error =
@@ -68,13 +91,20 @@
   }
 
   async function handleConfirm() {
-    if (!selectedFile) return;
+    if (importSource === "upload" && !selectedFile) return;
+    if (importSource === "path" && !serverPath.trim()) return;
 
     error = null;
     loading = true;
 
     try {
-      result = await confirmCalibreImport(selectedFile, selectedLibraryId);
+      result =
+        importSource === "path"
+          ? await confirmCalibreImportFromPath(
+              serverPath.trim(),
+              selectedLibraryId,
+            )
+          : await confirmCalibreImport(selectedFile!, selectedLibraryId);
       step = "result";
     } catch (err) {
       error =
@@ -86,7 +116,9 @@
 
   function handleReset() {
     step = "upload";
+    importSource = "upload";
     selectedFile = null;
+    serverPath = "";
     selectedLibraryId = "";
     preview = null;
     result = null;
@@ -110,17 +142,12 @@
         class="font-mono text-xs bg-ink-100 dark:bg-ink-800 px-1 py-0.5 rounded"
         >metadata.db</code
       >
-      file to preview your books, then confirm to import them.
+      file or provide the path to it on the server, then preview and confirm the import.
     </p>
 
     <!-- Step indicators -->
     <nav aria-label="Import steps" class="flex items-center gap-2 mb-6">
-      {#each ["upload", "preview", "result"] as const as s, i (s)}
-        {@const labels = {
-          upload: "Upload",
-          preview: "Preview",
-          result: "Done",
-        }}
+      {#each steps as s, i (s)}
         {@const isActive = step === s}
         {@const isPast =
           (s === "upload" && (step === "preview" || step === "result")) ||
@@ -141,7 +168,7 @@
                 : 'bg-ink-100 dark:bg-ink-800 text-ink-400 dark:text-ink-500'}"
             aria-current={isActive ? "step" : undefined}
           >
-            {labels[s]}
+            {stepLabels[s]}
           </span>
         </div>
       {/each}
@@ -150,39 +177,107 @@
     <!-- Step 1: Upload -->
     {#if step === "upload"}
       <form onsubmit={handlePreview} class="space-y-4">
-        <div>
-          <label
-            for="calibre-db-file"
+        <!-- Source toggle -->
+        <fieldset>
+          <legend
             class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
+            >Import Source</legend
           >
-            Calibre metadata.db
-          </label>
-          <input
-            id="calibre-db-file"
-            type="file"
-            accept=".db"
-            onchange={handleFileChange}
-            disabled={loading}
-            class="block w-full text-sm text-ink-600 dark:text-ink-300
-              file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0
-              file:text-sm file:font-medium
-              file:bg-accent-50 file:text-accent-700
-              dark:file:bg-accent-900/30 dark:file:text-accent-400
-              hover:file:bg-accent-100 dark:hover:file:bg-accent-900/50
-              cursor-pointer"
-            aria-describedby="calibre-db-hint"
-          />
-          <p
-            id="calibre-db-hint"
-            class="text-xs text-ink-500 dark:text-ink-300 mt-1"
-          >
-            The <code
-              class="font-mono bg-ink-100 dark:bg-ink-800 px-1 py-0.5 rounded"
-              >metadata.db</code
-            > file is located in the root of your Calibre library folder. Maximum
-            100 MB.
-          </p>
-        </div>
+          <div class="flex gap-2">
+            <button
+              type="button"
+              onclick={() => {
+                importSource = "upload";
+                error = null;
+              }}
+              class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors {importSource ===
+              'upload'
+                ? 'bg-accent-500 text-white'
+                : 'bg-ink-100 dark:bg-ink-800 text-ink-600 dark:text-ink-300 hover:bg-ink-200 dark:hover:bg-ink-700'}"
+              aria-pressed={importSource === "upload"}
+            >
+              Upload File
+            </button>
+            <button
+              type="button"
+              onclick={() => {
+                importSource = "path";
+                error = null;
+              }}
+              class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors {importSource ===
+              'path'
+                ? 'bg-accent-500 text-white'
+                : 'bg-ink-100 dark:bg-ink-800 text-ink-600 dark:text-ink-300 hover:bg-ink-200 dark:hover:bg-ink-700'}"
+              aria-pressed={importSource === "path"}
+            >
+              Server Path
+            </button>
+          </div>
+        </fieldset>
+
+        {#if importSource === "upload"}
+          <div>
+            <label
+              for="calibre-db-file"
+              class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
+            >
+              Calibre metadata.db
+            </label>
+            <input
+              id="calibre-db-file"
+              type="file"
+              accept=".db"
+              onchange={handleFileChange}
+              disabled={loading}
+              class="block w-full text-sm text-ink-600 dark:text-ink-300
+                file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0
+                file:text-sm file:font-medium
+                file:bg-accent-50 file:text-accent-700
+                dark:file:bg-accent-900/30 dark:file:text-accent-400
+                hover:file:bg-accent-100 dark:hover:file:bg-accent-900/50
+                cursor-pointer"
+              aria-describedby="calibre-db-hint"
+            />
+            <p
+              id="calibre-db-hint"
+              class="text-xs text-ink-500 dark:text-ink-300 mt-1"
+            >
+              The <code
+                class="font-mono bg-ink-100 dark:bg-ink-800 px-1 py-0.5 rounded"
+                >metadata.db</code
+              > file is located in the root of your Calibre library folder. Maximum
+              100 MB.
+            </p>
+          </div>
+        {:else}
+          <div>
+            <label
+              for="calibre-db-path"
+              class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
+            >
+              Server path to metadata.db
+            </label>
+            <input
+              id="calibre-db-path"
+              type="text"
+              bind:value={serverPath}
+              disabled={loading}
+              placeholder="/path/to/Calibre Library/metadata.db"
+              class="w-full px-4 py-2.5 border border-ink-400 dark:border-ink-400 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
+              aria-describedby="calibre-path-hint"
+            />
+            <p
+              id="calibre-path-hint"
+              class="text-xs text-ink-500 dark:text-ink-300 mt-1"
+            >
+              Enter the absolute filesystem path on the server where your
+              Calibre <code
+                class="font-mono bg-ink-100 dark:bg-ink-800 px-1 py-0.5 rounded"
+                >metadata.db</code
+              > is located.
+            </p>
+          </div>
+        {/if}
 
         <div>
           <label
@@ -220,7 +315,8 @@
 
         <Button
           type="submit"
-          disabled={loading || !selectedFile}
+          disabled={loading ||
+            (importSource === "upload" ? !selectedFile : !serverPath.trim())}
           class="w-full px-4 py-2.5"
         >
           {loading ? "Reading database…" : "Preview Import"}
@@ -351,7 +447,7 @@
           onclick={handleReset}
           class="w-full px-4 py-2.5 bg-ink-100 dark:bg-ink-700 text-ink-700 dark:text-ink-200 hover:bg-ink-200 dark:hover:bg-ink-600"
         >
-          Import Another File
+          Import Again
         </Button>
       </div>
     {/if}

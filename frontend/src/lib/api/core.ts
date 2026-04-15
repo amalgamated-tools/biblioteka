@@ -55,6 +55,33 @@ export async function request<T>(
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 
+  return parseResponse<T>(res);
+}
+
+// requestFormData sends a multipart/form-data request and returns the parsed
+// JSON response. The caller is responsible for building the FormData body.
+export async function requestFormData<T>(
+  method: string,
+  path: string,
+  body: FormData,
+): Promise<T> {
+  const headers: Record<string, string> = {};
+
+  const token = getToken();
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  // Do not set Content-Type — the browser sets it automatically with the
+  // correct multipart boundary when given a FormData body.
+  const res = await fetch(path, { method, headers, body });
+
+  return parseResponse<T>(res);
+}
+
+// parseResponse handles the common response parsing logic: 204 No Content,
+// content-type detection, JSON parsing with fallback, and ApiError throwing.
+async function parseResponse<T>(res: Response): Promise<T> {
   if (res.status === 204) {
     return undefined as T;
   }
@@ -90,59 +117,4 @@ export async function request<T>(
   }
 
   return data as T;
-}
-
-// requestFormData sends a multipart/form-data request and returns the parsed
-// JSON response. The caller is responsible for building the FormData body.
-export async function requestFormData<T>(
-  method: string,
-  path: string,
-  body: FormData,
-): Promise<T> {
-  const headers: Record<string, string> = {};
-
-  const token = getToken();
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
-  // Do not set Content-Type — the browser sets it automatically with the
-  // correct multipart boundary when given a FormData body.
-  const res = await fetch(path, { method, headers, body });
-
-  if (res.status === 204) {
-    return undefined as T;
-  }
-
-  const formContentType = res.headers.get("content-type") || "";
-  const formText = await res.text();
-  let formData: unknown;
-
-  if (formContentType.includes("application/json")) {
-    if (formText) {
-      try {
-        formData = JSON.parse(formText);
-      } catch {
-        formData = { error: formText };
-      }
-    } else {
-      formData = {};
-    }
-  } else {
-    formData = formText ? { error: formText } : {};
-  }
-
-  if (!res.ok) {
-    const errorValue =
-      typeof formData === "object" && formData !== null && "error" in formData
-        ? (formData as { error?: unknown }).error
-        : undefined;
-    const message =
-      typeof errorValue === "string" && errorValue.length > 0
-        ? errorValue
-        : res.statusText || "Request failed";
-    throw new ApiError(message, res.status);
-  }
-
-  return formData as T;
 }

@@ -47,6 +47,32 @@ vi.mock("../../lib/api", () => ({
     skipped: 0,
     errors: 0,
   }),
+  previewCalibreImportFromPath: vi.fn().mockResolvedValue({
+    total: 3,
+    books: [
+      {
+        calibre_id: 1,
+        title: "Dune",
+        authors: ["Frank Herbert"],
+        series: [{ name: "Dune", position: 1 }],
+        publisher: "Chilton Books",
+        formats: ["epub"],
+      },
+      {
+        calibre_id: 2,
+        title: "Foundation",
+        authors: ["Isaac Asimov"],
+        series: [],
+        formats: ["epub", "mobi"],
+      },
+    ],
+  }),
+  confirmCalibreImportFromPath: vi.fn().mockResolvedValue({
+    total: 3,
+    imported: 3,
+    skipped: 0,
+    errors: 0,
+  }),
 }));
 
 vi.mock("lucide-svelte", () => ({
@@ -54,7 +80,12 @@ vi.mock("lucide-svelte", () => ({
 }));
 
 import CalibreImportTab from "./CalibreImportTab.svelte";
-import { previewCalibreImport, confirmCalibreImport } from "../../lib/api";
+import {
+  previewCalibreImport,
+  confirmCalibreImport,
+  previewCalibreImportFromPath,
+  confirmCalibreImportFromPath,
+} from "../../lib/api";
 
 describe("CalibreImportTab rendering", () => {
   afterEach(() => {
@@ -213,5 +244,123 @@ describe("CalibreImportTab rendering", () => {
 
     // Back to upload — file input visible again.
     expect(screen.getByLabelText(/Calibre metadata\.db/i)).toBeInTheDocument();
+  });
+});
+
+describe("CalibreImportTab server-path mode", () => {
+  afterEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+  });
+
+  it("renders source toggle with Upload File and Server Path buttons", async () => {
+    render(CalibreImportTab);
+    await tick();
+
+    expect(
+      screen.getByRole("button", { name: /Upload File/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Server Path/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows text input when Server Path is selected", async () => {
+    render(CalibreImportTab);
+    await tick();
+
+    const serverPathBtn = screen.getByRole("button", {
+      name: /Server Path/i,
+    });
+    await fireEvent.click(serverPathBtn);
+    await tick();
+
+    expect(
+      screen.getByLabelText(/Server path to metadata\.db/i),
+    ).toBeInTheDocument();
+    // File input should not be visible.
+    expect(
+      screen.queryByLabelText(/^Calibre metadata\.db$/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows error when submitting server path mode without a path", async () => {
+    render(CalibreImportTab);
+    await tick();
+
+    const serverPathBtn = screen.getByRole("button", {
+      name: /Server Path/i,
+    });
+    await fireEvent.click(serverPathBtn);
+    await tick();
+
+    const form = document.querySelector("form")!;
+    await fireEvent.submit(form);
+    await tick();
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      /Please enter a server path/i,
+    );
+  });
+
+  it("advances to preview step with server path", async () => {
+    render(CalibreImportTab);
+    await tick();
+
+    const serverPathBtn = screen.getByRole("button", {
+      name: /Server Path/i,
+    });
+    await fireEvent.click(serverPathBtn);
+    await tick();
+
+    const pathInput = screen.getByLabelText(/Server path to metadata\.db/i);
+    await fireEvent.input(pathInput, {
+      target: { value: "/home/user/Calibre Library/metadata.db" },
+    });
+
+    const form = document.querySelector("form")!;
+    await fireEvent.submit(form);
+    await tick();
+    await tick();
+
+    expect(previewCalibreImportFromPath).toHaveBeenCalledWith(
+      "/home/user/Calibre Library/metadata.db",
+    );
+    expect(
+      screen.getByText(/books in your Calibre library/),
+    ).toBeInTheDocument();
+  });
+
+  it("calls confirmCalibreImportFromPath in server path mode", async () => {
+    render(CalibreImportTab);
+    await tick();
+
+    // Switch to path mode.
+    const serverPathBtn = screen.getByRole("button", {
+      name: /Server Path/i,
+    });
+    await fireEvent.click(serverPathBtn);
+    await tick();
+
+    // Enter a path.
+    const pathInput = screen.getByLabelText(/Server path to metadata\.db/i);
+    await fireEvent.input(pathInput, {
+      target: { value: "/home/user/Calibre Library/metadata.db" },
+    });
+
+    // Submit preview.
+    const form = document.querySelector("form")!;
+    await fireEvent.submit(form);
+    await tick();
+    await tick();
+
+    // Confirm import.
+    const confirmBtn = screen.getByRole("button", { name: /Import 3 books/i });
+    await fireEvent.click(confirmBtn);
+    await tick();
+    await tick();
+
+    expect(confirmCalibreImportFromPath).toHaveBeenCalledOnce();
+    expect(screen.getByText(/Successfully imported/i)).toBeInTheDocument();
   });
 });
