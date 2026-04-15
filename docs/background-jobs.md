@@ -11,6 +11,7 @@ Biblioteka uses [asynq](https://github.com/hibiken/asynq), a Redis-backed task q
 │  POST /api/libraries ─────┼──────▶ │  "default"    │
 │  POST /api/books ─────────┼──────▶ │   queue       │
 │  Scheduled (every 24 h) ──┼──────▶ │               │
+│  Scheduled (every 1 m) ───┼──────▶ │               │
 └───────────────────────────┘        └───────┬───────┘
                                              │
                                      ┌───────▼───────────┐
@@ -22,6 +23,7 @@ Biblioteka uses [asynq](https://github.com/hibiken/asynq), a Redis-backed task q
                                      │  scan:path         │
                                      │  process:file      │
                                      │  enrich:goodreads  │
+                                     │  scan:watch-folder │
                                      └────────────────────┘
 ```
 
@@ -218,6 +220,24 @@ The resulting `goodreads_metadata` record stores the Goodreads book title, ident
 
 **Failure handling:** if the Goodreads client call or the database write fails, the error is returned and asynq retries the job up to `DefaultMaxRetry` (5) times with exponential back-off. A failed enrichment never blocks or modifies the book record already committed by `POST /api/books`.
 
+### `scan:watch-folder`
+
+| | |
+|---|---|
+| **Source** | `internal/jobs/scan_watch_folder.go` — `NewScanWatchFolderHandler` |
+| **Trigger** | Scheduled every 1 minute (`@every 1m`) |
+| **Payload** | _none (empty struct)_ |
+
+Reads the `watch_folder_path` and `watch_folder_library_id` settings from the database. If both are configured and non-empty, delegates to `ScanDirectory` to walk the watch folder and enqueue a `process:file` job for each supported file found (`.epub`, `.mobi`, `.pdf`, `.azw3`).
+
+The watch folder path is used as the scan root. `library_root` is intentionally left empty, so watch-folder imports keep files in their original location and `process:file` does not reorganize them into the library's configured storage path.
+
+If the watch folder is not configured (no `watch_folder_path` setting, or the path is empty), the job exits cleanly with a debug log and no work is performed. If the library ID is missing, the job logs a warning and exits — scanning without a target library would produce orphaned book records.
+
+**Failure handling:** a failure to read settings or walk the directory is returned and asynq retries the job up to `DefaultMaxRetry` (5) times. Individual file-enqueue failures follow the same deduplication and error-handling semantics as `scan:path` (see above).
+
+> **Note:** The watch folder feature requires a running Redis worker. When the server runs in `server`-only mode (no worker), the scheduler does not start and the watch folder is never polled. See [Watch Folder](administration.md#watch-folder) in the Administration Guide for configuration details.
+
 ### Job Chain
 
 A full scan flows through the jobs in a fan-out pattern:
@@ -236,15 +256,24 @@ POST /api/books
  └─▶ enrich:goodreads  (one per created book)
 ```
 
+The watch folder runs on its own schedule:
+
+```
+scheduler (@every 1m)
+ └─▶ scan:watch-folder
+      └─▶ process:file  (one per supported file found in the watch folder)
+```
+
 ## Scheduling
 
 Periodic jobs are registered with the asynq scheduler at startup in `cmd/server/main.go`, **but only when the process is running in `worker` or `all` mode**:
 
-```go
-w.RegisterSchedule("@every 24h", jobs.JobScanLibraries, struct{}{})
-```
+| Job | Schedule | Description |
+|-----|----------|-------------|
+| `scan:libraries` | `@every 24h` | Triggers a full scan of all monitored libraries |
+| `scan:watch-folder` | `@every 1m` | Polls the configured watch folder for new book files |
 
-The cron specification follows the format accepted by asynq — both classic cron expressions (`0 3 * * *`) and convenience shortcuts (`@every 24h`, `@daily`) are supported.
+Both schedules are registered using `w.RegisterSchedule`. The cron specification follows the format accepted by asynq — both classic cron expressions (`0 3 * * *`) and convenience shortcuts (`@every 24h`, `@daily`, `@every 1m`) are supported.
 
 ## Worker Configuration
 
@@ -268,9 +297,11 @@ Jobs enter the queue in two ways:
 
    Both are subject to the 24-hour deduplication window described above.
 
-2. **Scheduled** — The asynq scheduler fires `scan:libraries` every 24 hours. The `scan:libraries` trigger itself is issued directly by the asynq scheduler (not through `Worker.Enqueue`) and carries no deduplication. However, when the `scan:libraries` handler runs, it calls `Worker.Enqueue` to create `scan:library` jobs, which cascade into `scan:path` and `process:file` jobs — all of which go through `Worker.Enqueue` and therefore benefit from the 24-hour deduplication window.
+2. **Scheduled** — The asynq scheduler fires two periodic jobs:
+   - `scan:libraries` every 24 hours — the trigger is issued directly by the asynq scheduler (not through `Worker.Enqueue`) and carries no deduplication. When the handler runs, it calls `Worker.Enqueue` to create `scan:library` jobs, which cascade into `scan:path` and `process:file` jobs — all of which go through `Worker.Enqueue` and benefit from the 24-hour deduplication window.
+   - `scan:watch-folder` every 1 minute — the trigger is also issued directly by the asynq scheduler. The handler calls `ScanDirectory`, which enqueues `process:file` jobs through `Worker.Enqueue`.
 
-API-triggered jobs call `Worker.Enqueue`, which serialises the payload to JSON and pushes an asynq task onto the `"default"` queue with the configured deduplication options. The root `scan:libraries` scheduled trigger is created directly by the asynq scheduler and does not go through `Worker.Enqueue`.
+API-triggered jobs call `Worker.Enqueue`, which serialises the payload to JSON and pushes an asynq task onto the `"default"` queue with the configured deduplication options. The root scheduled triggers (`scan:libraries` and `scan:watch-folder`) are created directly by the asynq scheduler and do not go through `Worker.Enqueue`.
 
 ### Deduplication
 
@@ -309,9 +340,10 @@ internal/
   jobs/
     enrich_goodreads.go            # enrich:goodreads handler — fetches Goodreads metadata and creates a pending goodreads_metadata record
     scan_directory.go          # ScanDirectory: walks a path and enqueues process:file jobs; defines Enqueuer interface and supportedExtensions
-    scan_path.go               # scan:path handler (NewScanPathHandler → ScanDirectory)
     scan_libraries.go          # scan:libraries handler (scans all monitored libraries)
     scan_library.go            # scan:library handler (scans a single library)
+    scan_path.go               # scan:path handler (NewScanPathHandler → ScanDirectory)
+    scan_watch_folder.go       # scan:watch-folder handler — reads watch-folder settings and delegates to ScanDirectory
     process_file.go            # process:file handler — deserializes payload, delegates to ProcessBookFile
     process_book_file.go       # ProcessBookFile public entry point
     book_metadata_helpers.go   # deriveTitle, extractBookMetadata, resolveAuthorAndTitle
