@@ -54,8 +54,18 @@ func scanRow[T any](row interface{ Scan(...any) error }, fill func(*T) []any) (*
 //
 //	return collectRows(rows, scanFoo)
 func collectRows[T any](rows *sql.Rows, scan func(interface{ Scan(...any) error }) (*T, error)) ([]T, error) {
+	return collectRowsWithCap(rows, scan, 0)
+}
+
+// collectRowsWithCap is like collectRows but pre-allocates the result slice
+// with the given capacity hint. Use this on hot paths where the maximum number
+// of rows is known in advance (e.g., paginated queries with a known limit).
+func collectRowsWithCap[T any](rows *sql.Rows, scan func(interface{ Scan(...any) error }) (*T, error), cap int) ([]T, error) {
 	defer rows.Close()
 	var items []T
+	if cap > 0 {
+		items = make([]T, 0, cap)
+	}
 	for rows.Next() {
 		item, err := scan(rows)
 		if err != nil {

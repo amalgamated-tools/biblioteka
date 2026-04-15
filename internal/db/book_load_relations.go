@@ -22,7 +22,7 @@ type BookRelations struct {
 // consistent with the Kobo sync endpoint while providing a convenient
 // single-book wrapper for use in metadata and detail endpoints.
 func (d *DB) LoadBookRelations(ctx context.Context, bookID string) (*BookRelations, error) {
-	slog.DebugContext(ctx, "db: loading book relations", slog.String(otelkeys.BookID, bookID))
+	slog.DebugContext(ctx, "loading book relations", slog.String(otelkeys.BookID, bookID))
 
 	ids := []string{bookID}
 

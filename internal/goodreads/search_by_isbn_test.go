@@ -16,7 +16,7 @@ func TestSearchByISBN_EmptyISBN(t *testing.T) {
 	results, err := client.SearchByISBN(t.Context(), "")
 	require.Error(t, err)
 	require.Nil(t, results)
-	require.Contains(t, err.Error(), "isbn cannot be empty")
+	require.Contains(t, err.Error(), "ISBN cannot be empty")
 }
 
 // TestSearchByISBN_InvalidLength verifies that ISBNs with lengths other than 10 or 13
@@ -75,7 +75,7 @@ func TestSearchByISBN_HTTPFailure(t *testing.T) {
 	results, err := client.SearchByISBN(t.Context(), "9780306406157")
 	require.Error(t, err)
 	require.Nil(t, results)
-	require.Contains(t, err.Error(), "HTTP request failed")
+	require.Contains(t, err.Error(), "goodreads ISBN search request failed")
 }
 
 // TestSearchByISBN_NonOKStatus verifies that non-200 HTTP responses are treated as errors.
@@ -136,7 +136,7 @@ func TestSearchByISBN_ResponseTooLarge(t *testing.T) {
 // JSON array is parsed into the expected slice of autocompleteEntry values.
 func TestParseAutocompleteEntries_ValidEntry(t *testing.T) {
 	body := []byte(`[{"bookId":"54493401","workId":"79106958","title":"Project Hail Mary","imageUrl":"https://example.com/img.jpg","author":{"id":6540057,"name":"Andy Weir"}}]`)
-	entries, err := parseAutocompleteEntries(t.Context(), body)
+	entries, err := parseAutocompleteEntries(body)
 	require.NoError(t, err)
 	require.Len(t, entries, 1)
 
@@ -161,7 +161,7 @@ func TestParseAutocompleteEntries_FiltersInvalidEntriesAndPreservesValidOnes(t *
 		{"bookId":"3","workId":"0","title":"Invalid Work ID"}
 	]`)
 
-	entries, err := parseAutocompleteEntries(t.Context(), body)
+	entries, err := parseAutocompleteEntries(body)
 	require.NoError(t, err)
 	require.Len(t, entries, 2)
 
@@ -182,7 +182,7 @@ func TestParseAutocompleteEntries_FiltersInvalidEntriesAndPreservesValidOnes(t *
 // TestParseAutocompleteEntries_UsesRealFixture verifies that the real autocomplete.json
 // fixture is parsed without error and produces the expected number of entries.
 func TestParseAutocompleteEntries_UsesRealFixture(t *testing.T) {
-	entries, err := parseAutocompleteEntries(t.Context(), AutoComplete)
+	entries, err := parseAutocompleteEntries(AutoComplete)
 	require.NoError(t, err)
 	require.Len(t, entries, 1)
 	require.Equal(t, "Project Hail Mary", entries[0].title)
