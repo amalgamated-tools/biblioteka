@@ -268,27 +268,27 @@ Both `addBook` and `removeBook` call `reload()` after the backend write to keep 
 | `skip(userId)` | `(userId: string \| undefined) => void` | Persists the skip flag for this user. Called by `FirstLibraryWizard` when the user clicks "Skip for now". Silently ignores `localStorage` errors (e.g. in private-browsing mode). |
 | `clearSkip(userId)` | `(userId: string \| undefined) => void` | Removes the skip flag. Called after the user successfully creates their first library so the wizard can resurface if they later remove all libraries. |
 
-**Typical usage in `Dashboard.svelte`:**
+**Usage in `Dashboard.svelte`:**
+
+`Dashboard.svelte` conditionally renders onboarding cards when the user has no libraries. It does **not** auto-redirect to the wizard; instead it shows inline UI:
+
+- **Not skipped:** a prominent "Get started with Biblioteka" card with an "Add Your First Library" button linking to the wizard.
+- **Skipped:** a subtle reminder card ("You skipped the setup wizard") with a button to re-enter setup.
 
 ```svelte
 <script lang="ts">
   import { onboardingStore } from "../stores/onboarding.svelte";
   import { authStore } from "../stores/auth.svelte";
   import { libraryStore } from "../stores/libraries.svelte";
-  import { routerStore } from "../stores/router.svelte";
-
-  // Navigate to the first-library wizard if the user has no libraries
-  // and has not already dismissed it.
-  $effect(() => {
-    if (
-      libraryStore.loaded &&
-      libraryStore.libraries.length === 0 &&
-      !onboardingStore.isSkipped(authStore.user?.id)
-    ) {
-      routerStore.navigate("libraries/setup");
-    }
-  });
 </script>
+
+{#if libraryStore.loaded && libraryStore.libraries.length === 0}
+  {#if onboardingStore.isSkipped(authStore.user?.id)}
+    <!-- subtle reminder card with "Set up" button -->
+  {:else}
+    <!-- prominent onboarding card with "Add Your First Library" button -->
+  {/if}
+{/if}
 ```
 
 ### Using a store in a component
@@ -2699,7 +2699,7 @@ Accessibility regressions are locked in by dedicated test files. Keep all of the
 2. **`renders the monitor toggle on step 3`** — asserts the "Monitor for new content" toggle input is present.
 3. **`'Next' on step 3 advances to step 4 (review)`** — clicks Next; asserts the step-4 heading `"Review & create"` appears.
 
-**"FirstLibraryWizard – step 4 (review & create)" — nine tests:**
+**"FirstLibraryWizard – step 4 (review & create)" — eight tests:**
 
 1. **`shows the review step heading`** — asserts the `"Review & create"` `<h1>` is present.
 2. **`shows the library name in the review`** — asserts the entered name is rendered in the review `<dl>`.
@@ -2979,7 +2979,7 @@ The following test suites cover reactive stores and the API client. Unlike the a
 
 ### `onboarding.test.ts`
 
-`frontend/src/stores/onboarding.test.ts` exercises `onboardingStore`, the per-user first-library wizard skip-state store. `localStorage` is replaced with a fake in-memory implementation before each test. Tests are organized in three `describe` blocks.
+`frontend/src/stores/onboarding.test.ts` exercises `onboardingStore`, the per-user first-library wizard skip-state store. `localStorage` is stubbed globally by `test-setup.ts`; a `beforeEach` block calls `onboardingStore.clearSkip(userId)` to reset state. Tests are organized in a single `describe("onboardingStore")` block.
 
 **`isSkipped` (three tests):**
 
@@ -2987,15 +2987,13 @@ The following test suites cover reactive stores and the API client. Unlike the a
 2. **`returns false when localStorage has no entry for the user`** — asserts `isSkipped("user-1")` returns `false` on a clean store.
 3. **`returns true after skip() is called for the user`** — calls `skip("user-1")` and asserts `isSkipped("user-1")` is `true`.
 
-**`skip` (two tests):**
+**`skip` (one test):**
 
 1. **`persists the flag to localStorage`** — calls `skip("user-2")`; asserts `localStorage.getItem("biblioteka_onboarding_skipped_user-2")` equals `"1"`.
-2. **`does not throw when localStorage is unavailable`** — replaces `localStorage.setItem` with a function that throws `DOMException`; asserts `skip()` does not propagate the error.
 
-**`clearSkip` (two tests):**
+**`clearSkip` (one test):**
 
 1. **`removes the flag from localStorage`** — calls `skip("user-3")` then `clearSkip("user-3")`; asserts `localStorage.getItem(...)` returns `null`.
-2. **`does not throw when localStorage is unavailable`** — replaces `localStorage.removeItem` with a function that throws; asserts `clearSkip()` does not propagate the error.
 
 ---
 
