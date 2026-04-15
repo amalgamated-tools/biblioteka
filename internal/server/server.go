@@ -234,25 +234,24 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	// require a server restart to take effect (communicated via restart_required
 	// in the PUT response).
 	if llmEnabledStr, err := s.DB.GetSetting(ctx, db.SettingLLMEnabled); err == nil && llmEnabledStr == "true" {
-		llmProvider, _ := s.DB.GetSetting(ctx, db.SettingLLMProvider)
+		llmProviderName, _ := s.DB.GetSetting(ctx, db.SettingLLMProvider)
 		llmEndpoint, _ := s.DB.GetSetting(ctx, db.SettingLLMEndpoint)
 		llmModel, _ := s.DB.GetSetting(ctx, db.SettingLLMModel)
 		if llmEndpoint != "" {
-			switch llmProvider {
-			case llm.ProviderOllama, "":
-				ollamaClient := ollama.New(llmEndpoint, llmModel)
-				metadataHandler.LLMProvider = ollamaClient
-				metadataHandler.LLMProviderName = llmProvider
-				if metadataHandler.LLMProviderName == "" {
-					metadataHandler.LLMProviderName = llm.ProviderOllama
-				}
-				slog.InfoContext(ctx, "LLM provider configured",
-					slog.String(otelkeys.Source, metadataHandler.LLMProviderName),
-					slog.String(otelkeys.URL, llmEndpoint),
-				)
-			default:
+			factories := map[string]llm.Factory{
+				llm.ProviderOllama: func(endpoint, model string) llm.Provider { return ollama.New(endpoint, model) },
+			}
+			p, name, err := llm.NewProvider(llmProviderName, llmEndpoint, llmModel, factories)
+			if err != nil {
 				slog.WarnContext(ctx, "unsupported LLM provider, AI enrichment disabled",
-					slog.String(otelkeys.Source, llmProvider),
+					slog.String(otelkeys.Source, llmProviderName),
+				)
+			} else {
+				metadataHandler.LLMProvider = p
+				metadataHandler.LLMProviderName = name
+				slog.InfoContext(ctx, "LLM provider configured",
+					slog.String(otelkeys.Source, name),
+					slog.String(otelkeys.URL, llmEndpoint),
 				)
 			}
 		}

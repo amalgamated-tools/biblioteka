@@ -23,6 +23,20 @@ type LLMConfig struct {
 }
 
 // HandleLLMConfig handles GET and PUT /api/config/llm (admin-only).
+//
+//	@Summary		Get or update LLM configuration
+//	@Description	GET returns current LLM config (admin only). PUT updates LLM config (admin only). Changes require a server restart.
+//	@Tags			Config
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Success		200	{object}	LLMConfig
+//	@Failure		400	{object}	errorResponse
+//	@Failure		401	{object}	errorResponse
+//	@Failure		403	{object}	errorResponse
+//	@Failure		500	{object}	errorResponse
+//	@Router			/config/llm [get]
+//	@Router			/config/llm [put]
 func (h *ConfigHandler) HandleLLMConfig(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:

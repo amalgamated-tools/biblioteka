@@ -59,6 +59,21 @@ func (h *TagHandler) tagOps() namedEntityOps[db.Tag, tagDTO, tagRequest] {
 }
 
 // HandleTags handles GET /api/tags and POST /api/tags.
+//
+//	@Summary		List or create tags
+//	@Description	GET returns all tags. POST creates a new tag.
+//	@Tags			Tags
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401	{object}	errorResponse
+//	@Success		200	{array}		tagDTO
+//	@Success		201	{object}	tagDTO
+//	@Failure		400	{object}	errorResponse
+//	@Failure		409	{object}	errorResponse
+//	@Failure		500	{object}	errorResponse
+//	@Router			/tags [get]
+//	@Router			/tags [post]
 func (h *TagHandler) HandleTags(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
@@ -71,6 +86,24 @@ func (h *TagHandler) HandleTags(w http.ResponseWriter, r *http.Request) {
 }
 
 // HandleTag handles requests under /api/tags/{id}.
+//
+//	@Summary		Get, update, or delete a tag
+//	@Description	GET returns a tag by ID. PUT updates a tag. DELETE removes a tag.
+//	@Tags			Tags
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id	path		string	true	"Tag ID"
+//	@Failure		401	{object}	errorResponse
+//	@Success		200	{object}	tagDTO
+//	@Success		204	"No Content"
+//	@Failure		400	{object}	errorResponse
+//	@Failure		404	{object}	errorResponse
+//	@Failure		409	{object}	errorResponse
+//	@Failure		500	{object}	errorResponse
+//	@Router			/tags/{id} [get]
+//	@Router			/tags/{id} [put]
+//	@Router			/tags/{id} [delete]
 func (h *TagHandler) HandleTag(w http.ResponseWriter, r *http.Request) {
 	id, ok := extractPathID(r.URL.Path, "/api/tags/")
 	if !ok {

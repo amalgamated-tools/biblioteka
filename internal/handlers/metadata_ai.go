@@ -215,6 +215,10 @@ func (h *MetadataHandler) applyAIEnrichment(w http.ResponseWriter, r *http.Reque
 
 	updated, err := h.DB.ApplyAIEnrichment(r.Context(), applyInput)
 	if err != nil {
+		if errors.Is(err, db.ErrAIEnrichmentNotPending) {
+			writeError(r.Context(), w, http.StatusConflict, "enrichment is no longer pending")
+			return
+		}
 		slog.ErrorContext(r.Context(), "failed to apply AI enrichment",
 			slog.String(otelkeys.AIEnrichmentID, enrichment.ID),
 			slog.String(otelkeys.BookID, bookID),
