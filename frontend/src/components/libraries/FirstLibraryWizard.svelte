@@ -103,7 +103,6 @@
         organization_type: formOrganizationType,
         monitored: formMonitored,
       });
-      onboardingStore.clearSkip(authStore.user?.id);
       routerStore.navigate(`libraries/${lib.id}`);
     } catch (e) {
       formError = e instanceof Error ? e.message : "Failed to create library";

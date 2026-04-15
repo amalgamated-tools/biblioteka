@@ -295,7 +295,6 @@ describe("FirstLibraryWizard – step 4 (review & create)", () => {
       screen.getByRole("button", { name: /Create Library/i }),
     );
     await waitFor(() => {
-      expect(onboardingStore.clearSkip).toHaveBeenCalledWith("user-1");
       expect(routerStore.navigate).toHaveBeenCalledWith("libraries/lib-new");
     });
   });

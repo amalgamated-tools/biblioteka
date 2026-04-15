@@ -1,6 +1,8 @@
 import type { Library, LibraryInput } from "../types";
 import { SvelteSet } from "svelte/reactivity";
 import * as api from "../lib/api";
+import { onboardingStore } from "./onboarding.svelte";
+import { authStore } from "./auth.svelte";
 
 // Auto-clear scanning state after this duration as a safety net.
 // 5 minutes is generous enough for large libraries while ensuring the UI
@@ -51,6 +53,10 @@ class LibraryStore {
   async add(input: LibraryInput): Promise<Library> {
     const created = await api.createLibrary(input);
     this.libraries = [...this.libraries, created];
+    // Clear the onboarding skip flag so the wizard can resurface if the
+    // user later removes all libraries. This runs for every creation path
+    // (wizard and LibraryForm alike).
+    onboardingStore.clearSkip(authStore.user?.id);
     // Mark the library as scanning so the UI can show a progress indicator
     // and poll for books until the background scan completes.
     this.scanningIds.add(created.id);
