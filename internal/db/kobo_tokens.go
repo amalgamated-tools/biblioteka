@@ -18,6 +18,7 @@ type KoboToken struct {
 
 const koboTokenColumns = `id, user_id, name, token_hash, created_at`
 
+// scanKoboToken scans a Kobo token row into a KoboToken struct.
 func scanKoboToken(row interface{ Scan(...any) error }) (*KoboToken, error) {
 	return scanRow(row, func(t *KoboToken) []any {
 		return []any{&t.ID, &t.UserID, &t.Name, &t.TokenHash, &t.CreatedAt}

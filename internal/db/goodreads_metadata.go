@@ -52,6 +52,7 @@ type GoodreadsMetadata struct {
 
 const goodreadsMetadataColumns = `id, user_id, book_id, status, title, description, asin, isbn10, isbn13, goodreads_id, hardcover_id, google_books_id, publication_date, publisher, language, cover_image_url, author_name, author_goodreads_id, author_image_url, goodreads_work_id, goodreads_book_legacy_id, goodreads_work_legacy_id, goodreads_author_legacy_id, created_at, updated_at`
 
+// scanGoodreadsMetadata scans a Goodreads metadata row into a GoodreadsMetadata struct.
 func scanGoodreadsMetadata(row interface{ Scan(...any) error }) (*GoodreadsMetadata, error) {
 	return scanRow(row, func(gm *GoodreadsMetadata) []any {
 		return []any{
