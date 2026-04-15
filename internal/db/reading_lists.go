@@ -122,6 +122,25 @@ func (d *DB) DeleteReadingList(ctx context.Context, id, userID string) error {
 	return d.execAffected(ctx, `DELETE FROM reading_lists WHERE id = $1 AND user_id = $2`, id, userID)
 }
 
+// verifyReadingListOwnership checks that the reading list identified by listID
+// is owned by userID. Returns the underlying error if the query fails (e.g.
+// sql.ErrNoRows when the list does not exist), or sql.ErrNoRows if the list
+// exists but belongs to a different user.
+func (d *DB) verifyReadingListOwnership(ctx context.Context, listID, userID string) error {
+	var ownerID string
+	err := d.QueryRowContext(ctx,
+		`SELECT user_id FROM reading_lists WHERE id = $1`,
+		listID,
+	).Scan(&ownerID)
+	if err != nil {
+		return err
+	}
+	if ownerID != userID {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
 // AddBookToReadingList adds a book to a reading list. The list must be owned
 // by userID. Returns ErrBookNotFound if the book does not exist.
 // Returns (true, nil) if the book was newly added, (false, nil) if it was
@@ -132,17 +151,8 @@ func (d *DB) AddBookToReadingList(ctx context.Context, listID, userID, bookID st
 		slog.String(otelkeys.UserID, userID),
 		slog.String(otelkeys.BookID, bookID),
 	)
-	// Verify ownership first.
-	var ownerID string
-	err := d.QueryRowContext(ctx,
-		`SELECT user_id FROM reading_lists WHERE id = $1`,
-		listID,
-	).Scan(&ownerID)
-	if err != nil {
+	if err := d.verifyReadingListOwnership(ctx, listID, userID); err != nil {
 		return false, err
-	}
-	if ownerID != userID {
-		return false, sql.ErrNoRows
 	}
 	result, err := d.ExecContext(ctx,
 		`INSERT INTO reading_list_books (reading_list_id, book_id) VALUES ($1, $2)
@@ -182,17 +192,8 @@ func (d *DB) RemoveBookFromReadingList(ctx context.Context, listID, userID, book
 		slog.String(otelkeys.UserID, userID),
 		slog.String(otelkeys.BookID, bookID),
 	)
-	// Verify ownership first.
-	var ownerID string
-	err := d.QueryRowContext(ctx,
-		`SELECT user_id FROM reading_lists WHERE id = $1`,
-		listID,
-	).Scan(&ownerID)
-	if err != nil {
+	if err := d.verifyReadingListOwnership(ctx, listID, userID); err != nil {
 		return false, err
-	}
-	if ownerID != userID {
-		return false, sql.ErrNoRows
 	}
 	result, err := d.ExecContext(ctx,
 		`DELETE FROM reading_list_books WHERE reading_list_id = $1 AND book_id = $2`,
@@ -218,17 +219,8 @@ func (d *DB) ListReadingListBooks(ctx context.Context, listID, userID string, li
 		slog.Int(otelkeys.Limit, limit),
 		slog.Int(otelkeys.Offset, offset),
 	)
-	// Verify ownership.
-	var ownerID string
-	err := d.QueryRowContext(ctx,
-		`SELECT user_id FROM reading_lists WHERE id = $1`,
-		listID,
-	).Scan(&ownerID)
-	if err != nil {
+	if err := d.verifyReadingListOwnership(ctx, listID, userID); err != nil {
 		return nil, 0, err
-	}
-	if ownerID != userID {
-		return nil, 0, sql.ErrNoRows
 	}
 
 	rows, err := d.QueryContext(ctx,
