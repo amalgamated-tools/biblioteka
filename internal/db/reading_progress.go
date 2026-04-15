@@ -187,10 +187,17 @@ func (d *DB) GetYearInBooks(ctx context.Context, userID string, year int) (YearI
 
 	result := YearInBooks{Year: year}
 
-	// Use explicit UTC date range in SQLite DATETIME text format so string
-	// comparisons remain correct at year boundaries.
-	yearStart := fmt.Sprintf("%04d-01-01 00:00:00", year)
-	yearEnd := fmt.Sprintf("%04d-01-01 00:00:00", year+1)
+	// For Postgres, pass time.Time values in UTC so the driver sends proper
+	// timestamptz parameters. For SQLite, use DATETIME-formatted strings so
+	// string comparisons work correctly at year boundaries.
+	var yearStart, yearEnd any
+	if d.Dialect == DialectPostgres {
+		yearStart = time.Date(year, 1, 1, 0, 0, 0, 0, time.UTC)
+		yearEnd = time.Date(year+1, 1, 1, 0, 0, 0, 0, time.UTC)
+	} else {
+		yearStart = fmt.Sprintf("%04d-01-01 00:00:00", year)
+		yearEnd = fmt.Sprintf("%04d-01-01 00:00:00", year+1)
+	}
 
 	finishedQuery := `
 		SELECT COUNT(*) FROM reading_progress
