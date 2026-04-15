@@ -159,8 +159,8 @@ type ApplyAIEnrichmentInput struct {
 	BookID       string
 	UserID       string
 	EnrichmentID string
-	TagIDs       []string   // union-merged tag IDs to set on the book
-	BookUpdate   *BookInput // non-nil when description should be updated
+	TagIDs       []string // union-merged tag IDs to set on the book
+	Description  *string  // non-nil when description should be set (only if book has none)
 }
 
 // ApplyAIEnrichment atomically sets book tags, optionally updates the book
@@ -191,13 +191,12 @@ func (d *DB) ApplyAIEnrichment(ctx context.Context, input ApplyAIEnrichmentInput
 		}
 
 		// 2. Optionally update book description (only if still empty to avoid overwriting concurrent edits).
-		if input.BookUpdate != nil {
-			bi := input.BookUpdate
+		if input.Description != nil {
 			if _, err := tx.ExecContext(ctx,
-				`UPDATE books SET title = $1, description = $2, asin = $3, isbn10 = $4, isbn13 = $5, goodreads_id = $6, hardcover_id = $7, google_books_id = $8, publication_date = $9, publisher = $10, language = $11, cover_image_url = $12, updated_at = `+d.now()+` WHERE id = $13 AND (description IS NULL OR description = '')`,
-				bi.Title, bi.Description, bi.ASIN, bi.ISBN10, bi.ISBN13, bi.GoodreadsID, bi.HardcoverID, bi.GoogleBooksID, bi.PublicationDate, bi.Publisher, bi.Language, bi.CoverImageURL, input.BookID,
+				`UPDATE books SET description = $1, updated_at = `+d.now()+` WHERE id = $2 AND (description IS NULL OR description = '')`,
+				input.Description, input.BookID,
 			); err != nil {
-				return fmt.Errorf("update book: %w", err)
+				return fmt.Errorf("update book description: %w", err)
 			}
 		}
 
