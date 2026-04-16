@@ -117,8 +117,20 @@ describe("CalibreImportTab rendering", () => {
     await tick();
 
     expect(screen.getByText("Upload")).toBeInTheDocument();
-    expect(screen.getByText("Preview")).toBeInTheDocument();
+    const previewStep = screen.getByText("Preview");
+    expect(previewStep).toBeInTheDocument();
+    expect(previewStep).toHaveClass("text-ink-500");
+    expect(previewStep).toHaveClass("dark:text-ink-400");
     expect(screen.getByText("Done")).toBeInTheDocument();
+  });
+
+  it("renders optional target library hint with accessible contrast classes", async () => {
+    render(CalibreImportTab);
+    await tick();
+
+    const optional = screen.getByText("(optional)");
+    expect(optional).toHaveClass("text-ink-500");
+    expect(optional).toHaveClass("dark:text-ink-400");
   });
 
   it("shows error when submitting without a file", async () => {

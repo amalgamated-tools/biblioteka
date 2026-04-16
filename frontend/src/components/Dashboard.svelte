@@ -353,7 +353,7 @@
                   </div>
 
                   <div
-                    class="flex items-center gap-3 text-xs text-ink-400 dark:text-ink-500"
+                    class="flex items-center gap-3 text-xs text-ink-500 dark:text-ink-400"
                   >
                     {#if item.device}
                       <span>{item.device}</span>
@@ -404,7 +404,7 @@
         >
           {yearInBooks.year} in Books
         </h2>
-        <p class="text-sm text-ink-400 dark:text-ink-500 mb-5">
+        <p class="text-sm text-ink-500 dark:text-ink-400 mb-5">
           Your reading year at a glance
         </p>
 

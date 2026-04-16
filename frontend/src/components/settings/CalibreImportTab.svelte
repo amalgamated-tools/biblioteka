@@ -165,7 +165,7 @@
               ? 'bg-accent-500 text-white'
               : isPast
                 ? 'bg-accent-100 text-accent-700 dark:bg-accent-900/30 dark:text-accent-400'
-                : 'bg-ink-100 dark:bg-ink-800 text-ink-400 dark:text-ink-500'}"
+                : 'bg-ink-100 dark:bg-ink-800 text-ink-500 dark:text-ink-400'}"
             aria-current={isActive ? "step" : undefined}
           >
             {stepLabels[s]}
@@ -284,7 +284,8 @@
             for="calibre-library"
             class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
           >
-            Target Library <span class="text-ink-400 font-normal"
+            Target Library <span
+              class="text-ink-500 dark:text-ink-400 font-normal"
               >(optional)</span
             >
           </label>
