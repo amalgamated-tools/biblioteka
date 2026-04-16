@@ -42,12 +42,12 @@ frontend/
         LibraryView.svelte   Library detail with book listing
       settings/           Tab sub-components for the Settings page (see Settings component architecture below)
         AccountTab.svelte       Account management orchestrator: composes `AccountInfoSection`, `DisplayNameSection`, `SsoLinkSection`, `ChangePasswordSection`, and `PasskeysSection`; accepts an `oidcConfigured` prop and passes it to `SsoLinkSection`
-        AccountInfoSection.svelte   Read-only email display; labelled with `aria-describedby` hint directing users to contact support to change their address
+        AccountInfoSection.svelte   Read-only email display; labelled with `aria-describedby` hint directing users to contact support to change their email address
         ChangePasswordSection.svelte    Change-password form (`Lock` section icon); validates current password, new password (≥ 6 characters), and confirmation match; uses `AutoDismissTimer` for success feedback; fields carry `aria-invalid` wired to validation errors
         DisplayNameSection.svelte   Edit display name via `PUT /api/auth/me` (`User` section icon); uses `AutoDismissTimer` for success feedback; `$effect` keeps the local input in sync with the store value when not mid-save
         PasskeyList.svelte          Presentational list of registered passkeys; each row shows name and registration date and exposes a delete button; `aria-label="Registered passkeys"` on the `<ul>` element
         PasskeysSection.svelte      Passkey management (`KeyRound` section icon); loads `passkeyEnabled` and credential list on mount; supports registering new passkeys (name required) and deleting existing ones via `PasskeyList`; conditionally hidden when passkeys are not enabled on the server
-        SsoLinkSection.svelte       SSO / OIDC account-linking section (`Link` section icon); rendered only when `oidcConfigured` is true; initiates the OIDC link flow via `createOidcLinkNonce` and redirects to `/api/auth/oidc/link`; shows a "linked" badge when the account is already linked
+        SsoLinkSection.svelte       SSO / OIDC account-linking section (`Link` section icon); rendered only when `oidcConfigured` is true; initiates the OIDC link flow by calling `createOidcLinkNonce()` and then setting `window.location.href` to `/api/auth/oidc/link?nonce=...`; shows an "SSO Connected" badge when the account is already linked
         APIKeysTab.svelte       Create and revoke long-lived API keys (`bib_` prefix); delete actions use an inline `role="alertdialog"` confirmation with keyboard-focus management and Escape-to-dismiss instead of `window.confirm()` (WCAG 4.1.2)
         KoboTab.svelte          Kobo sync token management; displays setup instructions; delete actions use an inline `role="alertdialog"` confirmation with keyboard-focus management and Escape-to-dismiss instead of `window.confirm()` (WCAG 4.1.2)
         OidcTab.svelte          Admin: OIDC / SSO provider configuration
