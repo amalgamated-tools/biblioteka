@@ -272,8 +272,8 @@ func TestComputeLongestStreak_SingleDay(t *testing.T) {
 }
 
 func TestComputeLongestStreak_DuplicateSameDay(t *testing.T) {
-	now := time.Now().UTC()
-	ts := []time.Time{now, now.Add(time.Hour)}
+	noon := time.Date(2025, 6, 15, 12, 0, 0, 0, time.UTC)
+	ts := []time.Time{noon, noon.Add(time.Hour)}
 	require.Equal(t, 1, ComputeLongestStreak(ts))
 }
 
