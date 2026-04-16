@@ -30,7 +30,7 @@
       <div class="aspect-[2/3] bg-ink-100 dark:bg-ink-800">
         <img
           src={book.cover_image_url}
-          alt={book.title}
+          alt=""
           loading="lazy"
           class="w-full h-full object-cover"
         />
