@@ -63,10 +63,10 @@ describe("BookCard", () => {
       cover_image_url: "https://example.com/cover.jpg",
     };
     const { container } = render(BookCard, { book });
-    const img = container.querySelector("img");
+    const img = container.querySelector<HTMLImageElement>("img");
     expect(img).not.toBeNull();
-    expect(img).toHaveAttribute("src", "https://example.com/cover.jpg");
-    expect(img).toHaveAttribute("alt", "");
+    expect(img!).toHaveAttribute("src", "https://example.com/cover.jpg");
+    expect(img!).toHaveAttribute("alt", "");
   });
 
   it("sets loading='lazy' on the cover image", () => {
@@ -75,9 +75,9 @@ describe("BookCard", () => {
       cover_image_url: "https://example.com/cover.jpg",
     };
     const { container } = render(BookCard, { book });
-    const img = container.querySelector("img");
+    const img = container.querySelector<HTMLImageElement>("img");
     expect(img).not.toBeNull();
-    expect(img).toHaveAttribute("loading", "lazy");
+    expect(img!).toHaveAttribute("loading", "lazy");
   });
 
   it("does not render an img element when cover_image_url is null", () => {
