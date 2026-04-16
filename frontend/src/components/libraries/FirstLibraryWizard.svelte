@@ -141,7 +141,7 @@
     </div>
     <button
       onclick={handleSkip}
-      class="ml-4 flex-shrink-0 text-sm text-ink-400 hover:text-ink-600 dark:hover:text-ink-200 transition-colors hover:underline underline-offset-2"
+      class="ml-4 flex-shrink-0 text-sm text-ink-500 dark:text-ink-400 hover:text-ink-600 dark:hover:text-ink-200 transition-colors hover:underline underline-offset-2"
       aria-label="Skip first library setup for now"
       disabled={saving}
     >
@@ -301,7 +301,7 @@
             <option value={option.value}>{option.label}</option>
           {/each}
         </select>
-        <p class="text-xs text-ink-400 dark:text-ink-500 mt-1">
+        <p class="text-xs text-ink-500 dark:text-ink-400 mt-1">
           Determines how Biblioteka organizes books it imports into this
           library.
         </p>
@@ -358,7 +358,7 @@
               {/each}
             </ul>
           {:else}
-            <span class="text-ink-400">—</span>
+            <span class="text-ink-500 dark:text-ink-400">—</span>
           {/if}
         </dd>
       </div>
