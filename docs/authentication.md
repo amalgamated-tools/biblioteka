@@ -298,11 +298,11 @@ If a user signs in via OIDC and no existing account has that `sub` claim, the se
 
 ## Passkeys (WebAuthn)
 
-Passkeys provide a phishing-resistant, passwordless way to log in to Biblioteka. A passkey is a cryptographic credential stored on your device — a hardware security key, a fingerprint reader, Face ID, or a platform authenticator (Windows Hello, macOS Touch ID, or a mobile device). Once registered, a passkey replaces the username/password login flow with a local biometric or PIN gesture.
+Passkeys provide a phishing-resistant, passwordless way to log in to Biblioteka. A passkey is a cryptographic credential stored on your device — a hardware security key, a fingerprint reader, Face ID, or a platform authenticator (Windows Hello, macOS Touch ID, or a mobile device). Once registered, a passkey gives the user an additional sign-in option using a local biometric or PIN gesture instead of entering a password; password and OIDC/SSO login remain available if configured.
 
-> **Optional feature:** Passkeys are disabled by default. An operator must configure the WebAuthn environment variables before users can register or use passkeys. If a passkey button does not appear on the login screen, the server is not configured for passkeys.
+> **Local development only by default:** Passkeys are pre-configured for `localhost` out of the box and will appear in the UI on any server. They will only work when `WEBAUTHN_RP_ID` matches the domain users actually access. In any environment other than `http://localhost:8080`, an operator must set the `WEBAUTHN_*` variables below or all passkey ceremonies will fail.
 
-### Enabling passkeys (server configuration)
+### Configuring passkeys (server configuration)
 
 Set these environment variables before starting the server:
 
@@ -318,13 +318,15 @@ WEBAUTHN_RP_ORIGINS=https://books.example.com
 WEBAUTHN_RP_NAME=My Biblioteka
 ```
 
-> **Production requirement:** `WEBAUTHN_RP_ID` must exactly match the effective domain of your Biblioteka instance. For example, if your instance is at `https://books.example.com`, set `WEBAUTHN_RP_ID=books.example.com`. Setting this to `localhost` in production will cause all passkey ceremonies to fail. On startup, `WebAuthn passkeys enabled` is logged at `INFO` level confirming the RP ID and name.
+> **Production requirement:** `WEBAUTHN_RP_ID` must exactly match the effective domain of your Biblioteka instance. For example, if your instance is at `https://books.example.com`, set `WEBAUTHN_RP_ID=books.example.com`. The default `localhost` value makes passkeys non-functional outside of local development — ceremonies will silently fail while the UI still shows passkeys as available. On startup, `WebAuthn passkeys enabled` is logged at `INFO` level confirming the RP ID and name.
 
-The `GET /api/auth/passkey/enabled` endpoint returns `{"enabled": true}` when passkeys are configured, and `{"enabled": false}` otherwise. The frontend uses this to conditionally show the passkey login button.
+The `GET /api/auth/passkey/enabled` endpoint returns `{"enabled": true}` when WebAuthn initializes successfully, including when the server falls back to localhost defaults, and `{"enabled": false}` only when WebAuthn initialization fails. The frontend uses this to conditionally show the passkey login button.
+
+For non-localhost or production deployments, you must set `WEBAUTHN_RP_ID` and `WEBAUTHN_RP_ORIGINS` to the real domain and allowed origins for your Biblioteka instance. If these values are left at localhost defaults or otherwise do not match the deployed site, the endpoint may still report `{"enabled": true}` and the UI may show passkey actions, but passkey registration and login ceremonies will fail in the browser.
 
 ### Registering a passkey
 
-A passkey can only be registered by an authenticated user (the registration flow requires a valid JWT session). After logging in with your password or OIDC, go to **Settings → Passkeys** and click **Add passkey**. Give the passkey a descriptive name (e.g. `"MacBook Touch ID"` or `"YubiKey 5"`), then follow the browser prompt to authenticate with your device.
+A passkey can only be registered by an authenticated user (the registration flow requires a valid JWT session). After logging in with your password or OIDC, go to **Settings → Account → Passkeys** and click **Add passkey**. Give the passkey a descriptive name (e.g. `"MacBook Touch ID"` or `"YubiKey 5"`), then follow the browser prompt to authenticate with your device.
 
 **Via the API:**
 
@@ -413,7 +415,7 @@ curl http://localhost:8080/api/auth/passkey/credentials \
   -H "Authorization: Bearer <jwt>"
 ```
 
-Returns an array of registered passkeys (IDs, names, and creation timestamps). Raw credential data is never returned.
+Returns an array of registered passkeys (IDs, names, AAGUIDs, and creation timestamps). Raw credential data is never returned.
 
 #### Delete a passkey
 
