@@ -41,7 +41,13 @@ frontend/
         LibraryForm.svelte   Create / edit library form; required fields carry `aria-required={true}` and a visible legend ("Fields marked with an asterisk are required") uses `aria-hidden` on the visual `*` and a `sr-only` span for the spoken label (WCAG 3.3.2); the "Monitor for new content" toggle uses `role="switch"` and explicit `aria-checked` to communicate on/off state to assistive technologies (WCAG 4.1.2); delete library action uses the `DeleteConfirmation` component for an accessible inline confirmation with keyboard-focus management and Escape-to-dismiss (WCAG 4.1.2)
         LibraryView.svelte   Library detail with book listing
       settings/           Tab sub-components for the Settings page (see Settings component architecture below)
-        AccountTab.svelte       Account management: view email, edit display name, change password, and link OIDC account
+        AccountTab.svelte       Account management orchestrator: composes `AccountInfoSection`, `DisplayNameSection`, `SsoLinkSection`, `ChangePasswordSection`, and `PasskeysSection`; accepts an `oidcConfigured` prop and passes it to `SsoLinkSection`
+        AccountInfoSection.svelte   Read-only email display; labelled with `aria-describedby` hint directing users to contact support to change their address
+        ChangePasswordSection.svelte    Change-password form (`Lock` section icon); validates current password, new password (≥ 6 characters), and confirmation match; uses `AutoDismissTimer` for success feedback; fields carry `aria-invalid` wired to validation errors
+        DisplayNameSection.svelte   Edit display name via `PUT /api/auth/me` (`User` section icon); uses `AutoDismissTimer` for success feedback; `$effect` keeps the local input in sync with the store value when not mid-save
+        PasskeyList.svelte          Presentational list of registered passkeys; each row shows name and registration date and exposes a delete button; `aria-label="Registered passkeys"` on the `<ul>` element
+        PasskeysSection.svelte      Passkey management (`KeyRound` section icon); loads `passkeyEnabled` and credential list on mount; supports registering new passkeys (name required) and deleting existing ones via `PasskeyList`; conditionally hidden when passkeys are not enabled on the server
+        SsoLinkSection.svelte       SSO / OIDC account-linking section (`Link` section icon); rendered only when `oidcConfigured` is true; initiates the OIDC link flow via `createOidcLinkNonce` and redirects to `/api/auth/oidc/link`; shows a "linked" badge when the account is already linked
         APIKeysTab.svelte       Create and revoke long-lived API keys (`bib_` prefix); delete actions use an inline `role="alertdialog"` confirmation with keyboard-focus management and Escape-to-dismiss instead of `window.confirm()` (WCAG 4.1.2)
         KoboTab.svelte          Kobo sync token management; displays setup instructions; delete actions use an inline `role="alertdialog"` confirmation with keyboard-focus management and Escape-to-dismiss instead of `window.confirm()` (WCAG 4.1.2)
         OidcTab.svelte          Admin: OIDC / SSO provider configuration
@@ -1483,7 +1489,7 @@ Detail page for a single reading list. Receives the `listId` prop from `ReadingL
 
 | Component | Route | Visibility | Responsibility |
 |-----------|-------|------------|----------------|
-| `AccountTab.svelte` | `settings/account` | All users | View email; edit display name via `PUT /api/auth/me`; change password; link OIDC account |
+| `AccountTab.svelte` | `settings/account` | All users | Orchestrates `AccountInfoSection`, `DisplayNameSection`, `SsoLinkSection`, `ChangePasswordSection`, and `PasskeysSection`; passes `oidcConfigured` prop from `Settings.svelte` down to `SsoLinkSection` |
 | `APIKeysTab.svelte` | `settings/api-keys` | All users | Create and revoke long-lived API keys (`bib_` prefix); uses inline `role="alertdialog"` confirmations for delete actions |
 | `KoboTab.svelte` | `settings/kobo` | All users | Create and revoke Kobo sync tokens; copy device sync URL; uses inline `role="alertdialog"` confirmations for delete actions |
 | `PreferencesTab.svelte` | `settings/preferences` | All users | Choose light / dark / auto theme; announces the selected theme via a `role="status"` live region (WCAG 4.1.3) |
@@ -2209,7 +2215,13 @@ The following components apply this pattern. When you add icons to any of these 
 | `Libraries.svelte` | `LibraryIcon` (empty-state illustration), `Plus` (button with visible text) |
 | `MyLibrary.svelte` | `Library` (page-heading icon and empty-state illustration) |
 | `Recommendations.svelte` | `Sparkles` (page-heading icon and decorative cover placeholder) |
-| `settings/AccountTab.svelte` | `Mail`, `User`, `Link` ×2, `Lock` (section-heading icons) |
+| `settings/AccountTab.svelte` | no icons (composes section sub-components) |
+| `settings/AccountInfoSection.svelte` | `Mail` (section-heading icon) |
+| `settings/ChangePasswordSection.svelte` | `Lock` (section-heading icon) |
+| `settings/DisplayNameSection.svelte` | `User` (section-heading icon) |
+| `settings/PasskeyList.svelte` | `KeyRound` (list-item icon), `Trash2` (delete button with adjacent text) |
+| `settings/PasskeysSection.svelte` | `KeyRound` (section-heading icon) |
+| `settings/SsoLinkSection.svelte` | `Link` (section-heading icon) |
 | `settings/APIKeysTab.svelte` | `KeyRound` (section-heading icon), `Copy`, `Trash2` (buttons with adjacent text) |
 | `settings/PreferencesTab.svelte` | `Palette` (section-heading icon) |
 | `settings/OidcTab.svelte` | `Shield` (section-heading icon) |
@@ -2301,7 +2313,7 @@ When you add a new icon-only link or button, always supply both `aria-label` on 
 
 Password inputs must carry a valid `autocomplete` token so that password managers and autofill implementations can correctly identify the field's purpose. Without `autocomplete`, browsers may misclassify the fields, offer to save them as plain text, or fail to auto-fill them — degrading both usability and security.
 
-`settings/AccountTab.svelte` uses three password fields with the following tokens:
+`settings/ChangePasswordSection.svelte` uses three password fields with the following tokens:
 
 ```svelte
 <!-- Current/existing password -->
