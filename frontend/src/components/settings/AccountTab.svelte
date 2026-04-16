@@ -508,24 +508,31 @@
       <form
         onsubmit={handleRegisterPasskey}
         aria-label="Register new passkey"
-        class="flex gap-2"
+        class="space-y-2"
       >
-        <TextInput
-          id="passkey-name"
-          type="text"
-          bind:value={passkeyRegisterName}
-          placeholder="Name (e.g. My iPhone)"
-          disabled={passkeyRegistering}
-          class="flex-1 py-2.5"
-          aria-label="Passkey name"
-        />
-        <Button
-          type="submit"
-          disabled={passkeyRegistering}
-          class="px-4 py-2.5 shrink-0"
+        <label
+          for="passkey-name"
+          class="block text-sm font-medium text-ink-600 dark:text-ink-300"
         >
-          {passkeyRegistering ? "Registering…" : "Add Passkey"}
-        </Button>
+          Passkey name
+        </label>
+        <div class="flex gap-2">
+          <TextInput
+            id="passkey-name"
+            type="text"
+            bind:value={passkeyRegisterName}
+            placeholder="e.g. My iPhone"
+            disabled={passkeyRegistering}
+            class="flex-1 py-2.5"
+          />
+          <Button
+            type="submit"
+            disabled={passkeyRegistering}
+            class="px-4 py-2.5 shrink-0"
+          >
+            {passkeyRegistering ? "Registering…" : "Add Passkey"}
+          </Button>
+        </div>
       </form>
 
       {#if passkeyError}
