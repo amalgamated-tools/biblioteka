@@ -25,6 +25,11 @@ vi.mock("../../lib/api", () => ({
     oidc_linked: false,
     is_admin: false,
   }),
+  getPasskeyEnabled: vi.fn().mockResolvedValue(false),
+  listPasskeyCredentials: vi.fn().mockResolvedValue([]),
+  deletePasskeyCredential: vi.fn().mockResolvedValue(undefined),
+  beginPasskeyRegistration: vi.fn(),
+  finishPasskeyRegistration: vi.fn(),
 }));
 
 vi.mock("lucide-svelte", () => ({
@@ -32,6 +37,8 @@ vi.mock("lucide-svelte", () => ({
   Mail: () => {},
   Link: () => {},
   User: () => {},
+  KeyRound: () => {},
+  Trash2: () => {},
 }));
 
 import AccountTab from "./AccountTab.svelte";
@@ -39,6 +46,8 @@ import { authStore } from "../../stores/auth.svelte";
 import {
   changePassword,
   createOidcLinkNonce,
+  getPasskeyEnabled,
+  listPasskeyCredentials,
   updateProfile,
 } from "../../lib/api";
 
@@ -431,5 +440,25 @@ describe("AccountTab SSO section", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(
       "SSO provider is unavailable",
     );
+  });
+});
+
+describe("AccountTab passkeys", () => {
+  afterEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+  });
+
+  it("shows a visible label for the passkey name input", async () => {
+    vi.mocked(getPasskeyEnabled).mockResolvedValueOnce(true);
+    vi.mocked(listPasskeyCredentials).mockResolvedValueOnce([]);
+
+    render(AccountTab, { props: { oidcConfigured: false } });
+    await screen.findByRole("heading", { name: "Passkeys" });
+
+    const input = screen.getByLabelText("Passkey name");
+    expect(input).toBeInTheDocument();
+    expect(screen.getByText("Passkey name")).toBeInTheDocument();
+    expect(input).toHaveAttribute("id", "passkey-name");
   });
 });
