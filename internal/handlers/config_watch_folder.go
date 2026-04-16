@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -212,7 +213,7 @@ func (h *ConfigHandler) validateWatchFolderPathWith(ctx context.Context, path st
 		info, err := statFn(path)
 		if err != nil {
 			if os.IsNotExist(err) {
-				ch <- result{errors.New("folder not found: " + path)}
+				ch <- result{fmt.Errorf("folder not found: %s", path)}
 				return
 			}
 			// Don't expose raw OS error details to client; log them server-side.
@@ -220,11 +221,11 @@ func (h *ConfigHandler) validateWatchFolderPathWith(ctx context.Context, path st
 				slog.String(otelkeys.WatchFolderPath, path),
 				slog.Any(otelkeys.Error, err),
 			)
-			ch <- result{errors.New("unable to access path: " + path)}
+			ch <- result{fmt.Errorf("unable to access path: %s", path)}
 			return
 		}
 		if !info.IsDir() {
-			ch <- result{errors.New("path is not a folder: " + path)}
+			ch <- result{fmt.Errorf("path is not a folder: %s", path)}
 			return
 		}
 		ch <- result{nil}
