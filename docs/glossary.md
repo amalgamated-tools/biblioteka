@@ -104,12 +104,6 @@ A library organization layout that leaves imported book files in place — no fi
 
 **OpenID Connect.** An identity layer on top of OAuth 2.0 that Biblioteka supports for single sign-on (SSO). Users can link an OIDC provider account to their Biblioteka account, after which they can log in via the provider's authentication flow. OIDC settings (issuer URL, client ID/secret) are configured by admins under **Settings → OIDC**. See [Authentication](authentication.md).
 
-## Passkey
-
-A phishing-resistant, passwordless authentication credential based on the WebAuthn Level 2 standard. A passkey is a cryptographic key pair stored on the user's device — a hardware security key, fingerprint reader, Face ID, Windows Hello, or mobile platform authenticator. After registering a passkey while logged in (at **Settings → Account → Passkeys**), the user can log in using a local biometric or PIN gesture without entering a password. Because passkeys use discoverable credentials, no username is required at login time. Password and OIDC login remain available alongside passkeys.
-
-Passkeys require server-side configuration in non-`localhost` environments: `WEBAUTHN_RP_ID` must exactly match the domain users access (e.g. `books.example.com`); `WEBAUTHN_RP_ORIGINS` lists the allowed origins; `WEBAUTHN_RP_NAME` sets the name shown in the browser dialog. The default values only work at `http://localhost:8080`. See [Authentication](authentication.md).
-
 ## OPDS
 
 **Open Publication Distribution System.** A standard (version 1.2) that exposes a book library as a browsable Atom feed. Biblioteka's built-in OPDS catalog at `/opds` supports navigation, acquisition, and full-text search feeds. OPDS clients include KOReader, Calibre, Moon+ Reader, PocketBook, and Aldiko. Authentication uses HTTP Basic Auth with OPDS-specific credentials (separate from the main account). See [OPDS Catalog](opds.md).
@@ -117,6 +111,12 @@ Passkeys require server-side configuration in non-`localhost` environments: `WEB
 ## OPF
 
 **Open Packaging Format.** An XML metadata format (OPF 2.0, Dublin Core) used by Biblioteka for sidecar files. When a book file is imported, Biblioteka writes a `metadata.opf` file alongside it containing title, author, identifier, language, publication date, publisher, and description. See also [sidecar files](#sidecar-files).
+
+## Passkey
+
+A phishing-resistant, passwordless authentication credential based on the WebAuthn Level 2 standard. A passkey is a cryptographic key pair stored on the user's device — a hardware security key, fingerprint reader, Face ID, Windows Hello, or mobile platform authenticator. After registering a passkey while logged in (at **Settings → Account → Passkeys**), the user can log in using a local biometric or PIN gesture without entering a password. Because passkeys use discoverable credentials, no username is required at login time. Password and OIDC login remain available alongside passkeys.
+
+Passkeys require server-side configuration in non-`localhost` environments: `WEBAUTHN_RP_ID` must exactly match the domain users access (e.g. `books.example.com`); `WEBAUTHN_RP_ORIGINS` lists the allowed origins; `WEBAUTHN_RP_NAME` sets the name shown in the browser dialog. The default values only work at `http://localhost:8080`. See [Authentication](authentication.md).
 
 ## Reading List
 
