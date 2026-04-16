@@ -24,15 +24,16 @@ frontend/
       Auth.svelte         Login and signup forms; wraps all form content in a `<main>` landmark (WCAG 1.3.6); the Login/Sign Up toggle uses the ARIA tablist/tab/tabpanel pattern with roving tabindex and keyboard navigation (WCAG 4.1.2)
       Books.svelte        Book listing and detail view; includes a debounced search input that persists the search term in the URL hash query string (`#books?query=tolkien`); reads `initialOffset` from the URL and writes page changes back via `routerStore.setQueryParam`
       NotFound.svelte     404 page rendered when the router encounters an unknown hash path
-      Dashboard.svelte    Home screen; shows an empty-state onboarding card only after libraries are loaded and the list is empty; otherwise renders a two-card stats grid (Total Books, Libraries), a downloads-per-month histogram (via `DownloadsHistogram.svelte`), and a "Welcome to Biblioteka" prose panel (`<h2>` + `<p>`); in the stats-grid branch, Total Books is fetched from the API via `getTotalBooksCount()` on first render and shows "…" while the request is in flight (falls back to `0` on error, surfacing an `AlertBanner` with the error message); the histogram is fetched via `getDownloadsPerMonth(12)` and is hidden until data arrives (an `AlertBanner` is shown on error); Libraries reflects the live `libraryStore.libraries.length`; each stat card uses a `<dl>/<dt>/<dd>` description-list structure so that screen readers can announce the label–value relationship correctly (WCAG 1.3.1)
+      Dashboard.svelte    Home screen; shows an empty-state onboarding card only after libraries are loaded and the list is empty; otherwise renders four content areas: (1) a two-card stats grid (Total Books, Libraries); (2) a downloads-per-month histogram (via `DownloadsHistogram.svelte`); (3) a Reading Activity section showing KOSync reading streaks, finished-books count, and in-progress books with per-book progress bars and estimated time remaining — falls back to a "Welcome to Biblioteka" prose panel while stats are loading or a KOSync nudge when no reading data exists; (4) a Year in Books card (`data-testid="year-in-books-card"`) showing books finished, longest streak, days reading, and total downloads for the current calendar year — hidden when all counts are zero; followed by a `Recommendations.svelte` "You Might Also Like" panel; all four data sets (total books count, downloads, reading stats, year-in-books) are fetched concurrently in `onMount` with a cancellation guard that prevents stale writes after unmount; each fetch surfaces errors independently via `AlertBanner` so a failure in one section does not block the others; Total Books shows "…" while in flight and falls back to `0` on error; Libraries reflects the live `libraryStore.libraries.length`; each stat card uses a `<dl>/<dt>/<dd>` description-list structure so that screen readers can announce the label–value relationship correctly (WCAG 1.3.1)
       Libraries.svelte    Library management view; dispatches to sub-components based on `routerStore.subPath`: `"new"` → `LibraryForm` (create mode), `"edit/{id}"` → `LibraryForm` (edit mode), `"setup"` → `FirstLibraryWizard` (first-library onboarding wizard), `"{id}"` → `LibraryView`, or empty → list / empty state; a `$effect` redirects away from `"setup"` automatically if the user already has at least one library
       MyLibrary.svelte    Placeholder for a planned per-user personal library feature; currently shows an empty state
+      Recommendations.svelte  "You Might Also Like" panel rendered at the bottom of the Dashboard; fetches up to 10 book recommendations via `getRecommendations(limit)` using a `$effect`; shows skeleton cards while loading; renders an inline error message when the fetch fails (and logs the error to the console) and renders an empty-state message with a link to `#settings/kobo` when the result set is empty; book cards link to `#books/{id}` via `routerStore.navigate`
       Settings.svelte     Settings shell; owns shared admin state; renders one tab at a time
       Sidebar.svelte      Navigation sidebar; fetches and displays the running server version; uses `<a href>` anchor links for all navigation items; the brand name is rendered as `<p>` (not `<h1>`) to avoid duplicate top-level headings (WCAG 1.3.1); icon-only action links (Create library, Library settings) carry `aria-label`, and the Create-library icon explicitly carries `aria-hidden="true"` (WCAG 4.1.2); the Library-settings link aria-label includes the library name (e.g. "Library settings for Fiction") so each link has a unique, descriptive name (WCAG 2.4.6); the Library-settings link always carries at least `opacity-30` so it is visible when focused via keyboard (WCAG 2.4.7); nav link clusters are wrapped in `role="group"` containers labelled by `<h2>` group headings (WCAG 1.3.1)
       books/              Sub-components for book detail and editing
         BookDetail.svelte    Book detail view; displays cover image, metadata, author/series associations, file attachments, and download links
         BookEdit.svelte      Book edit page; fetches book data, manages form state, and coordinates the `BookEditForm` and `MetadataFetchPanel` sub-components
-        BookEditForm.svelte  Book metadata edit form; required fields carry `aria-required={true}` and a visible legend ("Fields marked with an asterisk are required") uses `aria-hidden` on the visual `*` and a `sr-only` span for the spoken label (WCAG 3.3.2)
+        BookEditForm.svelte  Book metadata edit form; required fields carry `aria-required={true}` and a visible legend ("Fields marked with an asterisk are required") uses `aria-hidden` on the visual `*` and a `sr-only` span for the spoken label (WCAG 3.3.2); when a Cover Image URL is entered, a live preview thumbnail renders below the field — the image is hidden automatically via an `onerror` handler if the URL fails to load
         MetadataComparison.svelte   Side-by-side comparison of current and fetched remote metadata; lets the user selectively apply individual fields
         MetadataFetchPanel.svelte   Panel that triggers a remote metadata fetch, streams progress events, and renders `MetadataComparison` once results arrive
       libraries/          Reusable sub-components for the Libraries view
@@ -51,11 +52,11 @@ frontend/
         AlertBanner.svelte   Dismissible alert / error banner
         BookCard.svelte      Card widget displaying a single book summary
         BookList.svelte      Paginated book list with grid / table view toggle; accepts a `fetchBooks` callback; supports optional polling for scan-aware empty states; table-view rows are keyboard-accessible via `tabindex="0"` and Enter-key navigation (WCAG 2.1.1)
-        Button.svelte        Reusable button with `primary`, `secondary`, and `danger` variants
+        Button.svelte        Reusable button with `primary`, `secondary`, and `danger` variants and two sizes (`sm`, `md`); renders as `inline-flex items-center justify-center` with built-in padding per size
         DeleteConfirmation.svelte  Accessible inline delete-confirmation dialog (`role="alertdialog"`, Escape-to-dismiss, autofocus on open); encapsulates the standard pattern for accessible destructive-action confirmations (WCAG 4.1.2)
         DownloadsHistogram.svelte  Bar chart showing monthly download counts; visual bars are `aria-hidden` and paired with a screen-reader-only data table (`Month` + `Downloads`) as the accessible equivalent; count tooltip uses `text-ink-600 dark:text-ink-200` and month labels use `text-ink-600 dark:text-ink-400` to meet the WCAG 1.4.3 Contrast Minimum (Level AA)
         EmailBookModal.svelte      Modal dialog for emailing a book file to an address; implements full focus trapping (Tab / Shift+Tab wrap-around), Escape-to-dismiss, and autofocus on the Close button (WCAG 2.1.1, 2.1.2)
-        TextInput.svelte     Reusable text input; forwards all standard `<input>` HTML attributes; placeholder text in dark mode uses `dark:placeholder:text-ink-300` to meet the minimum contrast ratio for non-active UI text (WCAG 1.4.3); border uses `border-ink-400 dark:border-ink-400` to meet the Non-text Contrast minimum (WCAG 1.4.11)
+        TextInput.svelte     Reusable text input; forwards all standard `<input>` HTML attributes; placeholder text in dark mode uses `dark:placeholder:text-ink-300` to meet the minimum contrast ratio for non-active UI text (WCAG 1.4.3); border uses `border-ink-400 dark:border-ink-400` to meet the Non-text Contrast minimum (WCAG 1.4.11); uses `focus-visible:outline-none` (not `outline-none`) so the global `*:focus-visible` outline is suppressed when the control matches `:focus-visible` (typically keyboard focus or other UA-determined cases where focus should be visibly indicated), while the component's `focus:ring-*` styles provide the visible focus indicator and avoid a double ring (WCAG 2.4.7)
     stores/             Reactive state modules (lowercase, *.svelte.ts)
     lib/
       actions.ts              Svelte action utilities (`autofocusFirstButton`)
@@ -914,18 +915,26 @@ The `variant` value controls both the colour scheme and the default ARIA `role`:
 
 ### `Button.svelte`
 
-A styled button with three visual variants.
+A styled button with three visual variants and two size options. Renders as `inline-flex items-center justify-center` with built-in padding and text size controlled by the `size` prop.
 
 **Props:**
 
 | Prop | Type | Required | Default | Description |
 |------|------|----------|---------|-------------|
 | `variant` | `"primary" \| "secondary" \| "danger"` | | `"primary"` | Visual style |
-| `disabled` | `boolean` | | `false` | Disables the button and applies muted styling |
+| `size` | `"sm" \| "md"` | | `"md"` | Button size; controls padding and text size |
 | `type` | `"button" \| "submit" \| "reset"` | | `"button"` | HTML button type |
-| `class` | `string` | | — | Additional Tailwind classes (e.g. padding, width) |
+| `disabled` | `boolean` | | `false` | Disables the button and applies reduced-opacity styling |
+| `class` | `string` | | — | Additional Tailwind classes appended to the button (e.g. `w-full`, `gap-2`) |
 | `onclick` | `(e: MouseEvent) => void` | | — | Click handler |
 | `children` | `Snippet` | ✓ | — | Button label content |
+
+**Sizes:**
+
+| Size | Padding | Text size | When to use |
+|------|---------|-----------|-------------|
+| `md` (default) | `px-4 py-2.5` | `text-sm` | Standard form submit buttons, primary actions |
+| `sm` | `px-3 py-1.5` | `text-xs` | Compact inline actions, toolbar buttons |
 
 **Usage:**
 
@@ -937,9 +946,8 @@ A styled button with three visual variants.
 <Button variant="primary" type="submit">Save</Button>
 <Button variant="secondary" onclick={cancel}>Cancel</Button>
 <Button variant="danger" onclick={deleteItem}>Delete</Button>
+<Button size="sm" variant="secondary" onclick={dismiss}>Dismiss</Button>
 ```
-
-Padding is intentionally left to the caller via the `class` prop to avoid Tailwind cascade conflicts.
 
 ---
 
@@ -988,7 +996,7 @@ A pure-CSS bar-chart component that renders monthly download counts fetched from
 
 ### `TextInput.svelte`
 
-A styled text input with focus ring, dark-mode support, disabled styling, and ARIA attribute forwarding. In dark mode, placeholder text uses `dark:placeholder:text-ink-300` to maintain sufficient contrast against the dark background (WCAG 1.4.3 Contrast Minimum, Level AA). Form control borders use `border-ink-400 dark:border-ink-400` to meet the WCAG 1.4.11 Non-text Contrast minimum of 3:1.
+A styled text input with focus ring, dark-mode support, disabled styling, and ARIA attribute forwarding. In dark mode, placeholder text uses `dark:placeholder:text-ink-300` to maintain sufficient contrast against the dark background (WCAG 1.4.3 Contrast Minimum, Level AA). Form control borders use `border-ink-400 dark:border-ink-400` to meet the WCAG 1.4.11 Non-text Contrast minimum of 3:1. The active state class string uses `focus-visible:outline-none` (not `outline-none`) to suppress the browser's default outline when `:focus-visible` matches (keyboard-initiated focus), so the component's explicit `focus:ring-*` accent ring is the sole visible indicator — avoiding a double ring while still meeting WCAG 2.4.7 Focus Visible (Level AA).
 
 **Props:**
 
@@ -1187,16 +1195,17 @@ This preserves table semantics while ensuring keyboard and assistive-technology 
 
 ### `Button.svelte`
 
-A styled button with three visual variants. Use this instead of a raw `<button>` element whenever a button appears in the application UI, so styling is consistent.
+A styled button with three visual variants and two size options. Use this instead of a raw `<button>` element whenever a button appears in the application UI, so styling is consistent. The component renders as `inline-flex items-center justify-center` — callers do not need to add flex or padding classes for standard use.
 
 **Props:**
 
 | Prop | Type | Required | Default | Description |
 |------|------|----------|---------|-------------|
 | `variant` | `"primary" \| "secondary" \| "danger"` | | `"primary"` | Visual style |
+| `size` | `"sm" \| "md"` | | `"md"` | Button size; controls padding and text size |
 | `type` | `"button" \| "submit" \| "reset"` | | `"button"` | HTML button type |
 | `disabled` | `boolean` | | `false` | Disables the button and applies reduced-opacity styling |
-| `class` | `string` | | — | Additional Tailwind classes appended to the button |
+| `class` | `string` | | — | Additional Tailwind classes appended to the button (e.g. `w-full`, `gap-2`, `flex-1`) |
 | `onclick` | `(e: MouseEvent) => void` | | — | Click handler |
 | `children` | `Snippet` | ✓ | — | Button label rendered as slot content |
 
@@ -1207,6 +1216,13 @@ A styled button with three visual variants. Use this instead of a raw `<button>`
 | `primary` | Primary call-to-action; accent-colored gradient background |
 | `secondary` | Secondary action; transparent background with a subtle border |
 | `danger` | Destructive actions such as delete or revoke; red background |
+
+**Sizes:**
+
+| Size | Padding | Text size | When to use |
+|------|---------|-----------|-------------|
+| `md` (default) | `px-4 py-2.5` | `text-sm` | Standard form submit buttons, primary actions |
+| `sm` | `px-3 py-1.5` | `text-xs` | Compact inline actions, toolbar buttons, side-by-side button pairs |
 
 **Usage:**
 
@@ -1222,9 +1238,16 @@ A styled button with three visual variants. Use this instead of a raw `<button>`
 <Button onclick={handleSave}>Save</Button>
 <Button variant="secondary" onclick={handleCancel}>Cancel</Button>
 <Button variant="danger" onclick={handleDelete}>Delete</Button>
+
+<!-- Small size for compact contexts -->
+<Button size="sm" variant="secondary" onclick={handleCancel}>Dismiss</Button>
 ```
 
-Padding is intentionally left to the caller via the `class` prop to avoid Tailwind cascade conflicts.
+When adding an icon alongside the button label, pass `class="gap-2"` to space the icon and text:
+
+```svelte
+<Button class="gap-2"><SaveIcon aria-hidden="true" />Save changes</Button>
+```
 
 ---
 
@@ -1687,7 +1710,7 @@ The relevant `$derived` class string in `TextInput.svelte`:
 const stateClasses = $derived(
   disabled
     ? "bg-ink-50 dark:bg-ink-800 text-ink-500 dark:text-ink-400 cursor-not-allowed"
-    : "bg-white text-ink-900 focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 placeholder:text-ink-500 dark:placeholder:text-ink-300",
+    : "bg-white text-ink-900 focus:ring-2 focus:ring-accent-500 focus:border-transparent focus-visible:outline-none dark:bg-ink-800 dark:text-cream-100 placeholder:text-ink-500 dark:placeholder:text-ink-300",
 );
 ```
 
@@ -1722,6 +1745,34 @@ The same `border-ink-400 dark:border-ink-400` pattern must be applied to any inl
 | `dark:border-ink-400` | Dark | `dark:bg-ink-800` | Meets WCAG 1.4.11 ≥ 3:1 |
 
 **Rule:** All form inputs and bordered interactive elements must use `border-ink-400 dark:border-ink-400` (or a higher-contrast token) for their default border. In light mode, do not use `border-ink-200` on `bg-white`; in dark mode, do not use `dark:border-ink-700` on `dark:bg-ink-800` — those are the low-contrast combinations that fail the 3:1 non-text contrast requirement.
+
+### Focus ring on form inputs (`TextInput.svelte` and inline inputs)
+
+**WCAG criterion:** [2.4.7 Focus Visible](https://www.w3.org/WAI/WCAG21/Understanding/focus-visible.html) (Level AA)
+
+Keyboard users must be able to see which element currently has focus. Applying `outline-none` unconditionally suppresses the browser's native focus indicator entirely — a direct WCAG 2.4.7 violation. The correct fix is `focus-visible:outline-none`, which targets the `:focus-visible` pseudo-class and removes the browser default outline **only when keyboard-initiated focus is detected** (`:focus-visible` matches when the UA determines focus should be visually indicated, typically keyboard navigation).
+
+The `focus:ring-2 focus:ring-accent-500 focus:border-transparent` classes on form inputs provide an explicit accent-colored focus ring for all focus states. `focus-visible:outline-none` suppresses the *additional* browser-default outline when `:focus-visible` matches, so keyboard users see the styled accent ring instead of a double indicator. The net effect is a clean, consistent focus indicator for both pointer and keyboard users.
+
+The active-state class string in `TextInput.svelte`:
+
+```svelte
+const stateClasses = $derived(
+  disabled
+    ? "bg-ink-50 dark:bg-ink-800 text-ink-500 dark:text-ink-400 cursor-not-allowed"
+    : "bg-white text-ink-900 focus:ring-2 focus:ring-accent-500 focus:border-transparent focus-visible:outline-none dark:bg-ink-800 dark:text-cream-100 placeholder:text-ink-500 dark:placeholder:text-ink-300",
+);
+```
+
+The same class pattern appears on inline `<input>` and `<textarea>` elements in components that do not use `TextInput`:
+
+```html
+class="... focus:ring-2 focus:ring-accent-500 focus:border-transparent focus-visible:outline-none ..."
+```
+
+Affected components (as of PR #2060): `TextInput.svelte`, `BookEditForm.svelte`, `FirstLibraryWizard.svelte`, `LibraryForm.svelte`, `CalibreImportTab.svelte`, `SmtpTab.svelte`, `WatchFolderTab.svelte`, and `EmailBookModal.svelte`.
+
+**Rule:** Never use `outline-none` on a focusable form element. Always use `focus-visible:outline-none` instead. The `focus-visible:outline-none` class must be combined with explicit `focus:ring-*` classes so that keyboard users see a styled focus indicator rather than the browser default.
 
 ### Live region for theme change announcements (`PreferencesTab.svelte`)
 
@@ -2153,10 +2204,11 @@ The following components apply this pattern. When you add icons to any of these 
 |---|---|
 | `Auth.svelte` | `BookCheck` (app logo alongside the app name heading) |
 | `Sidebar.svelte` | `BookCheck`, `LayoutDashboard`, `BookOpen`, `Library`, `SettingsIcon`, `LogOut` (nav-link icons alongside their text labels) |
-| `Dashboard.svelte` | `LayoutDashboard`, `Library`, `Plus`, `ArrowRight` |
+| `Dashboard.svelte` | `LayoutDashboard`, `Library`, `Plus`, `ArrowRight`, `Flame`, `BookOpen`, `CheckCheck`, `CalendarDays`, `Download` |
 | `Books.svelte` | `BookOpen` (page-heading icon) |
 | `Libraries.svelte` | `LibraryIcon` (empty-state illustration), `Plus` (button with visible text) |
 | `MyLibrary.svelte` | `Library` (page-heading icon and empty-state illustration) |
+| `Recommendations.svelte` | `Sparkles` (page-heading icon and decorative cover placeholder) |
 | `settings/AccountTab.svelte` | `Mail`, `User`, `Link` ×2, `Lock` (section-heading icons) |
 | `settings/APIKeysTab.svelte` | `KeyRound` (section-heading icon), `Copy`, `Trash2` (buttons with adjacent text) |
 | `settings/PreferencesTab.svelte` | `Palette` (section-heading icon) |
@@ -2192,6 +2244,7 @@ When editing the app shell or adding new persistent navigation elements:
 17. Every icon that appears alongside visible text must carry `aria-hidden="true"` to suppress redundant screen-reader announcements. See [Decorative icons alongside visible text](#decorative-icons-alongside-visible-text) above.
 18. Whenever a user action produces a transient status change without a focus move (e.g. selecting a theme, saving settings), add a `role="status"` `class="sr-only"` `<span>` live region to announce the outcome to screen readers (WCAG 4.1.3). Reset the text to `""` before setting the new message so repeated identical actions still trigger an announcement. See [Live region for theme change announcements](#live-region-for-theme-change-announcements-preferencestabsvelte) above.
 19. Do not add animations or transitions that cannot be suppressed by the global `prefers-reduced-motion` rule in `index.css`. Tailwind animation utilities (e.g. `animate-fade-in`, `animate-spin`) and ordinary CSS animations, including custom `@keyframes` used from component `<style>` blocks, are suppressible via that global override. Add a component-level `@media (prefers-reduced-motion: reduce)` guard only when motion is driven outside normal CSS animation/transition rules (for example, via JavaScript) or when local `!important` styles would otherwise bypass the global override. See [Reduced-motion support](#reduced-motion-support-indexcss) above.
+20. Never use `outline-none` on a focusable form input — always use `focus-visible:outline-none` combined with explicit `focus:ring-*` classes. `outline-none` removes the native focus ring for **all** interaction modes including keyboard, violating WCAG 2.4.7 Focus Visible. `focus-visible:outline-none` suppresses the browser-default outline when `:focus-visible` matches (keyboard-initiated focus), leaving the explicit `focus:ring-*` accent ring as the sole visible indicator for keyboard users. See [Focus ring on form inputs](#focus-ring-on-form-inputs-textinputsvelte-and-inline-inputs) above.
 
 ### Form accessibility
 
@@ -2613,12 +2666,12 @@ Accessibility regressions are locked in by dedicated test files. Keep all of the
 
 #### `Dashboard.test.ts`
 
-`frontend/src/components/Dashboard.test.ts` verifies the behavior and accessibility of the home screen, covering the onboarding empty state, the stats grid, and the Reading Activity section. Twenty tests in one `Dashboard` describe block:
+`frontend/src/components/Dashboard.test.ts` verifies the behavior and accessibility of the home screen, covering the onboarding empty state, the stats grid, the Reading Activity section, and the Year in Books section. Thirty-two tests in one `Dashboard` describe block (with a nested `Year in Books` describe block):
 
 1. **`renders the Dashboard heading`** — asserts a `<h1>` heading with text `"Dashboard"` is present on mount.
 2. **`shows the onboarding card when libraries are loaded and empty`** — seeds `libraryStore.loaded = true` with no libraries; asserts the `"Get started with Biblioteka"` heading is rendered.
 3. **`shows 'Add Your First Library' button in empty state`** — same setup; asserts the onboarding call-to-action button is visible.
-4. **`navigates to libraries/new when the onboarding button is clicked`** — clicks the button; asserts `routerStore.navigate` is called with `"libraries/new"`.
+4. **`navigates to libraries/setup when the onboarding button is clicked`** — clicks the button; asserts `routerStore.navigate` is called with `"libraries/setup"`.
 5. **`shows stats grid when libraries exist`** — seeds one library; asserts "Total Books" and "Libraries" stat labels appear and no unexpected stats are rendered.
 6. **`does not show the onboarding card when libraries exist`** — seeds one library; asserts the "Get started" heading is absent.
 7. **`uses semantic dl/dt/dd structure for stat cards`** — asserts each stat uses a `<dl>/<dt>/<dd>` description-list structure so screen readers can announce the label–value pairs correctly (WCAG 1.3.1).
@@ -2629,17 +2682,34 @@ Accessibility regressions are locked in by dedicated test files. Keep all of the
 12. **`shows the downloads histogram when data is available`** — `getDownloadsPerMonth` resolves with two data points; asserts the `data-testid="downloads-histogram-card"` element appears in the DOM.
 13. **`shows a downloads error banner when the stats fetch fails`** — `getDownloadsPerMonth` rejects with `Error("network error")`; asserts the error message `"network error"` is rendered in an `AlertBanner`.
 
-**Reading Activity section — seven tests:**
+**Reading Activity section — nine tests:**
 
 14. **`shows Reading Activity heading when stats load`** — seeds one library; `getReadingProgressStats` resolves with a zeroed stats object; asserts the `"Reading Activity"` heading is present after stats load.
 15. **`shows KOSync nudge when total_tracked is 0`** — `getReadingProgressStats` resolves with `total_tracked: 0`; asserts the `"No reading activity recorded yet"` nudge text is rendered.
 16. **`shows streak badge when current_streak > 0`** — `getReadingProgressStats` resolves with `current_streak: 5`; asserts the `"5-day streak"` badge is visible.
 17. **`shows finished books badge when total_finished > 0`** — `getReadingProgressStats` resolves with `total_finished: 2`; asserts the `"2 books finished"` badge is visible.
-18. **`shows Currently Reading list with document names`** — `getReadingProgressStats` resolves with one in-progress item (`document: "my-great-book"`, `percentage: 0.42`, `device: "KOReader"`); asserts the document name, `"42%"`, and `"KOReader"` are all rendered.
-19. **`shows estimated time remaining when provided`** — `getReadingProgressStats` resolves with `estimated_minutes_remaining: 45`; asserts the `"~45m left"` label is rendered.
-20. **`does not show reading activity section while stats are still loading`** — `getReadingProgressStats` never resolves; asserts the `"Reading Activity"` heading is absent and the welcome fallback is shown instead.
+18. **`uses accessible contrast classes for tracked documents text`** — `getReadingProgressStats` resolves with `total_tracked: 2`; asserts the tracked-documents count element carries `text-ink-500` and `dark:text-ink-300` Tailwind classes (WCAG 1.4.3).
+19. **`shows Currently Reading list with document names`** — `getReadingProgressStats` resolves with one in-progress item (`document: "my-great-book"`, `percentage: 0.42`, `device: "KOReader"`); asserts the document name, `"42%"`, and `"KOReader"` are all rendered.
+20. **`shows estimated time remaining when provided`** — `getReadingProgressStats` resolves with `estimated_minutes_remaining: 45`; asserts the `"~45m left"` label is rendered.
+21. **`does not show reading activity section while stats are still loading`** — `getReadingProgressStats` never resolves; asserts the `"Reading Activity"` heading is absent and the welcome fallback is shown instead.
+22. **`shows a reading stats error banner when the fetch fails`** — `getReadingProgressStats` rejects with `Error("reading stats unavailable")`; asserts the error message is rendered in an `AlertBanner` and the `"Welcome to Biblioteka"` fallback heading is **not** shown alongside it.
 
-> **Mocking note:** `libraryStore` (from `../stores/libraries.svelte`), `routerStore` (from `../stores/router.svelte`), `getTotalBooksCount`, `getDownloadsPerMonth`, and `getReadingProgressStats` (all from `../lib/api`) and all `lucide-svelte` icons are mocked. `beforeEach` resets `libraryStore.loaded` and `libraries`, and resets `getTotalBooksCount` (to resolve `0`), `getDownloadsPerMonth` (to resolve `[]`), and `getReadingProgressStats` (to resolve a zero-activity stats object). `afterEach` calls `cleanup()` and `vi.clearAllMocks()` to prevent state leakage between tests.
+**Year in Books — five tests (test #23 at top-level; tests 24–27 in nested `describe("Year in Books")`):**
+23. **`shows a year-in-books error banner when the fetch fails`** — `getYearInBooks` rejects with `Error("year in books unavailable")`; asserts the error message is rendered in an `AlertBanner`.
+24. **`does not show year-in-books card when all stats are zero`** — `getYearInBooks` resolves with all-zero stats; asserts `data-testid="year-in-books-card"` is absent.
+25. **`shows year-in-books card when there are books finished`** — `getYearInBooks` resolves with `books_finished: 3, active_days: 20, longest_streak: 5, total_downloads: 8`; asserts the `"2026 in Books"` heading, the counts, and the `"books finished"` / `"days reading"` labels are all rendered.
+26. **`shows year-in-books card when there are downloads only`** — `getYearInBooks` resolves with `books_finished: 0, active_days: 0, total_downloads: 5`; asserts the card renders (non-zero downloads trigger display).
+27. **`uses singular 'book' when exactly one book is finished`** — `getYearInBooks` resolves with `books_finished: 1`; asserts the label reads `"book finished"` (singular).
+
+**Onboarding skipped-state — five tests:**
+
+28. **`shows 'Add Your First Library' button when libraries are empty and not skipped`** — `onboardingStore.isSkipped` returns `false`; asserts the "Get started with Biblioteka" wizard entry card and the "Add Your First Library" button are rendered.
+29. **`shows 'No libraries yet' heading when libraries are empty and skipped`** — `onboardingStore.isSkipped` returns `true`; asserts the subtle `"No libraries yet"` heading appears instead of the wizard card.
+30. **`shows 'Set up your first library' button in skipped state`** — skipped state; asserts the `"Set up your first library"` secondary action button is rendered.
+31. **`navigates to libraries/setup from the skipped-state button`** — skipped state; clicks the secondary button; asserts `routerStore.navigate` is called with `"libraries/setup"`.
+32. **`does not show the 'Get started' wizard card in skipped state`** — skipped state; asserts the prominent `"Get started with Biblioteka"` card is absent.
+
+> **Mocking note:** `libraryStore` (from `../stores/libraries.svelte`), `routerStore` (from `../stores/router.svelte`), `onboardingStore` (from `../stores/onboarding.svelte`), `authStore` (from `../stores/auth.svelte`), `getTotalBooksCount`, `getDownloadsPerMonth`, `getReadingProgressStats`, `getYearInBooks`, and `getRecommendations` (all from `../lib/api`) and all `lucide-svelte` icons are mocked. `beforeEach` resets `libraryStore.loaded` and `libraries`, and resets the API mocks to their default resolved values. `afterEach` calls `cleanup()` and `vi.clearAllMocks()` to prevent state leakage between tests.
 
 #### `LibraryForm.test.ts`
 
@@ -2717,17 +2787,53 @@ Accessibility regressions are locked in by dedicated test files. Keep all of the
 
 > **Mocking note:** The test file mocks `libraryStore`, `routerStore`, `authStore` (user with `id: "user-1"`), `onboardingStore`, and all `lucide-svelte` icon components. `afterEach(cleanup)` prevents DOM leakage between tests.
 
+#### `ReadingListDetail.test.ts`
+
+`frontend/src/components/reading-lists/ReadingListDetail.test.ts` verifies the full lifecycle of reading list detail interactions: display, editing, deletion, error surfacing, and pagination. Eight tests in one `ReadingListDetail` describe block:
+
+1. **`renders the reading list from the store`** — seeds `readingListStore.lists` with a fixture list; asserts the `<h1>` heading shows the list name, the book count `"26 books"` is rendered, and the description text appears.
+2. **`loads lists when the store is not loaded`** — mounts with `readingListStore.loaded = false`; asserts `readingListStore.load` is called once.
+3. **`saves edits through the reading list store`** — clicks Edit, types an updated name and description (with surrounding whitespace), clicks Save; asserts `readingListStore.update` is called with the trimmed values.
+4. **`surfaces save API errors in the edit form`** — `readingListStore.update` rejects with `Error("Name already taken")`; clicks Save; asserts a `role="alert"` element shows the error and the `"Edit Reading List"` heading remains visible (form stays open).
+5. **`cancels editing and restores original values when editing is restarted`** — types a temporary name change, clicks Cancel, then clicks Edit again; asserts the name input has reverted to the original value.
+6. **`shows delete confirmation and deletes the list on confirm`** — clicks Delete; asserts the `"Delete this list?"` confirmation text appears and the confirm button receives focus; clicks `"Yes, delete"`; asserts `readingListStore.remove` is called with the list ID and `routerStore.navigate` is called with `"reading-lists"`.
+7. **`surfaces delete API errors in the component error state`** — `readingListStore.remove` rejects with `Error("Delete failed")`; clicks Delete and confirms; asserts a `role="alert"` element shows the error and the confirmation dialog is dismissed.
+8. **`renders paginated books and requests the next page`** — `listReadingListBooks` returns a total of 50 books; asserts the first page book appears; clicks Next; asserts `listReadingListBooks` is called with `offset=24`.
+
+> **Mocking note:** The test file mocks `listReadingListBooks` (from `../lib/api`), `readingListStore` (from `../stores/reading-lists.svelte`), `routerStore` (from `../stores/router.svelte`), and all `lucide-svelte` icon components. `beforeEach` seeds `readingListStore.lists` with a fixture list and resets mock state. `afterEach` calls `cleanup()` and `vi.clearAllMocks()`.
+
 #### `TextInput.test.ts`
 
 `frontend/src/components/ui/TextInput.test.ts` verifies ARIA forwarding and accessibility-critical styling on the reusable text input (WCAG 1.4.3, 4.1.2). The key accessibility test:
 
 1. **`uses ink-300 for dark-mode placeholder contrast (WCAG 1.4.3)`** — renders `TextInput` without a `disabled` prop and asserts the class string of the underlying `<input>` contains `dark:placeholder:text-ink-300` and does **not** contain `dark:placeholder:text-ink-500`. This pins the contrast fix introduced in PR #1512 and prevents regressions.
 
-Additional tests verify attribute forwarding:
-
 2. **`forwards placeholder attribute`** — asserts a `placeholder` prop is applied to the underlying element.
 3. **`forwards aria-describedby attribute`** — asserts the ARIA attribute reaches the underlying element, enabling inline error association patterns.
 4. **`forwards id attribute`** — asserts `id` forwarding so explicit `<label for>` associations work correctly.
+
+> **Testing note:** `afterEach(cleanup)` removes rendered components between tests.
+
+#### `Button.test.ts`
+
+`frontend/src/components/ui/Button.test.ts` verifies rendering, variant classes, size classes, and interaction behavior of the reusable button component. Sixteen tests in one `Button` describe block:
+
+1. **`renders a button element`** — asserts the component renders a `<button>` in the DOM.
+2. **`renders children content`** — asserts the `children` snippet is rendered inside the button.
+3. **`defaults to type='button'`** — asserts the `type` attribute is `"button"` when not specified.
+4. **`forwards the type prop to the button element`** — renders with `type="submit"` and asserts the attribute reaches the underlying element.
+5. **`applies primary variant gradient classes by default`** — asserts the button carries `bg-gradient-to-r` and `from-accent-600` classes when no `variant` is passed.
+6. **`applies secondary variant classes`** — renders with `variant="secondary"`; asserts `border` is present and `bg-gradient-to-r` is absent.
+7. **`applies danger variant classes`** — renders with `variant="danger"`; asserts the button carries `bg-danger-600`.
+8. **`is not disabled by default`** — asserts the button is not disabled without the `disabled` prop.
+9. **`disables the button when disabled prop is true`** — renders with `disabled={true}`; asserts the button element is disabled.
+10. **`includes the disabled cursor Tailwind variant class`** — asserts the button's class string contains `disabled:cursor-not-allowed`. The class is always present in the markup, but the `disabled:` Tailwind variant means it only takes effect when the button is actually disabled.
+11. **`calls onclick handler when clicked`** — attaches a `vi.fn()` handler; fires a click; asserts the handler was called once.
+12. **`does not fire onclick when button is disabled (userEvent respects disabled)`** — renders with `disabled={true}`; uses `userEvent.setup().click()`; asserts the handler was **not** called, confirming that `userEvent` respects the native disabled state.
+13. **`appends the extra class string to the button`** — renders with `class="my-extra-class"`; asserts the class appears on the button element.
+14. **`applies md size classes by default`** — asserts the button carries `px-4`, `py-2.5`, and `text-sm` when no `size` prop is passed.
+15. **`applies sm size classes when size='sm'`** — renders with `size="sm"`; asserts the button carries `px-3`, `py-1.5`, and `text-xs`.
+16. **`includes justify-center for centered content`** — asserts the button's class string contains `justify-center`, confirming that icon-and-label content is centered horizontally.
 
 > **Testing note:** `afterEach(cleanup)` removes rendered components between tests.
 
@@ -3060,6 +3166,20 @@ The following test suites cover reactive stores and the API client. Unlike the a
 4. **`does not poll when no pollingInterval is set`** — renders without `pollingInterval`; advances time and asserts `fetchBooks` is called only once (initial load).
 
 > **Mocking note:** `afterEach(cleanup)` prevents DOM leakage between tests. Fake timers (`vi.useFakeTimers()`) are activated per-suite and restored in `afterEach` to avoid contaminating other test files.
+
+### `BookEditForm.test.ts`
+
+`frontend/src/components/books/BookEditForm.test.ts` verifies the rendering, validation, cover image preview behavior, and disabled state of the book metadata edit form. Seven tests in one `BookEditForm` describe block:
+
+1. **`renders all 12 form fields with correct values`** — mounts the form with a fully populated `fields` prop and asserts that all twelve inputs render with the expected values.
+2. **`displays the formError AlertBanner when title is blank and form is submitted`** — submits the form with an empty title; asserts that an `AlertBanner` with the validation message is rendered.
+3. **`does not display an error banner initially`** — asserts that no error `AlertBanner` is present before the form is submitted.
+4. **`shows cover image preview when coverImageUrl is set`** — mounts the form with a non-empty `coverImageUrl`; asserts that an `<img alt="Cover preview">` element is rendered and its `src` matches the supplied URL.
+5. **`does not show cover image preview when coverImageUrl is empty`** — mounts the form with `coverImageUrl: ""`; asserts that no `<img alt="Cover preview">` element is present.
+6. **`does not show cover image preview when coverImageUrl is whitespace only`** — mounts the form with `coverImageUrl: "   "`; asserts that no preview image appears (whitespace is treated as empty).
+7. **`disables all inputs and buttons when saving is true`** — sets `saving={true}` and asserts that every input and button in the form carries the `disabled` attribute.
+
+> **Testing note:** The cover image preview is rendered inside a `{#if fields.coverImageUrl?.trim()}` block, so tests 5 and 6 confirm that neither an empty string nor a whitespace-only string triggers a preview. The `onerror` handler that hides a broken-URL image is exercised at runtime; JSDOM does not fire load/error events for images so it is not covered here.
 
 ---
 

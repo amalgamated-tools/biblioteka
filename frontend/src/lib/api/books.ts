@@ -6,6 +6,7 @@ import type {
   BookFile,
   BookFileInput,
   PaginatedBooks,
+  Tag,
 } from "../../types";
 import { request } from "./core";
 
@@ -70,6 +71,19 @@ export async function setBookSeries(
 ): Promise<BookSeriesEntry[]> {
   return request<BookSeriesEntry[]>("PUT", `/api/books/${bookId}/series`, {
     entries,
+  });
+}
+
+export async function getBookTags(bookId: string): Promise<Tag[]> {
+  return request<Tag[]>("GET", `/api/books/${bookId}/tags`);
+}
+
+export async function setBookTags(
+  bookId: string,
+  tagIds: string[],
+): Promise<Tag[]> {
+  return request<Tag[]>("PUT", `/api/books/${bookId}/tags`, {
+    tag_ids: tagIds,
   });
 }
 
