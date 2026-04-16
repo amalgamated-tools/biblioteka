@@ -94,7 +94,7 @@ Common HTTP status codes:
 | **Authors** | `/api/authors`, `/api/authors/{id}` | Author management |
 | **Series** | `/api/series`, `/api/series/{id}` | Series management |
 | **Tags** | `/api/tags`, `/api/tags/{id}`, `GET`/`PUT /api/books/{id}/tags` | Tag management; book tags updated via the book sub-resource |
-| **Books** | `/api/books`, `/api/books/{id}` and sub-resources (`/authors`, `/series`, `/tags`, `/files`, `/reading-lists`, `/metadata`, `/metadata/ai-fetch`, `/metadata/ai-apply`, `/metadata/ai-reject`) | Full book CRUD including author, series, tag, and file associations; AI enrichment enqueues a background job |
+| **Books** | `/api/books`, `/api/books/{id}` and sub-resources (`/authors`, `/series`, `/tags`, `/files`, `/reading-lists`, `/metadata`, `/metadata/ai`, `/metadata/ai-fetch`, `/metadata/ai-apply`, `/metadata/ai-reject`) | Full book CRUD including author, series, tag, and file associations; AI enrichment enqueues a background job |
 | **Book Files** | `/api/book-files/{id}` | Individual book file records |
 | **Calibre Import** | `POST /api/calibre-import/preview`, `/api/calibre-import/confirm` | Preview and apply a Calibre library import; admin only |
 | **Reading Lists** | `/api/reading-lists`, `/api/reading-lists/{id}`, `/api/reading-lists/{id}/books` | Per-user ordered book lists |
