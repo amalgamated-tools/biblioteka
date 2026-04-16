@@ -59,7 +59,6 @@ func (h *PasskeyHandler) FinishRegistration(w http.ResponseWriter, r *http.Reque
 		} else if resp.ID != "" {
 			logAudit(r.Context(), h.DB, userID, db.AuditActionPasskeyCreated, "passkey", resp.ID, nil)
 		}
-		}
 	}
 }
 
