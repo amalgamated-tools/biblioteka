@@ -2219,7 +2219,7 @@ The following components apply this pattern. When you add icons to any of these 
 | `settings/AccountInfoSection.svelte` | `Mail` (section-heading icon) |
 | `settings/ChangePasswordSection.svelte` | `Lock` (section-heading icon) |
 | `settings/DisplayNameSection.svelte` | `User` (section-heading icon) |
-| `settings/PasskeyList.svelte` | `KeyRound` (list-item icon), `Trash2` (delete button with adjacent text) |
+| `settings/PasskeyList.svelte` | `KeyRound` (list-item icon), `Trash2` (icon-only delete button with an `aria-label`) |
 | `settings/PasskeysSection.svelte` | `KeyRound` (section-heading icon) |
 | `settings/SsoLinkSection.svelte` | `Link` (section-heading icon) |
 | `settings/APIKeysTab.svelte` | `KeyRound` (section-heading icon), `Copy`, `Trash2` (buttons with adjacent text) |
