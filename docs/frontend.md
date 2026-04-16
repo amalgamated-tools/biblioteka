@@ -24,9 +24,10 @@ frontend/
       Auth.svelte         Login and signup forms; wraps all form content in a `<main>` landmark (WCAG 1.3.6); the Login/Sign Up toggle uses the ARIA tablist/tab/tabpanel pattern with roving tabindex and keyboard navigation (WCAG 4.1.2)
       Books.svelte        Book listing and detail view; includes a debounced search input that persists the search term in the URL hash query string (`#books?query=tolkien`); reads `initialOffset` from the URL and writes page changes back via `routerStore.setQueryParam`
       NotFound.svelte     404 page rendered when the router encounters an unknown hash path
-      Dashboard.svelte    Home screen; shows an empty-state onboarding card only after libraries are loaded and the list is empty; otherwise renders a two-card stats grid (Total Books, Libraries), a downloads-per-month histogram (via `DownloadsHistogram.svelte`), and a "Welcome to Biblioteka" prose panel (`<h2>` + `<p>`); in the stats-grid branch, Total Books is fetched from the API via `getTotalBooksCount()` on first render and shows "…" while the request is in flight (falls back to `0` on error, surfacing an `AlertBanner` with the error message); the histogram is fetched via `getDownloadsPerMonth(12)` and is hidden until data arrives (an `AlertBanner` is shown on error); Libraries reflects the live `libraryStore.libraries.length`; each stat card uses a `<dl>/<dt>/<dd>` description-list structure so that screen readers can announce the label–value relationship correctly (WCAG 1.3.1)
+      Dashboard.svelte    Home screen; shows an empty-state onboarding card only after libraries are loaded and the list is empty; otherwise renders four content areas: (1) a two-card stats grid (Total Books, Libraries); (2) a downloads-per-month histogram (via `DownloadsHistogram.svelte`); (3) a Reading Activity section showing KOSync reading streaks, finished-books count, and in-progress books with per-book progress bars and estimated time remaining — falls back to a "Welcome to Biblioteka" prose panel while stats are loading or a KOSync nudge when no reading data exists; (4) a Year in Books card (`data-testid="year-in-books-card"`) showing books finished, longest streak, days reading, and total downloads for the current calendar year — hidden when all counts are zero; followed by a `Recommendations.svelte` "You Might Also Like" panel; all four data sets (total books count, downloads, reading stats, year-in-books) are fetched concurrently in `onMount` with a cancellation guard that prevents stale writes after unmount; each fetch surfaces errors independently via `AlertBanner` so a failure in one section does not block the others; Total Books shows "…" while in flight and falls back to `0` on error; Libraries reflects the live `libraryStore.libraries.length`; each stat card uses a `<dl>/<dt>/<dd>` description-list structure so that screen readers can announce the label–value relationship correctly (WCAG 1.3.1)
       Libraries.svelte    Library management view; dispatches to sub-components based on `routerStore.subPath`: `"new"` → `LibraryForm` (create mode), `"edit/{id}"` → `LibraryForm` (edit mode), `"setup"` → `FirstLibraryWizard` (first-library onboarding wizard), `"{id}"` → `LibraryView`, or empty → list / empty state; a `$effect` redirects away from `"setup"` automatically if the user already has at least one library
       MyLibrary.svelte    Placeholder for a planned per-user personal library feature; currently shows an empty state
+      Recommendations.svelte  "You Might Also Like" panel rendered at the bottom of the Dashboard; fetches up to 10 book recommendations via `getRecommendations(limit)` using a `$effect`; shows skeleton cards while loading; renders an inline error message when the fetch fails (and logs the error to the console) and renders an empty-state message with a link to `#settings/kobo` when the result set is empty; book cards link to `#books/{id}` via `routerStore.navigate`
       Settings.svelte     Settings shell; owns shared admin state; renders one tab at a time
       Sidebar.svelte      Navigation sidebar; fetches and displays the running server version; uses `<a href>` anchor links for all navigation items; the brand name is rendered as `<p>` (not `<h1>`) to avoid duplicate top-level headings (WCAG 1.3.1); icon-only action links (Create library, Library settings) carry `aria-label`, and the Create-library icon explicitly carries `aria-hidden="true"` (WCAG 4.1.2); the Library-settings link aria-label includes the library name (e.g. "Library settings for Fiction") so each link has a unique, descriptive name (WCAG 2.4.6); the Library-settings link always carries at least `opacity-30` so it is visible when focused via keyboard (WCAG 2.4.7); nav link clusters are wrapped in `role="group"` containers labelled by `<h2>` group headings (WCAG 1.3.1)
       books/              Sub-components for book detail and editing
@@ -2203,10 +2204,11 @@ The following components apply this pattern. When you add icons to any of these 
 |---|---|
 | `Auth.svelte` | `BookCheck` (app logo alongside the app name heading) |
 | `Sidebar.svelte` | `BookCheck`, `LayoutDashboard`, `BookOpen`, `Library`, `SettingsIcon`, `LogOut` (nav-link icons alongside their text labels) |
-| `Dashboard.svelte` | `LayoutDashboard`, `Library`, `Plus`, `ArrowRight` |
+| `Dashboard.svelte` | `LayoutDashboard`, `Library`, `Plus`, `ArrowRight`, `Flame`, `BookOpen`, `CheckCheck`, `CalendarDays`, `Download` |
 | `Books.svelte` | `BookOpen` (page-heading icon) |
 | `Libraries.svelte` | `LibraryIcon` (empty-state illustration), `Plus` (button with visible text) |
 | `MyLibrary.svelte` | `Library` (page-heading icon and empty-state illustration) |
+| `Recommendations.svelte` | `Sparkles` (page-heading icon and decorative cover placeholder) |
 | `settings/AccountTab.svelte` | `Mail`, `User`, `Link` ×2, `Lock` (section-heading icons) |
 | `settings/APIKeysTab.svelte` | `KeyRound` (section-heading icon), `Copy`, `Trash2` (buttons with adjacent text) |
 | `settings/PreferencesTab.svelte` | `Palette` (section-heading icon) |
@@ -2664,12 +2666,12 @@ Accessibility regressions are locked in by dedicated test files. Keep all of the
 
 #### `Dashboard.test.ts`
 
-`frontend/src/components/Dashboard.test.ts` verifies the behavior and accessibility of the home screen, covering the onboarding empty state, the stats grid, and the Reading Activity section. Twenty tests in one `Dashboard` describe block:
+`frontend/src/components/Dashboard.test.ts` verifies the behavior and accessibility of the home screen, covering the onboarding empty state, the stats grid, the Reading Activity section, and the Year in Books section. Thirty-two tests in one `Dashboard` describe block (with a nested `Year in Books` describe block):
 
 1. **`renders the Dashboard heading`** — asserts a `<h1>` heading with text `"Dashboard"` is present on mount.
 2. **`shows the onboarding card when libraries are loaded and empty`** — seeds `libraryStore.loaded = true` with no libraries; asserts the `"Get started with Biblioteka"` heading is rendered.
 3. **`shows 'Add Your First Library' button in empty state`** — same setup; asserts the onboarding call-to-action button is visible.
-4. **`navigates to libraries/new when the onboarding button is clicked`** — clicks the button; asserts `routerStore.navigate` is called with `"libraries/new"`.
+4. **`navigates to libraries/setup when the onboarding button is clicked`** — clicks the button; asserts `routerStore.navigate` is called with `"libraries/setup"`.
 5. **`shows stats grid when libraries exist`** — seeds one library; asserts "Total Books" and "Libraries" stat labels appear and no unexpected stats are rendered.
 6. **`does not show the onboarding card when libraries exist`** — seeds one library; asserts the "Get started" heading is absent.
 7. **`uses semantic dl/dt/dd structure for stat cards`** — asserts each stat uses a `<dl>/<dt>/<dd>` description-list structure so screen readers can announce the label–value pairs correctly (WCAG 1.3.1).
@@ -2680,17 +2682,34 @@ Accessibility regressions are locked in by dedicated test files. Keep all of the
 12. **`shows the downloads histogram when data is available`** — `getDownloadsPerMonth` resolves with two data points; asserts the `data-testid="downloads-histogram-card"` element appears in the DOM.
 13. **`shows a downloads error banner when the stats fetch fails`** — `getDownloadsPerMonth` rejects with `Error("network error")`; asserts the error message `"network error"` is rendered in an `AlertBanner`.
 
-**Reading Activity section — seven tests:**
+**Reading Activity section — nine tests:**
 
 14. **`shows Reading Activity heading when stats load`** — seeds one library; `getReadingProgressStats` resolves with a zeroed stats object; asserts the `"Reading Activity"` heading is present after stats load.
 15. **`shows KOSync nudge when total_tracked is 0`** — `getReadingProgressStats` resolves with `total_tracked: 0`; asserts the `"No reading activity recorded yet"` nudge text is rendered.
 16. **`shows streak badge when current_streak > 0`** — `getReadingProgressStats` resolves with `current_streak: 5`; asserts the `"5-day streak"` badge is visible.
 17. **`shows finished books badge when total_finished > 0`** — `getReadingProgressStats` resolves with `total_finished: 2`; asserts the `"2 books finished"` badge is visible.
-18. **`shows Currently Reading list with document names`** — `getReadingProgressStats` resolves with one in-progress item (`document: "my-great-book"`, `percentage: 0.42`, `device: "KOReader"`); asserts the document name, `"42%"`, and `"KOReader"` are all rendered.
-19. **`shows estimated time remaining when provided`** — `getReadingProgressStats` resolves with `estimated_minutes_remaining: 45`; asserts the `"~45m left"` label is rendered.
-20. **`does not show reading activity section while stats are still loading`** — `getReadingProgressStats` never resolves; asserts the `"Reading Activity"` heading is absent and the welcome fallback is shown instead.
+18. **`uses accessible contrast classes for tracked documents text`** — `getReadingProgressStats` resolves with `total_tracked: 2`; asserts the tracked-documents count element carries `text-ink-500` and `dark:text-ink-300` Tailwind classes (WCAG 1.4.3).
+19. **`shows Currently Reading list with document names`** — `getReadingProgressStats` resolves with one in-progress item (`document: "my-great-book"`, `percentage: 0.42`, `device: "KOReader"`); asserts the document name, `"42%"`, and `"KOReader"` are all rendered.
+20. **`shows estimated time remaining when provided`** — `getReadingProgressStats` resolves with `estimated_minutes_remaining: 45`; asserts the `"~45m left"` label is rendered.
+21. **`does not show reading activity section while stats are still loading`** — `getReadingProgressStats` never resolves; asserts the `"Reading Activity"` heading is absent and the welcome fallback is shown instead.
+22. **`shows a reading stats error banner when the fetch fails`** — `getReadingProgressStats` rejects with `Error("reading stats unavailable")`; asserts the error message is rendered in an `AlertBanner` and the `"Welcome to Biblioteka"` fallback heading is **not** shown alongside it.
 
-> **Mocking note:** `libraryStore` (from `../stores/libraries.svelte`), `routerStore` (from `../stores/router.svelte`), `getTotalBooksCount`, `getDownloadsPerMonth`, and `getReadingProgressStats` (all from `../lib/api`) and all `lucide-svelte` icons are mocked. `beforeEach` resets `libraryStore.loaded` and `libraries`, and resets `getTotalBooksCount` (to resolve `0`), `getDownloadsPerMonth` (to resolve `[]`), and `getReadingProgressStats` (to resolve a zero-activity stats object). `afterEach` calls `cleanup()` and `vi.clearAllMocks()` to prevent state leakage between tests.
+**Year in Books — five tests (test #23 at top-level; tests 24–27 in nested `describe("Year in Books")`):**
+23. **`shows a year-in-books error banner when the fetch fails`** — `getYearInBooks` rejects with `Error("year in books unavailable")`; asserts the error message is rendered in an `AlertBanner`.
+24. **`does not show year-in-books card when all stats are zero`** — `getYearInBooks` resolves with all-zero stats; asserts `data-testid="year-in-books-card"` is absent.
+25. **`shows year-in-books card when there are books finished`** — `getYearInBooks` resolves with `books_finished: 3, active_days: 20, longest_streak: 5, total_downloads: 8`; asserts the `"2026 in Books"` heading, the counts, and the `"books finished"` / `"days reading"` labels are all rendered.
+26. **`shows year-in-books card when there are downloads only`** — `getYearInBooks` resolves with `books_finished: 0, active_days: 0, total_downloads: 5`; asserts the card renders (non-zero downloads trigger display).
+27. **`uses singular 'book' when exactly one book is finished`** — `getYearInBooks` resolves with `books_finished: 1`; asserts the label reads `"book finished"` (singular).
+
+**Onboarding skipped-state — five tests:**
+
+28. **`shows 'Add Your First Library' button when libraries are empty and not skipped`** — `onboardingStore.isSkipped` returns `false`; asserts the "Get started with Biblioteka" wizard entry card and the "Add Your First Library" button are rendered.
+29. **`shows 'No libraries yet' heading when libraries are empty and skipped`** — `onboardingStore.isSkipped` returns `true`; asserts the subtle `"No libraries yet"` heading appears instead of the wizard card.
+30. **`shows 'Set up your first library' button in skipped state`** — skipped state; asserts the `"Set up your first library"` secondary action button is rendered.
+31. **`navigates to libraries/setup from the skipped-state button`** — skipped state; clicks the secondary button; asserts `routerStore.navigate` is called with `"libraries/setup"`.
+32. **`does not show the 'Get started' wizard card in skipped state`** — skipped state; asserts the prominent `"Get started with Biblioteka"` card is absent.
+
+> **Mocking note:** `libraryStore` (from `../stores/libraries.svelte`), `routerStore` (from `../stores/router.svelte`), `onboardingStore` (from `../stores/onboarding.svelte`), `authStore` (from `../stores/auth.svelte`), `getTotalBooksCount`, `getDownloadsPerMonth`, `getReadingProgressStats`, `getYearInBooks`, and `getRecommendations` (all from `../lib/api`) and all `lucide-svelte` icons are mocked. `beforeEach` resets `libraryStore.loaded` and `libraries`, and resets the API mocks to their default resolved values. `afterEach` calls `cleanup()` and `vi.clearAllMocks()` to prevent state leakage between tests.
 
 #### `LibraryForm.test.ts`
 
@@ -2768,13 +2787,26 @@ Accessibility regressions are locked in by dedicated test files. Keep all of the
 
 > **Mocking note:** The test file mocks `libraryStore`, `routerStore`, `authStore` (user with `id: "user-1"`), `onboardingStore`, and all `lucide-svelte` icon components. `afterEach(cleanup)` prevents DOM leakage between tests.
 
+#### `ReadingListDetail.test.ts`
+
+`frontend/src/components/reading-lists/ReadingListDetail.test.ts` verifies the full lifecycle of reading list detail interactions: display, editing, deletion, error surfacing, and pagination. Eight tests in one `ReadingListDetail` describe block:
+
+1. **`renders the reading list from the store`** — seeds `readingListStore.lists` with a fixture list; asserts the `<h1>` heading shows the list name, the book count `"26 books"` is rendered, and the description text appears.
+2. **`loads lists when the store is not loaded`** — mounts with `readingListStore.loaded = false`; asserts `readingListStore.load` is called once.
+3. **`saves edits through the reading list store`** — clicks Edit, types an updated name and description (with surrounding whitespace), clicks Save; asserts `readingListStore.update` is called with the trimmed values.
+4. **`surfaces save API errors in the edit form`** — `readingListStore.update` rejects with `Error("Name already taken")`; clicks Save; asserts a `role="alert"` element shows the error and the `"Edit Reading List"` heading remains visible (form stays open).
+5. **`cancels editing and restores original values when editing is restarted`** — types a temporary name change, clicks Cancel, then clicks Edit again; asserts the name input has reverted to the original value.
+6. **`shows delete confirmation and deletes the list on confirm`** — clicks Delete; asserts the `"Delete this list?"` confirmation text appears and the confirm button receives focus; clicks `"Yes, delete"`; asserts `readingListStore.remove` is called with the list ID and `routerStore.navigate` is called with `"reading-lists"`.
+7. **`surfaces delete API errors in the component error state`** — `readingListStore.remove` rejects with `Error("Delete failed")`; clicks Delete and confirms; asserts a `role="alert"` element shows the error and the confirmation dialog is dismissed.
+8. **`renders paginated books and requests the next page`** — `listReadingListBooks` returns a total of 50 books; asserts the first page book appears; clicks Next; asserts `listReadingListBooks` is called with `offset=24`.
+
+> **Mocking note:** The test file mocks `listReadingListBooks` (from `../lib/api`), `readingListStore` (from `../stores/reading-lists.svelte`), `routerStore` (from `../stores/router.svelte`), and all `lucide-svelte` icon components. `beforeEach` seeds `readingListStore.lists` with a fixture list and resets mock state. `afterEach` calls `cleanup()` and `vi.clearAllMocks()`.
+
 #### `TextInput.test.ts`
 
 `frontend/src/components/ui/TextInput.test.ts` verifies ARIA forwarding and accessibility-critical styling on the reusable text input (WCAG 1.4.3, 4.1.2). The key accessibility test:
 
 1. **`uses ink-300 for dark-mode placeholder contrast (WCAG 1.4.3)`** — renders `TextInput` without a `disabled` prop and asserts the class string of the underlying `<input>` contains `dark:placeholder:text-ink-300` and does **not** contain `dark:placeholder:text-ink-500`. This pins the contrast fix introduced in PR #1512 and prevents regressions.
-
-Additional tests verify attribute forwarding:
 
 2. **`forwards placeholder attribute`** — asserts a `placeholder` prop is applied to the underlying element.
 3. **`forwards aria-describedby attribute`** — asserts the ARIA attribute reaches the underlying element, enabling inline error association patterns.
