@@ -8,6 +8,7 @@
     getPasskeyEnabled,
     listPasskeyCredentials,
     deletePasskeyCredential,
+    prepareCreationOptions,
     beginPasskeyRegistration,
     finishPasskeyRegistration,
   } from "../../lib/api";
@@ -103,8 +104,7 @@
         await beginPasskeyRegistration(trimmedName);
 
       const credential = await navigator.credentials.create({
-        publicKey: (options as { publicKey: unknown })
-          .publicKey as PublicKeyCredentialCreationOptions,
+        publicKey: prepareCreationOptions(options),
       });
 
       if (!credential || !(credential instanceof PublicKeyCredential)) {
@@ -300,7 +300,7 @@
         <AlertBanner variant="success">Display name updated</AlertBanner>
       {/if}
 
-      <Button type="submit" disabled={nameLoading} class="w-full px-4 py-2.5">
+      <Button type="submit" disabled={nameLoading} class="w-full">
         {nameLoading ? "Saving..." : "Save Name"}
       </Button>
     </form>

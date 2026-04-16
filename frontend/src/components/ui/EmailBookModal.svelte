@@ -204,7 +204,7 @@
               <select
                 id="email-file-select"
                 bind:value={selectedFileId}
-                class="w-full px-4 py-2 border border-ink-400 dark:border-ink-400 rounded-xl bg-white dark:bg-ink-800 text-ink-900 dark:text-cream-100 focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none"
+                class="w-full px-4 py-2 border border-ink-400 dark:border-ink-400 rounded-xl bg-white dark:bg-ink-800 text-ink-900 dark:text-cream-100 focus:ring-2 focus:ring-accent-500 focus:border-transparent focus-visible:outline-none"
               >
                 {#each book.files as f (f.id)}
                   <option value={f.id}>{fileLabel(f)}</option>
@@ -232,7 +232,7 @@
               placeholder="reader@example.com"
               required
               autocomplete="email"
-              class="w-full px-4 py-2 border border-ink-400 dark:border-ink-400 rounded-xl bg-white dark:bg-ink-800 text-ink-900 dark:text-cream-100 focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none placeholder:text-ink-500 dark:placeholder:text-ink-300"
+              class="w-full px-4 py-2 border border-ink-400 dark:border-ink-400 rounded-xl bg-white dark:bg-ink-800 text-ink-900 dark:text-cream-100 focus:ring-2 focus:ring-accent-500 focus:border-transparent focus-visible:outline-none placeholder:text-ink-500 dark:placeholder:text-ink-300"
             />
           </div>
 
