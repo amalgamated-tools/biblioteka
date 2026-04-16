@@ -36,12 +36,25 @@
 
 <div
   {id}
-  class="px-4 py-3 rounded-xl text-sm animate-scale-in {styles[
+  class="px-4 py-3 rounded-xl text-sm animate-scale-in flex items-start gap-2 {styles[
     variant
   ]} {extraClass ?? ''}"
   role={resolvedRole}
   aria-live={liveRegion}
   data-testid={testId}
 >
+  {#if variant === "error"}
+    <span
+      class="inline-flex items-center justify-center w-4 h-4 mt-0.5 shrink-0 font-bold"
+      aria-hidden="true"
+      data-testid="alert-banner-error-icon">✕</span
+    >
+  {:else}
+    <span
+      class="inline-flex items-center justify-center w-4 h-4 mt-0.5 shrink-0 font-bold"
+      aria-hidden="true"
+      data-testid="alert-banner-success-icon">✓</span
+    >
+  {/if}
   {@render children()}
 </div>

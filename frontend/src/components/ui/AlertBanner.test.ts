@@ -82,6 +82,32 @@ describe("AlertBanner", () => {
     expect(screen.getByRole("status").className).toContain("bg-success-50");
   });
 
+  it("renders an error icon for error variant", () => {
+    const { container } = render(AlertBanner, {
+      variant: "error",
+      children: makeChildren("Error"),
+    });
+    expect(
+      container.querySelector('[data-testid="alert-banner-error-icon"]'),
+    ).toHaveAttribute("aria-hidden", "true");
+    expect(
+      container.querySelector('[data-testid="alert-banner-success-icon"]'),
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders a success icon for success variant", () => {
+    const { container } = render(AlertBanner, {
+      variant: "success",
+      children: makeChildren("Success"),
+    });
+    expect(
+      container.querySelector('[data-testid="alert-banner-success-icon"]'),
+    ).toHaveAttribute("aria-hidden", "true");
+    expect(
+      container.querySelector('[data-testid="alert-banner-error-icon"]'),
+    ).not.toBeInTheDocument();
+  });
+
   it("appends the extra class string", () => {
     render(AlertBanner, {
       variant: "error",
