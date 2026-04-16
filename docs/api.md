@@ -84,28 +84,40 @@ Common HTTP status codes:
 
 | Group | Endpoints | Notes |
 |-------|-----------|-------|
-| **Auth** | `POST /api/auth/signup`, `/login`, `/logout`, `GET /api/auth/me`, `PUT /api/auth/password` | Account creation, session management, password change |
+| **Auth** | `POST /api/auth/signup`, `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`, `PUT /api/auth/password`, `GET /api/auth/signup/enabled` | Account creation, session management, password change |
+| **Passkeys (WebAuthn)** | `/api/auth/passkey/enabled`, `/api/auth/passkey/register/begin`, `/api/auth/passkey/register/finish`, `/api/auth/passkey/login/begin`, `/api/auth/passkey/login/finish`, `GET /api/auth/passkey/credentials`, `DELETE /api/auth/passkey/credentials/{id}` | WebAuthn passkey registration and login; registration and credential management — JWT only; login endpoints are public |
 | **OIDC / SSO** | `/api/auth/oidc/*` | OIDC login and account-link flow |
-| **API Keys** | `/api/api-keys`, `/api/api-keys/{id}` | Long-lived `bib_`-prefixed access tokens |
-| **Config** | `/api/config/status`, `/api/config/oidc`, `/api/config/smtp` | `/api/config/status` — JWT only (any authenticated user); OIDC and SMTP config — admin only |
+| **API Keys** | `/api/api-keys`, `/api/api-keys/{id}` | Long-lived `bib_`-prefixed access tokens; JWT only |
+| **Config** | `/api/config/status`, `/api/config/llm`, `/api/config/oidc`, `/api/config/smtp`, `/api/config/smtp/test`, `/api/config/watch-folder` | `/api/config/status` — JWT only (any authenticated user); all others — admin only |
+| **Admin** | `GET /api/admin/users`, `PUT /api/admin/users/{id}`, `POST /api/admin/search/reindex` | User listing, promote/demote admin, rebuild full-text search index; admin only |
 | **Libraries** | `/api/libraries`, `/api/libraries/{id}` | Named book collections with file-system paths |
 | **Authors** | `/api/authors`, `/api/authors/{id}` | Author management |
 | **Series** | `/api/series`, `/api/series/{id}` | Series management |
-| **Books** | `/api/books`, `/api/books/{id}` and sub-resources | Full book CRUD including author, series, and file associations |
+| **Tags** | `/api/tags`, `/api/tags/{id}`, `GET`/`PUT /api/books/{id}/tags` | Tag management; book tags updated via the book sub-resource |
+| **Books** | `/api/books`, `/api/books/{id}` and sub-resources (`/authors`, `/series`, `/tags`, `/files`, `/reading-lists`, `/metadata`, `/metadata/ai`, `/metadata/ai-fetch`, `/metadata/ai-apply`, `/metadata/ai-reject`) | Full book CRUD including author, series, tag, and file associations; AI enrichment enqueues a background job |
 | **Book Files** | `/api/book-files/{id}` | Individual book file records |
-| **Audit Logs** | `GET /api/audit-logs` | Append-only action history (admin only) |
-| **OPDS Credentials** | `/api/opds/credentials` | Per-user OPDS Basic Auth credential management |
+| **Calibre Import** | `POST /api/calibre-import/preview`, `/api/calibre-import/confirm` | Preview and apply a Calibre library import; admin only |
+| **Reading Lists** | `/api/reading-lists`, `/api/reading-lists/{id}`, `/api/reading-lists/{id}/books` | Per-user ordered book lists |
+| **Reading Groups** | `/api/groups`, `/api/groups/{id}`, `/api/groups/{id}/members`, `/api/groups/{id}/lists`, `/api/groups/{id}/progress` | Collaborative reading groups with shared lists and progress tracking |
+| **Reading Progress** | `GET /api/reading-progress/stats` | Per-user KOReader reading statistics |
+| **Recommendations** | `GET /api/recommendations` | Personalized book recommendations based on reading history |
+| **Stats** | `GET /api/stats/downloads-per-month`, `GET /api/stats/year-in-books` | Download histogram and annual reading summary |
+| **Audit Logs** | `GET /api/audit-logs` | Append-only action history; admin only |
+| **OPDS Credentials** | `/api/opds/credentials` | Per-user OPDS Basic Auth credential management; JWT only |
 | **OPDS Catalog** | `/opds/*` | OPDS 1.2 catalog for e-reader apps |
-| **Kobo Tokens** | `/api/kobo/tokens`, `/api/kobo/tokens/{id}` | Kobo sync token management |
+| **Kobo Tokens** | `/api/kobo/tokens`, `/api/kobo/tokens/{id}` | Kobo sync token management; JWT only |
+| **Kobo Sync** | `/kobo/*` | Kobo device sync protocol (requires a Kobo token) |
 | **KOReader / KOSync** | `/api/kosync/credentials`, `/api/user/*`, `/api/syncs/*` | KOReader kosync-compatible sync |
 | **Swagger UI** | `/swagger/` | Interactive API documentation |
-| **Monitoring** | `/asynqmon/` | Background job dashboard (admin only) |
+| **Monitoring** | `/asynqmon/` | Background job dashboard; admin only |
 
 ---
 
 ## Related guides
 
-- [Authentication guide](authentication.md) — configure JWT, OIDC, and account linking
+- [Authentication guide](authentication.md) — configure JWT, OIDC, passkeys, and account linking
+- [Metadata guide](metadata.md) — book metadata extraction and AI enrichment
+- [Background Jobs guide](background-jobs.md) — background job types, Redis worker, and job monitoring
 - [OPDS Catalog guide](opds.md) — set up OPDS credentials and connect an e-reader
 - [Kobo Sync guide](kobo.md) — pair a Kobo device and manage sync tokens
 - [KOReader Sync guide](koreader.md) — configure KOSync credentials
