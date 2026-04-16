@@ -2,10 +2,9 @@ module github.com/amalgamated-tools/biblioteka
 
 go 1.26.1
 
-require github.com/amalgamated-tools/goauth v0.1.1
-
 require (
 	github.com/Khan/genqlient v0.8.1
+	github.com/amalgamated-tools/goauth v0.1.1
 	github.com/buger/jsonparser v1.1.2
 	github.com/coreos/go-oidc/v3 v3.18.0
 	github.com/go-webauthn/webauthn v0.16.4
