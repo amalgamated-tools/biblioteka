@@ -11,9 +11,9 @@ import (
 )
 
 func TestMiddleware_MissingAuthorizationHeader(t *testing.T) {
-	jm, err := NewJWTManager("secret", time.Hour)
+	jm, err := NewJWTManager("secret", time.Hour, "test")
 	require.NoError(t, err, "NewJWTManager()")
-	mw := Middleware(jm, nil)
+	mw := Middleware(jm, testJWTOnlyConfig(), nil)
 
 	called := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -30,9 +30,9 @@ func TestMiddleware_MissingAuthorizationHeader(t *testing.T) {
 }
 
 func TestMiddleware_InvalidAuthorizationFormat(t *testing.T) {
-	jm, err := NewJWTManager("secret", time.Hour)
+	jm, err := NewJWTManager("secret", time.Hour, "test")
 	require.NoError(t, err, "NewJWTManager()")
-	mw := Middleware(jm, nil)
+	mw := Middleware(jm, testJWTOnlyConfig(), nil)
 
 	called := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -52,9 +52,9 @@ func TestMiddleware_InvalidAuthorizationFormat(t *testing.T) {
 }
 
 func TestMiddleware_InvalidToken(t *testing.T) {
-	jm, err := NewJWTManager("secret", time.Hour)
+	jm, err := NewJWTManager("secret", time.Hour, "test")
 	require.NoError(t, err, "NewJWTManager()")
-	mw := Middleware(jm, nil)
+	mw := Middleware(jm, testJWTOnlyConfig(), nil)
 
 	called := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -72,9 +72,9 @@ func TestMiddleware_InvalidToken(t *testing.T) {
 }
 
 func TestMiddleware_ValidToken(t *testing.T) {
-	jm, err := NewJWTManager("secret", time.Hour)
+	jm, err := NewJWTManager("secret", time.Hour, "test")
 	require.NoError(t, err, "NewJWTManager()")
-	mw := Middleware(jm, nil)
+	mw := Middleware(jm, testJWTOnlyConfig(), nil)
 
 	token, err := jm.CreateToken(t.Context(), "user-abc")
 	require.NoError(t, err, "CreateToken()")
@@ -115,97 +115,16 @@ func assertJSONError(t *testing.T, body []byte, wantMsg string) {
 	require.Equal(t, wantMsg, resp["error"])
 }
 
-// --- extractToken unit tests ---
-
-func TestExtractToken(t *testing.T) {
-	tests := []struct {
-		name       string
-		header     string // Authorization header value ("" = not set)
-		cookie     string // cookie value ("" = no cookie)
-		wantToken  string
-		wantSource tokenSource
-	}{
-		{
-			name:       "no header no cookie",
-			wantToken:  "",
-			wantSource: tokenSourceNone,
-		},
-		{
-			name:       "Bearer header only",
-			header:     "Bearer validtoken",
-			wantToken:  "validtoken",
-			wantSource: tokenSourceHeader,
-		},
-		{
-			name:       "cookie only",
-			cookie:     "cookietoken",
-			wantToken:  "cookietoken",
-			wantSource: tokenSourceCookie,
-		},
-		{
-			name:       "both present, header takes precedence",
-			header:     "Bearer headertoken",
-			cookie:     "cookietoken",
-			wantToken:  "headertoken",
-			wantSource: tokenSourceHeader,
-		},
-		{
-			name:       "non-Bearer header with valid cookie falls back to cookie",
-			header:     "Basic sometoken",
-			cookie:     "cookietoken",
-			wantToken:  "cookietoken",
-			wantSource: tokenSourceCookie,
-		},
-		{
-			name:       "non-Bearer header without cookie",
-			header:     "Basic sometoken",
-			wantToken:  "",
-			wantSource: tokenSourceNone,
-		},
-		{
-			name:       "Bearer with empty token falls back to cookie",
-			header:     "Bearer ",
-			cookie:     "cookietoken",
-			wantToken:  "cookietoken",
-			wantSource: tokenSourceCookie,
-		},
-		{
-			name:       "Bearer with whitespace-only token falls back to cookie",
-			header:     "Bearer   ",
-			cookie:     "cookietoken",
-			wantToken:  "cookietoken",
-			wantSource: tokenSourceCookie,
-		},
-		{
-			name:       "empty cookie value ignored",
-			cookie:     "",
-			wantToken:  "",
-			wantSource: tokenSourceNone,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			r := httptest.NewRequest(http.MethodGet, "/", nil)
-			if tt.header != "" {
-				r.Header.Set("Authorization", tt.header)
-			}
-			if tt.cookie != "" {
-				r.AddCookie(&http.Cookie{Name: tokenCookieName, Value: tt.cookie})
-			}
-			got, gotSource, _ := extractToken(r)
-			require.Equal(t, tt.wantToken, got)
-			require.Equal(t, tt.wantSource, gotSource)
-		})
-	}
-}
+// extractToken is internal to goauth; its behavior is covered by the
+// Middleware tests above (header precedence, cookie fallback, empty/whitespace
+// tokens). Unit tests for extractToken belong in goauth's test suite.
 
 // --- Cookie-based auth tests for Middleware ---
 
 func TestMiddleware_ValidTokenViaCookie(t *testing.T) {
-	jm, err := NewJWTManager("secret", time.Hour)
+	jm, err := NewJWTManager("secret", time.Hour, "test")
 	require.NoError(t, err, "NewJWTManager()")
-	mw := Middleware(jm, nil)
+	mw := Middleware(jm, testJWTOnlyConfig(), nil)
 
 	token, err := jm.CreateToken(t.Context(), "cookie-user")
 	require.NoError(t, err, "CreateToken()")
@@ -225,9 +144,9 @@ func TestMiddleware_ValidTokenViaCookie(t *testing.T) {
 }
 
 func TestMiddleware_InvalidTokenViaCookie(t *testing.T) {
-	jm, err := NewJWTManager("secret", time.Hour)
+	jm, err := NewJWTManager("secret", time.Hour, "test")
 	require.NoError(t, err, "NewJWTManager()")
-	mw := Middleware(jm, nil)
+	mw := Middleware(jm, testJWTOnlyConfig(), nil)
 
 	called := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -245,9 +164,9 @@ func TestMiddleware_InvalidTokenViaCookie(t *testing.T) {
 }
 
 func TestMiddleware_HeaderTakesPrecedenceOverCookie(t *testing.T) {
-	jm, err := NewJWTManager("secret", time.Hour)
+	jm, err := NewJWTManager("secret", time.Hour, "test")
 	require.NoError(t, err, "NewJWTManager()")
-	mw := Middleware(jm, nil)
+	mw := Middleware(jm, testJWTOnlyConfig(), nil)
 
 	headerToken, err := jm.CreateToken(t.Context(), "header-user")
 	require.NoError(t, err, "CreateToken()")

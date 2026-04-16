@@ -1,13 +1,18 @@
 package auth
 
-import (
-	"crypto/sha256"
-	"encoding/hex"
+import goauth "github.com/amalgamated-tools/goauth/auth"
+
+// hashHighEntropyToken delegates to goauth's exported function.
+// Kept as a package-level unexported function for backward compatibility
+// with protocol middleware in this package.
+func hashHighEntropyToken(token string) string {
+	return goauth.HashHighEntropyToken(token)
+}
+
+// Re-export symbols from goauth that this package's protocol middleware uses.
+var (
+	UserIDFromContext = goauth.UserIDFromContext
+	ContextWithUserID = goauth.ContextWithUserID
 )
 
-// hashHighEntropyToken returns the hex-encoded SHA-256 hash of a high-entropy token.
-// SHA-256 is appropriate here because these tokens are random values, not passwords.
-func hashHighEntropyToken(token string) string {
-	h := sha256.Sum256([]byte(token)) // #nosec G401 -- not a password; high-entropy token
-	return hex.EncodeToString(h[:])
-}
+const BcryptCost = goauth.BcryptCost

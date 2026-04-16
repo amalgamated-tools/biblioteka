@@ -224,3 +224,20 @@ func TestListUsersEmptyTable(t *testing.T) {
 	require.Len(t, users, 0)
 	require.NotNil(t, users)
 }
+
+func TestCountUsers(t *testing.T) {
+	d := newTestDB(t)
+
+	count, err := d.CountUsers(t.Context())
+	require.NoError(t, err, "CountUsers() on empty table error")
+	require.Equal(t, 0, count)
+
+	_, err = d.CreateUser(t.Context(), "Alice", "alice@example.com", "pw")
+	require.NoError(t, err, "CreateUser() for Alice error")
+	_, err = d.CreateUser(t.Context(), "Bob", "bob@example.com", "pw")
+	require.NoError(t, err, "CreateUser() for Bob error")
+
+	count, err = d.CountUsers(t.Context())
+	require.NoError(t, err, "CountUsers() with users error")
+	require.Equal(t, 2, count)
+}
