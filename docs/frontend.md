@@ -51,7 +51,7 @@ frontend/
         AlertBanner.svelte   Dismissible alert / error banner
         BookCard.svelte      Card widget displaying a single book summary
         BookList.svelte      Paginated book list with grid / table view toggle; accepts a `fetchBooks` callback; supports optional polling for scan-aware empty states; table-view rows are keyboard-accessible via `tabindex="0"` and Enter-key navigation (WCAG 2.1.1)
-        Button.svelte        Reusable button with `primary`, `secondary`, and `danger` variants
+        Button.svelte        Reusable button with `primary`, `secondary`, and `danger` variants and two sizes (`sm`, `md`); renders as `inline-flex items-center justify-center` with built-in padding per size
         DeleteConfirmation.svelte  Accessible inline delete-confirmation dialog (`role="alertdialog"`, Escape-to-dismiss, autofocus on open); encapsulates the standard pattern for accessible destructive-action confirmations (WCAG 4.1.2)
         DownloadsHistogram.svelte  Bar chart showing monthly download counts; visual bars are `aria-hidden` and paired with a screen-reader-only data table (`Month` + `Downloads`) as the accessible equivalent; count tooltip uses `text-ink-600 dark:text-ink-200` and month labels use `text-ink-600 dark:text-ink-400` to meet the WCAG 1.4.3 Contrast Minimum (Level AA)
         EmailBookModal.svelte      Modal dialog for emailing a book file to an address; implements full focus trapping (Tab / Shift+Tab wrap-around), Escape-to-dismiss, and autofocus on the Close button (WCAG 2.1.1, 2.1.2)
@@ -914,18 +914,26 @@ The `variant` value controls both the colour scheme and the default ARIA `role`:
 
 ### `Button.svelte`
 
-A styled button with three visual variants.
+A styled button with three visual variants and two size options. Renders as `inline-flex items-center justify-center` with built-in padding and text size controlled by the `size` prop.
 
 **Props:**
 
 | Prop | Type | Required | Default | Description |
 |------|------|----------|---------|-------------|
 | `variant` | `"primary" \| "secondary" \| "danger"` | | `"primary"` | Visual style |
+| `size` | `"sm" \| "md"` | | `"md"` | Button size; controls padding and text size |
 | `disabled` | `boolean` | | `false` | Disables the button and applies muted styling |
 | `type` | `"button" \| "submit" \| "reset"` | | `"button"` | HTML button type |
-| `class` | `string` | | — | Additional Tailwind classes (e.g. padding, width) |
+| `class` | `string` | | — | Additional Tailwind classes appended to the button (e.g. `w-full`, `gap-2`) |
 | `onclick` | `(e: MouseEvent) => void` | | — | Click handler |
 | `children` | `Snippet` | ✓ | — | Button label content |
+
+**Sizes:**
+
+| Size | Padding | Text size | When to use |
+|------|---------|-----------|-------------|
+| `md` (default) | `px-4 py-2.5` | `text-sm` | Standard form submit buttons, primary actions |
+| `sm` | `px-3 py-1.5` | `text-xs` | Compact inline actions, toolbar buttons |
 
 **Usage:**
 
@@ -937,9 +945,8 @@ A styled button with three visual variants.
 <Button variant="primary" type="submit">Save</Button>
 <Button variant="secondary" onclick={cancel}>Cancel</Button>
 <Button variant="danger" onclick={deleteItem}>Delete</Button>
+<Button size="sm" variant="secondary" onclick={dismiss}>Dismiss</Button>
 ```
-
-Padding is intentionally left to the caller via the `class` prop to avoid Tailwind cascade conflicts.
 
 ---
 
@@ -1187,16 +1194,17 @@ This preserves table semantics while ensuring keyboard and assistive-technology 
 
 ### `Button.svelte`
 
-A styled button with three visual variants. Use this instead of a raw `<button>` element whenever a button appears in the application UI, so styling is consistent.
+A styled button with three visual variants and two size options. Use this instead of a raw `<button>` element whenever a button appears in the application UI, so styling is consistent. The component renders as `inline-flex items-center justify-center` — callers do not need to add flex or padding classes for standard use.
 
 **Props:**
 
 | Prop | Type | Required | Default | Description |
 |------|------|----------|---------|-------------|
 | `variant` | `"primary" \| "secondary" \| "danger"` | | `"primary"` | Visual style |
+| `size` | `"sm" \| "md"` | | `"md"` | Button size; controls padding and text size |
 | `type` | `"button" \| "submit" \| "reset"` | | `"button"` | HTML button type |
 | `disabled` | `boolean` | | `false` | Disables the button and applies reduced-opacity styling |
-| `class` | `string` | | — | Additional Tailwind classes appended to the button |
+| `class` | `string` | | — | Additional Tailwind classes appended to the button (e.g. `w-full`, `gap-2`, `flex-1`) |
 | `onclick` | `(e: MouseEvent) => void` | | — | Click handler |
 | `children` | `Snippet` | ✓ | — | Button label rendered as slot content |
 
@@ -1207,6 +1215,13 @@ A styled button with three visual variants. Use this instead of a raw `<button>`
 | `primary` | Primary call-to-action; accent-colored gradient background |
 | `secondary` | Secondary action; transparent background with a subtle border |
 | `danger` | Destructive actions such as delete or revoke; red background |
+
+**Sizes:**
+
+| Size | Padding | Text size | When to use |
+|------|---------|-----------|-------------|
+| `md` (default) | `px-4 py-2.5` | `text-sm` | Standard form submit buttons, primary actions |
+| `sm` | `px-3 py-1.5` | `text-xs` | Compact inline actions, toolbar buttons, side-by-side button pairs |
 
 **Usage:**
 
@@ -1222,9 +1237,16 @@ A styled button with three visual variants. Use this instead of a raw `<button>`
 <Button onclick={handleSave}>Save</Button>
 <Button variant="secondary" onclick={handleCancel}>Cancel</Button>
 <Button variant="danger" onclick={handleDelete}>Delete</Button>
+
+<!-- Small size for compact contexts -->
+<Button size="sm" variant="secondary" onclick={handleDismiss}>Dismiss</Button>
 ```
 
-Padding is intentionally left to the caller via the `class` prop to avoid Tailwind cascade conflicts.
+When adding an icon alongside the button label, pass `class="gap-2"` to space the icon and text:
+
+```svelte
+<Button class="gap-2"><SaveIcon aria-hidden="true" />Save changes</Button>
+```
 
 ---
 
@@ -2728,6 +2750,29 @@ Additional tests verify attribute forwarding:
 2. **`forwards placeholder attribute`** — asserts a `placeholder` prop is applied to the underlying element.
 3. **`forwards aria-describedby attribute`** — asserts the ARIA attribute reaches the underlying element, enabling inline error association patterns.
 4. **`forwards id attribute`** — asserts `id` forwarding so explicit `<label for>` associations work correctly.
+
+> **Testing note:** `afterEach(cleanup)` removes rendered components between tests.
+
+#### `Button.test.ts`
+
+`frontend/src/components/ui/Button.test.ts` verifies rendering, variant classes, size classes, and interaction behavior of the reusable button component. Sixteen tests in one `Button` describe block:
+
+1. **`renders a button element`** — asserts the component renders a `<button>` in the DOM.
+2. **`renders children content`** — asserts the `children` snippet is rendered inside the button.
+3. **`defaults to type='button'`** — asserts the `type` attribute is `"button"` when not specified.
+4. **`forwards the type prop to the button element`** — renders with `type="submit"` and asserts the attribute reaches the underlying element.
+5. **`applies primary variant gradient classes by default`** — asserts the button carries `bg-gradient-to-r` and `from-accent-600` classes when no `variant` is passed.
+6. **`applies secondary variant classes`** — renders with `variant="secondary"`; asserts `border` is present and `bg-gradient-to-r` is absent.
+7. **`applies danger variant classes`** — renders with `variant="danger"`; asserts the button carries `bg-danger-600`.
+8. **`is not disabled by default`** — asserts the button is not disabled without the `disabled` prop.
+9. **`disables the button when disabled prop is true`** — renders with `disabled={true}`; asserts the button element is disabled.
+10. **`includes the disabled cursor Tailwind variant class`** — asserts the button's class string contains `disabled:cursor-not-allowed` so the no-entry cursor appears even when the button is enabled (the class is always present; the variant activates at runtime).
+11. **`calls onclick handler when clicked`** — attaches a `vi.fn()` handler; fires a click; asserts the handler was called once.
+12. **`does not fire onclick when button is disabled (userEvent respects disabled)`** — renders with `disabled={true}`; uses `userEvent.setup().click()`; asserts the handler was **not** called, confirming that `userEvent` respects the native disabled state.
+13. **`appends the extra class string to the button`** — renders with `class="my-extra-class"`; asserts the class appears on the button element.
+14. **`applies md size classes by default`** — asserts the button carries `px-4`, `py-2.5`, and `text-sm` when no `size` prop is passed.
+15. **`applies sm size classes when size='sm'`** — renders with `size="sm"`; asserts the button carries `px-3`, `py-1.5`, and `text-xs`.
+16. **`includes justify-center for centered content`** — asserts the button's class string contains `justify-center`, confirming that icon-and-label content is centered horizontally.
 
 > **Testing note:** `afterEach(cleanup)` removes rendered components between tests.
 
