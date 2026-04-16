@@ -169,7 +169,7 @@ Copy `.env.sample` to `.env` and adjust as needed. The `PORT` value can also be 
 | `SMTP_PASSWORD` | *(empty)* | SMTP authentication password |
 | `SMTP_FROM` | *(empty)* | Envelope `From` address for outgoing mail (e.g. `biblioteka@example.com`) |
 | `SMTP_TLS` | `starttls` | TLS mode: `none`, `starttls`, or `tls` |
-| `WEBAUTHN_RP_ID` | `localhost` | WebAuthn relying party ID — set to your domain (e.g. `books.example.com`) to enable passkey authentication. See [Passkeys](docs/authentication.md#passkeys-webauthn) |
+| `WEBAUTHN_RP_ID` | `localhost` | WebAuthn relying party ID — must match the domain your users access Biblioteka from (e.g. `books.example.com`). See [Passkeys](docs/authentication.md#passkeys-webauthn) |
 | `WEBAUTHN_RP_ORIGINS` | `http://localhost:8080` | Comma-separated allowed origins for WebAuthn (e.g. `https://books.example.com`) |
 | `WEBAUTHN_RP_NAME` | `Biblioteka` | Display name shown in the browser passkey dialog |
 | `TELEMETRY_ENABLED` | `false` | Send anonymous usage telemetry on first startup (opt-in, disabled by default) |
