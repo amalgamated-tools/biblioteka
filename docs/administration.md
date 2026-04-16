@@ -160,6 +160,7 @@ Entries are returned newest-first. `limit` defaults to `50` (maximum `200`); `of
 | `smtp.config_updated`  | `config`      | `host`, `from`                                   | `PUT /api/config/smtp`                  |
 | `fts.rebuilt`          | `fts`         | —                                                | `POST /api/admin/search/reindex`        |
 | `watch_folder.config_updated` | `config` | `path`, `library_id`                             | `PUT /api/config/watch-folder`          |
+| `llm.config_updated`   | `config`      | —                                                | `PUT /api/config/llm`                   |
 
 **Notes:** `user_id` is the actor who performed the action (`null` for system/background actions). Entries are append-only and never modified. Book files created by the background scanner do **not** currently produce an audit entry — only files created via the API are audited. Background imports run without an authenticated user context (there is no actor to attribute the action to), so they cannot be represented in the same audit model as user-initiated writes.
 
@@ -456,7 +457,7 @@ curl -X PUT http://localhost:8080/api/config/llm \
 
 | Field | Required when `enabled` | Description |
 |-------|------------------------|-------------|
-| `provider` | No | LLM provider name. Currently only `"ollama"` is accepted. Defaults to `"ollama"` when omitted. |
+| `provider` | No (defaults to `"ollama"`) | LLM provider name. Currently only `"ollama"` is accepted. |
 | `endpoint` | Yes | Base URL of the Ollama server (e.g. `"http://localhost:11434"`). |
 | `model` | Yes | Ollama model name (e.g. `"llama3"`, `"mistral"`, `"gemma3"`). The model must already be pulled on the Ollama server. |
 | `enabled` | — | `true` to activate AI enrichment; `false` to disable it. |
