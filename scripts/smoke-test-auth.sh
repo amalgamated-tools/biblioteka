@@ -134,9 +134,9 @@ pass "200, cookie reissued"
 # ---------------------------------------------------------------------------
 step "change password"
 body=$(jq -n --arg o "$PASSWORD" --arg n "$NEW_PASSWORD" \
-  '{old_password:$o,new_password:$n}')
+  '{currentPassword:$o,newPassword:$n}')
 code="$(curl -sS -b "$COOKIE_JAR" -o /tmp/smoke-changepw.json -w '%{http_code}' \
-  -H 'Content-Type: application/json' -H "Origin: $BASE_URL" \
+  -X PUT -H 'Content-Type: application/json' -H "Origin: $BASE_URL" \
   -d "$body" "$BASE_URL/api/auth/password")"
 [ "$code" = "200" ] || { cat /tmp/smoke-changepw.json; fail "change password expected 200, got $code"; }
 pass "200"
