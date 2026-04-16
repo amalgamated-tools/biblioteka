@@ -85,7 +85,7 @@ Common HTTP status codes:
 | Group | Endpoints | Notes |
 |-------|-----------|-------|
 | **Auth** | `POST /api/auth/signup`, `/login`, `/logout`, `GET /api/auth/me`, `PUT /api/auth/password`, `GET /api/auth/signup/enabled` | Account creation, session management, password change |
-| **Passkeys (WebAuthn)** | `/api/auth/passkey/enabled`, `/api/auth/passkey/register/begin`, `/register/finish`, `/login/begin`, `/login/finish`, `GET /api/auth/passkey/credentials`, `DELETE /api/auth/passkey/credentials/{id}` | WebAuthn passkey registration and login; JWT only |
+| **Passkeys (WebAuthn)** | `/api/auth/passkey/enabled`, `/api/auth/passkey/register/begin`, `/api/auth/passkey/register/finish`, `/api/auth/passkey/login/begin`, `/api/auth/passkey/login/finish`, `GET /api/auth/passkey/credentials`, `DELETE /api/auth/passkey/credentials/{id}` | WebAuthn passkey registration and login; registration and credential management — JWT only; login endpoints are public |
 | **OIDC / SSO** | `/api/auth/oidc/*` | OIDC login and account-link flow |
 | **API Keys** | `/api/api-keys`, `/api/api-keys/{id}` | Long-lived `bib_`-prefixed access tokens; JWT only |
 | **Config** | `/api/config/status`, `/api/config/llm`, `/api/config/oidc`, `/api/config/smtp`, `/api/config/smtp/test`, `/api/config/watch-folder` | `/api/config/status` — JWT only (any authenticated user); all others — admin only |
