@@ -126,7 +126,7 @@ Reading lists are managed via the REST API at `/api/reading-lists` and `/api/rea
 
 ## Recommendations
 
-A scored list of books the authenticated user has not yet read, generated locally without an external service. The ranking algorithm combines four signals derived from the user's KOSync reading history: author overlap with books the user is currently reading or has finished, series continuation (books in the same series as books the user is reading or has finished), publisher match, and overall download popularity across the instance. Results are returned by `GET /api/recommendations` (default 10, max 50) and displayed on the dashboard as a **You Might Also Like** panel backed by the `Recommendations.svelte` component. See [API Reference](api-reference.md).
+A scored list of books the authenticated user has not yet read, generated locally without an external service. The ranking algorithm combines four signals derived from the user's Kobo reading history: author overlap with books the user is currently reading or has finished, series continuation (books in the same series as books the user is reading or has finished), publisher match, and overall download popularity across the instance. Results are returned by `GET /api/recommendations` (default 10, max 50) and displayed on the dashboard as a **You Might Also Like** panel backed by the `Recommendations.svelte` component. See [API Reference](api-reference.md).
 
 ## Runes
 
