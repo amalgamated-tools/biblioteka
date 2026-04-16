@@ -34,8 +34,26 @@ func (m *mockAPIKeyValidator) TouchAPIKeyLastUsed(_ context.Context, id string) 
 	return nil
 }
 
+// The remaining APIKeyStore methods are unused by middleware tests; they exist
+// only so *mockAPIKeyValidator satisfies the full goauth interface.
+func (m *mockAPIKeyValidator) CreateAPIKey(_ context.Context, _, _, _, _ string) (*APIKey, error) {
+	return nil, sql.ErrNoRows
+}
+
+func (m *mockAPIKeyValidator) ListAPIKeysByUser(_ context.Context, _ string) ([]APIKey, error) {
+	return nil, nil
+}
+
+func (m *mockAPIKeyValidator) FindAPIKeyByIDAndUser(_ context.Context, _, _ string) (*APIKey, error) {
+	return nil, sql.ErrNoRows
+}
+
+func (m *mockAPIKeyValidator) DeleteAPIKey(_ context.Context, _, _ string) error {
+	return sql.ErrNoRows
+}
+
 func TestMiddleware_ValidAPIKey(t *testing.T) {
-	jm, err := NewJWTManager("secret", time.Hour)
+	jm, err := NewJWTManager("secret", time.Hour, "test")
 	require.NoError(t, err, "NewJWTManager() error")
 	apiKey := "bib_abcdef1234567890abcdef1234567890"
 	keyHash := HashAPIKey(apiKey)
@@ -44,7 +62,7 @@ func TestMiddleware_ValidAPIKey(t *testing.T) {
 			keyHash: {userID: "apikey-user", keyID: "key-1"},
 		},
 	}
-	mw := Middleware(jm, validator)
+	mw := Middleware(jm, testConfig(), validator)
 
 	var gotUserID string
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -64,12 +82,12 @@ func TestMiddleware_ValidAPIKey(t *testing.T) {
 }
 
 func TestMiddleware_InvalidAPIKey(t *testing.T) {
-	jm, err := NewJWTManager("secret", time.Hour)
+	jm, err := NewJWTManager("secret", time.Hour, "test")
 	require.NoError(t, err, "NewJWTManager() error")
 	validator := &mockAPIKeyValidator{
 		keys: map[string]struct{ userID, keyID string }{},
 	}
-	mw := Middleware(jm, validator)
+	mw := Middleware(jm, testConfig(), validator)
 
 	called := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -87,7 +105,7 @@ func TestMiddleware_InvalidAPIKey(t *testing.T) {
 }
 
 func TestMiddleware_APIKeyViaCookieRejected(t *testing.T) {
-	jm, err := NewJWTManager("secret", time.Hour)
+	jm, err := NewJWTManager("secret", time.Hour, "test")
 	require.NoError(t, err, "NewJWTManager() error")
 	apiKey := "bib_abcdef1234567890abcdef1234567890"
 	keyHash := HashAPIKey(apiKey)
@@ -96,7 +114,7 @@ func TestMiddleware_APIKeyViaCookieRejected(t *testing.T) {
 			keyHash: {userID: "apikey-user", keyID: "key-1"},
 		},
 	}
-	mw := Middleware(jm, validator)
+	mw := Middleware(jm, testConfig(), validator)
 
 	called := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -114,7 +132,7 @@ func TestMiddleware_APIKeyViaCookieRejected(t *testing.T) {
 }
 
 func TestAdminMiddleware_ValidAPIKey(t *testing.T) {
-	jm, err := NewJWTManager("secret", time.Hour)
+	jm, err := NewJWTManager("secret", time.Hour, "test")
 	require.NoError(t, err, "NewJWTManager() error")
 	apiKey := "bib_abcdef1234567890abcdef1234567890"
 	keyHash := HashAPIKey(apiKey)
@@ -124,7 +142,7 @@ func TestAdminMiddleware_ValidAPIKey(t *testing.T) {
 		},
 	}
 	checker := &mockAdminChecker{admins: map[string]bool{"admin-user": true}}
-	mw := AdminMiddleware(jm, checker, validator)
+	mw := AdminMiddleware(jm, checker, testConfig(), validator)
 
 	var gotUserID string
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -3,6 +3,12 @@ module github.com/amalgamated-tools/biblioteka
 go 1.26.1
 
 require (
+	github.com/patrick-veverka/goauth v0.0.0
+)
+
+replace github.com/patrick-veverka/goauth => ../goauth
+
+require (
 	github.com/Khan/genqlient v0.8.1
 	github.com/buger/jsonparser v1.1.2
 	github.com/coreos/go-oidc/v3 v3.18.0
