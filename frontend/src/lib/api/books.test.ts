@@ -18,6 +18,8 @@ import {
   setBookAuthors,
   getBookSeries,
   setBookSeries,
+  getBookTags,
+  setBookTags,
   listBookFiles,
   createBookFile,
   getBookFile,
@@ -33,6 +35,7 @@ import type {
   BookSeriesEntry,
   PaginatedBooks,
   Series,
+  Tag,
 } from "../../types";
 import {
   mockFetchResponse as _mockFetchResponse,
@@ -94,6 +97,13 @@ const fakeSeries: Series = {
 const fakeSeriesEntry: BookSeriesEntry = {
   series: fakeSeries,
   position: 1,
+};
+
+const fakeTag: Tag = {
+  id: "tag1",
+  name: "science-fiction",
+  created_at: "2026-01-01T00:00:00Z",
+  updated_at: "2026-01-01T00:00:00Z",
 };
 
 const fakeBookFile: BookFile = {
@@ -280,6 +290,33 @@ describe("Books API", () => {
         entries: [{ series_id: "s1", position: 1 }],
       });
       expect(result).toEqual([fakeSeriesEntry]);
+    });
+  });
+
+  describe("getBookTags", () => {
+    it("sends GET /api/books/:id/tags and returns the tags", async () => {
+      mockFetchResponse([fakeTag]);
+
+      const result = await getBookTags("b1");
+
+      const [url, options] = fetchMock.mock.calls[0];
+      expect(url).toBe("/api/books/b1/tags");
+      expect(options.method).toBe("GET");
+      expect(result).toEqual([fakeTag]);
+    });
+  });
+
+  describe("setBookTags", () => {
+    it("sends PUT /api/books/:id/tags with tag_ids body and returns updated tags", async () => {
+      mockFetchResponse([fakeTag]);
+
+      const result = await setBookTags("b1", ["tag1"]);
+
+      const [url, options] = fetchMock.mock.calls[0];
+      expect(url).toBe("/api/books/b1/tags");
+      expect(options.method).toBe("PUT");
+      expect(JSON.parse(options.body)).toEqual({ tag_ids: ["tag1"] });
+      expect(result).toEqual([fakeTag]);
     });
   });
 
