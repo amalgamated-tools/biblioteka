@@ -97,7 +97,6 @@ pass "403 blocks CSRF"
 # 5. Logout same-origin → 200, cookie cleared
 # ---------------------------------------------------------------------------
 step "logout (same-origin)"
-host="${BASE_URL#*://}"
 resp="$(curl -sS -b "$COOKIE_JAR" -c "$COOKIE_JAR" -D - -o /dev/null \
   -X POST -H "Origin: $BASE_URL" -H "Referer: $BASE_URL/" \
   "$BASE_URL/api/auth/logout")"
