@@ -73,7 +73,7 @@ A self-hosted personal book library manager. Scan local files, extract metadata,
 | Frontend | Svelte 5, TypeScript, Tailwind CSS 3.4, Vite 7 |
 | Database | SQLite (default) · PostgreSQL |
 | Job queue | asynq (Redis) |
-| Auth | JWT · OIDC |
+| Auth | [`goauth`](https://github.com/amalgamated-tools/goauth) (JWT · bcrypt · rate limiting) · OIDC · WebAuthn |
 | Observability | OpenTelemetry (tracing + structured logging) |
 
 ## Quick Start

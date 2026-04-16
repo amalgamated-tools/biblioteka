@@ -271,6 +271,49 @@ Associates books with series entries, including optional position within the ser
 
 ---
 
+### `tags`
+
+Free-form labels that can be applied to books to aid organization and discovery. Tag names are normalized (trimmed and collapsed to single spaces) and stored case-insensitively.
+
+| Column      | Type     | Nullable | Default  | Description                                   |
+|-------------|----------|----------|----------|-----------------------------------------------|
+| `id`        | TEXT     | NOT NULL | auto-gen | Primary key                                   |
+| `name`      | TEXT     | NOT NULL | —        | Display name; unique after normalization       |
+| `created_at`| DATETIME | NOT NULL | `now()`  | When the tag was created                      |
+| `updated_at`| DATETIME | NOT NULL | `now()`  | When the tag was last updated                 |
+
+**Indexes:**
+- `UNIQUE(LOWER(name))` (`idx_tags_name`) — case-insensitive uniqueness enforced at the database level
+
+**Notes:**
+- Names are normalized before storage (`NormalizeTagName`); duplicate normalized names are rejected with `ErrTagNameExists`.
+- Tags are global (not per-user); any authenticated user can view and apply them.
+- Deleting a tag cascades and removes all `book_tags` rows that reference it.
+- See [API Reference — Tags](api-reference.md#tags) for the REST API.
+
+---
+
+### `book_tags` (join table)
+
+Associates books with tags. Each row links one book to one tag.
+
+| Column    | Type | Nullable | Default | Description                                |
+|-----------|------|----------|---------|--------------------------------------------|
+| `book_id` | TEXT | NOT NULL | —       | FK → `books.id` ON DELETE CASCADE          |
+| `tag_id`  | TEXT | NOT NULL | —       | FK → `tags.id` ON DELETE CASCADE           |
+
+**Primary key:** `(book_id, tag_id)`
+
+**Indexes:**
+- `idx_book_tags_tag_id` — fast lookup of books for a given tag
+
+**Notes:**
+- Setting a book's tags replaces the entire set in a single transaction (DELETE then INSERT).
+- Deleting a book cascades and removes its `book_tags` rows.
+- Deleting a tag cascades and removes its `book_tags` rows.
+
+---
+
 ### `book_files`
 
 Individual physical files (EPUB, MOBI, PDF, AZW3) linked to a book record.
@@ -365,6 +408,55 @@ Long-lived credentials for programmatic API access. Each key belongs to one user
 - The full API key (`bib_` + 40 hex chars) is shown **once** at creation and is not recoverable afterward. The `key_hash` persists for lookup, and the non-secret `key_prefix` persists for UI identification.
 - When a user is deleted, all their API keys are deleted via CASCADE.
 - See the [Authentication guide — API Keys](authentication.md#api-keys) for usage details.
+
+---
+
+### `passkey_credentials`
+
+Stores registered WebAuthn passkey credentials for a user. Each credential corresponds to a physical authenticator (hardware key, platform biometric, etc.). A user may register multiple passkeys.
+
+| Column            | Type     | Nullable | Default  | Description                                                                  |
+|-------------------|----------|----------|----------|------------------------------------------------------------------------------|
+| `id`              | TEXT     | NOT NULL | auto-gen | Primary key                                                                  |
+| `user_id`         | TEXT     | NOT NULL | —        | FK → `users.id` ON DELETE CASCADE                                            |
+| `name`            | TEXT     | NOT NULL | —        | User-chosen display label for the key (e.g. `"YubiKey 5"`)                  |
+| `credential_id`   | TEXT     | NOT NULL | —        | Unique WebAuthn credential ID (base64url-encoded raw bytes); UNIQUE          |
+| `credential_data` | TEXT     | NOT NULL | —        | Serialized `webauthn.Credential` JSON blob used during authentication        |
+| `aaguid`          | TEXT     | NOT NULL | `''`     | Authenticator Attestation GUID; identifies the authenticator model           |
+| `created_at`      | DATETIME | NOT NULL | `now()`  | When the credential was registered                                           |
+
+**Indexes:**
+- `UNIQUE(credential_id)` (`idx_passkey_credentials_credential_id`) — fast lookup during authentication assertions
+- `idx_passkey_credentials_user_id` — list all keys for a user
+
+**Notes:**
+- `credential_data` is an opaque blob read and written exclusively by the `go-webauthn/webauthn` library; do not parse it directly.
+- `credential_id` and `credential_data` are not exposed through the REST API; only `id`, `user_id`, `name`, `aaguid`, and `created_at` are returned to clients.
+- When a user is deleted, all their passkey credentials are deleted via CASCADE.
+- See [Authentication — Passkeys](authentication.md#passkeys-webauthn) for the user-facing feature overview.
+
+---
+
+### `passkey_challenges`
+
+Temporary WebAuthn challenge sessions created during registration and authentication ceremonies. Each row is a short-lived blob that must be consumed (read and deleted atomically) before `expires_at`.
+
+| Column         | Type     | Nullable | Default  | Description                                                    |
+|----------------|----------|----------|----------|----------------------------------------------------------------|
+| `id`           | TEXT     | NOT NULL | auto-gen | Primary key; also used as the challenge reference in the ceremony |
+| `user_id`      | TEXT     | NULL     | NULL     | FK → `users.id` ON DELETE CASCADE; NULL for passwordless discovery flows |
+| `session_data` | TEXT     | NOT NULL | —        | Serialized `webauthn.SessionData` JSON blob                    |
+| `expires_at`   | DATETIME | NOT NULL | —        | Hard expiry; challenges older than this are invalid and are purged by a background job |
+| `created_at`   | DATETIME | NOT NULL | `now()`  | When the challenge was created                                 |
+
+**Indexes:**
+- `idx_passkey_challenges_expires_at` — fast sweep of expired challenges by the cleanup job
+- `idx_passkey_challenges_user_id` — fast lookup of in-progress challenge for a user
+
+**Notes:**
+- Challenges are consumed atomically via `GetAndDeletePasskeyChallenge` — reading a challenge also deletes it, preventing replay attacks.
+- `user_id` is nullable to support discoverable-credential (usernameless) flows where the user identity is asserted by the authenticator, not the client.
+- A background job (`DeleteExpiredPasskeyChallenges`) periodically purges rows where `expires_at` is in the past.
 
 ---
 
@@ -566,6 +658,106 @@ Associates books with reading lists and tracks insertion time.
 
 ---
 
+### `reading_groups`
+
+Collaborative reading groups. Each group has a single owner and any number of members. Groups provide a shared space for reading lists and book annotations.
+
+| Column        | Type     | Nullable | Default  | Description                                                        |
+|---------------|----------|----------|----------|--------------------------------------------------------------------|
+| `id`          | TEXT     | NOT NULL | auto-gen | Primary key                                                        |
+| `owner_id`    | TEXT     | NOT NULL | —        | FK → `users.id` ON DELETE CASCADE; the user who created the group |
+| `name`        | TEXT     | NOT NULL | —        | Group name; unique per owner after normalization                   |
+| `description` | TEXT     | NULL     | NULL     | Optional free-text description                                     |
+| `created_at`  | DATETIME | NOT NULL | `now()`  | When the group was created                                         |
+| `updated_at`  | DATETIME | NOT NULL | `now()`  | When the group was last updated                                    |
+
+**Indexes:**
+- `UNIQUE(owner_id, name)` (`idx_reading_groups_owner_name`) — one group per normalized name per owner
+
+**Notes:**
+- Names are normalized before storage (`NormalizeGroupName`); duplicate normalized names for the same owner are rejected with `ErrGroupNameExists`.
+- The `member_count` field is computed on read via a `LEFT JOIN` to `reading_group_members`; it is not stored.
+- The owner is **not** automatically added to `reading_group_members`; ownership is tracked solely via `owner_id`.
+- When a user is deleted, their groups are deleted via CASCADE; this cascades to `reading_group_members` and `reading_group_lists`.
+
+---
+
+### `reading_group_members` (join table)
+
+Tracks membership of users in reading groups, including the member's role.
+
+| Column      | Type     | Nullable | Default    | Description                                           |
+|-------------|----------|----------|------------|-------------------------------------------------------|
+| `group_id`  | TEXT     | NOT NULL | —          | FK → `reading_groups.id` ON DELETE CASCADE           |
+| `user_id`   | TEXT     | NOT NULL | —          | FK → `users.id` ON DELETE CASCADE                    |
+| `role`      | TEXT     | NOT NULL | `'member'` | Member role: `'owner'` or `'member'`                 |
+| `joined_at` | DATETIME | NOT NULL | `now()`    | When the user joined the group                       |
+
+**Primary key:** `(group_id, user_id)`
+
+**Indexes:**
+- `idx_reading_group_members_user` — fast lookup of all groups a user belongs to
+
+**Notes:**
+- Valid `role` values are `'owner'` and `'member'`; enforced by a `CHECK` constraint.
+- The group owner cannot be removed from the group while they hold the `owner_id` reference on `reading_groups`.
+- Deleting a group cascades and removes all its `reading_group_members` rows.
+- Deleting a user cascades and removes their membership rows.
+
+---
+
+### `reading_group_lists` (join table)
+
+Tracks which reading lists have been shared with which reading groups.
+
+| Column       | Type     | Nullable | Default | Description                                              |
+|--------------|----------|----------|---------|----------------------------------------------------------|
+| `group_id`   | TEXT     | NOT NULL | —       | FK → `reading_groups.id` ON DELETE CASCADE              |
+| `list_id`    | TEXT     | NOT NULL | —       | FK → `reading_lists.id` ON DELETE CASCADE               |
+| `shared_by`  | TEXT     | NOT NULL | —       | FK → `users.id` ON DELETE CASCADE; user who shared it   |
+| `shared_at`  | DATETIME | NOT NULL | `now()` | When the list was shared with the group                 |
+
+**Primary key:** `(group_id, list_id)`
+
+**Indexes:**
+- `idx_reading_group_lists_list_id` — fast lookup of which groups a list is shared with
+- `idx_reading_group_lists_shared_by` — fast lookup of lists shared by a specific user
+
+**Notes:**
+- Only the list's owner may share it with a group, and only if they are a member of that group.
+- Sharing is idempotent (`ON CONFLICT DO NOTHING`).
+- Deleting a group, list, or the sharing user cascades and removes the row.
+
+---
+
+### `book_annotations`
+
+User annotations and highlights on books. Annotations may be private to the author or optionally shared with a reading group.
+
+| Column       | Type     | Nullable | Default  | Description                                                                  |
+|--------------|----------|----------|----------|------------------------------------------------------------------------------|
+| `id`         | TEXT     | NOT NULL | auto-gen | Primary key                                                                  |
+| `user_id`    | TEXT     | NOT NULL | —        | FK → `users.id` ON DELETE CASCADE; annotation author                        |
+| `book_id`    | TEXT     | NOT NULL | —        | FK → `books.id` ON DELETE CASCADE                                           |
+| `text`       | TEXT     | NOT NULL | —        | Annotation body (highlight text or note)                                     |
+| `cfi`        | TEXT     | NULL     | NULL     | EPUB CFI (Canonical Fragment Identifier) locating the passage in the file   |
+| `group_id`   | TEXT     | NULL     | NULL     | FK → `reading_groups.id` ON DELETE SET NULL; non-NULL makes this a group annotation |
+| `created_at` | DATETIME | NOT NULL | `now()`  | When the annotation was created                                              |
+| `updated_at` | DATETIME | NOT NULL | `now()`  | When the annotation was last updated                                         |
+
+**Indexes:**
+- `idx_book_annotations_book_user` — composite index on `(book_id, user_id)` for listing a user's annotations for a given book
+- `idx_book_annotations_group` — fast lookup of annotations shared with a given group
+
+**Notes:**
+- `cfi` is optional; annotations without a CFI are notes about the book rather than inline highlights.
+- When `group_id` is set, the annotation is visible to all members of that group (the author must be a member).
+- Deleting a book cascades and removes all its annotations.
+- Deleting a user cascades and removes all their annotations.
+- Deleting a group sets `group_id = NULL` on any annotations that referenced it (ON DELETE SET NULL), converting them to private annotations.
+
+---
+
 ### `goodreads_metadata`
 
 Stores Goodreads (and compatible catalog) metadata candidates fetched on behalf of a user. Each row is an imported snapshot of book metadata that can be reviewed and applied to a book record. The `status` field tracks whether the candidate has been accepted, rejected, or is awaiting review.
@@ -611,16 +803,49 @@ Stores Goodreads (and compatible catalog) metadata candidates fetched on behalf 
 
 ---
 
+### `ai_enrichments`
+
+AI-generated metadata suggestions for books, produced by a background enrichment job. Each row is a candidate set of metadata (suggested tags, reading level, generated description) for one book, awaiting user review.
+
+| Column                  | Type     | Nullable | Default     | Description                                                                       |
+|-------------------------|----------|----------|-------------|-----------------------------------------------------------------------------------|
+| `id`                    | TEXT     | NOT NULL | auto-gen    | Primary key                                                                       |
+| `user_id`               | TEXT     | NOT NULL | —           | FK → `users.id` ON DELETE CASCADE; the user who requested the enrichment         |
+| `book_id`               | TEXT     | NULL     | NULL        | FK → `books.id` ON DELETE SET NULL; the target book                              |
+| `status`                | TEXT     | NOT NULL | `'pending'` | Review status: `'pending'`, `'applied'`, or `'rejected'`; enforced by CHECK      |
+| `provider`              | TEXT     | NOT NULL | —           | AI provider identifier (e.g. `"openai"`)                                         |
+| `model`                 | TEXT     | NOT NULL | —           | Model name (e.g. `"gpt-4o-mini"`)                                                |
+| `suggested_tags`        | TEXT     | NOT NULL | `'[]'`      | JSON array of suggested tag names                                                 |
+| `reading_level`         | TEXT     | NULL     | NULL        | Optional reading level string (e.g. `"Young Adult"`)                             |
+| `generated_description` | TEXT     | NULL     | NULL        | Optional AI-generated book synopsis                                               |
+| `raw_response`          | TEXT     | NOT NULL | `''`        | Full raw API response from the provider (stored for audit/debugging)             |
+| `created_at`            | DATETIME | NOT NULL | `now()`     | When the enrichment was created                                                   |
+| `updated_at`            | DATETIME | NOT NULL | `now()`     | When the enrichment was last updated                                              |
+
+**Indexes:**
+- `idx_ai_enrichments_user_book_status` — composite index on `(user_id, book_id, status, created_at DESC)` for paginated listing filtered by status
+
+**Notes:**
+- `suggested_tags` is a JSON array of strings stored as TEXT; it is deserialized into `[]string` by `AIEnrichment.SuggestedTags` in Go.
+- Status transitions: `pending` → `applied` (`ApplyAIEnrichment` writes the tags and/or description to the book and marks the row applied) or `pending` → `rejected` (candidate discarded without modifying the book).
+- `ErrAIEnrichmentNotPending` is returned if an apply/reject is attempted on a non-pending row.
+- `book_id` is nullable: the linked book may be deleted while the enrichment still exists (ON DELETE SET NULL).
+- When a user is deleted, all their enrichment rows are deleted via CASCADE.
+
+---
+
 ## Cascade Deletion Summary
 
-| Deleted entity | Also deletes                                      |
-|----------------|---------------------------------------------------|
-| `users`        | `api_keys`, `opds_credentials`, `kobo_tokens`, `kobo_reading_states`, `kosync_credentials`, `reading_progress`, `reading_lists` (which cascades to `reading_list_books`), `goodreads_metadata` for that user |
-| `libraries`    | `library_books` entries for that library          |
-| `books`        | `book_files`, `book_authors`, `book_series`, `library_books`, `kobo_reading_states`, `reading_list_books` entries for that book; sets `goodreads_metadata.book_id = NULL` for linked candidates |
-| `authors`      | `book_authors` entries for that author            |
-| `series`       | `book_series` entries for that series             |
-| `reading_lists` | `reading_list_books` entries for that list       |
+| Deleted entity    | Also deletes                                      |
+|-------------------|---------------------------------------------------|
+| `users`           | `api_keys`, `passkey_credentials`, `passkey_challenges` (where user_id matches), `opds_credentials`, `kobo_tokens`, `kobo_reading_states`, `kosync_credentials`, `reading_progress`, `reading_lists` (which cascades to `reading_list_books`), `reading_groups` (owned by the user, which cascade to `reading_group_members` and `reading_group_lists`), `reading_group_members` (memberships in other groups), `book_annotations`, `goodreads_metadata`, `ai_enrichments` for that user |
+| `libraries`       | `library_books` entries for that library          |
+| `books`           | `book_files`, `book_authors`, `book_series`, `book_tags`, `book_annotations`, `library_books`, `kobo_reading_states`, `reading_list_books` entries for that book; sets `goodreads_metadata.book_id = NULL` and `ai_enrichments.book_id = NULL` for linked candidates |
+| `authors`         | `book_authors` entries for that author            |
+| `series`          | `book_series` entries for that series             |
+| `tags`            | `book_tags` entries for that tag                  |
+| `reading_lists`   | `reading_list_books` entries, `reading_group_lists` entries that share the list with a group |
+| `reading_groups`  | `reading_group_members`, `reading_group_lists` entries for that group; sets `book_annotations.group_id = NULL` for annotations shared with the group |
 
 ---
 
@@ -644,6 +869,7 @@ All database access lives in the `internal/db/` package. The books domain is spl
 | `settings.go` | `Setting` struct; `GetSetting`, `SetSetting`, `SetSettings` (transactional multi-key save) |
 | `users.go` | `User` struct; `CreateUser`, `CreateOIDCUser`, `GetUser*`, `LinkOIDCSubject`, `UpdatePassword`, `IsAdmin`, `SetAdmin`, `ListUsers` |
 | `api_keys.go` | `APIKey` struct; `CreateAPIKey`, `ListAPIKeys`, `GetAPIKey`, `DeleteAPIKey`, `GetAPIKeyByHash`, `TouchAPIKeyLastUsed`, `ValidateAPIKey` |
+| `passkeys.go` | `PasskeyCredential` / `PasskeyChallenge` structs; `CreatePasskeyCredential`, `GetPasskeyCredential`, `GetPasskeyCredentialByCredentialID`, `ListPasskeyCredentials`, `UpdatePasskeyCredentialData`, `DeletePasskeyCredential`, `CreatePasskeyChallenge`, `GetAndDeletePasskeyChallenge`, `DeleteExpiredPasskeyChallenges` |
 | `protocol_credentials.go` | Shared base for per-protocol credential tables: `ProtocolCredential` struct, `protocolCredentialConfig` config type, and unexported helpers `getCredentialByUserID`, `getCredentialByUsername`, `upsertCredential`, `deleteCredential` — used by `opds_credentials.go` and `kosync.go` |
 | `opds_credentials.go` | `OPDSCredential` (type alias for `ProtocolCredential`); `GetOPDSCredentialByUserID`, `GetOPDSCredentialByUsername`, `UpsertOPDSCredential`, `DeleteOPDSCredential` — thin wrappers around the shared helpers in `protocol_credentials.go` |
 | `kobo_tokens.go` | `KoboToken` struct; `CreateKoboToken`, `GetKoboToken`, `GetKoboTokenByHash`, `ListKoboTokens`, `DeleteKoboToken` |
@@ -651,12 +877,17 @@ All database access lives in the `internal/db/` package. The books domain is spl
 | `kosync.go` | `KOSyncCredential` (type alias for `ProtocolCredential`); `GetKOSyncCredentialByUserID`, `GetKOSyncCredentialByUsername`, `UpsertKOSyncCredential`, `DeleteKOSyncCredential` — thin wrappers around the shared helpers in `protocol_credentials.go`; `ReadingProgress` struct; `GetReadingProgress`, `UpsertReadingProgress` |
 | `reading_progress.go` | Additional reading progress queries split from `kosync.go`: `ListReadingProgress`, `GetReadingStats`, `GetReadingStreak`, `ComputeReadingStreak` (computes a consecutive-day streak from a slice of timestamps, using the current UTC date to determine whether the streak reaches today or yesterday) |
 | `reading_lists.go` | `ReadingList` struct; `CreateReadingList`, `GetReadingList`, `ListReadingLists`, `UpdateReadingList`, `DeleteReadingList`, `AddBookToReadingList`, `RemoveBookFromReadingList`, `ListReadingListBooks`, `GetReadingListsForBook` |
+| `reading_groups.go` | `ReadingGroup` / `ReadingGroupMember` / `GroupMemberProgress` structs; `CreateGroup`, `GetGroup`, `ListGroups`, `UpdateGroup`, `DeleteGroup`, `ListGroupMembers`, `AddGroupMember`, `RemoveGroupMember`, `IsMember`, `ListGroupMemberProgress` |
+| `reading_group_lists.go` | `ShareListWithGroup`, `UnshareListFromGroup`, `ListGroupReadingLists` |
+| `book_annotations.go` | `BookAnnotation` struct; `CreateAnnotation`, `GetAnnotation`, `ListAnnotationsForBook`, `UpdateAnnotation`, `DeleteAnnotation` |
+| `tags.go` | `Tag` struct; `CreateTag`, `GetTag`, `GetTagByName`, `ListTags`, `UpdateTag`, `FindOrCreateTag`, `DeleteTag`, `GetBookTags`, `SetBookTags` |
 | `book_downloads.go` | `MonthlyDownloadCount` struct; `RecordBookDownload`, `GetMonthlyDownloads` |
 | `book_load_relations.go` | `BookRelations` struct; `LoadBookRelations` — batch-fetches authors, files, and series for a single book by delegating to the existing batch APIs |
 | `audit_logs.go` | `AuditLog` struct; `CreateAuditLog`, `ListAuditLogs` |
 | `goodreads_metadata.go` | `GoodreadsMetadata` struct; `GoodreadsMetadataInput` struct (holds the 20 optional fields passed to `CreateGoodreadsMetadata` in place of positional arguments); `CreateGoodreadsMetadata`, `GetGoodreadsMetadata`, `ListGoodreadsMetadataByUser`, `ListGoodreadsMetadataByStatus`, `UpdateGoodreadsMetadataStatus`, `DeleteGoodreadsMetadata` |
+| `ai_enrichments.go` | `AIEnrichment` / `ApplyAIEnrichmentInput` structs; `CreateAIEnrichment`, `GetAIEnrichment`, `GetPendingAIEnrichmentByBook`, `UpdateAIEnrichmentStatus`, `DeleteAIEnrichment`, `ApplyAIEnrichment` |
 | `find_or_create.go` | Unexported generic helper `findOrCreate[T]` — implements the lookup → insert → race-fetch pattern shared by `FindOrCreateAuthor` and `FindOrCreateSeries`. Normalizes the name, validates it, attempts the insert, and falls back to a second lookup when a concurrent insert wins the unique-constraint race. |
-| `named_entity_write.go` | Unexported generic helpers `namedEntityCreate[T]` and `namedEntityUpdate[T]` — normalize the name, validate it, execute the provided insert/update function, and translate unique-constraint violations into the entity-specific sentinel errors (`ErrXxxNameExists`). Used by `CreateAuthor`/`UpdateAuthor`, `CreateSeries`/`UpdateSeries`, and `CreateReadingList`/`UpdateReadingList`. |
+| `named_entity_write.go` | Unexported generic helpers `namedEntityCreate[T]` and `namedEntityUpdate[T]` — normalize the name, validate it, execute the provided insert/update function, and translate unique-constraint violations into the entity-specific sentinel errors (`ErrXxxNameExists`). Used by `CreateAuthor`/`UpdateAuthor`, `CreateSeries`/`UpdateSeries`, `CreateReadingList`/`UpdateReadingList`, and `CreateTag`/`UpdateTag`. |
 | `scan_helpers.go` | Unexported generic scan utilities: `scanRow[T]` (wraps single-row scan to eliminate per-entity boilerplate), `collectRows[T]` (iterates `*sql.Rows` and collects results into a slice), and `collectRowsAndTotal[T]` (same as `collectRows` but also captures a `COUNT(*) OVER()` window-function total for paginated queries). |
 | `tx.go` | Unexported transaction helper `deferRollback` — intended for use with `defer`; calls `tx.Rollback()`, silently ignores `sql.ErrTxDone`, and logs a warning for any other rollback error. |
 | `paginate.go` | Two internal generic helpers sharing the `listQuery` interface and `allowedListTables` allowlist: `listAll[T]` — full-table SELECT with no limit; used by `ListAuthors`, `ListSeries`, `ListLibraries`; `listPaginated[T]` — issues a `COUNT(*)` then a paginated SELECT; used by `ListAuthorsPaginated` and `ListSeriesPaginated`. Both validate table names against the allowlist to prevent SQL injection |
