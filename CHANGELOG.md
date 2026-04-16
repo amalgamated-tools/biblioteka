@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.14.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.13.0...v0.14.0) (2026-04-16)
+
+
+### Features
+
+* **frontend:** show cover image preview on book edit page ([#2061](https://github.com/amalgamated-tools/biblioteka/issues/2061)) ([a0e3f7e](https://github.com/amalgamated-tools/biblioteka/commit/a0e3f7e31b0b0e658bf120e8086fcf4ae32eb1bf))
+
+
+### Bug Fixes
+
+* **accessibility:** add visible label for passkey name input in Account settings ([#2075](https://github.com/amalgamated-tools/biblioteka/issues/2075)) ([5ffbc8c](https://github.com/amalgamated-tools/biblioteka/commit/5ffbc8c631022de2f808246183a925650b5a9675))
+* **accessibility:** prevent duplicate screen reader announcements in BookCard links ([#2072](https://github.com/amalgamated-tools/biblioteka/issues/2072)) ([9367248](https://github.com/amalgamated-tools/biblioteka/commit/9367248f3fca4a90a14cf23f5f3d183b12195a1c))
+* **accessibility:** raise light-mode helper text contrast from ink-400 to ink-500 ([#2070](https://github.com/amalgamated-tools/biblioteka/issues/2070)) ([91dbab9](https://github.com/amalgamated-tools/biblioteka/commit/91dbab950c9b3a28f1b2ed605d7dfb53267b1283))
+* **ci:** stop false `[aw] Contribution Check failed` issue creation ([#2039](https://github.com/amalgamated-tools/biblioteka/issues/2039)) ([e2a13f2](https://github.com/amalgamated-tools/biblioteka/commit/e2a13f25c9086799d583351da3f32f789c9a64d4))
+* **frontend:** replace outline-none with focus-visible:outline-none across form inputs ([#2060](https://github.com/amalgamated-tools/biblioteka/issues/2060)) ([1bbf63a](https://github.com/amalgamated-tools/biblioteka/commit/1bbf63ab16e9771f40f466225ba0523669bb0c55))
+* **frontend:** surface dashboard fetch failures via AlertBanner and onMount loaders ([#2034](https://github.com/amalgamated-tools/biblioteka/issues/2034)) ([46737f1](https://github.com/amalgamated-tools/biblioteka/commit/46737f1b574f5718b5281c93da89022db4847633))
+* **passkeys:** convert base64url strings to ArrayBuffer for WebAuthn API ([#2062](https://github.com/amalgamated-tools/biblioteka/issues/2062)) ([be2c1d3](https://github.com/amalgamated-tools/biblioteka/commit/be2c1d3b7b9071cb9e2daed425c4b3afb1bed28d))
+* **repo assist:** add tags API client, Tag types, and getBookTags/setBookTags ([#2076](https://github.com/amalgamated-tools/biblioteka/issues/2076)) ([b193014](https://github.com/amalgamated-tools/biblioteka/commit/b193014465d10e9d7992b53aab5e141bdbc33c70))
+* **ui:** add missing padding and alignment to Button component ([#2057](https://github.com/amalgamated-tools/biblioteka/issues/2057)) ([ac87ef0](https://github.com/amalgamated-tools/biblioteka/commit/ac87ef0455d0b19bb0b7483e8aea60d3fcd4eb07))
+
+
+### Performance Improvements
+
+* Add missing FK indexes: book_tags.tag_id and goodreads_metadata user+book+status ([#2051](https://github.com/amalgamated-tools/biblioteka/issues/2051)) ([f723789](https://github.com/amalgamated-tools/biblioteka/commit/f72378990cb5d08bc01fb09d4a0c03cc4cf18d77))
+
 ## [0.13.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.12.0...v0.13.0) (2026-04-15)
 
 
