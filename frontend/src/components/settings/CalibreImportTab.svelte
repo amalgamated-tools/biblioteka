@@ -263,7 +263,7 @@
               bind:value={serverPath}
               disabled={loading}
               placeholder="/path/to/Calibre Library/metadata.db"
-              class="w-full px-4 py-2.5 border border-ink-400 dark:border-ink-400 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
+              class="w-full px-4 py-2.5 border border-ink-400 dark:border-ink-400 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent focus-visible:outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
               aria-describedby="calibre-path-hint"
             />
             <p
@@ -292,7 +292,7 @@
             id="calibre-library"
             bind:value={selectedLibraryId}
             disabled={loading}
-            class="w-full px-4 py-2.5 border border-ink-400 dark:border-ink-400 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
+            class="w-full px-4 py-2.5 border border-ink-400 dark:border-ink-400 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent focus-visible:outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
             aria-describedby="calibre-library-hint"
           >
             <option value="">None (import without library)</option>

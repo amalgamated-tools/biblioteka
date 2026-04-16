@@ -176,7 +176,7 @@
         <select
           id="watch-folder-library"
           bind:value={watchFolderLibraryId}
-          class="w-full px-4 py-2.5 border border-ink-400 dark:border-ink-400 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
+          class="w-full px-4 py-2.5 border border-ink-400 dark:border-ink-400 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent focus-visible:outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
           disabled={loading}
           aria-describedby="watch-folder-library-hint"
         >
@@ -202,7 +202,7 @@
       {/if}
 
       <div class="flex gap-3">
-        <Button type="submit" disabled={loading} class="flex-1 px-4 py-2.5">
+        <Button type="submit" disabled={loading} class="flex-1">
           {submitLabel}
         </Button>
         {#if configured}
@@ -210,7 +210,7 @@
             type="button"
             onclick={handleClear}
             disabled={loading}
-            class="px-4 py-2.5 bg-ink-100 dark:bg-ink-700 text-ink-700 dark:text-ink-200 hover:bg-ink-200 dark:hover:bg-ink-600"
+            class="bg-ink-100 dark:bg-ink-700 text-ink-700 dark:text-ink-200 hover:bg-ink-200 dark:hover:bg-ink-600"
           >
             Clear
           </Button>
