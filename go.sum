@@ -32,6 +32,8 @@ github.com/alexflint/go-scalar v1.2.0 h1:WR7JPKkeNpnYIOfHRa7ivM21aWAdHD0gEWHCx+W
 github.com/alexflint/go-scalar v1.2.0/go.mod h1:LoFvNMqS1CPrMVltza4LvnGKhaSpc3oyLEBUZVhhS2o=
 github.com/amalgamated-tools/goauth v0.1.0 h1:GJnh9bq3l46D3kxYpxN+Ec1duuRy3tfACKwIw+lpopQ=
 github.com/amalgamated-tools/goauth v0.1.0/go.mod h1:brrOpptc9Z61RmglomiQ8jrfS4Ji09MGr49OsJ2phSg=
+github.com/amalgamated-tools/goauth v0.1.1 h1:qEbRQ1qC6KQQyvk4qZ5YUFFfV6Ub6b8imvyEc6a+3gc=
+github.com/amalgamated-tools/goauth v0.1.1/go.mod h1:brrOpptc9Z61RmglomiQ8jrfS4Ji09MGr49OsJ2phSg=
 github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883 h1:bvNMNQO63//z+xNgfBlViaCIJKLlCJ6/fmUseuG0wVQ=
 github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883/go.mod h1:rCTlJbsFo29Kk6CurOXKm700vrz8f0KW0JNfpkRJY/8=
 github.com/andybalholm/brotli v1.2.0 h1:ukwgCxwYrmACq68yiUqwIWnGY0cTPox/M94sVwToPjQ=
