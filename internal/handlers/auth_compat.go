@@ -14,7 +14,6 @@ import (
 	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
-	"github.com/amalgamated-tools/biblioteka/internal/db"
 	goauthhandler "github.com/amalgamated-tools/goauth/handler"
 )
 
@@ -57,11 +56,6 @@ func (h *APIKeyHandler) HandleAPIKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.Delete(w, r)
-}
-
-// setAuthCookie sets the auth cookie.
-func setAuthCookie(w http.ResponseWriter, token string, secure bool) {
-	goauthhandler.SetAuthCookie(w, token, auth.TokenCookieName(), secure)
 }
 
 // clearAuthCookie clears the auth cookie.
@@ -151,19 +145,4 @@ func normalizeHost(host string) string {
 		return strings.TrimPrefix(strings.TrimSuffix(host, "]"), "[")
 	}
 	return host
-}
-
-// toUserDTO converts a db.User to the goauth UserDTO.
-func toUserDTO(u *db.User) goauthhandler.UserDTO {
-	var oidcSubject *string
-	if u.OIDCSubject != nil {
-		oidcSubject = u.OIDCSubject
-	}
-	return goauthhandler.UserDTO{
-		ID:         u.ID,
-		Name:       u.Name,
-		Email:      u.Email,
-		OIDCLinked: oidcSubject != nil,
-		IsAdmin:    u.IsAdmin,
-	}
 }
