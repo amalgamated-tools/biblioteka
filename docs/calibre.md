@@ -103,16 +103,18 @@ File size is read from Calibre's `data.uncompressed_size` column. Note that the 
 | **Ratings** | Biblioteka does not have a ratings field |
 | **Custom columns** | Calibre custom columns have no equivalent in Biblioteka |
 | **Reading progress** | No equivalent in Biblioteka |
-| **Cover images** | Covers are not read from the Calibre library during import. Running `process-file` on the same already-imported EPUB paths will be skipped once those files are indexed, so it is not a supported post-import cover backfill workflow |
+| **Cover images** | Covers are not read from the Calibre library during import. Running `process-file` on the same already-imported EPUB paths will be skipped once those files are indexed, so it is not a supported post-import cover backfill workflow. See [Cover backfill after import](#cover-backfill-after-import) for supported options |
 
 > Calibre tags are not imported. After the import completes, use the [Tags API](api-reference.md) or the Biblioteka UI to apply tags to your books.
 
-### Cover backfill after import
+---
+
+## Cover backfill after import
 
 If you need covers after a Calibre import, use one of these supported workflows:
 
-1. **Goodreads metadata enrichment:** trigger [`POST /api/books/{id}/metadata/fetch`](api-reference.md#post-apibooksidmetadatafetch-) for each imported book, then review and apply the pending metadata (UI or [`POST /api/books/{id}/metadata/apply`](api-reference.md#post-apibooksidmetadataapply-)). This can populate `cover_image_url` when Goodreads has a cover URL.
-2. **Manual cover update:** update each book via [`PUT /api/books/{id}`](api-reference.md#put-apibooksid-) and set `cover_image_url` in the request body.
+1. **Goodreads metadata enrichment:** trigger [`POST /api/books/{id}/metadata/fetch`](api-reference.md#post-apibooksidmetadatafetch-) for each imported book, then review and apply the pending metadata (UI or [`POST /api/books/{id}/metadata/apply`](api-reference.md#post-apibooksidmetadataapply-)). This can populate `cover_image_url` when Goodreads has a cover URL. This endpoint requires the metadata background worker/queue to be configured and running; if it is unavailable, the request can return `503`.
+2. **Manual cover update:** fetch each book first with `GET /api/books/{id}`, then update it via [`PUT /api/books/{id}`](api-reference.md#put-apibooksid-) with all existing fields plus `cover_image_url` set in the request body. (`PUT` is a full replacement — omitted fields are cleared.)
 
 ---
 
