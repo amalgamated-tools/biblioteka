@@ -131,7 +131,7 @@ Calibre import complete:
 
 > **Note:** Calibre tags are not imported. Re-tag books manually in Biblioteka after import.
 
-See the full [Migrate from Calibre](calibre.md) guide for identifier mapping, deduplication behavior, and a step-by-step workflow.
+See the full [Migrate from Calibre](calibre.md) guide for identifier mapping, deduplication behavior, troubleshooting, cover backfill options, and a step-by-step workflow.
 
 ---
 

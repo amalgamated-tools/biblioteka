@@ -99,13 +99,22 @@ File size is read from Calibre's `data.uncompressed_size` column. Note that the 
 
 | Data | Reason |
 |------|--------|
-| **Tags** | Calibre tags do not map cleanly to Biblioteka's tag model. Re-tag books manually in Biblioteka after import |
+| **Tags** | Not currently imported by `calibre-import`. Re-tag books manually in Biblioteka after import |
 | **Ratings** | Biblioteka does not have a ratings field |
 | **Custom columns** | Calibre custom columns have no equivalent in Biblioteka |
 | **Reading progress** | No equivalent in Biblioteka |
-| **Cover images** | Covers are not read from the Calibre library during import. Upload covers via the API after import. Running `process-file` on the same already-imported EPUB paths will be skipped once those files are indexed, so it is not a supported post-import cover backfill workflow |
+| **Cover images** | Covers are not read from the Calibre library during import. Running `process-file` on the same already-imported EPUB paths will be skipped once those files are indexed, so it is not a supported post-import cover backfill workflow. See [Cover backfill after import](#cover-backfill-after-import) for supported options |
 
 > Calibre tags are not imported. After the import completes, use the [Tags API](api-reference.md) or the Biblioteka UI to apply tags to your books.
+
+---
+
+## Cover backfill after import
+
+If you need covers after a Calibre import, use one of these supported workflows:
+
+1. **Goodreads metadata enrichment:** trigger [`POST /api/books/{id}/metadata/fetch`](api-reference.md#post-apibooksidmetadatafetch-) for each imported book, then review and apply the pending metadata (UI or [`POST /api/books/{id}/metadata/apply`](api-reference.md#post-apibooksidmetadataapply-)). This can populate `cover_image_url` when Goodreads has a cover URL. This endpoint requires the metadata background worker/queue to be configured and running; if it is unavailable, the request can return `503`.
+2. **Manual cover update:** fetch each book first with `GET /api/books/{id}`, then update it via [`PUT /api/books/{id}`](api-reference.md#put-apibooksid-) with all existing fields plus `cover_image_url` set in the request body. (`PUT` is a full replacement — omitted fields are cleared.)
 
 ---
 
@@ -195,5 +204,8 @@ go build -o biblioteka-cli ./cmd/cli
 
 - [CLI tool reference](metadata.md#cli-tool) — `process-file`, `scan-directory`, and other commands
 - [Administration — Libraries](administration.md#libraries) — creating and managing library records
+- [Background Jobs — `enrich:goodreads`](background-jobs.md#enrichgoodreads) — how Goodreads metadata (including covers) is fetched
 - [Background Jobs](background-jobs.md) — how `scan-directory` and `process:file` work when a worker is running
+- [API Reference — `POST /api/books/{id}/metadata/fetch`](api-reference.md#post-apibooksidmetadatafetch-) — enqueue Goodreads metadata fetch jobs
+- [API Reference — `PUT /api/books/{id}`](api-reference.md#put-apibooksid-) — manually update `cover_image_url`
 - [API Reference](api-reference.md) — managing books, authors, series, and tags via the REST API
