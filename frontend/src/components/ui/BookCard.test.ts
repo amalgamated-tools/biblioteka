@@ -57,15 +57,16 @@ describe("BookCard", () => {
     );
   });
 
-  it("renders the cover image when cover_image_url is set", () => {
+  it("renders a decorative cover image when cover_image_url is set", () => {
     const book = {
       ...baseBook,
       cover_image_url: "https://example.com/cover.jpg",
     };
-    render(BookCard, { book });
-    const img = screen.getByRole("img");
+    const { container } = render(BookCard, { book });
+    const img = container.querySelector("img");
+    expect(img).not.toBeNull();
     expect(img).toHaveAttribute("src", "https://example.com/cover.jpg");
-    expect(img).toHaveAttribute("alt", "The Hobbit");
+    expect(img).toHaveAttribute("alt", "");
   });
 
   it("sets loading='lazy' on the cover image", () => {
@@ -73,8 +74,10 @@ describe("BookCard", () => {
       ...baseBook,
       cover_image_url: "https://example.com/cover.jpg",
     };
-    render(BookCard, { book });
-    expect(screen.getByRole("img")).toHaveAttribute("loading", "lazy");
+    const { container } = render(BookCard, { book });
+    const img = container.querySelector("img");
+    expect(img).not.toBeNull();
+    expect(img).toHaveAttribute("loading", "lazy");
   });
 
   it("does not render an img element when cover_image_url is null", () => {
