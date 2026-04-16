@@ -19,6 +19,7 @@ tools:
     min-integrity: none # This workflow is allowed to examine and comment on any issues
 
 safe-outputs:
+  report-failure-as-issue: false
   create-issue:
     title-prefix: "[Contribution Check Report]"
     labels:
