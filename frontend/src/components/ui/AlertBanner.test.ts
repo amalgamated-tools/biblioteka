@@ -87,9 +87,12 @@ describe("AlertBanner", () => {
       variant: "error",
       children: makeChildren("Error"),
     });
-    expect(
-      container.querySelector('[data-testid="alert-banner-error-icon"]'),
-    ).toHaveAttribute("aria-hidden", "true");
+    const icon = container.querySelector(
+      '[data-testid="alert-banner-error-icon"]',
+    );
+    expect(icon).toBeInTheDocument();
+    expect(icon).toHaveAttribute("aria-hidden", "true");
+    expect(icon).toHaveTextContent("✕");
     expect(
       container.querySelector('[data-testid="alert-banner-success-icon"]'),
     ).not.toBeInTheDocument();
@@ -100,9 +103,12 @@ describe("AlertBanner", () => {
       variant: "success",
       children: makeChildren("Success"),
     });
-    expect(
-      container.querySelector('[data-testid="alert-banner-success-icon"]'),
-    ).toHaveAttribute("aria-hidden", "true");
+    const icon = container.querySelector(
+      '[data-testid="alert-banner-success-icon"]',
+    );
+    expect(icon).toBeInTheDocument();
+    expect(icon).toHaveAttribute("aria-hidden", "true");
+    expect(icon).toHaveTextContent("✓");
     expect(
       container.querySelector('[data-testid="alert-banner-error-icon"]'),
     ).not.toBeInTheDocument();

@@ -56,5 +56,5 @@
       data-testid="alert-banner-success-icon">✓</span
     >
   {/if}
-  {@render children()}
+  <div class="flex-1 min-w-0">{@render children()}</div>
 </div>
