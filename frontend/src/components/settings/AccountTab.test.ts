@@ -458,7 +458,7 @@ describe("AccountTab passkeys", () => {
 
     const input = screen.getByLabelText("Passkey name");
     expect(input).toBeInTheDocument();
-    expect(input).toHaveAttribute("aria-label", "Passkey name");
+    expect(screen.getByText("Passkey name")).toBeInTheDocument();
     expect(input).toHaveAttribute("id", "passkey-name");
   });
 });
