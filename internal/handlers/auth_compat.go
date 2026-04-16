@@ -33,8 +33,40 @@ type OIDCHandler = goauthhandler.OIDCHandler
 // NewOIDCHandler delegates to goauth.
 var NewOIDCHandler = goauthhandler.NewOIDCHandler
 
-// PasskeyHandler wraps goauth's PasskeyHandler.
-type PasskeyHandler = goauthhandler.PasskeyHandler
+// PasskeyHandler wraps goauth's PasskeyHandler with audit logging for
+// credential registration and deletion.
+type PasskeyHandler struct {
+	goauthhandler.PasskeyHandler
+	DB *db.DB
+}
+
+// FinishRegistration wraps goauth's FinishRegistration to emit an audit log
+// entry when a passkey credential is successfully created.
+func (h *PasskeyHandler) FinishRegistration(w http.ResponseWriter, r *http.Request) {
+	rc := newResponseCapture(w)
+	h.PasskeyHandler.FinishRegistration(rc, r)
+	if rc.status == http.StatusCreated && h.DB != nil {
+		userID := auth.UserIDFromContext(r.Context())
+		var resp struct {
+			ID string `json:"id"`
+		}
+		if json.Unmarshal(rc.body.Bytes(), &resp) == nil {
+			logAudit(r.Context(), h.DB, userID, db.AuditActionPasskeyCreated, "passkey", resp.ID, nil)
+		}
+	}
+}
+
+// DeleteCredential wraps goauth's DeleteCredential to emit an audit log entry
+// when a passkey credential is successfully deleted.
+func (h *PasskeyHandler) DeleteCredential(w http.ResponseWriter, r *http.Request) {
+	id := h.URLParamFunc(r, "id")
+	rc := newResponseCapture(w)
+	h.PasskeyHandler.DeleteCredential(rc, r)
+	if rc.status == http.StatusNoContent && h.DB != nil {
+		userID := auth.UserIDFromContext(r.Context())
+		logAudit(r.Context(), h.DB, userID, db.AuditActionPasskeyDeleted, "passkey", id, nil)
+	}
+}
 
 // APIKeyHandler wraps goauth's APIKeyHandler with method-dispatching Handle
 // methods so biblioteka's existing stdlib-mux routes continue to work, and

@@ -10,13 +10,14 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/authstore"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/amalgamated-tools/biblioteka/internal/handlers"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	goauthhandler "github.com/amalgamated-tools/goauth/handler"
 	"github.com/go-webauthn/webauthn/webauthn"
 )
 
 // newPasskeyHandler creates a PasskeyHandler configured from environment variables.
-func newPasskeyHandler(ctx context.Context, database *db.DB, jwt *auth.JWTManager, secureCookies bool) *goauthhandler.PasskeyHandler {
+func newPasskeyHandler(ctx context.Context, database *db.DB, jwt *auth.JWTManager, secureCookies bool) *handlers.PasskeyHandler {
 	rpID := os.Getenv("WEBAUTHN_RP_ID")
 	if rpID == "" {
 		rpID = "localhost"
@@ -64,11 +65,14 @@ func newPasskeyHandler(ctx context.Context, database *db.DB, jwt *auth.JWTManage
 		slog.WarnContext(ctx, "failed to initialize WebAuthn; passkeys disabled",
 			slog.Any(otelkeys.Error, err),
 		)
-		return &goauthhandler.PasskeyHandler{
-			Users: userAdapter, Passkeys: passkeyAdapter,
-			WebAuthn: nil, JWT: jwt,
-			CookieName: auth.TokenCookieName(), SecureCookies: secureCookies,
-			URLParamFunc: urlParamFunc,
+		return &handlers.PasskeyHandler{
+			PasskeyHandler: goauthhandler.PasskeyHandler{
+				Users: userAdapter, Passkeys: passkeyAdapter,
+				WebAuthn: nil, JWT: jwt,
+				CookieName: auth.TokenCookieName(), SecureCookies: secureCookies,
+				URLParamFunc: urlParamFunc,
+			},
+			DB: database,
 		}
 	}
 
@@ -77,10 +81,13 @@ func newPasskeyHandler(ctx context.Context, database *db.DB, jwt *auth.JWTManage
 		slog.String(otelkeys.WebAuthnRPName, rpName),
 	)
 
-	return &goauthhandler.PasskeyHandler{
-		Users: userAdapter, Passkeys: passkeyAdapter,
-		WebAuthn: wa, JWT: jwt,
-		CookieName: auth.TokenCookieName(), SecureCookies: secureCookies,
-		URLParamFunc: urlParamFunc,
+	return &handlers.PasskeyHandler{
+		PasskeyHandler: goauthhandler.PasskeyHandler{
+			Users: userAdapter, Passkeys: passkeyAdapter,
+			WebAuthn: wa, JWT: jwt,
+			CookieName: auth.TokenCookieName(), SecureCookies: secureCookies,
+			URLParamFunc: urlParamFunc,
+		},
+		DB: database,
 	}
 }
