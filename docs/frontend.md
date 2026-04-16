@@ -27,7 +27,7 @@ frontend/
       Dashboard.svelte    Home screen; shows an empty-state onboarding card only after libraries are loaded and the list is empty; otherwise renders four content areas: (1) a two-card stats grid (Total Books, Libraries); (2) a downloads-per-month histogram (via `DownloadsHistogram.svelte`); (3) a Reading Activity section showing KOSync reading streaks, finished-books count, and in-progress books with per-book progress bars and estimated time remaining — falls back to a "Welcome to Biblioteka" prose panel while stats are loading or a KOSync nudge when no reading data exists; (4) a Year in Books card (`data-testid="year-in-books-card"`) showing books finished, longest streak, days reading, and total downloads for the current calendar year — hidden when all counts are zero; followed by a `Recommendations.svelte` "You Might Also Like" panel; all four data sets (total books count, downloads, reading stats, year-in-books) are fetched concurrently in `onMount` with a cancellation guard that prevents stale writes after unmount; each fetch surfaces errors independently via `AlertBanner` so a failure in one section does not block the others; Total Books shows "…" while in flight and falls back to `0` on error; Libraries reflects the live `libraryStore.libraries.length`; each stat card uses a `<dl>/<dt>/<dd>` description-list structure so that screen readers can announce the label–value relationship correctly (WCAG 1.3.1)
       Libraries.svelte    Library management view; dispatches to sub-components based on `routerStore.subPath`: `"new"` → `LibraryForm` (create mode), `"edit/{id}"` → `LibraryForm` (edit mode), `"setup"` → `FirstLibraryWizard` (first-library onboarding wizard), `"{id}"` → `LibraryView`, or empty → list / empty state; a `$effect` redirects away from `"setup"` automatically if the user already has at least one library
       MyLibrary.svelte    Placeholder for a planned per-user personal library feature; currently shows an empty state
-      Recommendations.svelte  "You Might Also Like" panel rendered at the bottom of the Dashboard; fetches up to 10 book recommendations via `getRecommendations(limit)` using a `$effect`; shows skeleton cards while loading; hides the section on error (logs to console) or when the result set is empty; book cards link to `#books/{id}` via `routerStore.navigate`
+      Recommendations.svelte  "You Might Also Like" panel rendered at the bottom of the Dashboard; fetches up to 10 book recommendations via `getRecommendations(limit)` using a `$effect`; shows skeleton cards while loading; renders an inline error message when the fetch fails (and may also log the error to the console) and renders an empty-state message with a link to `#settings/kobo` when the result set is empty; book cards link to `#books/{id}` via `routerStore.navigate`
       Settings.svelte     Settings shell; owns shared admin state; renders one tab at a time
       Sidebar.svelte      Navigation sidebar; fetches and displays the running server version; uses `<a href>` anchor links for all navigation items; the brand name is rendered as `<p>` (not `<h1>`) to avoid duplicate top-level headings (WCAG 1.3.1); icon-only action links (Create library, Library settings) carry `aria-label`, and the Create-library icon explicitly carries `aria-hidden="true"` (WCAG 4.1.2); the Library-settings link aria-label includes the library name (e.g. "Library settings for Fiction") so each link has a unique, descriptive name (WCAG 2.4.6); the Library-settings link always carries at least `opacity-30` so it is visible when focused via keyboard (WCAG 2.4.7); nav link clusters are wrapped in `role="group"` containers labelled by `<h2>` group headings (WCAG 1.3.1)
       books/              Sub-components for book detail and editing
@@ -2158,6 +2158,7 @@ The following components apply this pattern. When you add icons to any of these 
 | `Books.svelte` | `BookOpen` (page-heading icon) |
 | `Libraries.svelte` | `LibraryIcon` (empty-state illustration), `Plus` (button with visible text) |
 | `MyLibrary.svelte` | `Library` (page-heading icon and empty-state illustration) |
+| `Recommendations.svelte` | `Sparkles` (page-heading icon and decorative cover placeholder) |
 | `settings/AccountTab.svelte` | `Mail`, `User`, `Link` ×2, `Lock` (section-heading icons) |
 | `settings/APIKeysTab.svelte` | `KeyRound` (section-heading icon), `Copy`, `Trash2` (buttons with adjacent text) |
 | `settings/PreferencesTab.svelte` | `Palette` (section-heading icon) |
@@ -2630,7 +2631,7 @@ Accessibility regressions are locked in by dedicated test files. Keep all of the
 12. **`shows the downloads histogram when data is available`** — `getDownloadsPerMonth` resolves with two data points; asserts the `data-testid="downloads-histogram-card"` element appears in the DOM.
 13. **`shows a downloads error banner when the stats fetch fails`** — `getDownloadsPerMonth` rejects with `Error("network error")`; asserts the error message `"network error"` is rendered in an `AlertBanner`.
 
-**Reading Activity section — eight tests:**
+**Reading Activity section — nine tests:**
 
 14. **`shows Reading Activity heading when stats load`** — seeds one library; `getReadingProgressStats` resolves with a zeroed stats object; asserts the `"Reading Activity"` heading is present after stats load.
 15. **`shows KOSync nudge when total_tracked is 0`** — `getReadingProgressStats` resolves with `total_tracked: 0`; asserts the `"No reading activity recorded yet"` nudge text is rendered.
@@ -2642,8 +2643,7 @@ Accessibility regressions are locked in by dedicated test files. Keep all of the
 21. **`does not show reading activity section while stats are still loading`** — `getReadingProgressStats` never resolves; asserts the `"Reading Activity"` heading is absent and the welcome fallback is shown instead.
 22. **`shows a reading stats error banner when the fetch fails`** — `getReadingProgressStats` rejects with `Error("reading stats unavailable")`; asserts the error message is rendered in an `AlertBanner` and the `"Welcome to Biblioteka"` fallback heading is **not** shown alongside it.
 
-**Year in Books section — five tests (nested `describe("Year in Books")`):**
-
+**Year in Books — five tests (test #23 at top-level; tests 24–27 in nested `describe("Year in Books")`):**
 23. **`shows a year-in-books error banner when the fetch fails`** — `getYearInBooks` rejects with `Error("year in books unavailable")`; asserts the error message is rendered in an `AlertBanner`.
 24. **`does not show year-in-books card when all stats are zero`** — `getYearInBooks` resolves with all-zero stats; asserts `data-testid="year-in-books-card"` is absent.
 25. **`shows year-in-books card when there are books finished`** — `getYearInBooks` resolves with `books_finished: 3, active_days: 20, longest_streak: 5, total_downloads: 8`; asserts the `"2026 in Books"` heading, the counts, and the `"books finished"` / `"days reading"` labels are all rendered.
