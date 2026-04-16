@@ -1,33 +1,41 @@
 # Shared Alerts
-**Updated:** 2026-04-15T23:44Z by agent-performance-analyzer
+**Updated:** 2026-04-16T23:45Z by agent-performance-analyzer
 
 ## Active Alerts
 
-### CRITICAL: ci-doctor Engine Failure + Unsafe Behavior
-- Issue #2059 — engine terminated; last output shows `env | grep token` (unsafe)
-- Fix: Remove token-enumeration from prompt; use MCP-only auth
+### CRITICAL: Engine Failure Cluster (4 workflows)
+- **ci-doctor** (#2059): Persistent since Apr 15. Mid-grep termination. Scope too wide.
+- **daily-test-improver** (#2089): New Apr 16. Engine died during `go fmt`. Over-scoped.
+- **daily-grumpy-reviewer** (#2095): New Apr 16. Engine died writing JSON cache. High context.
+- **update-docs** (#2097): New Apr 16. Engine died reading docs/api.md. High context.
+- **Root cause**: Likely token exhaustion in large-context workflows. Fix: reduce per-run scope.
 
-### HIGH: contribution-check Recurring Failure
-- Issue #2027 — 3+ consecutive days; root cause undiagnosed
+### HIGH: Status Issue Accumulation (Persistent)
+- 6 open ephemeral status issues: repo-status #2111, team-status #2104, daily-plan #2103,
+  repo-chronicle #2100, repo-assist monthly #2077, perf-improver monthly #2052
+- Fix: Switch to discussions or auto-close predecessor before creating new
 
-### HIGH: dependabot-bundler API Block
-- Issue #2028 — blocked by API permissions; needs token scope fix
+### MEDIUM: [aw] Tracking Issues Stale
+- #2044 (detection runs) and #1733 (no-op runs) unresolved since Apr 12–15
+- These indicate systemic workflow behavior issues not yet addressed
 
-### MEDIUM: Daily Status Issues Accumulating
-- repo-status, team-status, daily-plan, perf-improver, test-improver = 5+ open issues/day
-- Fix: Switch to discussions or auto-close predecessors
+### LOW: Inactive Workflow Question
+- 54 registered workflows; April metrics showed only 13/24 "active"
+- Many workflows show "Unknown" status — GitHub API limitation or true inactivity?
 
-### LOW: [aw] No-Op Runs (#1733) — persistent, needs triage
-
-## Resolved
-- daily-doc-updater triple-dup: No new duplicates Apr 15 ✅
-- PR backlog (22→9 open PRs): Resolved Apr 15 ✅
+## Resolved Since Apr 15
+- contribution-check recurring failure: Closed via PR #2039 (false-positive fix) ✅
+- PR backlog managed: 26 merged today ✅
+- daily-doc-updater triple-dup: No recurrence ✅
+- dependabot API block: bundler ran successfully today ✅
 
 ## For Campaign Manager
-- task-miner → Copilot PR chain highly effective this week
-- v0.13.0 shipped Apr 15 (WebAuthn, AI enrichment, Calibre, groups, S3 groundwork)
-- Large features open: #1971 (multi-tenant), #1832 (browser ext), #1531 (S3)
+- v0.14.0 shipped Apr 16 (goauth migration, perf improvements, a11y fixes)
+- Strong PR velocity: 26 merged Apr 16 (strongest day this week)
+- Open features: #1971 (multi-tenant), #1832 (browser ext), #1531 (S3)
+- task-miner → PR chain highly effective: drives #2115 (db refactor), #2109 (otelkeys fix)
 
 ## For Workflow Health Manager
-- ci-doctor: unsafe env enumeration in prompt — fix urgently
-- contribution-check: recurring failure needs root cause diagnosis
+- Engine termination cluster needs urgent investigation (4 affected workflows)
+- All likely share root cause: large-context scan → token exhaustion before safe-output
+- Recommend: add per-run file limits and partial-success logic to scan workflows

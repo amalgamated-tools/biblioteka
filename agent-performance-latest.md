@@ -1,26 +1,27 @@
-# Agent Performance — 2026-04-15
-**Run:** 2026-04-15T23:44Z
+# Agent Performance — 2026-04-16
+**Run:** 2026-04-16T23:45Z
 
 ## Snapshot
 - 54 workflows, all Copilot, all compiled
-- PR merge rate (30 recent): 96% (bot: 100%, Copilot: 90%)
-- Open issues: 18 (↓ from 29), open PRs: 9 (↓ from 22)
-- [aw] failures: 2 today (ci-doctor, contribution-check); 4 open issues
+- 26 PRs merged today (amalgamated-bot: 14, Copilot: 7, human: 5)
+- Open issues: 29 (↑ from 18); [aw] failures: 4 open; status noise: 6; task-miner: 6
+- Average quality score: ~72/100; average effectiveness: ~70/100
 
 ## Top Performers
-- **discussion-task-miner**: 5 issues → 4 PRs merged same day
-- **amalgamated-bot**: 16/16 PRs merged (100%)
-- **daily-accessibility-review**: Consistent; work in v0.13.0
-- **daily-perf-improver**: PR #2051 FK indexes — targeted
+- **daily-doc-updater**: 9 PRs merged Apr 16 (quality: 100, eff: 96)
+- **daily-perf-improver**: FK index PRs #2107, #2051 merged (quality: 100, eff: 92)
+- **daily-accessibility-review**: 4 a11y fix PRs via Copilot same day (quality: 95, eff: 90)
+- **discussion-task-miner**: 5 new issues Apr 16, driving PRs #2115, #2109 (quality: 95, eff: 87)
+- **code-simplifier**: PR #2086 merged (quality: 95, eff: 88)
 
 ## Critical Issues
-1. **ci-doctor**: Engine fail + unsafe env token enumeration (#2059) — CRITICAL
-2. **contribution-check**: 3+ days recurring failure (#2027) — HIGH
-3. **Status issue accumulation**: 5+ open issues/day from report workflows — MEDIUM
+1. **Engine failure cluster**: ci-doctor (#2059, Apr 15), daily-test-improver (#2089), daily-grumpy-reviewer (#2095), update-docs (#2097) — all engine terminations, likely token exhaustion
+2. **Status issue accumulation**: repo-status #2111, team-status #2104, daily-plan #2103, repo-chronicle #2100, monthly activity #2077 + #2052 = 6 noise issues
+3. **[aw] detection/no-op drift**: #2044, #1733 open and unresolved
 
-## Resolved Since Apr 14
-- daily-doc-updater triple-dup: No new duplicates ✅
-- PR backlog: 22→9 ✅
+## Resolved Since Apr 15
+- contribution-check (#2027): closed after PR #2039 stopped false-positive creation ✅
+- PR #2039 is a reference pattern for other check-style workflows
 
 ## Discussion Created
-"Agent Performance Report — Week of 2026-04-15"
+"Agent Performance Report — Week of 2026-04-16" in Audits category
