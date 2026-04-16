@@ -55,7 +55,7 @@ frontend/
         DeleteConfirmation.svelte  Accessible inline delete-confirmation dialog (`role="alertdialog"`, Escape-to-dismiss, autofocus on open); encapsulates the standard pattern for accessible destructive-action confirmations (WCAG 4.1.2)
         DownloadsHistogram.svelte  Bar chart showing monthly download counts; visual bars are `aria-hidden` and paired with a screen-reader-only data table (`Month` + `Downloads`) as the accessible equivalent; count tooltip uses `text-ink-600 dark:text-ink-200` and month labels use `text-ink-600 dark:text-ink-400` to meet the WCAG 1.4.3 Contrast Minimum (Level AA)
         EmailBookModal.svelte      Modal dialog for emailing a book file to an address; implements full focus trapping (Tab / Shift+Tab wrap-around), Escape-to-dismiss, and autofocus on the Close button (WCAG 2.1.1, 2.1.2)
-        TextInput.svelte     Reusable text input; forwards all standard `<input>` HTML attributes; placeholder text in dark mode uses `dark:placeholder:text-ink-300` to meet the minimum contrast ratio for non-active UI text (WCAG 1.4.3); border uses `border-ink-400 dark:border-ink-400` to meet the Non-text Contrast minimum (WCAG 1.4.11)
+        TextInput.svelte     Reusable text input; forwards all standard `<input>` HTML attributes; placeholder text in dark mode uses `dark:placeholder:text-ink-300` to meet the minimum contrast ratio for non-active UI text (WCAG 1.4.3); border uses `border-ink-400 dark:border-ink-400` to meet the Non-text Contrast minimum (WCAG 1.4.11); uses `focus-visible:outline-none` (not `outline-none`) so the global `*:focus-visible` outline is suppressed when the control matches `:focus-visible` (typically keyboard focus or other UA-determined cases where focus should be visibly indicated), while the component's `focus:ring-*` styles provide the visible focus indicator and avoid a double ring (WCAG 2.4.7)
     stores/             Reactive state modules (lowercase, *.svelte.ts)
     lib/
       actions.ts              Svelte action utilities (`autofocusFirstButton`)
@@ -988,7 +988,7 @@ A pure-CSS bar-chart component that renders monthly download counts fetched from
 
 ### `TextInput.svelte`
 
-A styled text input with focus ring, dark-mode support, disabled styling, and ARIA attribute forwarding. In dark mode, placeholder text uses `dark:placeholder:text-ink-300` to maintain sufficient contrast against the dark background (WCAG 1.4.3 Contrast Minimum, Level AA). Form control borders use `border-ink-400 dark:border-ink-400` to meet the WCAG 1.4.11 Non-text Contrast minimum of 3:1.
+A styled text input with focus ring, dark-mode support, disabled styling, and ARIA attribute forwarding. In dark mode, placeholder text uses `dark:placeholder:text-ink-300` to maintain sufficient contrast against the dark background (WCAG 1.4.3 Contrast Minimum, Level AA). Form control borders use `border-ink-400 dark:border-ink-400` to meet the WCAG 1.4.11 Non-text Contrast minimum of 3:1. The active state class string uses `focus-visible:outline-none` (not `outline-none`) to suppress the browser's default outline when `:focus-visible` matches (keyboard-initiated focus), so the component's explicit `focus:ring-*` accent ring is the sole visible indicator — avoiding a double ring while still meeting WCAG 2.4.7 Focus Visible (Level AA).
 
 **Props:**
 
@@ -1687,7 +1687,7 @@ The relevant `$derived` class string in `TextInput.svelte`:
 const stateClasses = $derived(
   disabled
     ? "bg-ink-50 dark:bg-ink-800 text-ink-500 dark:text-ink-400 cursor-not-allowed"
-    : "bg-white text-ink-900 focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 placeholder:text-ink-500 dark:placeholder:text-ink-300",
+    : "bg-white text-ink-900 focus:ring-2 focus:ring-accent-500 focus:border-transparent focus-visible:outline-none dark:bg-ink-800 dark:text-cream-100 placeholder:text-ink-500 dark:placeholder:text-ink-300",
 );
 ```
 
@@ -1722,6 +1722,34 @@ The same `border-ink-400 dark:border-ink-400` pattern must be applied to any inl
 | `dark:border-ink-400` | Dark | `dark:bg-ink-800` | Meets WCAG 1.4.11 ≥ 3:1 |
 
 **Rule:** All form inputs and bordered interactive elements must use `border-ink-400 dark:border-ink-400` (or a higher-contrast token) for their default border. In light mode, do not use `border-ink-200` on `bg-white`; in dark mode, do not use `dark:border-ink-700` on `dark:bg-ink-800` — those are the low-contrast combinations that fail the 3:1 non-text contrast requirement.
+
+### Focus ring on form inputs (`TextInput.svelte` and inline inputs)
+
+**WCAG criterion:** [2.4.7 Focus Visible](https://www.w3.org/WAI/WCAG21/Understanding/focus-visible.html) (Level AA)
+
+Keyboard users must be able to see which element currently has focus. Applying `outline-none` unconditionally suppresses the browser's native focus indicator entirely — a direct WCAG 2.4.7 violation. The correct fix is `focus-visible:outline-none`, which targets the `:focus-visible` pseudo-class and removes the browser default outline **only when keyboard-initiated focus is detected** (`:focus-visible` matches when the UA determines focus should be visually indicated, typically keyboard navigation).
+
+The `focus:ring-2 focus:ring-accent-500 focus:border-transparent` classes on form inputs provide an explicit accent-colored focus ring for all focus states. `focus-visible:outline-none` suppresses the *additional* browser-default outline when `:focus-visible` matches, so keyboard users see the styled accent ring instead of a double indicator. The net effect is a clean, consistent focus indicator for both pointer and keyboard users.
+
+The active-state class string in `TextInput.svelte`:
+
+```svelte
+const stateClasses = $derived(
+  disabled
+    ? "bg-ink-50 dark:bg-ink-800 text-ink-500 dark:text-ink-400 cursor-not-allowed"
+    : "bg-white text-ink-900 focus:ring-2 focus:ring-accent-500 focus:border-transparent focus-visible:outline-none dark:bg-ink-800 dark:text-cream-100 placeholder:text-ink-500 dark:placeholder:text-ink-300",
+);
+```
+
+The same class pattern appears on inline `<input>` and `<textarea>` elements in components that do not use `TextInput`:
+
+```html
+class="... focus:ring-2 focus:ring-accent-500 focus:border-transparent focus-visible:outline-none ..."
+```
+
+Affected components (as of PR #2060): `TextInput.svelte`, `BookEditForm.svelte`, `FirstLibraryWizard.svelte`, `LibraryForm.svelte`, `CalibreImportTab.svelte`, `SmtpTab.svelte`, `WatchFolderTab.svelte`, and `EmailBookModal.svelte`.
+
+**Rule:** Never use `outline-none` on a focusable form element. Always use `focus-visible:outline-none` instead. The `focus-visible:outline-none` class must be combined with explicit `focus:ring-*` classes so that keyboard users see a styled focus indicator rather than the browser default.
 
 ### Live region for theme change announcements (`PreferencesTab.svelte`)
 
@@ -2192,6 +2220,7 @@ When editing the app shell or adding new persistent navigation elements:
 17. Every icon that appears alongside visible text must carry `aria-hidden="true"` to suppress redundant screen-reader announcements. See [Decorative icons alongside visible text](#decorative-icons-alongside-visible-text) above.
 18. Whenever a user action produces a transient status change without a focus move (e.g. selecting a theme, saving settings), add a `role="status"` `class="sr-only"` `<span>` live region to announce the outcome to screen readers (WCAG 4.1.3). Reset the text to `""` before setting the new message so repeated identical actions still trigger an announcement. See [Live region for theme change announcements](#live-region-for-theme-change-announcements-preferencestabsvelte) above.
 19. Do not add animations or transitions that cannot be suppressed by the global `prefers-reduced-motion` rule in `index.css`. Tailwind animation utilities (e.g. `animate-fade-in`, `animate-spin`) and ordinary CSS animations, including custom `@keyframes` used from component `<style>` blocks, are suppressible via that global override. Add a component-level `@media (prefers-reduced-motion: reduce)` guard only when motion is driven outside normal CSS animation/transition rules (for example, via JavaScript) or when local `!important` styles would otherwise bypass the global override. See [Reduced-motion support](#reduced-motion-support-indexcss) above.
+20. Never use `outline-none` on a focusable form input — always use `focus-visible:outline-none` combined with explicit `focus:ring-*` classes. `outline-none` removes the native focus ring for **all** interaction modes including keyboard, violating WCAG 2.4.7 Focus Visible. `focus-visible:outline-none` suppresses the browser-default outline when `:focus-visible` matches (keyboard-initiated focus), leaving the explicit `focus:ring-*` accent ring as the sole visible indicator for keyboard users. See [Focus ring on form inputs](#focus-ring-on-form-inputs-textinputsvelte-and-inline-inputs) above.
 
 ### Form accessibility
 
