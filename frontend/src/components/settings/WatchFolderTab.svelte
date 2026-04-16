@@ -202,7 +202,7 @@
       {/if}
 
       <div class="flex gap-3">
-        <Button type="submit" disabled={loading} class="flex-1 px-4 py-2.5">
+        <Button type="submit" disabled={loading} class="flex-1">
           {submitLabel}
         </Button>
         {#if configured}
@@ -210,7 +210,7 @@
             type="button"
             onclick={handleClear}
             disabled={loading}
-            class="px-4 py-2.5 bg-ink-100 dark:bg-ink-700 text-ink-700 dark:text-ink-200 hover:bg-ink-200 dark:hover:bg-ink-600"
+            class="bg-ink-100 dark:bg-ink-700 text-ink-700 dark:text-ink-200 hover:bg-ink-200 dark:hover:bg-ink-600"
           >
             Clear
           </Button>
