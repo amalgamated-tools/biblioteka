@@ -52,8 +52,13 @@ func (h *PasskeyHandler) FinishRegistration(w http.ResponseWriter, r *http.Reque
 		var resp struct {
 			ID string `json:"id"`
 		}
-		if json.Unmarshal(rc.body.Bytes(), &resp) == nil {
+		if err := json.Unmarshal(rc.body.Bytes(), &resp); err != nil {
+			slog.WarnContext(r.Context(), "failed to parse passkey registration response for audit",
+				slog.Any(otelkeys.Error, err),
+			)
+		} else if resp.ID != "" {
 			logAudit(r.Context(), h.DB, userID, db.AuditActionPasskeyCreated, "passkey", resp.ID, nil)
+		}
 		}
 	}
 }
