@@ -238,7 +238,7 @@
         >
       {/if}
 
-      <Button type="submit" disabled={oidcLoading} class="w-full px-4 py-2.5">
+      <Button type="submit" disabled={oidcLoading} class="w-full">
         {submitLabel}
       </Button>
     </form>

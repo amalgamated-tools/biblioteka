@@ -285,6 +285,20 @@
           class="w-full py-2.5"
           disabled={saving}
         />
+        {#if fields.coverImageUrl?.trim()}
+          <div class="mt-2">
+            {#key fields.coverImageUrl}
+              <img
+                src={fields.coverImageUrl}
+                alt="Cover preview"
+                class="max-h-48 max-w-full rounded-md border border-ink-200 dark:border-ink-700 object-contain"
+                onerror={(e: Event) => {
+                  (e.currentTarget as HTMLImageElement).style.display = "none";
+                }}
+              />
+            {/key}
+          </div>
+        {/if}
       </div>
     </div>
 
