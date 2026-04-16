@@ -163,6 +163,7 @@ jobs:
       - name: Build frontend
         working-directory: ./frontend
         run: pnpm run build
+
   frontend-all:
     needs: [check-docs-only, frontend-checks]
     runs-on: ubuntu-latest
@@ -200,12 +201,8 @@ jobs:
           cache: true
           cache-dependency-path: go.sum
 
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20
-        with:
-          version: v2.11.3
-
       - name: Check Go formatting
+        id: gofmt
         run: |
           if [ "$(gofmt -l . | wc -l)" -gt 0 ]; then
             echo "Go files are not formatted. Please run 'go fmt ./...'"
@@ -214,12 +211,37 @@ jobs:
           fi
 
       - name: Verify go.mod is tidy
+        id: gomod
         run: |
           go mod tidy
           if [ -n "$(git status --porcelain go.mod go.sum)" ]; then
             echo "go.mod or go.sum is not tidy. Please run 'go mod tidy'."
             git diff go.mod go.sum
             exit 1
+          fi
+          
+      - name: golangci-lint
+        id: golangci
+        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20
+        with:
+          version: v2.11.3
+
+      - name: Report Go lint check outcomes
+        if: always()
+        run: |
+          {
+            echo "### Go Lint Check Outcomes"
+            echo "- go formatting: ${{ steps.gofmt.outcome }}"
+            echo "- go.mod tidy: ${{ steps.gomod.outcome }}"
+            echo "- golangci-lint: ${{ steps.golangci.outcome }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "${{ steps.gofmt.outcome }}" = "failure" ]; then
+            echo "::error::Go Lint failed check: go formatting"
+          elif [ "${{ steps.gomod.outcome }}" = "failure" ]; then
+            echo "::error::Go Lint failed check: go.mod tidy"
+          elif [ "${{ steps.golangci.outcome }}" = "failure" ]; then
+            echo "::error::Go Lint failed check: golangci-lint"
           fi
 
   go-test:
