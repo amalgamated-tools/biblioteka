@@ -158,6 +158,7 @@ Before going live, verify each item:
 - [ ] **SQLite backups** — if using SQLite, back up the Docker volume (`biblioteka-data`) or the `*.db` file.
 - [ ] **`TELEMETRY_ENABLED`** — leave unset (or set to `false`) to keep anonymous telemetry disabled (default). Set to `true` to enable it.
 - [ ] **`TRUSTED_PROXIES`** — set to your reverse-proxy CIDR(s) if behind nginx/Caddy/Traefik. Leave unset if deploying without a proxy (direct exposure).
+- [ ] **Passkeys** — if enabling passkeys, set `WEBAUTHN_RP_ID` to your production domain (e.g. `books.example.com`) and set `WEBAUTHN_RP_ORIGINS` to the matching HTTPS origin (e.g. `https://books.example.com`). Leaving both at their `localhost` defaults makes passkeys non-functional in production — ceremonies will silently fail while the UI still shows passkeys as available. See [Authentication → Passkeys](authentication.md#passkeys-webauthn).
 - [ ] **SMTP** — if you want email delivery, configure the variables below (or use the admin UI under *Settings → Email*). Environment variables take precedence over UI settings when `SMTP_HOST` is set; unset `SMTP_HOST` to switch back to UI-managed config.
 
   | Variable | Default | Notes |
