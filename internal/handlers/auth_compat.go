@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/url"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	goauthhandler "github.com/amalgamated-tools/goauth/handler"
 )
 
@@ -83,10 +85,15 @@ func (h *APIKeyHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if rc.status == http.StatusCreated && h.DB != nil {
 		userID := auth.UserIDFromContext(r.Context())
 		var resp struct {
-			ID string `json:"id"`
+			ID   string `json:"id"`
+			Name string `json:"name"`
 		}
-		if json.Unmarshal(rc.body.Bytes(), &resp) == nil {
-			logAudit(r.Context(), h.DB, userID, db.AuditActionAPIKeyCreated, "api_key", resp.ID, nil)
+		if err := json.Unmarshal(rc.body.Bytes(), &resp); err != nil {
+			slog.WarnContext(r.Context(), "failed to parse API key create response for audit",
+				slog.Any(otelkeys.Error, err),
+			)
+		} else {
+			logAudit(r.Context(), h.DB, userID, db.AuditActionAPIKeyCreated, "api_key", resp.ID, map[string]any{"name": resp.Name})
 		}
 	}
 }
@@ -135,11 +142,20 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 	if rc.status == http.StatusCreated && h.DB != nil {
 		var resp struct {
 			User struct {
-				ID string `json:"id"`
+				ID    string `json:"id"`
+				Name  string `json:"name"`
+				Email string `json:"email"`
 			} `json:"user"`
 		}
-		if json.Unmarshal(rc.body.Bytes(), &resp) == nil {
-			logAudit(r.Context(), h.DB, resp.User.ID, db.AuditActionUserSignedUp, "user", resp.User.ID, nil)
+		if err := json.Unmarshal(rc.body.Bytes(), &resp); err != nil {
+			slog.WarnContext(r.Context(), "failed to parse signup response for audit",
+				slog.Any(otelkeys.Error, err),
+			)
+		} else if resp.User.ID != "" {
+			logAudit(r.Context(), h.DB, resp.User.ID, db.AuditActionUserSignedUp, "user", resp.User.ID, map[string]any{
+				"name":  resp.User.Name,
+				"email": redactEmail(resp.User.Email),
+			})
 		}
 	}
 }
