@@ -1,88 +1,68 @@
 {
-  "last_run": "2026-04-15T20:38:00Z",
-  "tasks_run": ["task2", "task3", "task7"],
+  "last_run": "2026-04-16T20:28:41Z",
+  "tasks_run": ["task3", "task4", "task7"],
   "commands": {
     "build": "make build (requires frontend first)",
     "test": "go test ./... (Go 1.26.1 auto-downloaded; internal/jobs failures are pre-existing)",
     "lint": "make lint",
     "fmt": "make fmt && make hardfmt",
     "bench": "go test -bench=. -benchmem ./internal/db/",
-    "note": "Go 1.26.1 is auto-downloaded when needed (not using GOTOOLCHAIN=local). internal/jobs tests have pre-existing failures unrelated to DB/index changes."
+    "note": "Go 1.26.1 is auto-downloaded when needed. internal/jobs tests have pre-existing failures."
   },
   "backlog": [
     {
       "id": "static-asset-caching",
       "status": "merged",
       "description": "Add Cache-Control: immutable for Vite content-hashed assets in /assets/; no-cache for index.html",
-      "impact": "medium",
-      "pr_number": 1790,
-      "merged_by": "veverkap"
+      "pr_number": 1790
     },
     {
       "id": "books-title-index",
       "status": "merged",
       "description": "Add indexes on books.title and books.created_at for ORDER BY performance",
-      "impact": "high",
-      "pr_number": 1677,
-      "merged_by": "veverkap"
+      "pr_number": 1677
     },
     {
       "id": "fts-search",
       "status": "implemented_by_maintainers",
-      "description": "SQLite FTS5 for full-text book search - already implemented (migration 20260412000000_add_books_fts.sql)",
-      "impact": "high"
+      "description": "SQLite FTS5 for full-text book search - already implemented"
     },
     {
       "id": "benchmark-db-queries",
       "status": "implemented",
-      "description": "Go benchmarks for DB query functions - already exists in internal/db/bench_test.go",
-      "impact": "medium"
+      "description": "Go benchmarks for DB query functions - internal/db/bench_test.go"
     },
     {
       "id": "book-downloads-file-id-index",
       "status": "merged",
       "description": "Add index on book_downloads.book_file_id for cascade delete efficiency",
-      "impact": "low",
-      "pr_number": 1806,
-      "merged_by": "veverkap"
+      "pr_number": 1806
     },
     {
       "id": "reading-progress-user-updated-at-index",
       "status": "merged",
-      "description": "Add composite index on reading_progress(user_id, updated_at) to eliminate filesort for ListReadingProgress ORDER BY updated_at DESC",
-      "impact": "medium",
-      "pr_number": 1876,
-      "merged_by": "veverkap"
+      "description": "Add composite index on reading_progress(user_id, updated_at)",
+      "pr_number": 1876
     },
     {
       "id": "load-book-relations-parallel",
       "status": "merged",
-      "description": "LoadBookRelations now runs 3 DB queries concurrently with errgroup. Also added BenchmarkLoadBookRelations.",
-      "impact": "low"
+      "description": "LoadBookRelations now runs 3 DB queries concurrently with errgroup"
     },
     {
-      "id": "book-tags-tag-id-index",
+      "id": "book-tags-goodreads-indexes",
+      "status": "merged",
+      "description": "idx_book_tags_tag_id + idx_goodreads_metadata_user_book_status",
+      "pr_number": 2051
+    },
+    {
+      "id": "reading-group-lists-passkey-challenges-indexes",
       "status": "pr_created",
-      "description": "Add idx_book_tags_tag_id ON book_tags(tag_id): prevents SCAN on cascade delete; enables future books-by-tag queries",
-      "impact": "low",
-      "pr_branch": "perf-assist/missing-fk-indexes"
-    },
-    {
-      "id": "goodreads-metadata-user-book-status-index",
-      "status": "pr_created",
-      "description": "Add idx_goodreads_metadata_user_book_status ON (user_id, book_id, status, created_at DESC, id DESC): tightens GetLatestGoodreadsMetadataForBook from (user_id, status) scan to (user_id, book_id, status) point lookup",
-      "impact": "medium",
-      "pr_branch": "perf-assist/missing-fk-indexes",
-      "evidence": "EXPLAIN QUERY PLAN: before=SEARCH USING INDEX ...(user_id=? AND status=?), after=SEARCH USING INDEX ...(user_id=? AND book_id=? AND status=?)"
-    },
-    {
-      "id": "reading-list-books-position-index",
-      "status": "superseded",
-      "description": "Position column dropped (migration 20260415151000_drop_reading_list_books_position.sql) - no longer relevant",
-      "impact": "none"
+      "description": "Add idx_reading_group_lists_list_id, idx_reading_group_lists_shared_by, idx_passkey_challenges_user_id: all convert SCAN to SEARCH on cascade deletes",
+      "pr_branch": "perf-assist/fk-cascade-indexes",
+      "evidence": "EXPLAIN QUERY PLAN: before=SCAN, after=SEARCH USING INDEX for all 3"
     }
   ],
-  "monthly_activity_issue_number": null,
-  "monthly_activity_issue_note": "Need to create April 2026 issue this run",
+  "monthly_activity_issue_number": 2052,
   "checked_off_items": []
 }
