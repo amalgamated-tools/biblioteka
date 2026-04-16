@@ -11,8 +11,8 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/authstore"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
-	"github.com/go-webauthn/webauthn/webauthn"
 	goauthhandler "github.com/amalgamated-tools/goauth/handler"
+	"github.com/go-webauthn/webauthn/webauthn"
 )
 
 // newPasskeyHandler creates a PasskeyHandler configured from environment variables.
