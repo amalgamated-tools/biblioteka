@@ -346,17 +346,12 @@ func (d *DB) GetSeriesForBooks(ctx context.Context, bookIDs []string) (map[strin
 	}
 	slog.DebugContext(ctx, "batch fetching series for books", slog.Int(otelkeys.BookCount, len(bookIDs)))
 
-	placeholders := make([]string, len(bookIDs))
-	args := make([]any, len(bookIDs))
-	for i, id := range bookIDs {
-		placeholders[i] = dollarN(i + 1)
-		args[i] = id
-	}
+	inClause, args := buildInClause(bookIDs, 1)
 
 	rows, err := d.QueryContext(ctx,
 		`SELECT bs.book_id, s.id, s.name, s.goodreads_id, s.hardcover_id, s.google_books_id, s.created_at, s.updated_at, bs.position
 		FROM series s INNER JOIN book_series bs ON bs.series_id = s.id
-		WHERE bs.book_id IN (`+strings.Join(placeholders, ",")+`)
+		WHERE bs.book_id IN (`+inClause+`)
 		ORDER BY s.name ASC`,
 		args...,
 	)

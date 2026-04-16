@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"strings"
 	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
@@ -152,15 +151,12 @@ func (d *DB) GetReadingStatesForBooks(ctx context.Context, userID string, bookID
 	)
 
 	// Build placeholders: $1 = userID, $2..$N+1 = bookIDs, $N+2 = since (if non-zero).
-	placeholders := make([]string, len(bookIDs))
-	args := make([]any, 0, len(bookIDs)+2)
+	inClause, inArgs := buildInClause(bookIDs, 2)
+	args := make([]any, 0, len(inArgs)+2)
 	args = append(args, userID)
-	for i, id := range bookIDs {
-		placeholders[i] = dollarN(i + 2)
-		args = append(args, id)
-	}
+	args = append(args, inArgs...)
 
-	q := `SELECT ` + koboReadingStateColumns + ` FROM kobo_reading_states WHERE user_id = $1 AND book_id IN (` + strings.Join(placeholders, ",") + `)`
+	q := `SELECT ` + koboReadingStateColumns + ` FROM kobo_reading_states WHERE user_id = $1 AND book_id IN (` + inClause + `)`
 
 	if !since.IsZero() {
 		sinceIdx := dollarN(len(bookIDs) + 2)
