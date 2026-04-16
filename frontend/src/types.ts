@@ -93,6 +93,17 @@ export interface BookSeriesEntry {
   position: number | null;
 }
 
+export interface Tag {
+  id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TagInput {
+  name: string;
+}
+
 export interface BookFile {
   id: string;
   book_id: string;
