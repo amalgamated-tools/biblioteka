@@ -1,12 +1,13 @@
 {
-  "last_run": "2026-04-16T01:08:01Z",
+  "last_run": "2026-04-16T12:49:51Z",
   "comments_made": {
     "1531": "2026-04-12T01:06:21Z",
     "1888": "2026-04-14T01:25:00Z",
     "1941": "2026-04-14T13:00:00Z",
     "1971": "2026-04-15T12:48:00Z",
     "2019": "2026-04-15T12:48:00Z",
-    "2055": "2026-04-16T01:08:00Z"
+    "2055": "2026-04-16T01:08:00Z",
+    "1880": "2026-04-16T12:49:51Z"
   },
   "prs_created": [
     {
@@ -31,6 +32,7 @@
     },
     {
       "branch": "repo-assist/fix-collectrows-monthly-downloads-1941",
+      "pr_number": 2008,
       "title": "refactor(db): use collectRows in GetMonthlyDownloads",
       "closes": [1941],
       "created_at": "2026-04-15T01:06:57Z",
@@ -38,6 +40,7 @@
     },
     {
       "branch": "repo-assist/improve-api-types-1990",
+      "pr_number": 2007,
       "title": "refactor(frontend): move AuthResponse and MetadataFetchResponse to types.ts",
       "closes": [1990],
       "created_at": "2026-04-15T01:06:57Z",
@@ -45,22 +48,32 @@
     },
     {
       "branch": "repo-assist/fix-reading-list-ownership-helper-2020",
+      "pr_number": 2029,
       "title": "refactor(db): extract verifyReadingListOwnership helper in reading_lists.go",
       "closes": [2020],
       "created_at": "2026-04-15T12:48:38Z",
-      "status": "open"
+      "status": "closed"
     },
     {
       "branch": "repo-assist/improve-tags-frontend-api-2055",
+      "pr_number": 2076,
       "title": "feat(frontend): add tags API client and Tag types",
       "closes": [2055],
       "created_at": "2026-04-16T01:08:00Z",
       "status": "open"
+    },
+    {
+      "branch": "repo-assist/fix-passkey-label-2073",
+      "title": "fix(a11y): add visible label to passkey name input",
+      "closes": [2073],
+      "created_at": "2026-04-16T12:49:51Z",
+      "status": "open",
+      "notes": "Duplicate of Copilot PR #2075 which also fixes #2073; maintainer should pick one. My PR only changes template (no test). Also note PR #2088 (AccountTab refactor) will split PasskeysSection.svelte and may conflict."
     }
   ],
-  "issues_commented": [1531, 1888, 1941, 1971, 2019, 2055],
+  "issues_commented": [1531, 1888, 1941, 1971, 2019, 2055, 1880],
   "monthly_activity_issue": "2026-04",
-  "monthly_activity_issue_number": "aw_monthlyAct",
-  "backlog_cursor": 2055,
-  "notes": "Monthly activity issue #1952 was closed by veverkap on 2026-04-15; new one created this run. Issue #2018 (position dead schema) closed by veverkap as completed. Issue #1896 (aria-required) closed as not_planned. PR for #2020 (reading list ownership helper) still open. PR for tags frontend API (addresses #2055 Task 2) created this run. Remaining from #2055: book annotations HTTP handler (Task 1), reading groups frontend (Task 3), groups handler tests (Task 4)."
+  "monthly_activity_issue_number": 2077,
+  "backlog_cursor": 2073,
+  "notes": "PR #2075 (Copilot) and my PR fix the same #2073 (passkey label). Maintainer should choose one. Issue #1880 (docs) already resolved in PR #1924. Issue #2087 (AccountTab refactor) has PR #2088 from Copilot in progress. PR #2076 (tags frontend) still open. Book annotations handler (Task 1 of #2055) still unimplemented."
 }
