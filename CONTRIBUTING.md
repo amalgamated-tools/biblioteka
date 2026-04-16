@@ -57,7 +57,8 @@ cmd/
   server/            # Main entry point (server binary)
   cli/               # CLI tool for standalone metadata extraction
 internal/
-  auth/              # JWT, rate limiting, middleware
+  auth/              # Protocol-specific middleware (OPDS, KOSync, Kobo); re-exports JWT, rate limiting, and crypto from goauth
+  authstore/         # Adapters bridging db.DB to goauth store interfaces (UserStore, APIKeyStore, PasskeyStore)
   db/                # Database abstraction (SQLite/Postgres), CRUD operations
   goodreads/         # Goodreads catalog client: search by query/ISBN, lookup by ASIN or Goodreads ID; used by CLI commands
   handlers/          # HTTP request handlers

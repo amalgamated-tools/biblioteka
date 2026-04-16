@@ -9,7 +9,7 @@ NOTE: Use American English spelling in all code, comments, and documentation (e.
 - **Backend**: Go 1.26.1, standard `net/http` (no router framework), `database/sql`
 - **Databases**: SQLite (default) and PostgreSQL — both are supported; use dialect-aware helpers
 - **Background jobs**: `asynq` (Redis-backed) via `internal/worker`
-- **Auth**: JWT (`golang-jwt/jwt/v5`) + OIDC (`coreos/go-oidc/v3`)
+- **Auth**: [`goauth`](https://github.com/amalgamated-tools/goauth) for JWT, rate limiting, and bcrypt; OIDC via `coreos/go-oidc/v3`; passkeys via `go-webauthn/webauthn`
 - **Middleware**: `justinas/alice` for middleware chaining
 - **Frontend**: Svelte 5, TypeScript, Tailwind CSS 3, Vite
 - **Migrations**: `dbmate` format, run automatically on startup
@@ -20,7 +20,8 @@ NOTE: Use American English spelling in all code, comments, and documentation (e.
 cmd/server/        # Binary entry point
 cmd/cli/           # CLI tool for standalone metadata extraction
 internal/
-  auth/            # JWT creation/validation, rate limiting, auth middleware
+  auth/            # Protocol-specific middleware (OPDS, KOSync, Kobo); re-exports JWT, rate limiting, and crypto from goauth
+  authstore/       # Adapters bridging db.DB to goauth store interfaces (UserStore, APIKeyStore, PasskeyStore)
   coverutil/       # Cover image decoding (base64 data: URLs; enforces 20 MB limit)
   db/              # Database layer: setup, CRUD per domain (books, authors, …)
   goodreads/       # Goodreads catalog client: search by query/ISBN, lookup by ASIN or Goodreads ID; used by CLI commands
