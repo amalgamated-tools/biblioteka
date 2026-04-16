@@ -104,6 +104,12 @@ A library organization layout that leaves imported book files in place — no fi
 
 **OpenID Connect.** An identity layer on top of OAuth 2.0 that Biblioteka supports for single sign-on (SSO). Users can link an OIDC provider account to their Biblioteka account, after which they can log in via the provider's authentication flow. OIDC settings (issuer URL, client ID/secret) are configured by admins under **Settings → OIDC**. See [Authentication](authentication.md).
 
+## Passkey
+
+A phishing-resistant, passwordless authentication credential based on the WebAuthn Level 2 standard. A passkey is a cryptographic key pair stored on the user's device — a hardware security key, fingerprint reader, Face ID, Windows Hello, or mobile platform authenticator. After registering a passkey while logged in (at **Settings → Account → Passkeys**), the user can log in using a local biometric or PIN gesture without entering a password. Because passkeys use discoverable credentials, no username is required at login time. Password and OIDC login remain available alongside passkeys.
+
+Passkeys require server-side configuration in non-`localhost` environments: `WEBAUTHN_RP_ID` must exactly match the domain users access (e.g. `books.example.com`); `WEBAUTHN_RP_ORIGINS` lists the allowed origins; `WEBAUTHN_RP_NAME` sets the name shown in the browser dialog. The default values only work at `http://localhost:8080`. See [Authentication](authentication.md).
+
 ## OPDS
 
 **Open Publication Distribution System.** A standard (version 1.2) that exposes a book library as a browsable Atom feed. Biblioteka's built-in OPDS catalog at `/opds` supports navigation, acquisition, and full-text search feeds. OPDS clients include KOReader, Calibre, Moon+ Reader, PocketBook, and Aldiko. Authentication uses HTTP Basic Auth with OPDS-specific credentials (separate from the main account). See [OPDS Catalog](opds.md).
@@ -117,6 +123,10 @@ A library organization layout that leaves imported book files in place — no fi
 A user-curated named collection of books. Reading lists are user-scoped — each user manages their own lists independently. Each list has a required name (unique per user after normalization), an optional description, and a `book_count` computed at read time. Books are added and removed individually; both operations are idempotent.
 
 Reading lists are managed via the REST API at `/api/reading-lists` and `/api/reading-lists/{id}/books`. The `GET /api/books/{id}/reading-lists` endpoint returns the lists that contain a specific book. Frontend state is managed by `readingListStore` and the feature is accessible from the **Reading Lists** sidebar entry. See [API Reference](api-reference.md).
+
+## Recommendations
+
+A scored list of books the authenticated user has not yet read, generated locally without an external service. The ranking algorithm combines four signals: author overlap with previously downloaded books, series continuation (books in the same series as books already in the library), publisher match, and overall download popularity across the instance. Results are returned by `GET /api/recommendations` (default 10, max 50) and displayed on the dashboard as a **You Might Also Like** panel backed by the `Recommendations.svelte` component. See [API Reference](api-reference.md).
 
 ## Runes
 
@@ -132,6 +142,10 @@ Two companion files written alongside every imported book file, regardless of wh
 | `metadata.opf` | [OPF](#opf) 2.0 Dublin Core metadata (title, author, identifier, language, date, publisher, description) |
 
 For `book_per_file` libraries where multiple books share the same directory, sidecar filenames are prefixed with the book's filename stem (e.g. `gatsby.jpg`, `gatsby.opf`). Sidecar files are compatible with Calibre, KOReader, and Kobo. See [Administration](administration.md).
+
+## Tag
+
+A user-defined label applied to books for categorization and discovery. Tags are globally-scoped named entities (not per-user) with their own CRUD API at `/api/tags`. A tag name is normalized before storage (whitespace trimmed and collapsed). Tags can be assigned to a book via `PUT /api/books/{id}/tags` and retrieved via `GET /api/books/{id}/tags`. Multiple tags can be applied to a single book, and a single tag can be applied to many books. Tags are also populated during AI metadata enrichment when using the Ollama provider. See [API Reference](api-reference.md).
 
 ## WAL
 
