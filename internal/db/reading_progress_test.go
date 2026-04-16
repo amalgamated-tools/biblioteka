@@ -272,6 +272,7 @@ func TestComputeLongestStreak_SingleDay(t *testing.T) {
 }
 
 func TestComputeLongestStreak_DuplicateSameDay(t *testing.T) {
+	// Use a fixed time far from midnight so adding an hour stays on the same calendar day.
 	noon := time.Date(2025, 6, 15, 12, 0, 0, 0, time.UTC)
 	ts := []time.Time{noon, noon.Add(time.Hour)}
 	require.Equal(t, 1, ComputeLongestStreak(ts))
