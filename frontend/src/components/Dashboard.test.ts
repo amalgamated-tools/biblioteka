@@ -479,8 +479,9 @@ describe("Dashboard", () => {
     expect(screen.getByText("42%")).toBeInTheDocument();
     expect(screen.getByText("KOReader")).toBeInTheDocument();
     const helperTextRow = screen.getByText("KOReader").closest("div");
-    expect(helperTextRow).toHaveClass("text-ink-500");
-    expect(helperTextRow).toHaveClass("dark:text-ink-400");
+    expect(helperTextRow).not.toBeNull();
+    expect(helperTextRow!).toHaveClass("text-ink-500");
+    expect(helperTextRow!).toHaveClass("dark:text-ink-400");
   });
 
   it("shows estimated time remaining when provided", async () => {
