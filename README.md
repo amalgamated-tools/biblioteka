@@ -169,6 +169,9 @@ Copy `.env.sample` to `.env` and adjust as needed. The `PORT` value can also be 
 | `SMTP_PASSWORD` | *(empty)* | SMTP authentication password |
 | `SMTP_FROM` | *(empty)* | Envelope `From` address for outgoing mail (e.g. `biblioteka@example.com`) |
 | `SMTP_TLS` | `starttls` | TLS mode: `none`, `starttls`, or `tls` |
+| `WEBAUTHN_RP_ID` | `localhost` | WebAuthn relying party ID — must match the domain your users access Biblioteka from (e.g. `books.example.com`). See [Passkeys](docs/authentication.md#passkeys-webauthn) |
+| `WEBAUTHN_RP_ORIGINS` | `http://localhost:8080` | Comma-separated allowed origins for WebAuthn (e.g. `https://books.example.com`) |
+| `WEBAUTHN_RP_NAME` | `Biblioteka` | Display name shown in the browser passkey dialog |
 | `TELEMETRY_ENABLED` | `false` | Send anonymous usage telemetry on first startup (opt-in, disabled by default) |
 | `TELEMETRY_ENDPOINT` | *(internal default)* | Override the anonymous telemetry collection endpoint |
 | `TRUSTED_PROXIES` | *(empty)* | Comma-separated CIDR ranges of trusted reverse proxies (e.g. `10.0.0.0/8,172.16.0.0/12`). When set, the rate limiter uses the rightmost non-trusted IP from `X-Forwarded-For`. When unset, `X-Forwarded-For` is ignored and `RemoteAddr` is used directly |
