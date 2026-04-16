@@ -84,9 +84,12 @@ describe("FirstLibraryWizard – step 1 (name)", () => {
 
   it("renders the 'Skip for now' button on step 1", () => {
     render(FirstLibraryWizard);
-    expect(
-      screen.getByRole("button", { name: /Skip.*setup.*now/i }),
-    ).toBeInTheDocument();
+    const skipButton = screen.getByRole("button", {
+      name: /Skip.*setup.*now/i,
+    });
+    expect(skipButton).toBeInTheDocument();
+    expect(skipButton).toHaveClass("text-ink-500");
+    expect(skipButton).toHaveClass("dark:text-ink-400");
   });
 
   it("renders a 'Next' button on step 1", () => {
@@ -210,6 +213,15 @@ describe("FirstLibraryWizard – step 3 (options)", () => {
     const toggle = container.querySelector("#wizard-monitored");
     expect(toggle).toBeInTheDocument();
     expect(toggle).toHaveAttribute("role", "switch");
+  });
+
+  it("renders organization helper text with accessible contrast classes on step 3", async () => {
+    await advanceToStep3();
+    const helperText = screen.getByText(
+      "Determines how Biblioteka organizes books it imports into this library.",
+    );
+    expect(helperText).toHaveClass("text-ink-500");
+    expect(helperText).toHaveClass("dark:text-ink-400");
   });
 
   it("'Next' on step 3 advances to step 4 (review)", async () => {

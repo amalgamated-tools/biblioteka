@@ -478,6 +478,9 @@ describe("Dashboard", () => {
     });
     expect(screen.getByText("42%")).toBeInTheDocument();
     expect(screen.getByText("KOReader")).toBeInTheDocument();
+    const helperTextRow = screen.getByText("KOReader").closest("div");
+    expect(helperTextRow).toHaveClass("text-ink-500");
+    expect(helperTextRow).toHaveClass("dark:text-ink-400");
   });
 
   it("shows estimated time remaining when provided", async () => {
@@ -596,6 +599,9 @@ describe("Dashboard", () => {
       expect(screen.getByText("days longest streak")).toBeInTheDocument();
       expect(screen.getByText("8")).toBeInTheDocument();
       expect(screen.getByText("downloads")).toBeInTheDocument();
+      const subheading = screen.getByText("Your reading year at a glance");
+      expect(subheading).toHaveClass("text-ink-500");
+      expect(subheading).toHaveClass("dark:text-ink-400");
     });
 
     it("shows year-in-books card when there are downloads only", async () => {
