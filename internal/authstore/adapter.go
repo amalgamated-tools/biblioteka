@@ -4,6 +4,7 @@ package authstore
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -32,11 +33,17 @@ func dbUserToAuth(u *db.User) *auth.User {
 
 func (a *UserAdapter) CreateUser(ctx context.Context, name, email, passwordHash string) (*auth.User, error) {
 	u, err := a.DB.CreateUser(ctx, name, email, passwordHash)
+	if errors.Is(err, db.ErrEmailExists) {
+		return nil, auth.ErrEmailExists
+	}
 	return dbUserToAuth(u), err
 }
 
 func (a *UserAdapter) CreateOIDCUser(ctx context.Context, name, email, oidcSubject string) (*auth.User, error) {
 	u, err := a.DB.CreateOIDCUser(ctx, name, email, oidcSubject)
+	if errors.Is(err, db.ErrEmailExists) {
+		return nil, auth.ErrEmailExists
+	}
 	return dbUserToAuth(u), err
 }
 
@@ -73,11 +80,7 @@ func (a *UserAdapter) IsAdmin(ctx context.Context, userID string) (bool, error) 
 }
 
 func (a *UserAdapter) CountUsers(ctx context.Context) (int, error) {
-	users, err := a.DB.ListUsers(ctx)
-	if err != nil {
-		return 0, err
-	}
-	return len(users), nil
+	return a.DB.CountUsers(ctx)
 }
 
 // APIKeyAdapter wraps *db.DB and implements auth.APIKeyStore.

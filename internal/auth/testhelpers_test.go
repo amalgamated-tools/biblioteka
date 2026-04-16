@@ -1,7 +1,5 @@
 package auth
 
-import "context"
-
 // tokenCookieName mirrors TokenCookieName() as a constant for tests that need
 // to set cookies directly (httptest.Cookie.Name).
 const tokenCookieName = "biblioteka_token"
@@ -17,8 +15,3 @@ func testConfig() Config {
 func testJWTOnlyConfig() Config {
 	return Config{CookieName: tokenCookieName}
 }
-
-// stubAPIKeyStore extends mockAPIKeyValidator to satisfy the full APIKeyStore
-// interface in goauth. Only ValidateAPIKey and TouchAPIKeyLastUsed are used by
-// middleware tests; the remaining CRUD methods are unreachable stubs.
-func stubCtx() context.Context { return context.Background() }

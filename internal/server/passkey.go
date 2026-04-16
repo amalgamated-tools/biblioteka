@@ -43,6 +43,18 @@ func newPasskeyHandler(ctx context.Context, database *db.DB, jwt *auth.JWTManage
 	userAdapter := &authstore.UserAdapter{DB: database}
 	passkeyAdapter := &authstore.PasskeyAdapter{DB: database}
 
+	// biblioteka uses stdlib mux, not Chi — extract from URL path manually.
+	// Shared across both success and failure branches so credential management
+	// (list/delete) works even when WebAuthn initialization fails.
+	urlParamFunc := func(r *http.Request, key string) string {
+		rest := strings.TrimPrefix(r.URL.Path, "/api/auth/passkey/credentials/")
+		rest = strings.TrimSuffix(rest, "/")
+		if strings.Contains(rest, "/") {
+			return ""
+		}
+		return rest
+	}
+
 	wa, err := webauthn.New(&webauthn.Config{
 		RPDisplayName: rpName,
 		RPID:          rpID,
@@ -56,7 +68,7 @@ func newPasskeyHandler(ctx context.Context, database *db.DB, jwt *auth.JWTManage
 			Users: userAdapter, Passkeys: passkeyAdapter,
 			WebAuthn: nil, JWT: jwt,
 			CookieName: auth.TokenCookieName(), SecureCookies: secureCookies,
-			URLParamFunc: func(r *http.Request, key string) string { return "" },
+			URLParamFunc: urlParamFunc,
 		}
 	}
 
@@ -69,14 +81,6 @@ func newPasskeyHandler(ctx context.Context, database *db.DB, jwt *auth.JWTManage
 		Users: userAdapter, Passkeys: passkeyAdapter,
 		WebAuthn: wa, JWT: jwt,
 		CookieName: auth.TokenCookieName(), SecureCookies: secureCookies,
-		URLParamFunc: func(r *http.Request, key string) string {
-			// biblioteka uses stdlib mux, not Chi — extract from URL path manually
-			rest := strings.TrimPrefix(r.URL.Path, "/api/auth/passkey/credentials/")
-			rest = strings.TrimSuffix(rest, "/")
-			if strings.Contains(rest, "/") {
-				return ""
-			}
-			return rest
-		},
+		URLParamFunc: urlParamFunc,
 	}
 }
