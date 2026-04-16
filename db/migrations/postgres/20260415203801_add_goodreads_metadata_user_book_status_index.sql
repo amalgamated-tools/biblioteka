@@ -1,6 +1,6 @@
 -- migrate:up
 -- Add a composite index covering the three equality predicates in
--- GetLatestGoodreadsMetadataForBook:
+-- GetPendingGoodreadsMetadataByBook:
 --   WHERE user_id = $1 AND book_id = $2 AND status = $3
 --   ORDER BY created_at DESC, id DESC LIMIT 1
 --
