@@ -1,6 +1,7 @@
 package authstore
 
 import (
+	"database/sql"
 	"errors"
 	"testing"
 	"time"
@@ -8,7 +9,31 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/goauth/auth"
 	"github.com/stretchr/testify/require"
+
+	_ "modernc.org/sqlite" // SQLite driver
 )
+
+// newTestDB creates an in-memory SQLite database with all migrations applied.
+func newTestDB(t *testing.T) *db.DB {
+	t.Helper()
+	t.Setenv("BIBLIOTEKA_ENV", "test")
+	sqlDB, err := sql.Open("sqlite", ":memory:")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = sqlDB.Close() })
+
+	_, err = sqlDB.Exec(`
+		PRAGMA journal_mode = WAL;
+		PRAGMA synchronous = NORMAL;
+		PRAGMA foreign_keys = ON;
+	`)
+	require.NoError(t, err)
+
+	sqlDB.SetMaxOpenConns(1)
+
+	require.NoError(t, db.RunMigrations(t.Context(), sqlDB, db.DialectSQLite))
+
+	return &db.DB{DB: sqlDB, Dialect: db.DialectSQLite}
+}
 
 func TestDbUserToAuth(t *testing.T) {
 	t.Run("nil input", func(t *testing.T) {
@@ -100,4 +125,51 @@ func TestCreateUser_TranslatesErrEmailExists(t *testing.T) {
 	// equality, so the adapter must translate between them.
 	require.False(t, errors.Is(db.ErrEmailExists, auth.ErrEmailExists),
 		"db.ErrEmailExists and auth.ErrEmailExists must be distinct sentinels (different pointers) for the adapter translation to matter")
+
+	d := newTestDB(t)
+	adapter := &UserAdapter{DB: d}
+	ctx := t.Context()
+
+	// CreateUser: second call with same email must return auth.ErrEmailExists
+	_, err := adapter.CreateUser(ctx, "Alice", "dup@example.com", "hash1")
+	require.NoError(t, err)
+
+	u, err := adapter.CreateUser(ctx, "Alice2", "dup@example.com", "hash2")
+	require.Nil(t, u)
+	require.ErrorIs(t, err, auth.ErrEmailExists)
+
+	// CreateOIDCUser: same email must also return auth.ErrEmailExists
+	u, err = adapter.CreateOIDCUser(ctx, "Bob", "dup@example.com", "oidc-sub")
+	require.Nil(t, u)
+	require.ErrorIs(t, err, auth.ErrEmailExists)
+}
+
+func TestCreateOIDCUser_TranslatesErrEmailExists(t *testing.T) {
+	d := newTestDB(t)
+	adapter := &UserAdapter{DB: d}
+	ctx := t.Context()
+
+	_, err := adapter.CreateOIDCUser(ctx, "First", "oidc-dup@example.com", "sub-1")
+	require.NoError(t, err)
+
+	u, err := adapter.CreateOIDCUser(ctx, "Second", "oidc-dup@example.com", "sub-2")
+	require.Nil(t, u)
+	require.ErrorIs(t, err, auth.ErrEmailExists)
+}
+
+func TestCountUsers_DelegatesToDB(t *testing.T) {
+	d := newTestDB(t)
+	adapter := &UserAdapter{DB: d}
+	ctx := t.Context()
+
+	count, err := adapter.CountUsers(ctx)
+	require.NoError(t, err)
+	require.Equal(t, 0, count)
+
+	_, err = adapter.CreateUser(ctx, "Alice", "alice@example.com", "hash")
+	require.NoError(t, err)
+
+	count, err = adapter.CountUsers(ctx)
+	require.NoError(t, err)
+	require.Equal(t, 1, count)
 }
