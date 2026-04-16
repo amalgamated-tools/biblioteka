@@ -32,7 +32,7 @@ frontend/
       books/              Sub-components for book detail and editing
         BookDetail.svelte    Book detail view; displays cover image, metadata, author/series associations, file attachments, and download links
         BookEdit.svelte      Book edit page; fetches book data, manages form state, and coordinates the `BookEditForm` and `MetadataFetchPanel` sub-components
-        BookEditForm.svelte  Book metadata edit form; required fields carry `aria-required={true}` and a visible legend ("Fields marked with an asterisk are required") uses `aria-hidden` on the visual `*` and a `sr-only` span for the spoken label (WCAG 3.3.2)
+        BookEditForm.svelte  Book metadata edit form; required fields carry `aria-required={true}` and a visible legend ("Fields marked with an asterisk are required") uses `aria-hidden` on the visual `*` and a `sr-only` span for the spoken label (WCAG 3.3.2); when a Cover Image URL is entered, a live preview thumbnail renders below the field — the image is hidden automatically via an `onerror` handler if the URL fails to load
         MetadataComparison.svelte   Side-by-side comparison of current and fetched remote metadata; lets the user selectively apply individual fields
         MetadataFetchPanel.svelte   Panel that triggers a remote metadata fetch, streams progress events, and renders `MetadataComparison` once results arrive
       libraries/          Reusable sub-components for the Libraries view
@@ -3134,6 +3134,20 @@ The following test suites cover reactive stores and the API client. Unlike the a
 4. **`does not poll when no pollingInterval is set`** — renders without `pollingInterval`; advances time and asserts `fetchBooks` is called only once (initial load).
 
 > **Mocking note:** `afterEach(cleanup)` prevents DOM leakage between tests. Fake timers (`vi.useFakeTimers()`) are activated per-suite and restored in `afterEach` to avoid contaminating other test files.
+
+### `BookEditForm.test.ts`
+
+`frontend/src/components/books/BookEditForm.test.ts` verifies the rendering, validation, cover image preview behavior, and disabled state of the book metadata edit form. Seven tests in one `BookEditForm` describe block:
+
+1. **`renders all 12 form fields with correct values`** — mounts the form with a fully populated `fields` prop and asserts that all twelve inputs render with the expected values.
+2. **`displays the formError AlertBanner when title is blank and form is submitted`** — submits the form with an empty title; asserts that an `AlertBanner` with the validation message is rendered.
+3. **`does not display an error banner initially`** — asserts that no error `AlertBanner` is present before the form is submitted.
+4. **`shows cover image preview when coverImageUrl is set`** — mounts the form with a non-empty `coverImageUrl`; asserts that an `<img alt="Cover preview">` element is rendered and its `src` matches the supplied URL.
+5. **`does not show cover image preview when coverImageUrl is empty`** — mounts the form with `coverImageUrl: ""`; asserts that no `<img alt="Cover preview">` element is present.
+6. **`does not show cover image preview when coverImageUrl is whitespace only`** — mounts the form with `coverImageUrl: "   "`; asserts that no preview image appears (whitespace is treated as empty).
+7. **`disables all inputs and buttons when saving is true`** — sets `saving={true}` and asserts that every input and button in the form carries the `disabled` attribute.
+
+> **Testing note:** The cover image preview is rendered inside a `{#if fields.coverImageUrl?.trim()}` block, so tests 5 and 6 confirm that neither an empty string nor a whitespace-only string triggers a preview. The `onerror` handler that hides a broken-URL image is exercised at runtime; JSDOM does not fire load/error events for images so it is not covered here.
 
 ---
 
