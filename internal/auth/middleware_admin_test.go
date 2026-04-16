@@ -25,10 +25,10 @@ func (m *mockAdminChecker) IsAdmin(_ context.Context, userID string) (bool, erro
 }
 
 func TestAdminMiddleware_NoToken(t *testing.T) {
-	jm, err := NewJWTManager("secret", time.Hour)
+	jm, err := NewJWTManager("secret", time.Hour, "test")
 	require.NoError(t, err, "NewJWTManager() error")
 	checker := &mockAdminChecker{admins: map[string]bool{}}
-	mw := AdminMiddleware(jm, checker, nil)
+	mw := AdminMiddleware(jm, checker, testJWTOnlyConfig(), nil)
 
 	called := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -45,10 +45,10 @@ func TestAdminMiddleware_NoToken(t *testing.T) {
 }
 
 func TestAdminMiddleware_InvalidToken(t *testing.T) {
-	jm, err := NewJWTManager("secret", time.Hour)
+	jm, err := NewJWTManager("secret", time.Hour, "test")
 	require.NoError(t, err, "NewJWTManager() error")
 	checker := &mockAdminChecker{admins: map[string]bool{}}
-	mw := AdminMiddleware(jm, checker, nil)
+	mw := AdminMiddleware(jm, checker, testJWTOnlyConfig(), nil)
 
 	called := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -66,10 +66,10 @@ func TestAdminMiddleware_InvalidToken(t *testing.T) {
 }
 
 func TestAdminMiddleware_NonAdminUser(t *testing.T) {
-	jm, err := NewJWTManager("secret", time.Hour)
+	jm, err := NewJWTManager("secret", time.Hour, "test")
 	require.NoError(t, err, "NewJWTManager() error")
 	checker := &mockAdminChecker{admins: map[string]bool{"admin-user": true}}
-	mw := AdminMiddleware(jm, checker, nil)
+	mw := AdminMiddleware(jm, checker, testJWTOnlyConfig(), nil)
 
 	token, err := jm.CreateToken(t.Context(), "regular-user")
 	require.NoError(t, err, "CreateToken() error")
@@ -90,10 +90,10 @@ func TestAdminMiddleware_NonAdminUser(t *testing.T) {
 }
 
 func TestAdminMiddleware_AdminUser(t *testing.T) {
-	jm, err := NewJWTManager("secret", time.Hour)
+	jm, err := NewJWTManager("secret", time.Hour, "test")
 	require.NoError(t, err, "NewJWTManager() error")
 	checker := &mockAdminChecker{admins: map[string]bool{"admin-user": true}}
-	mw := AdminMiddleware(jm, checker, nil)
+	mw := AdminMiddleware(jm, checker, testJWTOnlyConfig(), nil)
 
 	token, err := jm.CreateToken(t.Context(), "admin-user")
 	require.NoError(t, err, "CreateToken() error")
@@ -113,10 +113,10 @@ func TestAdminMiddleware_AdminUser(t *testing.T) {
 }
 
 func TestAdminMiddleware_AdminViaCookie(t *testing.T) {
-	jm, err := NewJWTManager("secret", time.Hour)
+	jm, err := NewJWTManager("secret", time.Hour, "test")
 	require.NoError(t, err, "NewJWTManager() error")
 	checker := &mockAdminChecker{admins: map[string]bool{"admin-user": true}}
-	mw := AdminMiddleware(jm, checker, nil)
+	mw := AdminMiddleware(jm, checker, testJWTOnlyConfig(), nil)
 
 	token, err := jm.CreateToken(t.Context(), "admin-user")
 	require.NoError(t, err, "CreateToken() error")
@@ -136,10 +136,10 @@ func TestAdminMiddleware_AdminViaCookie(t *testing.T) {
 }
 
 func TestAdminMiddleware_CheckerError(t *testing.T) {
-	jm, err := NewJWTManager("secret", time.Hour)
+	jm, err := NewJWTManager("secret", time.Hour, "test")
 	require.NoError(t, err, "NewJWTManager() error")
 	checker := &mockAdminChecker{err: errors.New("db down")}
-	mw := AdminMiddleware(jm, checker, nil)
+	mw := AdminMiddleware(jm, checker, testJWTOnlyConfig(), nil)
 
 	token, err := jm.CreateToken(t.Context(), "some-user")
 	require.NoError(t, err, "CreateToken() error")

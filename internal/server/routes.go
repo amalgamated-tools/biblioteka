@@ -18,43 +18,43 @@ import (
 
 func (s *Server) setupRoutes(ctx context.Context) {
 	// Public auth routes (rate-limited)
-	s.mux.HandleFunc("/api/auth/signup", s.authLimiter.Limit(s.authHandler.Signup))
-	s.mux.HandleFunc("/api/auth/login", s.authLimiter.Limit(s.authHandler.Login))
-	s.mux.HandleFunc("/api/auth/logout", s.authLimiter.Limit(s.authHandler.Logout))
+	s.mux.HandleFunc("/api/auth/signup", s.authLimiter.Wrap(s.authHandler.Signup))
+	s.mux.HandleFunc("/api/auth/login", s.authLimiter.Wrap(s.authHandler.Login))
+	s.mux.HandleFunc("/api/auth/logout", s.authLimiter.Wrap(s.authHandler.Logout))
 
 	// Public informational endpoints (not rate-limited, read-only)
 	s.mux.HandleFunc("/api/auth/signup/enabled", s.handleSignupEnabled)
 	s.mux.HandleFunc("/api/auth/oidc/enabled", s.handleOIDCEnabled)
-	s.mux.HandleFunc("/api/auth/passkey/enabled", s.passkeyHandler.HandlePasskeyEnabled)
+	s.mux.HandleFunc("/api/auth/passkey/enabled", s.passkeyHandler.Enabled)
 
 	// Passkey registration (JWT-only: adding a passkey requires an authenticated session)
-	s.mux.Handle("/api/auth/passkey/register/begin", s.requireJWTAuth(http.HandlerFunc(s.passkeyHandler.HandleBeginRegistration)))
-	s.mux.Handle("/api/auth/passkey/register/finish", s.requireJWTAuth(http.HandlerFunc(s.passkeyHandler.HandleFinishRegistration)))
+	s.mux.Handle("/api/auth/passkey/register/begin", s.requireJWTAuth(http.HandlerFunc(s.passkeyHandler.BeginRegistration)))
+	s.mux.Handle("/api/auth/passkey/register/finish", s.requireJWTAuth(http.HandlerFunc(s.passkeyHandler.FinishRegistration)))
 
 	// Passkey authentication (rate-limited, public: no auth needed to log in with a passkey)
-	s.mux.HandleFunc("/api/auth/passkey/login/begin", s.authLimiter.Limit(s.passkeyHandler.HandleBeginAuthentication))
-	s.mux.HandleFunc("/api/auth/passkey/login/finish", s.authLimiter.Limit(s.passkeyHandler.HandleFinishAuthentication))
+	s.mux.HandleFunc("/api/auth/passkey/login/begin", s.authLimiter.Wrap(s.passkeyHandler.BeginAuthentication))
+	s.mux.HandleFunc("/api/auth/passkey/login/finish", s.authLimiter.Wrap(s.passkeyHandler.FinishAuthentication))
 
 	// Passkey credential management (JWT-only: same constraint as API keys)
-	s.mux.Handle("/api/auth/passkey/credentials", s.requireJWTAuth(http.HandlerFunc(s.passkeyHandler.HandlePasskeyCredentials)))
-	s.mux.Handle("/api/auth/passkey/credentials/", s.requireJWTAuth(http.HandlerFunc(s.passkeyHandler.HandlePasskeyCredential)))
+	s.mux.Handle("/api/auth/passkey/credentials", s.requireJWTAuth(http.HandlerFunc(s.passkeyHandler.ListCredentials)))
+	s.mux.Handle("/api/auth/passkey/credentials/", s.requireJWTAuth(http.HandlerFunc(s.passkeyHandler.DeleteCredential)))
 
 	// OIDC auth routes — always registered, check handler at request time
-	s.mux.HandleFunc("/api/auth/oidc/login", s.authLimiter.Limit(s.oidcRoute((*handlers.OIDCHandler).Login)))
-	s.mux.HandleFunc("/api/auth/oidc/callback", s.authLimiter.Limit(s.oidcRoute((*handlers.OIDCHandler).Callback)))
-	s.mux.HandleFunc("/api/auth/oidc/link", s.authLimiter.Limit(s.oidcRoute((*handlers.OIDCHandler).Link)))
+	s.mux.HandleFunc("/api/auth/oidc/login", s.authLimiter.Wrap(s.oidcRoute((*handlers.OIDCHandler).Login)))
+	s.mux.HandleFunc("/api/auth/oidc/callback", s.authLimiter.Wrap(s.oidcRoute((*handlers.OIDCHandler).Callback)))
+	s.mux.HandleFunc("/api/auth/oidc/link", s.authLimiter.Wrap(s.oidcRoute((*handlers.OIDCHandler).Link)))
 	s.mux.Handle("/api/auth/oidc/link-nonce", s.requireAuth(http.HandlerFunc(s.oidcRoute((*handlers.OIDCHandler).CreateLinkNonce))))
 
 	// Protected auth routes
 	s.mux.Handle("/api/auth/me", s.requireAuth(http.HandlerFunc(s.authHandler.Me)))
-	s.mux.Handle("/api/auth/password", s.requireJWTAuth(s.authLimiter.Limit(s.authHandler.ChangePassword)))
+	s.mux.Handle("/api/auth/password", s.requireJWTAuth(s.authLimiter.Wrap(s.authHandler.ChangePassword)))
 
 	// Protected config routes (JWT-only: sensitive server configuration)
 	s.mux.Handle("/api/config/status", s.requireJWTAuth(http.HandlerFunc(s.configHandler.HandleConfigStatus)))
 	s.mux.Handle("/api/config/llm", s.requireJWTAuth(http.HandlerFunc(s.configHandler.HandleLLMConfig)))
 	s.mux.Handle("/api/config/oidc", s.requireJWTAuth(http.HandlerFunc(s.configHandler.HandleOIDCConfig)))
 	s.mux.Handle("/api/config/smtp", s.requireJWTAuth(http.HandlerFunc(s.configHandler.HandleSMTPConfig)))
-	s.mux.Handle("/api/config/smtp/test", s.requireJWTAuth(s.authLimiter.Limit(s.configHandler.HandleSMTPTest)))
+	s.mux.Handle("/api/config/smtp/test", s.requireJWTAuth(s.authLimiter.Wrap(s.configHandler.HandleSMTPTest)))
 	s.mux.Handle("/api/config/watch-folder", s.requireJWTAuth(http.HandlerFunc(s.configHandler.HandleWatchFolderConfig)))
 
 	// Protected admin routes (JWT-only)
@@ -124,12 +124,12 @@ func (s *Server) setupRoutes(ctx context.Context) {
 	// KOReader kosync-compatible progress sync endpoints.
 	// POST /api/user/create — KOReader always tries to register; we return 409 so
 	// it falls through to /api/user/auth.  Users set up credentials via the web UI.
-	s.mux.HandleFunc("/api/user/create", s.authLimiter.Limit(s.kosyncHandler.HandleKOSyncUserCreate))
+	s.mux.HandleFunc("/api/user/create", s.authLimiter.Wrap(s.kosyncHandler.HandleKOSyncUserCreate))
 	// GET /api/user/auth — verified by the KOSync header auth middleware.
-	s.mux.HandleFunc("/api/user/auth", s.authLimiter.Limit(s.requireKOSyncAuth(http.HandlerFunc(s.kosyncHandler.HandleKOSyncUserAuth)).ServeHTTP))
+	s.mux.HandleFunc("/api/user/auth", s.authLimiter.Wrap(s.requireKOSyncAuth(http.HandlerFunc(s.kosyncHandler.HandleKOSyncUserAuth)).ServeHTTP))
 	// PUT /api/syncs/progress and GET /api/syncs/progress/{document}.
-	s.mux.HandleFunc("/api/syncs/progress", s.authLimiter.Limit(s.requireKOSyncAuth(http.HandlerFunc(s.kosyncHandler.HandleKOSyncProgress)).ServeHTTP))
-	s.mux.HandleFunc("/api/syncs/progress/", s.authLimiter.Limit(s.requireKOSyncAuth(http.HandlerFunc(s.kosyncHandler.HandleKOSyncProgress)).ServeHTTP))
+	s.mux.HandleFunc("/api/syncs/progress", s.authLimiter.Wrap(s.requireKOSyncAuth(http.HandlerFunc(s.kosyncHandler.HandleKOSyncProgress)).ServeHTTP))
+	s.mux.HandleFunc("/api/syncs/progress/", s.authLimiter.Wrap(s.requireKOSyncAuth(http.HandlerFunc(s.kosyncHandler.HandleKOSyncProgress)).ServeHTTP))
 
 	// Protected API key routes (JWT-only: API keys cannot manage other API keys)
 	s.mux.Handle("/api/api-keys", s.requireJWTAuth(http.HandlerFunc(s.apiKeyHandler.HandleAPIKeys)))

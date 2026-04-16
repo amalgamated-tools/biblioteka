@@ -146,7 +146,7 @@ func bcryptCredMiddleware(cfg bcryptCredConfig) func(http.Handler) http.Handler 
 				slog.String(otelkeys.UserID, userID),
 				cfg.usernameAttr(normUsername),
 			)
-			ctx := context.WithValue(r.Context(), userIDKey, userID)
+			ctx := ContextWithUserID(r.Context(), userID)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

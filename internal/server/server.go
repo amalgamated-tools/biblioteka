@@ -14,9 +14,11 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
+	"github.com/amalgamated-tools/biblioteka/internal/authstore"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/handlers"
 	"github.com/amalgamated-tools/biblioteka/internal/handlers/middleware"
@@ -28,6 +30,8 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/worker"
 
 	_ "github.com/amalgamated-tools/biblioteka/docs/swagger"
+
+	goauthhandler "github.com/amalgamated-tools/goauth/handler"
 
 	"github.com/justinas/alice"
 	"golang.org/x/sync/errgroup"
@@ -132,7 +136,7 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 
 	if s.JWT == nil {
 		jwtSecret := os.Getenv("JWT_SECRET")
-		jwtManager, err := auth.NewJWTManager(jwtSecret, 24*time.Hour)
+		jwtManager, err := auth.NewJWTManager(jwtSecret, 24*time.Hour, "biblioteka")
 		if err != nil {
 			return nil, fmt.Errorf("failed to initialize JWT manager: %w", err)
 		}
@@ -152,18 +156,21 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 		return nil, fmt.Errorf("failed to initialize settings encrypter: %w", err)
 	}
 
+	apiKeyAdapter := &authstore.APIKeyAdapter{DB: s.DB}
+	userAdapter := &authstore.UserAdapter{DB: s.DB}
+	authCfg := auth.Config{CookieName: auth.TokenCookieName(), APIKeyPrefix: auth.APIKeyPrefix}
+	jwtOnlyCfg := auth.Config{CookieName: auth.TokenCookieName()}
+
 	if s.requireAuth == nil {
-		s.requireAuth = auth.Middleware(s.JWT, s.DB)
+		s.requireAuth = auth.Middleware(s.JWT, authCfg, apiKeyAdapter)
 	}
 
 	if s.requireJWTAuth == nil {
-		s.requireJWTAuth = auth.Middleware(s.JWT, nil)
+		s.requireJWTAuth = auth.Middleware(s.JWT, jwtOnlyCfg, nil)
 	}
 
 	if s.requireAdmin == nil {
-		var adminChecker auth.AdminChecker = s.DB
-		var apiKeyValidator auth.APIKeyValidator = s.DB
-		s.requireAdmin = auth.AdminMiddleware(s.JWT, adminChecker, apiKeyValidator)
+		s.requireAdmin = auth.AdminMiddleware(s.JWT, userAdapter, authCfg, apiKeyAdapter)
 	}
 
 	if s.authLimiter == nil {
@@ -190,7 +197,16 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	// Disable signup if DISABLE_SIGNUP=true; signup is enabled by default.
 	disableSignup := os.Getenv("DISABLE_SIGNUP") == "true"
 
-	s.authHandler = &handlers.AuthHandler{DB: s.DB, JWT: s.JWT, SecureCookies: secureCookies, DisableSignup: disableSignup}
+	s.authHandler = &handlers.AuthHandler{
+		AuthHandler: goauthhandler.AuthHandler{
+			Users:         userAdapter,
+			JWT:           s.JWT,
+			CookieName:    auth.TokenCookieName(),
+			SecureCookies: secureCookies,
+			DisableSignup: disableSignup,
+		},
+		DB: s.DB,
+	}
 
 	// Initialize WebAuthn for passkey support. RPID and origins must match the
 	// deployment domain; they default to localhost for local development.
@@ -256,7 +272,21 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	s.kosyncHandler = &handlers.KOSyncHandler{DB: s.DB}
 	s.readingProgressHandler = &handlers.ReadingProgressHandler{DB: s.DB}
 	s.calibreImportHandler = &handlers.CalibreImportHandler{DB: s.DB}
-	s.apiKeyHandler = &handlers.APIKeyHandler{DB: s.DB}
+	s.apiKeyHandler = &handlers.APIKeyHandler{
+		APIKeyHandler: goauthhandler.APIKeyHandler{
+			APIKeys: apiKeyAdapter,
+			Prefix:  auth.APIKeyPrefix,
+			URLParamFunc: func(r *http.Request, key string) string {
+				rest := strings.TrimPrefix(r.URL.Path, "/api/api-keys/")
+				rest = strings.TrimSuffix(rest, "/")
+				if strings.Contains(rest, "/") {
+					return ""
+				}
+				return rest
+			},
+		},
+		DB: s.DB,
+	}
 	s.koboHandler = &handlers.KoboHandler{DB: s.DB}
 	s.koboHandler.RegisterRoutes()
 	s.groupHandler = &handlers.GroupHandler{DB: s.DB}
@@ -271,7 +301,7 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 		Secrets:          secretEncrypter,
 		IsOIDCConfigured: func() bool { return s.oidcHandler != nil },
 		OnOIDCConfigSet: func(ctx context.Context, issuerURL, clientID, clientSecret, redirectURI string) error {
-			oidcHandler, err := handlers.NewOIDCHandler(ctx, s.DB, s.JWT, issuerURL, clientID, clientSecret, redirectURI, secureCookies)
+			oidcHandler, err := handlers.NewOIDCHandler(ctx, userAdapter, s.JWT, issuerURL, clientID, clientSecret, redirectURI, auth.TokenCookieName(), secureCookies)
 			if err != nil {
 				slog.ErrorContext(ctx, "failed to initialize OIDC provider with new settings", slog.Any(otelkeys.Error, err))
 				return fmt.Errorf("failed to initialize OIDC provider with new settings: %w", err)
@@ -289,7 +319,7 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 		if clientID == "" || clientSecret == "" || redirectURI == "" {
 			return nil, errors.New("OIDC_ISSUER_URL is set but one or more of OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, or OIDC_REDIRECT_URI is missing")
 		}
-		oidcHandler, err := handlers.NewOIDCHandler(ctx, s.DB, s.JWT, issuer, clientID, clientSecret, redirectURI, secureCookies)
+		oidcHandler, err := handlers.NewOIDCHandler(ctx, userAdapter, s.JWT, issuer, clientID, clientSecret, redirectURI, auth.TokenCookieName(), secureCookies)
 		if err != nil {
 			return nil, fmt.Errorf("failed to initialize OIDC provider: %w", err)
 		}
@@ -307,7 +337,7 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 			slog.WarnContext(ctx, "failed to decrypt OIDC client secret from saved settings; skipping OIDC initialization from saved settings", slog.Any(otelkeys.Error, decErr))
 		}
 		if dbClientID != "" && dbClientSecret != "" && dbRedirectURI != "" {
-			oidcHandler, err := handlers.NewOIDCHandler(ctx, s.DB, s.JWT, dbIssuer, dbClientID, dbClientSecret, dbRedirectURI, secureCookies)
+			oidcHandler, err := handlers.NewOIDCHandler(ctx, userAdapter, s.JWT, dbIssuer, dbClientID, dbClientSecret, dbRedirectURI, auth.TokenCookieName(), secureCookies)
 			if err != nil {
 				slog.WarnContext(ctx, "failed to initialize OIDC from saved settings", slog.Any(otelkeys.Error, err))
 			} else {

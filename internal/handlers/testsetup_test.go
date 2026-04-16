@@ -8,6 +8,7 @@ import (
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	goauthhandler "github.com/amalgamated-tools/goauth/handler"
 	_ "modernc.org/sqlite"
 
 	"github.com/stretchr/testify/require"
@@ -40,9 +41,20 @@ func newTestDB(t *testing.T) *db.DB {
 
 func newTestJWT(t *testing.T) *auth.JWTManager {
 	t.Helper()
-	jm, err := auth.NewJWTManager("testsecret", time.Hour)
+	jm, err := auth.NewJWTManager("testsecret", time.Hour, "test")
 	require.NoError(t, err, "newTestJWT")
 	return jm
+}
+
+// newAuthHandler returns an AuthHandler wired for Logout-level CSRF tests.
+// The handler only needs SecureCookies and CookieName set; auth flows that
+// hit the database belong in goauth's test suite.
+func newAuthHandler(t *testing.T) *AuthHandler {
+	t.Helper()
+	return &AuthHandler{AuthHandler: goauthhandler.AuthHandler{
+		JWT:        newTestJWT(t),
+		CookieName: auth.TokenCookieName(),
+	}}
 }
 
 // withUserID returns a copy of r with the user ID injected into the context.

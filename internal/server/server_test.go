@@ -9,6 +9,7 @@ import (
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/handlers"
+	goauthhandler "github.com/amalgamated-tools/goauth/handler"
 	_ "modernc.org/sqlite"
 
 	"github.com/stretchr/testify/require"
@@ -263,7 +264,7 @@ func TestHandleOIDCEnabled_MethodNotAllowed(t *testing.T) {
 
 func TestHandleSignupEnabled_Enabled(t *testing.T) {
 	s := &Server{
-		authHandler: &handlers.AuthHandler{DisableSignup: false},
+		authHandler: &handlers.AuthHandler{AuthHandler: goauthhandler.AuthHandler{DisableSignup: false}},
 	}
 	req := httptest.NewRequest(http.MethodGet, "/api/auth/signup/enabled", nil)
 	rec := httptest.NewRecorder()
@@ -279,7 +280,7 @@ func TestHandleSignupEnabled_Enabled(t *testing.T) {
 
 func TestHandleSignupEnabled_Disabled(t *testing.T) {
 	s := &Server{
-		authHandler: &handlers.AuthHandler{DisableSignup: true},
+		authHandler: &handlers.AuthHandler{AuthHandler: goauthhandler.AuthHandler{DisableSignup: true}},
 	}
 	req := httptest.NewRequest(http.MethodGet, "/api/auth/signup/enabled", nil)
 	rec := httptest.NewRecorder()

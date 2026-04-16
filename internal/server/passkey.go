@@ -3,22 +3,20 @@ package server
 import (
 	"context"
 	"log/slog"
+	"net/http"
 	"os"
 	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
+	"github.com/amalgamated-tools/biblioteka/internal/authstore"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/handlers"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
+	goauthhandler "github.com/amalgamated-tools/goauth/handler"
 	"github.com/go-webauthn/webauthn/webauthn"
 )
 
 // newPasskeyHandler creates a PasskeyHandler configured from environment variables.
-//
-// Required env vars for production deployments (defaults to localhost for dev):
-//   - WEBAUTHN_RP_ID        — relying party ID (e.g. "mybooks.example.com")
-//   - WEBAUTHN_RP_ORIGINS   — comma-separated allowed origins (e.g. "https://mybooks.example.com")
-//   - WEBAUTHN_RP_NAME      — display name shown in the passkey dialog (default: "Biblioteka")
 func newPasskeyHandler(ctx context.Context, database *db.DB, jwt *auth.JWTManager, secureCookies bool) *handlers.PasskeyHandler {
 	rpID := os.Getenv("WEBAUTHN_RP_ID")
 	if rpID == "" {
@@ -43,6 +41,21 @@ func newPasskeyHandler(ctx context.Context, database *db.DB, jwt *auth.JWTManage
 		rpName = "Biblioteka"
 	}
 
+	userAdapter := &authstore.UserAdapter{DB: database}
+	passkeyAdapter := &authstore.PasskeyAdapter{DB: database}
+
+	// biblioteka uses stdlib mux, not Chi — extract from URL path manually.
+	// Shared across both success and failure branches so credential management
+	// (list/delete) works even when WebAuthn initialization fails.
+	urlParamFunc := func(r *http.Request, key string) string {
+		rest := strings.TrimPrefix(r.URL.Path, "/api/auth/passkey/credentials/")
+		rest = strings.TrimSuffix(rest, "/")
+		if strings.Contains(rest, "/") {
+			return ""
+		}
+		return rest
+	}
+
 	wa, err := webauthn.New(&webauthn.Config{
 		RPDisplayName: rpName,
 		RPID:          rpID,
@@ -52,7 +65,15 @@ func newPasskeyHandler(ctx context.Context, database *db.DB, jwt *auth.JWTManage
 		slog.WarnContext(ctx, "failed to initialize WebAuthn; passkeys disabled",
 			slog.Any(otelkeys.Error, err),
 		)
-		return &handlers.PasskeyHandler{DB: database, WebAuthn: nil, JWT: jwt, SecureCookies: secureCookies}
+		return &handlers.PasskeyHandler{
+			PasskeyHandler: goauthhandler.PasskeyHandler{
+				Users: userAdapter, Passkeys: passkeyAdapter,
+				WebAuthn: nil, JWT: jwt,
+				CookieName: auth.TokenCookieName(), SecureCookies: secureCookies,
+				URLParamFunc: urlParamFunc,
+			},
+			DB: database,
+		}
 	}
 
 	slog.InfoContext(ctx, "WebAuthn passkeys enabled",
@@ -60,5 +81,13 @@ func newPasskeyHandler(ctx context.Context, database *db.DB, jwt *auth.JWTManage
 		slog.String(otelkeys.WebAuthnRPName, rpName),
 	)
 
-	return &handlers.PasskeyHandler{DB: database, WebAuthn: wa, JWT: jwt, SecureCookies: secureCookies}
+	return &handlers.PasskeyHandler{
+		PasskeyHandler: goauthhandler.PasskeyHandler{
+			Users: userAdapter, Passkeys: passkeyAdapter,
+			WebAuthn: wa, JWT: jwt,
+			CookieName: auth.TokenCookieName(), SecureCookies: secureCookies,
+			URLParamFunc: urlParamFunc,
+		},
+		DB: database,
+	}
 }

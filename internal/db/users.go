@@ -171,3 +171,13 @@ func (d *DB) ListUsers(ctx context.Context) ([]User, error) {
 	slog.DebugContext(ctx, "listing users")
 	return listAll(ctx, d, userListQuery{}, scanUser)
 }
+
+// CountUsers returns the number of users in the database.
+func (d *DB) CountUsers(ctx context.Context) (int, error) {
+	slog.DebugContext(ctx, "counting users")
+	var count int
+	if err := d.QueryRowContext(ctx, `SELECT COUNT(*) FROM users`).Scan(&count); err != nil {
+		return 0, err
+	}
+	return count, nil
+}
