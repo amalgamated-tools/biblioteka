@@ -19,6 +19,32 @@ function base64urlToBuffer(value: string): Uint8Array {
   return bytes;
 }
 
+/** Decode each credential's id from base64url to Uint8Array. */
+function decodeCredentialIds(
+  creds: Record<string, unknown>[],
+): Record<string, unknown>[] {
+  return creds.map((c) => ({
+    ...c,
+    id: typeof c.id === "string" ? base64urlToBuffer(c.id) : c.id,
+  }));
+}
+
+/**
+ * Extract the publicKey object from the server response and convert the
+ * challenge field from base64url to Uint8Array. Both prepareCreationOptions
+ * and prepareRequestOptions start from this common base.
+ */
+function preparePublicKeyBase(
+  options: Record<string, unknown>,
+): Record<string, unknown> {
+  const { publicKey } = options as { publicKey: Record<string, unknown> };
+  const prepared = { ...publicKey } as Record<string, unknown>;
+  if (typeof prepared.challenge === "string") {
+    prepared.challenge = base64urlToBuffer(prepared.challenge);
+  }
+  return prepared;
+}
+
 /**
  * Convert JSON-serialized PublicKeyCredentialCreationOptions (base64url strings)
  * into the form expected by navigator.credentials.create() (BufferSource fields).
@@ -26,36 +52,19 @@ function base64urlToBuffer(value: string): Uint8Array {
 export function prepareCreationOptions(
   options: Record<string, unknown>,
 ): PublicKeyCredentialCreationOptions {
-  const publicKey = (options as { publicKey: Record<string, unknown> })
-    .publicKey;
-  const prepared = { ...publicKey } as Record<string, unknown>;
-
-  // challenge must be a BufferSource
-  if (typeof prepared.challenge === "string") {
-    prepared.challenge = base64urlToBuffer(prepared.challenge);
-  }
+  const prepared = preparePublicKeyBase(options);
 
   // user.id must be a BufferSource
-  if (
-    prepared.user &&
-    typeof (prepared.user as Record<string, unknown>).id === "string"
-  ) {
-    prepared.user = {
-      ...(prepared.user as Record<string, unknown>),
-      id: base64urlToBuffer(
-        (prepared.user as Record<string, unknown>).id as string,
-      ),
-    };
+  const user = prepared.user as Record<string, unknown> | undefined;
+  if (user && typeof user.id === "string") {
+    prepared.user = { ...user, id: base64urlToBuffer(user.id) };
   }
 
   // excludeCredentials[].id must be BufferSource
   if (Array.isArray(prepared.excludeCredentials)) {
-    prepared.excludeCredentials = (
-      prepared.excludeCredentials as Record<string, unknown>[]
-    ).map((c) => ({
-      ...c,
-      id: typeof c.id === "string" ? base64urlToBuffer(c.id) : c.id,
-    }));
+    prepared.excludeCredentials = decodeCredentialIds(
+      prepared.excludeCredentials as Record<string, unknown>[],
+    );
   }
 
   return prepared as unknown as PublicKeyCredentialCreationOptions;
@@ -68,23 +77,13 @@ export function prepareCreationOptions(
 export function prepareRequestOptions(
   options: Record<string, unknown>,
 ): PublicKeyCredentialRequestOptions {
-  const publicKey = (options as { publicKey: Record<string, unknown> })
-    .publicKey;
-  const prepared = { ...publicKey } as Record<string, unknown>;
-
-  // challenge must be a BufferSource
-  if (typeof prepared.challenge === "string") {
-    prepared.challenge = base64urlToBuffer(prepared.challenge);
-  }
+  const prepared = preparePublicKeyBase(options);
 
   // allowCredentials[].id must be BufferSource
   if (Array.isArray(prepared.allowCredentials)) {
-    prepared.allowCredentials = (
-      prepared.allowCredentials as Record<string, unknown>[]
-    ).map((c) => ({
-      ...c,
-      id: typeof c.id === "string" ? base64urlToBuffer(c.id) : c.id,
-    }));
+    prepared.allowCredentials = decodeCredentialIds(
+      prepared.allowCredentials as Record<string, unknown>[],
+    );
   }
 
   return prepared as unknown as PublicKeyCredentialRequestOptions;
