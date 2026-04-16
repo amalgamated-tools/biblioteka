@@ -309,7 +309,7 @@ Set these environment variables before starting the server:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `WEBAUTHN_RP_ID` | `localhost` | Relying party ID — must be a valid domain name that matches the hostname your users access Biblioteka from (e.g. `books.example.com`). |
-| `WEBAUTHN_RP_ORIGINS` | `http://localhost:8080` | Comma-separated list of fully-qualified origins allowed to use passkeys (e.g. `https://books.example.com`). Must include the scheme and port when non-standard. |
+| `WEBAUTHN_RP_ORIGINS` | `http://localhost:8080` | Comma-separated list of fully-qualified origins allowed to use passkeys (e.g. `https://books.example.com`). Must include the scheme and port when non-standard. **Only `localhost` may use `http://` for local development; all other origins must use `https://`**. Browsers require WebAuthn to run in a secure context, so configuring `http://` for a non-`localhost` domain is invalid and will cause passkey ceremonies to fail. |
 | `WEBAUTHN_RP_NAME` | `Biblioteka` | Human-readable name shown in the browser's passkey dialog. |
 
 ```bash
