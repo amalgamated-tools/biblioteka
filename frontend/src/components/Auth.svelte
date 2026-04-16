@@ -7,6 +7,7 @@
     getPasskeyEnabled,
     beginPasskeyLogin,
     finishPasskeyLogin,
+    prepareRequestOptions,
   } from "../lib/api";
   import { required, minLength, validate } from "../lib/validation";
   import AlertBanner from "./ui/AlertBanner.svelte";
@@ -87,8 +88,7 @@
       const { session_id, options } = await beginPasskeyLogin();
 
       const assertion = await navigator.credentials.get({
-        publicKey: (options as { publicKey: unknown })
-          .publicKey as PublicKeyCredentialRequestOptions,
+        publicKey: prepareRequestOptions(options),
       });
 
       if (!assertion || !(assertion instanceof PublicKeyCredential)) {

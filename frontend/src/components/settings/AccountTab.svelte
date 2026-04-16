@@ -8,6 +8,7 @@
     getPasskeyEnabled,
     listPasskeyCredentials,
     deletePasskeyCredential,
+    prepareCreationOptions,
     beginPasskeyRegistration,
     finishPasskeyRegistration,
   } from "../../lib/api";
@@ -103,8 +104,7 @@
         await beginPasskeyRegistration(trimmedName);
 
       const credential = await navigator.credentials.create({
-        publicKey: (options as { publicKey: unknown })
-          .publicKey as PublicKeyCredentialCreationOptions,
+        publicKey: prepareCreationOptions(options),
       });
 
       if (!credential || !(credential instanceof PublicKeyCredential)) {
