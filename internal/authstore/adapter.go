@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
-	"github.com/patrick-veverka/goauth/auth"
+	"github.com/amalgamated-tools/goauth/auth"
 )
 
 // UserAdapter wraps *db.DB and implements auth.UserStore.

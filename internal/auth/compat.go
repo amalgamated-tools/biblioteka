@@ -3,7 +3,7 @@
 // compatibility with the rest of the biblioteka codebase.
 //
 // Core auth logic (JWT, middleware, rate limiting, crypto) lives in
-// github.com/patrick-veverka/goauth/auth.
+// github.com/amalgamated-tools/goauth/auth.
 package auth
 
 import (
@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"net/http"
 
-	goauth "github.com/patrick-veverka/goauth/auth"
+	goauth "github.com/amalgamated-tools/goauth/auth"
 	"golang.org/x/crypto/bcrypt"
 )
 

@@ -9,7 +9,7 @@ import (
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/handlers"
-	goauthhandler "github.com/patrick-veverka/goauth/handler"
+	goauthhandler "github.com/amalgamated-tools/goauth/handler"
 	_ "modernc.org/sqlite"
 
 	"github.com/stretchr/testify/require"

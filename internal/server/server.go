@@ -31,7 +31,7 @@ import (
 
 	_ "github.com/amalgamated-tools/biblioteka/docs/swagger"
 
-	goauthhandler "github.com/patrick-veverka/goauth/handler"
+	goauthhandler "github.com/amalgamated-tools/goauth/handler"
 
 	"github.com/justinas/alice"
 	"golang.org/x/sync/errgroup"

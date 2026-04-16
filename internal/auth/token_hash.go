@@ -1,6 +1,6 @@
 package auth
 
-import goauth "github.com/patrick-veverka/goauth/auth"
+import goauth "github.com/amalgamated-tools/goauth/auth"
 
 // hashHighEntropyToken delegates to goauth's exported function.
 // Kept as a package-level unexported function for backward compatibility
