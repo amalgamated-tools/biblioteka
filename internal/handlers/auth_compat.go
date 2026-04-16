@@ -4,8 +4,10 @@
 package handlers
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
@@ -14,12 +16,15 @@ import (
 	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
+	"github.com/amalgamated-tools/biblioteka/internal/db"
 	goauthhandler "github.com/amalgamated-tools/goauth/handler"
 )
 
-// AuthHandler wraps goauth's AuthHandler with biblioteka-specific methods (Logout).
+// AuthHandler wraps goauth's AuthHandler with biblioteka-specific methods (Logout)
+// and audit logging for signup and password-change.
 type AuthHandler struct {
 	goauthhandler.AuthHandler
+	DB *db.DB
 }
 
 // OIDCHandler wraps goauth's OIDCHandler.
@@ -32,9 +37,37 @@ var NewOIDCHandler = goauthhandler.NewOIDCHandler
 type PasskeyHandler = goauthhandler.PasskeyHandler
 
 // APIKeyHandler wraps goauth's APIKeyHandler with method-dispatching Handle
-// methods so biblioteka's existing stdlib-mux routes continue to work.
+// methods so biblioteka's existing stdlib-mux routes continue to work, and
+// with audit logging for create and delete.
 type APIKeyHandler struct {
 	goauthhandler.APIKeyHandler
+	DB *db.DB
+}
+
+// Create wraps goauth's Create to emit an audit log entry on success.
+func (h *APIKeyHandler) Create(w http.ResponseWriter, r *http.Request) {
+	rc := newResponseCapture(w)
+	h.APIKeyHandler.Create(rc, r)
+	if rc.status == http.StatusCreated && h.DB != nil {
+		userID := auth.UserIDFromContext(r.Context())
+		var resp struct {
+			ID string `json:"id"`
+		}
+		if json.Unmarshal(rc.body.Bytes(), &resp) == nil {
+			logAudit(r.Context(), h.DB, userID, db.AuditActionAPIKeyCreated, "api_key", resp.ID, nil)
+		}
+	}
+}
+
+// Delete wraps goauth's Delete to emit an audit log entry on success.
+func (h *APIKeyHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	id := h.URLParamFunc(r, "id")
+	rc := newResponseCapture(w)
+	h.APIKeyHandler.Delete(rc, r)
+	if rc.status == http.StatusNoContent && h.DB != nil {
+		userID := auth.UserIDFromContext(r.Context())
+		logAudit(r.Context(), h.DB, userID, db.AuditActionAPIKeyDeleted, "api_key", id, nil)
+	}
 }
 
 // HandleAPIKeys dispatches GET (list) and POST (create) for /api/api-keys.
@@ -61,6 +94,57 @@ func (h *APIKeyHandler) HandleAPIKey(w http.ResponseWriter, r *http.Request) {
 // clearAuthCookie clears the auth cookie.
 func clearAuthCookie(w http.ResponseWriter, secure bool) {
 	goauthhandler.ClearAuthCookie(w, auth.TokenCookieName(), secure)
+}
+
+// Signup wraps goauth's Signup to emit an audit log entry on success.
+func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
+	rc := newResponseCapture(w)
+	h.AuthHandler.Signup(rc, r)
+	if rc.status == http.StatusCreated && h.DB != nil {
+		var resp struct {
+			User struct {
+				ID string `json:"id"`
+			} `json:"user"`
+		}
+		if json.Unmarshal(rc.body.Bytes(), &resp) == nil {
+			logAudit(r.Context(), h.DB, resp.User.ID, db.AuditActionUserSignedUp, "user", resp.User.ID, nil)
+		}
+	}
+}
+
+// ChangePassword wraps goauth's ChangePassword to emit an audit log entry on success.
+func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
+	rc := newResponseCapture(w)
+	h.AuthHandler.ChangePassword(rc, r)
+	if rc.status == http.StatusOK && h.DB != nil {
+		userID := auth.UserIDFromContext(r.Context())
+		logAudit(r.Context(), h.DB, userID, db.AuditActionPasswordChanged, "user", userID, nil)
+	}
+}
+
+// responseCapture wraps an http.ResponseWriter to capture the status code and
+// response body while still writing through to the underlying writer.
+type responseCapture struct {
+	http.ResponseWriter
+	status int
+	body   bytes.Buffer
+}
+
+func newResponseCapture(w http.ResponseWriter) *responseCapture {
+	return &responseCapture{ResponseWriter: w}
+}
+
+func (rc *responseCapture) WriteHeader(code int) {
+	rc.status = code
+	rc.ResponseWriter.WriteHeader(code)
+}
+
+func (rc *responseCapture) Write(b []byte) (int, error) {
+	if rc.status == 0 {
+		rc.status = http.StatusOK
+	}
+	rc.body.Write(b)
+	return rc.ResponseWriter.Write(b)
 }
 
 // redactEmail partially obscures an email address for logging.

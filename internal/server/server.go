@@ -205,6 +205,7 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 			SecureCookies: secureCookies,
 			DisableSignup: disableSignup,
 		},
+		DB: s.DB,
 	}
 
 	// Initialize WebAuthn for passkey support. RPID and origins must match the
@@ -284,6 +285,7 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 				return rest
 			},
 		},
+		DB: s.DB,
 	}
 	s.koboHandler = &handlers.KoboHandler{DB: s.DB}
 	s.koboHandler.RegisterRoutes()
