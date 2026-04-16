@@ -922,8 +922,8 @@ A styled button with three visual variants and two size options. Renders as `inl
 |------|------|----------|---------|-------------|
 | `variant` | `"primary" \| "secondary" \| "danger"` | | `"primary"` | Visual style |
 | `size` | `"sm" \| "md"` | | `"md"` | Button size; controls padding and text size |
-| `disabled` | `boolean` | | `false` | Disables the button and applies muted styling |
 | `type` | `"button" \| "submit" \| "reset"` | | `"button"` | HTML button type |
+| `disabled` | `boolean` | | `false` | Disables the button and applies reduced-opacity styling |
 | `class` | `string` | | — | Additional Tailwind classes appended to the button (e.g. `w-full`, `gap-2`) |
 | `onclick` | `(e: MouseEvent) => void` | | — | Click handler |
 | `children` | `Snippet` | ✓ | — | Button label content |
@@ -1239,7 +1239,7 @@ A styled button with three visual variants and two size options. Use this instea
 <Button variant="danger" onclick={handleDelete}>Delete</Button>
 
 <!-- Small size for compact contexts -->
-<Button size="sm" variant="secondary" onclick={handleDismiss}>Dismiss</Button>
+<Button size="sm" variant="secondary" onclick={handleCancel}>Dismiss</Button>
 ```
 
 When adding an icon alongside the button label, pass `class="gap-2"` to space the icon and text:
@@ -2766,7 +2766,7 @@ Additional tests verify attribute forwarding:
 7. **`applies danger variant classes`** — renders with `variant="danger"`; asserts the button carries `bg-danger-600`.
 8. **`is not disabled by default`** — asserts the button is not disabled without the `disabled` prop.
 9. **`disables the button when disabled prop is true`** — renders with `disabled={true}`; asserts the button element is disabled.
-10. **`includes the disabled cursor Tailwind variant class`** — asserts the button's class string contains `disabled:cursor-not-allowed` so the no-entry cursor appears even when the button is enabled (the class is always present; the variant activates at runtime).
+10. **`includes the disabled cursor Tailwind variant class`** — asserts the button's class string contains `disabled:cursor-not-allowed`. The class is always present in the markup, but the `disabled:` Tailwind variant means it only takes effect when the button is actually disabled.
 11. **`calls onclick handler when clicked`** — attaches a `vi.fn()` handler; fires a click; asserts the handler was called once.
 12. **`does not fire onclick when button is disabled (userEvent respects disabled)`** — renders with `disabled={true}`; uses `userEvent.setup().click()`; asserts the handler was **not** called, confirming that `userEvent` respects the native disabled state.
 13. **`appends the extra class string to the button`** — renders with `class="my-extra-class"`; asserts the class appears on the button element.
