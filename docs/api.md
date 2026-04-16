@@ -84,7 +84,7 @@ Common HTTP status codes:
 
 | Group | Endpoints | Notes |
 |-------|-----------|-------|
-| **Auth** | `POST /api/auth/signup`, `/login`, `/logout`, `GET /api/auth/me`, `PUT /api/auth/password`, `GET /api/auth/signup/enabled` | Account creation, session management, password change |
+| **Auth** | `POST /api/auth/signup`, `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`, `PUT /api/auth/password`, `GET /api/auth/signup/enabled` | Account creation, session management, password change |
 | **Passkeys (WebAuthn)** | `/api/auth/passkey/enabled`, `/api/auth/passkey/register/begin`, `/api/auth/passkey/register/finish`, `/api/auth/passkey/login/begin`, `/api/auth/passkey/login/finish`, `GET /api/auth/passkey/credentials`, `DELETE /api/auth/passkey/credentials/{id}` | WebAuthn passkey registration and login; registration and credential management — JWT only; login endpoints are public |
 | **OIDC / SSO** | `/api/auth/oidc/*` | OIDC login and account-link flow |
 | **API Keys** | `/api/api-keys`, `/api/api-keys/{id}` | Long-lived `bib_`-prefixed access tokens; JWT only |
