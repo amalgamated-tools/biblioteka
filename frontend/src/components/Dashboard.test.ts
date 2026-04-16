@@ -521,6 +521,36 @@ describe("Dashboard", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows a reading stats error banner when the fetch fails", async () => {
+    vi.mocked(libraryStore).loaded = true;
+    vi.mocked(libraryStore).libraries = libWithOne;
+    vi.mocked(getReadingProgressStats).mockRejectedValue(
+      new Error("reading stats unavailable"),
+    );
+    render(Dashboard);
+
+    await waitFor(() => {
+      expect(screen.getByText("reading stats unavailable")).toBeInTheDocument();
+    });
+    // The "Welcome to Biblioteka" fallback should NOT appear alongside the error.
+    expect(
+      screen.queryByRole("heading", { name: /Welcome to Biblioteka/i }),
+    ).toBeNull();
+  });
+
+  it("shows a year-in-books error banner when the fetch fails", async () => {
+    vi.mocked(libraryStore).loaded = true;
+    vi.mocked(libraryStore).libraries = libWithOne;
+    vi.mocked(getYearInBooks).mockRejectedValue(
+      new Error("year in books unavailable"),
+    );
+    render(Dashboard);
+
+    await waitFor(() => {
+      expect(screen.getByText("year in books unavailable")).toBeInTheDocument();
+    });
+  });
+
   describe("Year in Books", () => {
     it("does not show year-in-books card when all stats are zero", async () => {
       vi.mocked(libraryStore).loaded = true;
