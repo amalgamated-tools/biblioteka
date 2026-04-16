@@ -160,6 +160,7 @@ Entries are returned newest-first. `limit` defaults to `50` (maximum `200`); `of
 | `smtp.config_updated`  | `config`      | `host`, `from`                                   | `PUT /api/config/smtp`                  |
 | `fts.rebuilt`          | `fts`         | —                                                | `POST /api/admin/search/reindex`        |
 | `watch_folder.config_updated` | `config` | `path`, `library_id`                             | `PUT /api/config/watch-folder`          |
+| `llm.config_updated`   | `config`      | —                                                | `PUT /api/config/llm`                   |
 
 **Notes:** `user_id` is the actor who performed the action (`null` for system/background actions). Entries are append-only and never modified. Book files created by the background scanner do **not** currently produce an audit entry — only files created via the API are audited. Background imports run without an authenticated user context (there is no actor to attribute the action to), so they cannot be represented in the same audit model as user-initiated writes.
 
@@ -420,6 +421,52 @@ When SMTP is configured, any authenticated user can send a book file as an email
 If SMTP is not configured, the request is rejected with `400 Bad Request` and the UI disables the send button accordingly.
 
 See [API reference — `POST /api/book-files/{id}/email`](api-reference.md#post-apibook-filesidemail-) for the full endpoint shape and error codes.
+
+---
+
+## LLM Configuration (Runtime)
+
+Biblioteka can enrich book metadata using a locally-hosted large language model. When configured, the **AI Enrich** action on a book detail page enqueues a background job that sends the book's title, authors, and existing description to the LLM and stores the suggested genres, themes, mood, reading level, tags, and generated catalog description as a pending review record. The user can then apply or reject the suggestions without committing them automatically.
+
+> **Requires Redis.** AI enrichment runs as a background job; a Redis worker must be running. See [Background Jobs](background-jobs.md#enrichai) for details on the `enrich:ai` job.
+
+### Supported providers
+
+Currently only [Ollama](https://ollama.com/) is supported. Run Ollama locally or on a server reachable from the Biblioteka host.
+
+### Configuring LLM access
+
+Admins can configure the LLM at runtime via **Settings → AI Enrichment** or the API:
+
+```bash
+# Get current LLM config
+curl http://localhost:8080/api/config/llm \
+  -H "Authorization: Bearer <admin-jwt>"
+
+# Enable and configure Ollama
+curl -X PUT http://localhost:8080/api/config/llm \
+  -H "Authorization: Bearer <admin-jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "provider":  "ollama",
+    "endpoint":  "http://localhost:11434",
+    "model":     "llama3",
+    "enabled":   true
+  }'
+```
+
+| Field | Required when `enabled` | Description |
+|-------|------------------------|-------------|
+| `provider` | No (defaults to `"ollama"`) | LLM provider name. Currently only `"ollama"` is accepted. |
+| `endpoint` | Yes | Base URL of the Ollama server (e.g. `"http://localhost:11434"`). |
+| `model` | Yes | Ollama model name (e.g. `"llama3"`, `"mistral"`, `"gemma3"`). The model must already be pulled on the Ollama server. |
+| `enabled` | — | `true` to activate AI enrichment; `false` to disable it. |
+
+A successful update is recorded in the audit log as `llm.config_updated`.
+
+> **Restart required.** LLM configuration is read once at server startup. After saving a new configuration via the API, **restart the server** (or the worker process if running in split mode) for the change to take effect. The `PUT /api/config/llm` response always includes `"restart_required": true` as a reminder.
+
+See [API reference — LLM config endpoints](api-reference.md#get-apiconfigllm--admin--jwt-only) for the full request/response shapes.
 
 ---
 
