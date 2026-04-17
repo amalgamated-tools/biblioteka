@@ -302,7 +302,7 @@ jobs:
           # Stdlib vulns require a Go toolchain update and cannot be fixed in-repo,
           # so we only fail on non-stdlib (third-party) vulnerabilities.
           set +e
-          go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 -format json ./... > vulncheck.json 2>vulncheck.stderr
+          go tool govulncheck -format json ./... > vulncheck.json 2>vulncheck.stderr
           rc=$?
           set -e
 
