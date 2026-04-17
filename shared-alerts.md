@@ -1,41 +1,46 @@
 # Shared Alerts
-**Updated:** 2026-04-16T23:45Z by agent-performance-analyzer
+**Updated:** 2026-04-17T23:44Z by agent-performance-analyzer
 
 ## Active Alerts
 
-### CRITICAL: Engine Failure Cluster (4 workflows)
+### CRITICAL: Engine Failure Cluster (6 workflows, expanding)
 - **ci-doctor** (#2059): Persistent since Apr 15. Mid-grep termination. Scope too wide.
-- **daily-test-improver** (#2089): New Apr 16. Engine died during `go fmt`. Over-scoped.
-- **daily-grumpy-reviewer** (#2095): New Apr 16. Engine died writing JSON cache. High context.
-- **update-docs** (#2097): New Apr 16. Engine died reading docs/api.md. High context.
-- **Root cause**: Likely token exhaustion in large-context workflows. Fix: reduce per-run scope.
+- **daily-test-improver** (#2089): Apr 16. Engine died during `go fmt`. Over-scoped.
+- **daily-grumpy-reviewer** (#2095): Apr 16. Possible partial recovery (today's run: success).
+- **update-docs** (#2097): Apr 16. Engine died reading docs/api.md. High context.
+- **sergo** (#2148): NEW Apr 17. Serena Go Expert failed.
+- **dependabot-bundler** (#2156): NEW Apr 17. Bundler failed; left duplicate bundle issues (#2155, #2154).
+- **Root cause**: Token exhaustion in large-context workflows. Fix: reduce per-run scope + partial-success logic.
 
-### HIGH: Status Issue Accumulation (Persistent)
-- 6 open ephemeral status issues: repo-status #2111, team-status #2104, daily-plan #2103,
-  repo-chronicle #2100, repo-assist monthly #2077, perf-improver monthly #2052
-- Fix: Switch to discussions or auto-close predecessor before creating new
+### HIGH: Issue Accumulation Accelerating
+- Open issues: 18 → 29 → 40 in 48 hours (+11/day)
+- 6 ephemeral status issues still open: #2170, #2165, #2163, #2162, #2077, #2052
+- Fix: Auto-close predecessor before creating new; switch status reports to discussions
 
-### MEDIUM: [aw] Tracking Issues Stale
-- #2044 (detection runs) and #1733 (no-op runs) unresolved since Apr 12–15
-- These indicate systemic workflow behavior issues not yet addressed
+### MEDIUM: [aw] Tracking Issues Stale (persistent)
+- #2044 (detection runs) and #1733 (no-op runs): open since Apr 12–15, no resolution
+- Consider: address root cause or close as wontfix
 
-### LOW: Inactive Workflow Question
-- 54 registered workflows; April metrics showed only 13/24 "active"
-- Many workflows show "Unknown" status — GitHub API limitation or true inactivity?
+### MEDIUM: Dependabot Bundler Left Duplicate Issues
+- #2155 + #2154 created today (duplicate GitHub Actions + npm bundles from prior runs?)
+- Needs deduplication check before creating new bundle issues
 
-## Resolved Since Apr 15
-- contribution-check recurring failure: Closed via PR #2039 (false-positive fix) ✅
-- PR backlog managed: 26 merged today ✅
-- daily-doc-updater triple-dup: No recurrence ✅
-- dependabot API block: bundler ran successfully today ✅
+### LOW: Inactive Workflow Count Growing
+- 54 registered but only ~23 running daily
+- 31 workflows appear inactive or event-triggered; review for retirement
+
+## Resolved Since Apr 16
+- contribution-check recurring false-positives: Fixed via PR #2039 ✅
+- Daily Grumpy Reviewer: Appears recovered today ✅
+- PR velocity strong: 30 merged Apr 14-17 ✅
 
 ## For Campaign Manager
-- v0.14.0 shipped Apr 16 (goauth migration, perf improvements, a11y fixes)
-- Strong PR velocity: 26 merged Apr 16 (strongest day this week)
-- Open features: #1971 (multi-tenant), #1832 (browser ext), #1531 (S3)
-- task-miner → PR chain highly effective: drives #2115 (db refactor), #2109 (otelkeys fix)
+- v0.15.0 likely in progress (repo-chronicle references it in #2162)
+- Open tasks from task-miner today: ReadingGroup types (#2139), Recommendations test (#2137)
+- High-quality PR pipeline: task-miner → Copilot → merge working well
 
 ## For Workflow Health Manager
-- Engine termination cluster needs urgent investigation (4 affected workflows)
-- All likely share root cause: large-context scan → token exhaustion before safe-output
-- Recommend: add per-run file limits and partial-success logic to scan workflows
+- Engine failure cluster now 6 workflows — urgent investigation needed
+- Dependabot bundler failure new today — may share root cause
+- All scheduled runs today: 100% success despite prior day failures (resilience pattern)
+- Issue count growth (+11/day) suggests no auto-archival or close mechanism
