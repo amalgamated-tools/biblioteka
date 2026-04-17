@@ -1,6 +1,6 @@
 {
-  "last_run": "2026-04-16T20:28:41Z",
-  "tasks_run": ["task3", "task4", "task7"],
+  "last_run": "2026-04-17T20:27:03Z",
+  "tasks_run": ["task2", "task3", "task7"],
   "commands": {
     "build": "make build (requires frontend first)",
     "test": "go test ./... (Go 1.26.1 auto-downloaded; internal/jobs failures are pre-existing)",
@@ -57,10 +57,22 @@
     },
     {
       "id": "reading-group-lists-passkey-challenges-indexes",
+      "status": "merged",
+      "description": "idx_reading_group_lists_list_id, idx_reading_group_lists_shared_by, idx_passkey_challenges_user_id",
+      "pr_number": 2107
+    },
+    {
+      "id": "kobo-ai-goodreads-annotation-indexes",
       "status": "pr_created",
-      "description": "Add idx_reading_group_lists_list_id, idx_reading_group_lists_shared_by, idx_passkey_challenges_user_id: all convert SCAN to SEARCH on cascade deletes",
-      "pr_branch": "perf-assist/fk-cascade-indexes",
-      "evidence": "EXPLAIN QUERY PLAN: before=SCAN, after=SEARCH USING INDEX for all 3"
+      "description": "idx_kobo_reading_states_book_id, idx_ai_enrichments_book_id, idx_goodreads_metadata_book_id, idx_book_annotations_user_id",
+      "pr_branch": "perf-assist/missing-fk-book-annotation-indexes",
+      "evidence": "EXPLAIN QUERY PLAN: before=SCAN, after=SEARCH USING INDEX for all 4"
+    },
+    {
+      "id": "handler-n-plus-one",
+      "status": "pending",
+      "description": "Investigate handler code for N+1 query patterns",
+      "priority": "low"
     }
   ],
   "monthly_activity_issue_number": 2052,
