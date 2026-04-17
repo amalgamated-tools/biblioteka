@@ -11,7 +11,7 @@ A self-hosted personal book library manager. Scan local files, extract metadata,
 - **Sidecar files** – on every import, Biblioteka writes a `metadata.opf` ([OPF 2.0](https://idpf.org/epub/20/spec/OPF_2.0.1_draft.htm)) file alongside the book file, and a cover image (`cover.jpg`, `cover.png`, etc.) when one is available (EPUB only); these files are compatible with Calibre, KOReader, Kobo, and other tools; see [Administration → Sidecar files](docs/administration.md#sidecar-files)
 - **Library organisation** – group books into multiple named libraries with configurable file-system paths
 - **Author & series tracking** – browse by author or series, with position numbers within each series
-- **User authentication** – JWT-based login, optional OpenID Connect (OIDC/SSO)
+- **User authentication** – `goauth`-based authentication with local accounts, WebAuthn/passkeys, JWT sessions, and adapter-backed credential stores
 - **API keys** – Long-lived tokens for programmatic and scripted access (prefix `bib_`); managed per-user via the Settings page or API
 - **OPDS 1.2 catalog** – Built-in OPDS server at `/opds` lets any compatible e-reader app (KOReader, Calibre, Moon+ Reader, …) browse and download books using Basic Auth credentials separate from your main account password
 - **Kobo e-reader sync** – Native Kobo device API at `/kobo/<token>/` syncs your library and reading progress to Kobo e-readers; create per-device tokens from **Settings → Kobo Sync** or via the API
@@ -386,7 +386,7 @@ An interactive Swagger UI is served at `/swagger/` (public — no login required
 
 ## Authentication
 
-Biblioteka supports local password accounts and OIDC/SSO. See [docs/authentication.md](docs/authentication.md) for JWT details, OIDC configuration, step-by-step provider setup examples (Keycloak, Authentik, Google), and account linking.
+Biblioteka uses `goauth` for authentication, with local accounts, JWT-backed sessions, WebAuthn/passkey support, and `authstore` adapters that bridge the application database to the underlying auth stores. See [docs/authentication.md](docs/authentication.md) for configuration and usage details.
 
 ## Administration
 
