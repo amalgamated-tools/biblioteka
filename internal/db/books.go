@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"strconv"
 	"strings"
 	"time"
 
@@ -287,12 +286,6 @@ func bookColumnsWithPrefix(prefix string) string {
 		cols[i] = prefix + strings.TrimSpace(c)
 	}
 	return strings.Join(cols, ", ")
-}
-
-// dollarN returns a PostgreSQL-style positional placeholder ($1, $2, ...).
-// SQLite also accepts dollar-sign placeholders.
-func dollarN(n int) string {
-	return "$" + strconv.Itoa(n)
 }
 
 // ListBooksModifiedSince returns up to limit books updated after since, ordered by
