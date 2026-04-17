@@ -3,7 +3,6 @@ package db
 import (
 	"context"
 	"log/slog"
-	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
@@ -146,17 +145,12 @@ func (d *DB) GetAuthorsForBooks(ctx context.Context, bookIDs []string) (map[stri
 	}
 	slog.DebugContext(ctx, "batch fetching authors for books", slog.Int(otelkeys.BookCount, len(bookIDs)))
 
-	placeholders := make([]string, len(bookIDs))
-	args := make([]any, len(bookIDs))
-	for i, id := range bookIDs {
-		placeholders[i] = dollarN(i + 1)
-		args[i] = id
-	}
+	inClause, args := buildInClause(bookIDs, 1)
 
 	rows, err := d.QueryContext(ctx,
 		`SELECT ba.book_id, a.id, a.name, a.goodreads_id, a.hardcover_id, a.google_books_id, a.image_url, a.created_at, a.updated_at
 		FROM authors a INNER JOIN book_authors ba ON ba.author_id = a.id
-		WHERE ba.book_id IN (`+strings.Join(placeholders, ",")+`)
+		WHERE ba.book_id IN (`+inClause+`)
 		ORDER BY a.name ASC`,
 		args...,
 	)

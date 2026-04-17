@@ -101,16 +101,11 @@ func (d *DB) GetFilesForBooks(ctx context.Context, bookIDs []string) (map[string
 	}
 	slog.DebugContext(ctx, "batch fetching files for books", slog.Int(otelkeys.BookCount, len(bookIDs)))
 
-	placeholders := make([]string, len(bookIDs))
-	args := make([]any, len(bookIDs))
-	for i, id := range bookIDs {
-		placeholders[i] = dollarN(i + 1)
-		args[i] = id
-	}
+	inClause, args := buildInClause(bookIDs, 1)
 
 	orderBy := d.dialectOrderBy("bf.file_name", "ASC")
 	rows, err := d.QueryContext(ctx,
-		`SELECT `+bookFileColumnsWithPrefix("bf.")+` FROM book_files bf WHERE bf.book_id IN (`+strings.Join(placeholders, ",")+`) `+orderBy,
+		`SELECT `+bookFileColumnsWithPrefix("bf.")+` FROM book_files bf WHERE bf.book_id IN (`+inClause+`) `+orderBy,
 		args...,
 	)
 	if err != nil {
