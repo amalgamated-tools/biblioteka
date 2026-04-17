@@ -2960,8 +2960,8 @@ Returns annual reading and download statistics for the authenticated user for a 
 |-------|------|-------------|
 | `year` | integer | The requested calendar year |
 | `books_finished` | integer | Documents where reading `percentage >= 0.99` and last updated within the requested year (UTC) |
-| `active_days` | integer | Number of distinct calendar days (UTC) with at least one reading-progress sync event in the year |
-| `longest_streak` | integer | Longest run of consecutive calendar days with reading activity within the year |
+| `active_days` | integer | Number of distinct calendar dates (UTC) present in `reading_progress.updated_at` within the requested year |
+| `longest_streak` | integer | Longest run of consecutive calendar dates (UTC) present in `reading_progress.updated_at` within the requested year |
 | `total_downloads` | integer | Book file downloads initiated by the user within the year |
 
 All counts return `0` when there is no activity for the requested year — the response is never `null` or absent.
