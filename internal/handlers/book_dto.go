@@ -7,7 +7,7 @@ import (
 )
 
 type bookRequest struct {
-	Title           string  `json:"title" validate:"required"`
+	Title           string  `json:"title"`
 	Description     *string `json:"description"`
 	ASIN            *string `json:"asin"`
 	ISBN10          *string `json:"isbn10"`

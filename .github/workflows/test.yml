@@ -386,7 +386,7 @@ jobs:
       - name: Run PostgreSQL integration tests
         env:
           TEST_DATABASE_URL: postgres://biblioteka:testpassword@localhost:5432/biblioteka_test?sslmode=disable
-        run: go test ./internal/db/... -run TestSearchBooks_Postgres -v
+        run: go test ./internal/db/... -run Postgres -v
 
   go-all:
     needs: [check-docs-only, go-lint, go-test, go-test-postgres]
