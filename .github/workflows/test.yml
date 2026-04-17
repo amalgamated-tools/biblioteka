@@ -151,7 +151,7 @@ jobs:
       - name: Upload frontend coverage report
         # Only upload on main-branch pushes to keep artifact storage in check.
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: frontend-coverage
           path: frontend/coverage/
@@ -264,7 +264,7 @@ jobs:
 
       - name: Cache exiftool apt package
         id: exiftool-cache
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae
         with:
           path: ${{ runner.temp }}/apt-cache
           # Stable key tied to the OS only; bump the version suffix (v1 → v2) only
