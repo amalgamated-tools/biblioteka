@@ -9,7 +9,7 @@ NOTE: Use American English spelling in all code, comments, and documentation (e.
 - **Backend**: Go 1.26.1, standard `net/http` (no router framework), `database/sql`
 - **Databases**: SQLite (default) and PostgreSQL — both are supported; use dialect-aware helpers
 - **Background jobs**: `asynq` (Redis-backed) via `internal/worker`
-- **Auth**: [`goauth`](https://github.com/amalgamated-tools/goauth) for JWT, rate limiting, and bcrypt; OIDC via `coreos/go-oidc/v3`; passkeys via `go-webauthn/webauthn`
+- **Auth**: [`goauth`](https://github.com/amalgamated-tools/goauth) for JWT, rate limiting, and bcrypt; OIDC via `github.com/coreos/go-oidc/v3`; passkeys via `github.com/go-webauthn/webauthn`
 - **Middleware**: `justinas/alice` for middleware chaining
 - **Frontend**: Svelte 5, TypeScript, Tailwind CSS 3, Vite
 - **Migrations**: `dbmate` format, run automatically on startup
