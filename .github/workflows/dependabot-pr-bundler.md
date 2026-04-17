@@ -11,7 +11,13 @@ on:
 
 permissions: read-all
 
-network: defaults
+network:
+  allowed:
+    - defaults
+    - github
+    - go
+    - node
+    - python    
 
 safe-outputs:
   create-pull-request:
