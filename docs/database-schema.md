@@ -273,7 +273,7 @@ Associates books with series entries, including optional position within the ser
 
 ### `tags`
 
-Free-form labels that can be applied to books to aid organization and discovery. Tag names are normalized (trimmed and collapsed to single spaces) and stored case-insensitively.
+Free-form labels that can be applied to books to aid organization and discovery. Tag names are normalized (trimmed and collapsed to single spaces), original casing is preserved for storage/display, and uniqueness is enforced case-insensitively.
 
 | Column      | Type     | Nullable | Default  | Description                                   |
 |-------------|----------|----------|----------|-----------------------------------------------|
@@ -677,7 +677,7 @@ Collaborative reading groups. Each group has a single owner and any number of me
 **Notes:**
 - Names are normalized before storage (`NormalizeGroupName`); duplicate normalized names for the same owner are rejected with `ErrGroupNameExists`.
 - The `member_count` field is computed on read via a `LEFT JOIN` to `reading_group_members`; it is not stored.
-- The owner is **not** automatically added to `reading_group_members`; ownership is tracked solely via `owner_id`.
+- When a group is created, the owner is also inserted into `reading_group_members` with role `owner`; `owner_id` still records the owning user directly, and membership checks typically use `reading_group_members`.
 - When a user is deleted, their groups are deleted via CASCADE; this cascades to `reading_group_members` and `reading_group_lists`.
 
 ---
