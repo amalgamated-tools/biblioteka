@@ -16,10 +16,9 @@
   let loadError: string | null = $state(null);
   let loading = $state(true);
   let dialogEl: HTMLDivElement | null = $state(null);
-  let closeButtonEl: HTMLButtonElement | null = $state(null);
 
   $effect(() => {
-    closeButtonEl?.focus();
+    dialogEl?.focus();
   });
 
   let selectedFileId: string = $state("");
@@ -161,7 +160,6 @@
         </h2>
       </div>
       <button
-        bind:this={closeButtonEl}
         onclick={onClose}
         aria-label="Close"
         class="p-1 rounded-lg text-ink-400 hover:text-ink-600 dark:hover:text-ink-200 transition-colors"
