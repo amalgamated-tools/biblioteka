@@ -1385,7 +1385,7 @@ A modal dialog that lets users email a book file to an email address. It fetches
 **Accessibility:**
 
 - The dialog root uses `role="dialog"` with `aria-modal="true"` and `aria-labelledby` pointing to the modal's `<h2>` title element (WCAG 4.1.2).
-- On mount, focus moves to the **Close** button via `$effect` so keyboard users are immediately inside the dialog (WCAG 2.1.2).
+- On mount, focus moves to the dialog container via `$effect` so assistive technologies announce the dialog title first and keyboard users are immediately inside the dialog (WCAG 2.1.2).
 - Tab and Shift+Tab wrap around the set of focusable elements inside the dialog, preventing focus from escaping to the page behind the modal (WCAG 2.1.1).
 - Pressing Escape calls `onClose` to dismiss the dialog (WCAG 2.1.2).
 - The backdrop has `aria-hidden="true"` so screen readers are not aware of the decorative overlay.
@@ -3123,7 +3123,7 @@ The following test suites cover reactive stores and the API client. Unlike the a
 `frontend/src/components/ui/EmailBookModal.test.ts` verifies the loading, success, error, and accessibility behaviors of the `EmailBookModal` component. `fetch` is stubbed globally; `lucide-svelte` icons are mocked as no-ops (required for JSDOM). Eleven tests in one `describe` block:
 
 1. **`shows loading state initially`** — `fetch` never resolves; asserts a `role="status"` element with text matching `/loading/i` is present.
-2. **`moves focus to the close button on mount`** — `fetch` never resolves; asserts the Close button receives focus via `$effect` autofocus on mount (WCAG 2.1.2).
+2. **`moves focus to the dialog on mount`** — `fetch` never resolves; asserts the dialog container receives focus via `$effect` autofocus on mount so the dialog title is announced first (WCAG 2.1.2).
 3. **`renders the dialog title`** — `fetch` resolves with a book; asserts an `<h2>` heading with text `"Email Book"` is present.
 4. **`shows file name and email input after loading`** — `fetch` resolves; asserts the file name and the To address input are visible.
 5. **`shows 'no files' message when book has no files`** — `fetch` resolves with a book that has an empty `files` array; asserts the "no files available" message appears.
