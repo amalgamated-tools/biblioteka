@@ -89,6 +89,7 @@ const (
 	MetaName             string = "meta_name"
 	Method               string = "method"
 	MIMEType             string = "mime_type"
+	Months               string = "months"
 	Name                 string = "name"
 	New                  string = "new"
 	NewPath              string = "new_path"
