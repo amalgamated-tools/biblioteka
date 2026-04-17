@@ -45,7 +45,7 @@
 #   - actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
 #   - actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
 #   - github/gh-aw-actions/setup@ba90f2186d7ad780ec640f364005fa24e797b360 # v0.68.3
-#   - pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # fc06bc1257f339d1d5d8b3a19a8cae5388b55320
+#   - pnpm/action-setup@08c4be7e2e672a47d11bd04269e27e5f3e8529cb # fc06bc1257f339d1d5d8b3a19a8cae5388b55320
 #
 # Container images used:
 #   - ghcr.io/github/gh-aw-firewall/agent:0.25.20@sha256:9161f2415a3306a344aca34dd671ee69f122317e0a512e66dc64c94b9c508682
@@ -348,7 +348,7 @@ jobs:
         with:
           node-version: "22"
       - name: Install pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # fc06bc1257f339d1d5d8b3a19a8cae5388b55320
+        uses: pnpm/action-setup@08c4be7e2e672a47d11bd04269e27e5f3e8529cb # fc06bc1257f339d1d5d8b3a19a8cae5388b55320
         with:
           version: 10.32.1
       - name: Install frontend dependencies
