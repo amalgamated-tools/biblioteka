@@ -1,5 +1,5 @@
 {
-  "last_run": "2026-04-17T01:06:26Z",
+  "last_run": "2026-04-17T12:46:45Z",
   "comments_made": {
     "1531": "2026-04-12T01:06:21Z",
     "1888": "2026-04-14T01:25:00Z",
@@ -7,7 +7,9 @@
     "1971": "2026-04-15T12:48:00Z",
     "2019": "2026-04-15T12:48:00Z",
     "2055": "2026-04-16T01:08:00Z",
-    "1880": "2026-04-16T12:49:51Z"
+    "1880": "2026-04-16T12:49:51Z",
+    "2084": "2026-04-17T12:46:45Z",
+    "2085": "2026-04-17T12:46:45Z"
   },
   "prs_created": [
     {"branch": "repo-assist/fix-a11y-issues-1641-1642-1643-1644-1b30f25405368471", "status": "merged"},
@@ -18,11 +20,12 @@
     {"branch": "repo-assist/fix-reading-list-ownership-helper-2020", "pr_number": 2029, "status": "closed"},
     {"branch": "repo-assist/improve-tags-frontend-api-2055", "pr_number": 2076, "status": "closed"},
     {"branch": "repo-assist/fix-passkey-label-2073", "pr_number": 2092, "status": "closed"},
-    {"branch": "repo-assist/eng-gofumpt-ci-20260417", "status": "open", "notes": "test(db)+ci: reading_group_lists tests + gofumpt CI enforcement"}
+    {"branch": "repo-assist/eng-gofumpt-ci-20260417", "status": "open", "notes": "test(db): 12 reading_group_lists tests + gofumpt CI enforcement"},
+    {"branch": "repo-assist/test-ai-enrichments-20260417", "status": "open", "notes": "test(db): 23 tests for ai_enrichments.go"}
   ],
-  "issues_commented": [1531, 1888, 1941, 1971, 2019, 2055, 1880],
+  "issues_commented": [1531, 1888, 1941, 1971, 2019, 2055, 1880, 2084, 2085],
   "monthly_activity_issue": "2026-04",
   "monthly_activity_issue_number": 2077,
-  "backlog_cursor": 2077,
-  "notes": "PR repo-assist/eng-gofumpt-ci-20260417 open: 12 tests for reading_group_lists + gofumpt in CI. TODO next run: tests for ai_enrichments.go (complex tx logic, 0 tests). Issue #1880 open, can be closed (JWT docs in PR #1924)."
+  "backlog_cursor": 2085,
+  "notes": "Issue #2084 all criteria already met in codebase (can be closed). Issue #2085 local.go does not exist (only interface). TODO next run: implement #2080 (namedEntityCreate/Update in reading_groups.go) or #2082 (generic handlers in groups.go) — both are high-priority refactors with clear spec."
 }

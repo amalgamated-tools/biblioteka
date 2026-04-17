@@ -1,5 +1,5 @@
 {
-  "last_run": "2026-04-17T01:06:26Z",
+  "last_run": "2026-04-17T12:46:45Z",
   "comments_made": {
     "1531": "2026-04-12T01:06:21Z",
     "1888": "2026-04-14T01:25:00Z",
@@ -7,80 +7,25 @@
     "1971": "2026-04-15T12:48:00Z",
     "2019": "2026-04-15T12:48:00Z",
     "2055": "2026-04-16T01:08:00Z",
-    "1880": "2026-04-16T12:49:51Z"
+    "1880": "2026-04-16T12:49:51Z",
+    "2084": "2026-04-17T12:46:45Z",
+    "2085": "2026-04-17T12:46:45Z"
   },
   "prs_created": [
-    {
-      "branch": "repo-assist/fix-a11y-issues-1641-1642-1643-1644-1b30f25405368471",
-      "title": "fix(a11y): address four keyboard/screen-reader accessibility issues (#1641-#1644)",
-      "closes": [1641, 1642, 1643, 1644],
-      "created_at": "2026-04-11T22:26:12Z",
-      "status": "merged"
-    },
-    {
-      "branch": "repo-assist/fix-download-recording-kobo-opds-20260413",
-      "title": "fix(handlers): record download events for Kobo and OPDS downloads",
-      "created_at": "2026-04-13T01:20:00Z",
-      "status": "merged"
-    },
-    {
-      "branch": "repo-assist/fix-claude-md-listall-1841-1843",
-      "title": "docs(claude): fix stale helpers.go refs; refactor listAll to use collectRows",
-      "closes": [1841, 1843],
-      "created_at": "2026-04-13T09:30:00Z",
-      "status": "merged"
-    },
-    {
-      "branch": "repo-assist/fix-collectrows-monthly-downloads-1941",
-      "pr_number": 2008,
-      "title": "refactor(db): use collectRows in GetMonthlyDownloads",
-      "closes": [1941],
-      "created_at": "2026-04-15T01:06:57Z",
-      "status": "merged"
-    },
-    {
-      "branch": "repo-assist/improve-api-types-1990",
-      "pr_number": 2007,
-      "title": "refactor(frontend): move AuthResponse and MetadataFetchResponse to types.ts",
-      "closes": [1990],
-      "created_at": "2026-04-15T01:06:57Z",
-      "status": "merged"
-    },
-    {
-      "branch": "repo-assist/fix-reading-list-ownership-helper-2020",
-      "pr_number": 2029,
-      "title": "refactor(db): extract verifyReadingListOwnership helper in reading_lists.go",
-      "closes": [2020],
-      "created_at": "2026-04-15T12:48:38Z",
-      "status": "closed"
-    },
-    {
-      "branch": "repo-assist/improve-tags-frontend-api-2055",
-      "pr_number": 2076,
-      "title": "feat(frontend): add tags API client and Tag types",
-      "closes": [2055],
-      "created_at": "2026-04-16T01:08:00Z",
-      "status": "closed"
-    },
-    {
-      "branch": "repo-assist/fix-passkey-label-2073",
-      "pr_number": 2092,
-      "title": "fix(a11y): add visible label to passkey name input",
-      "closes": [2073],
-      "created_at": "2026-04-16T12:49:51Z",
-      "status": "closed",
-      "notes": "Closed — superseded by PR #2075 from Copilot bot."
-    },
-    {
-      "branch": "repo-assist/eng-gofumpt-ci-20260417",
-      "title": "test(db): add reading_group_lists tests; ci: enforce gofumpt in lint job",
-      "created_at": "2026-04-17T01:06:26Z",
-      "status": "open"
-    }
+    {"branch": "repo-assist/fix-a11y-issues-1641-1642-1643-1644-1b30f25405368471", "title": "fix(a11y): address four keyboard/screen-reader accessibility issues (#1641-#1644)", "closes": [1641, 1642, 1643, 1644], "created_at": "2026-04-11T22:26:12Z", "status": "merged"},
+    {"branch": "repo-assist/fix-download-recording-kobo-opds-20260413", "title": "fix(handlers): record download events for Kobo and OPDS downloads", "created_at": "2026-04-13T01:20:00Z", "status": "merged"},
+    {"branch": "repo-assist/fix-claude-md-listall-1841-1843", "title": "docs(claude): fix stale helpers.go refs; refactor listAll to use collectRows", "closes": [1841, 1843], "created_at": "2026-04-13T09:30:00Z", "status": "merged"},
+    {"branch": "repo-assist/fix-collectrows-monthly-downloads-1941", "pr_number": 2008, "title": "refactor(db): use collectRows in GetMonthlyDownloads", "closes": [1941], "created_at": "2026-04-15T01:06:57Z", "status": "merged"},
+    {"branch": "repo-assist/improve-api-types-1990", "pr_number": 2007, "title": "refactor(frontend): move AuthResponse and MetadataFetchResponse to types.ts", "closes": [1990], "created_at": "2026-04-15T01:06:57Z", "status": "merged"},
+    {"branch": "repo-assist/fix-reading-list-ownership-helper-2020", "pr_number": 2029, "title": "refactor(db): extract verifyReadingListOwnership helper in reading_lists.go", "closes": [2020], "created_at": "2026-04-15T12:48:38Z", "status": "closed"},
+    {"branch": "repo-assist/improve-tags-frontend-api-2055", "pr_number": 2076, "title": "feat(frontend): add tags API client and Tag types", "closes": [2055], "created_at": "2026-04-16T01:08:00Z", "status": "closed"},
+    {"branch": "repo-assist/fix-passkey-label-2073", "pr_number": 2092, "title": "fix(a11y): add visible label to passkey name input", "closes": [2073], "created_at": "2026-04-16T12:49:51Z", "status": "closed", "notes": "Superseded by PR #2075"},
+    {"branch": "repo-assist/eng-gofumpt-ci-20260417", "title": "test(db): add reading_group_lists tests; ci: enforce gofumpt in lint job", "created_at": "2026-04-17T01:06:26Z", "status": "open"},
+    {"branch": "repo-assist/test-ai-enrichments-20260417", "title": "test(db): add tests for ai_enrichments.go", "created_at": "2026-04-17T12:46:45Z", "status": "open"}
   ],
-  "issues_commented": [1531, 1888, 1941, 1971, 2019, 2055, 1880],
+  "issues_commented": [1531, 1888, 1941, 1971, 2019, 2055, 1880, 2084, 2085],
   "monthly_activity_issue": "2026-04",
   "monthly_activity_issue_number": 2077,
-  "backlog_cursor": 2077,
-  "notes": "Tasks this run: Task 4 (Engineering) — added gofumpt enforcement to go-lint CI job; Task 9 (Testing) — added 12 tests for reading_group_lists.go. PR created on branch repo-assist/eng-gofumpt-ci-20260417. Previous PRs #2076 (tags frontend) and #2092 (passkey label) were closed by maintainer without merging. TODO: add tests for ai_enrichments.go (253 lines, no test coverage, complex transactional logic). Issue #1880 still open — can be closed (JWT_SECRET docs added in PR #1924)."
+  "backlog_cursor": 2085,
+  "notes": "Issue #2084 all criteria already met in codebase (can be closed). Issue #2085 local.go does not exist yet (only Storage interface). TODO next run: implement #2080 (namedEntityCreate/Update in reading_groups.go, high-priority) or #2082 (generic handler helpers in groups.go, high-priority)."
 }
