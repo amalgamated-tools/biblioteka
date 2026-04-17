@@ -43,7 +43,7 @@ func scanMonthlyDownloadCount(row interface{ Scan(...any) error }) (*MonthlyDown
 func (d *DB) GetMonthlyDownloads(ctx context.Context, userID string, months int) ([]MonthlyDownloadCount, error) {
 	slog.DebugContext(ctx, "fetching monthly download counts",
 		slog.String(otelkeys.UserID, userID),
-		slog.Int(otelkeys.Limit, months),
+		slog.Int(otelkeys.Months, months),
 	)
 
 	var query string
