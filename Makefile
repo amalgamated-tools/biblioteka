@@ -1,11 +1,15 @@
-.PHONY: all build frontend backend clean dev redis-check screenshots kill-dev swagger swagger-fmt docs-serve lint-errorf
+.PHONY: help all build frontend backend clean dev redis-check screenshots kill-dev swagger swagger-fmt docs-serve lint-errorf
 
+.DEFAULT_GOAL := help
 # Tooling commands
 SWAG_CMD = go run github.com/swaggo/swag/v2/cmd/swag@v2.0.0-rc5
 GOLANGCI_LINT_CMD = go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@1c222b488bbc2c0ae2cad8423a24b8452f2fc3a9
+MODERNIZE_CMD = go run golang.org/x/tools/go/analysis/passes/modernize/cmd/modernize@latest
 
-# Build everything: frontend then Go binary
-all: build
+help: ## Show this help
+	@awk 'BEGIN {FS = ":.*##"; printf "Usage:\n  make <target>\n\nTargets:\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  %-16s %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
+
+all: build ## Alias for `build`
 
 # Install frontend dependencies
 frontend/node_modules: frontend/package.json
@@ -143,8 +147,8 @@ test:
 testsum:
 	gotestsum -- -v ./...
 
-modernize:
-	go run golang.org/x/tools/go/analysis/passes/modernize/cmd/modernize@latest -fix  ./...
+modernize: ## One-shot: rewrite Go code to current stdlib idioms (review the diff)
+	$(MODERNIZE_CMD) -fix ./...
 
 generate:
 	go generate ./...
