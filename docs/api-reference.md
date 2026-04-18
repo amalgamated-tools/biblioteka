@@ -3037,26 +3037,26 @@ Returns the authenticated user's reading streak, total-books-tracked count, fini
 
 ## Recommendations
 
-The recommendations endpoint returns a scored list of books the authenticated user has not yet read, ranked locally without any external service. It is powered by the user's Kobo reading history (books with `status` of `reading` or `finished`).
+The recommendations endpoint returns a ranked list of books the authenticated user has not yet read. Ranking is computed locally without any external service, using the user's Kobo reading history (books with `status` of `reading` or `finished`), and the internal score is not included in the JSON response.
 
 ### `GET /api/recommendations` 🔒
 
-Returns a scored list of books the authenticated user has not yet read. Results are ranked by a combination of four signals derived from the user's Kobo reading history; when the user has no history all unread books are returned ordered newest-first.
+Returns a ranked list of books the authenticated user has not yet read as `bookSummaryDTO` objects. Results are ordered by an internal score derived from four signals based on the user's Kobo reading history; the per-book score is not exposed in the response body. When the user has no history all unread books are returned ordered newest-first.
 
 **Ranking signals** (cumulative score per book):
 
 | Signal | Weight | Description |
 |--------|--------|-------------|
 | Author overlap | +3 per shared author | Books sharing an author with a book the user is reading or has finished |
-| Series continuation | +5 per series | The immediate next book in a series the user is actively reading |
+| Series continuation | +5 per series | The immediate next book in a series the user is reading or has finished |
 | Publisher match | +1 | Books from a publisher the user has read before |
-| Download popularity | `download_count / 100` | Global download tiebreaker across the instance |
+| Download popularity | `SUM(download_count) / 100` | Global download tiebreaker across the instance |
 
 **Query parameters:**
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `limit` | integer | `10` | Maximum number of recommendations to return. Clamped to `1–50`. |
+| `limit` | integer | `10` | Maximum number of recommendations to return. Invalid, zero, or negative values use the default (`10`); values greater than `50` are capped at `50`. |
 
 **Response:** `200 OK`
 
@@ -3077,7 +3077,7 @@ An array of book summary objects. Returns an empty array (`[]`) when there are n
     "publication_date": "2014-08-13",
     "publisher": "Hodder & Stoughton",
     "language": "en",
-    "cover_image_url": "/api/books/a1b2c3d4e5f6.../cover",
+    "cover_image_url": "https://example.com/covers/a1b2c3d4e5f6.jpg",
     "created_at": "2026-01-15T10:00:00Z",
     "updated_at": "2026-01-15T10:00:00Z"
   }
@@ -3088,7 +3088,7 @@ An array of book summary objects. Returns an empty array (`[]`) when there are n
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `id` | string | Book UUID |
+| `id` | string | Opaque resource ID |
 | `title` | string | Book title |
 | `description` | string \| null | Catalog description; `null` when absent |
 | `asin` | string \| null | Amazon ASIN; `null` when absent |
@@ -3100,7 +3100,7 @@ An array of book summary objects. Returns an empty array (`[]`) when there are n
 | `publication_date` | string \| null | Publication date in `YYYY-MM-DD` format; `null` when absent |
 | `publisher` | string \| null | Publisher name; `null` when absent |
 | `language` | string \| null | BCP 47 language code (e.g. `"en"`); `null` when absent |
-| `cover_image_url` | string \| null | Relative URL of the cover image; `null` when no cover is available |
+| `cover_image_url` | string \| null | Stored cover image value, typically an HTTPS URL or `data:` URL; `null` when no cover is available |
 | `created_at` | string | ISO 8601 timestamp when the book was added to the library |
 | `updated_at` | string | ISO 8601 timestamp of the most recent metadata update |
 
