@@ -702,7 +702,7 @@ Pass an empty array (`[]`) to remove all tags from the book.
 
 List all files associated with a book.
 
-**Response body (`200`):** Array of [book-file objects](#get-apibookfilesid).
+**Response body (`200`):** Array of [book-file objects](#get-apibook-filesid).
 
 ---
 
