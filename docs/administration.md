@@ -610,16 +610,22 @@ At startup, Biblioteka runs an FTS5 integrity check. If corruption is detected (
 
 ### Manual rebuild
 
-Admins can trigger a rebuild on demand via the API:
+Admins can trigger a full rebuild via **Settings → Search Index** in the web UI or via the API.
+
+This is useful after bulk imports (Calibre import, library scan) that may temporarily leave the search index stale, after running `VACUUM` on the database file outside of normal server operation, or whenever you suspect the index is out of sync.
+
+**Web UI:** Navigate to **Settings → Search Index** and click **Rebuild Search Index**. A success banner confirms the request was accepted and the rebuild has started. Completion is indicated later by an `fts.rebuilt` entry in the audit log (see below).
+
+**API:**
 
 ```bash
-curl -sf -X POST http://localhost:8080/api/admin/search/reindex \
+curl -i -X POST http://localhost:8080/api/admin/search/reindex \
   -H "Authorization: Bearer <admin-jwt>"
-# → 202 Accepted
+# HTTP/1.1 202 Accepted
 # → {"message":"search index rebuild started"}
 ```
 
-This is useful if you have run `VACUUM` on the database file outside of normal server operation, or if you suspect the index is out of sync. The endpoint returns `202 Accepted` immediately and runs the rebuild in the background. A successful rebuild emits an audit log entry with action `fts.rebuilt` (`entity_type: fts`).
+The endpoint returns `202 Accepted` immediately and runs the rebuild in the background. A successful rebuild emits an audit log entry with action `fts.rebuilt` (`entity_type: fts`).
 
 > **PostgreSQL:** The pg_trgm GIN indexes used for search on PostgreSQL are maintained automatically by the database engine. On PostgreSQL instances, this endpoint returns `200 OK` with a message indicating no rebuild is required and does not emit an audit log entry.
 
