@@ -51,7 +51,7 @@ func (userListQuery) orderBy(d *DB) string {
 // Returns ErrEmailExists if the email is already registered.
 // The first user created is automatically promoted to admin.
 func (d *DB) CreateUser(ctx context.Context, name, email, passwordHash string) (*User, error) {
-	slog.DebugContext(ctx, "creating user", slog.String(otelkeys.Email, email))
+	slog.DebugContext(ctx, "db: creating user", slog.String(otelkeys.Email, email))
 	var exists bool
 	if err := d.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM users WHERE LOWER(email) = LOWER($1))`, email).Scan(&exists); err != nil {
 		return nil, err
@@ -77,7 +77,7 @@ func (d *DB) CreateUser(ctx context.Context, name, email, passwordHash string) (
 // Returns ErrEmailExists if the email is already registered.
 // The first user created is automatically promoted to admin.
 func (d *DB) CreateOIDCUser(ctx context.Context, name, email, oidcSubject string) (*User, error) {
-	slog.DebugContext(ctx, "creating OIDC user", slog.String(otelkeys.Email, email))
+	slog.DebugContext(ctx, "db: creating OIDC user", slog.String(otelkeys.Email, email))
 	var exists bool
 	if err := d.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM users WHERE LOWER(email) = LOWER($1))`, email).Scan(&exists); err != nil {
 		return nil, err
@@ -100,7 +100,7 @@ func (d *DB) CreateOIDCUser(ctx context.Context, name, email, oidcSubject string
 
 // GetUserByEmail returns a user by email, or sql.ErrNoRows if not found.
 func (d *DB) GetUserByEmail(ctx context.Context, email string) (*User, error) {
-	slog.DebugContext(ctx, "fetching user by email", slog.String(otelkeys.Email, email))
+	slog.DebugContext(ctx, "db: fetching user by email", slog.String(otelkeys.Email, email))
 	return scanUser(d.QueryRowContext(ctx,
 		`SELECT `+userColumns+` FROM users WHERE LOWER(email) = LOWER($1)`,
 		email,
@@ -109,7 +109,7 @@ func (d *DB) GetUserByEmail(ctx context.Context, email string) (*User, error) {
 
 // GetUserByID returns a user by ID, or sql.ErrNoRows if not found.
 func (d *DB) GetUserByID(ctx context.Context, id string) (*User, error) {
-	slog.DebugContext(ctx, "fetching user by ID", slog.String(otelkeys.UserID, id))
+	slog.DebugContext(ctx, "db: fetching user by ID", slog.String(otelkeys.UserID, id))
 	return scanUser(d.QueryRowContext(ctx,
 		`SELECT `+userColumns+` FROM users WHERE id = $1`,
 		id,
@@ -118,7 +118,7 @@ func (d *DB) GetUserByID(ctx context.Context, id string) (*User, error) {
 
 // GetUserByOIDCSubject returns a user by OIDC subject, or sql.ErrNoRows if not found.
 func (d *DB) GetUserByOIDCSubject(ctx context.Context, subject string) (*User, error) {
-	slog.DebugContext(ctx, "fetching user by OIDC subject")
+	slog.DebugContext(ctx, "db: fetching user by OIDC subject")
 	return scanUser(d.QueryRowContext(ctx,
 		`SELECT `+userColumns+` FROM users WHERE oidc_subject = $1`,
 		subject,
@@ -127,14 +127,14 @@ func (d *DB) GetUserByOIDCSubject(ctx context.Context, subject string) (*User, e
 
 // LinkOIDCSubject sets the OIDC subject on an existing user.
 func (d *DB) LinkOIDCSubject(ctx context.Context, userID, oidcSubject string) error {
-	slog.DebugContext(ctx, "linking OIDC subject", slog.String(otelkeys.UserID, userID))
+	slog.DebugContext(ctx, "db: linking OIDC subject", slog.String(otelkeys.UserID, userID))
 	return d.execAffected(ctx, `UPDATE users SET oidc_subject = $1 WHERE id = $2`, oidcSubject, userID)
 }
 
 // UpdateName updates the display name of a user.
 // Returns sql.ErrNoRows if the user does not exist.
 func (d *DB) UpdateName(ctx context.Context, userID, name string) (*User, error) {
-	slog.DebugContext(ctx, "updating user name", slog.String(otelkeys.UserID, userID))
+	slog.DebugContext(ctx, "db: updating user name", slog.String(otelkeys.UserID, userID))
 	return scanUser(d.QueryRowContext(ctx,
 		`UPDATE users SET name = $1 WHERE id = $2 RETURNING `+userColumns,
 		name, userID,
@@ -143,7 +143,7 @@ func (d *DB) UpdateName(ctx context.Context, userID, name string) (*User, error)
 
 // UpdatePassword updates a user's password hash.
 func (d *DB) UpdatePassword(ctx context.Context, userID, newPasswordHash string) error {
-	slog.DebugContext(ctx, "updating password", slog.String(otelkeys.UserID, userID))
+	slog.DebugContext(ctx, "db: updating password", slog.String(otelkeys.UserID, userID))
 	return d.execAffected(ctx, `UPDATE users SET password_hash = $1 WHERE id = $2`, newPasswordHash, userID)
 }
 
@@ -159,7 +159,7 @@ func (d *DB) IsAdmin(ctx context.Context, userID string) (bool, error) {
 
 // SetAdmin sets the is_admin flag on a user. Returns sql.ErrNoRows if user doesn't exist.
 func (d *DB) SetAdmin(ctx context.Context, userID string, isAdmin bool) error {
-	slog.DebugContext(ctx, "setting admin status",
+	slog.DebugContext(ctx, "db: setting admin status",
 		slog.String(otelkeys.UserID, userID),
 		slog.Bool(otelkeys.IsAdmin, isAdmin),
 	)
@@ -168,13 +168,13 @@ func (d *DB) SetAdmin(ctx context.Context, userID string, isAdmin bool) error {
 
 // ListUsers returns all users ordered by creation time.
 func (d *DB) ListUsers(ctx context.Context) ([]User, error) {
-	slog.DebugContext(ctx, "listing users")
+	slog.DebugContext(ctx, "db: listing users")
 	return listAll(ctx, d, userListQuery{}, scanUser)
 }
 
 // CountUsers returns the number of users in the database.
 func (d *DB) CountUsers(ctx context.Context) (int, error) {
-	slog.DebugContext(ctx, "counting users")
+	slog.DebugContext(ctx, "db: counting users")
 	var count int
 	if err := d.QueryRowContext(ctx, `SELECT COUNT(*) FROM users`).Scan(&count); err != nil {
 		return 0, err

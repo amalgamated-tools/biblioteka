@@ -62,7 +62,7 @@ func (d *DB) CreateSeries(ctx context.Context, name string, goodreadsID, hardcov
 
 // GetSeries retrieves a series by its UUID. Returns sql.ErrNoRows if not found.
 func (d *DB) GetSeries(ctx context.Context, id string) (*Series, error) {
-	slog.DebugContext(ctx, "fetching series", slog.String(otelkeys.SeriesID, id))
+	slog.DebugContext(ctx, "db: fetching series", slog.String(otelkeys.SeriesID, id))
 	return scanSeries(d.QueryRowContext(ctx,
 		`SELECT `+seriesColumns+` FROM series WHERE id = $1`,
 		id,
@@ -76,7 +76,7 @@ func (d *DB) GetSeries(ctx context.Context, id string) (*Series, error) {
 // Callers do not need to pre-normalize the input; this method handles it.
 func (d *DB) GetSeriesByName(ctx context.Context, name string) (*Series, error) {
 	name = NormalizeSeriesName(name)
-	slog.DebugContext(ctx, "fetching series by name", slog.String(otelkeys.Name, name))
+	slog.DebugContext(ctx, "db: fetching series by name", slog.String(otelkeys.Name, name))
 	return scanSeries(d.QueryRowContext(ctx,
 		`SELECT `+seriesColumns+` FROM series WHERE LOWER(name) = LOWER($1)`,
 		name,
@@ -85,13 +85,13 @@ func (d *DB) GetSeriesByName(ctx context.Context, name string) (*Series, error) 
 
 // ListSeries returns all series ordered by name.
 func (d *DB) ListSeries(ctx context.Context) ([]Series, error) {
-	slog.DebugContext(ctx, "listing series")
+	slog.DebugContext(ctx, "db: listing series")
 	return listAll(ctx, d, seriesListQuery{}, scanSeries)
 }
 
 // ListSeriesPaginated returns series ordered by name with pagination and total count.
 func (d *DB) ListSeriesPaginated(ctx context.Context, limit, offset int) ([]Series, int, error) {
-	slog.DebugContext(ctx, "listing series paginated",
+	slog.DebugContext(ctx, "db: listing series paginated",
 		slog.Int(otelkeys.Limit, limit),
 		slog.Int(otelkeys.Offset, offset),
 	)
@@ -128,6 +128,6 @@ func (d *DB) FindOrCreateSeries(ctx context.Context, name string) (*Series, erro
 // DeleteSeries removes the series with the given ID. Returns sql.ErrNoRows if
 // no matching series exists.
 func (d *DB) DeleteSeries(ctx context.Context, id string) error {
-	slog.DebugContext(ctx, "deleting series", slog.String(otelkeys.SeriesID, id))
+	slog.DebugContext(ctx, "db: deleting series", slog.String(otelkeys.SeriesID, id))
 	return d.execAffected(ctx, `DELETE FROM series WHERE id = $1`, id)
 }

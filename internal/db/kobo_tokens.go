@@ -27,7 +27,7 @@ func scanKoboToken(row interface{ Scan(...any) error }) (*KoboToken, error) {
 
 // CreateKoboToken inserts a new Kobo sync token hash and returns it.
 func (d *DB) CreateKoboToken(ctx context.Context, userID, name, tokenHash string) (*KoboToken, error) {
-	slog.DebugContext(ctx, "creating kobo token",
+	slog.DebugContext(ctx, "db: creating kobo token",
 		slog.String(otelkeys.UserID, userID),
 		slog.String(otelkeys.Name, name),
 	)
@@ -39,7 +39,7 @@ func (d *DB) CreateKoboToken(ctx context.Context, userID, name, tokenHash string
 
 // GetKoboToken returns a Kobo token by ID scoped to the given user, or sql.ErrNoRows if not found.
 func (d *DB) GetKoboToken(ctx context.Context, id, userID string) (*KoboToken, error) {
-	slog.DebugContext(ctx, "fetching kobo token", slog.String(otelkeys.KoboTokenID, id))
+	slog.DebugContext(ctx, "db: fetching kobo token", slog.String(otelkeys.KoboTokenID, id))
 	return scanKoboToken(d.QueryRowContext(ctx,
 		`SELECT `+koboTokenColumns+` FROM kobo_tokens WHERE id = $1 AND user_id = $2`,
 		id, userID,
@@ -48,7 +48,7 @@ func (d *DB) GetKoboToken(ctx context.Context, id, userID string) (*KoboToken, e
 
 // GetKoboTokenByHash returns a Kobo token record by its hash, or sql.ErrNoRows if not found.
 func (d *DB) GetKoboTokenByHash(ctx context.Context, tokenHash string) (*KoboToken, error) {
-	slog.DebugContext(ctx, "looking up kobo token by hash")
+	slog.DebugContext(ctx, "db: looking up kobo token by hash")
 	return scanKoboToken(d.QueryRowContext(ctx,
 		`SELECT `+koboTokenColumns+` FROM kobo_tokens WHERE token_hash = $1`,
 		tokenHash,
@@ -57,7 +57,7 @@ func (d *DB) GetKoboTokenByHash(ctx context.Context, tokenHash string) (*KoboTok
 
 // ListKoboTokens returns all Kobo tokens for a user ordered by creation time (newest first).
 func (d *DB) ListKoboTokens(ctx context.Context, userID string) ([]KoboToken, error) {
-	slog.DebugContext(ctx, "listing kobo tokens", slog.String(otelkeys.UserID, userID))
+	slog.DebugContext(ctx, "db: listing kobo tokens", slog.String(otelkeys.UserID, userID))
 	rows, err := d.QueryContext(ctx,
 		`SELECT `+koboTokenColumns+` FROM kobo_tokens WHERE user_id = $1 ORDER BY created_at DESC, id DESC`,
 		userID,
@@ -71,7 +71,7 @@ func (d *DB) ListKoboTokens(ctx context.Context, userID string) ([]KoboToken, er
 // DeleteKoboToken removes a Kobo token by ID, scoped to the given user.
 // Returns sql.ErrNoRows if the token doesn't exist or doesn't belong to the user.
 func (d *DB) DeleteKoboToken(ctx context.Context, id, userID string) error {
-	slog.DebugContext(ctx, "deleting kobo token",
+	slog.DebugContext(ctx, "db: deleting kobo token",
 		slog.String(otelkeys.KoboTokenID, id),
 		slog.String(otelkeys.UserID, userID),
 	)

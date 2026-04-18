@@ -72,7 +72,7 @@ func runMigrations(ctx context.Context, d *DB) error {
 		}
 
 		if applied > 0 {
-			slog.DebugContext(ctx, "Migration already applied", slog.String(otelkeys.Version, version))
+			slog.DebugContext(ctx, "db: Migration already applied", slog.String(otelkeys.Version, version))
 			continue
 		}
 
