@@ -261,7 +261,11 @@ describe("BookList pagination accessibility", () => {
     offset,
   });
 
-  let fetchBooks: ReturnType<typeof vi.fn>;
+  let fetchBooks: (
+    limit: number,
+    offset: number,
+    query?: string,
+  ) => Promise<PaginatedBooks>;
 
   beforeEach(() => {
     fetchBooks = vi
