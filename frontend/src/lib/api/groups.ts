@@ -49,9 +49,9 @@ export async function addGroupMember(
 
 export async function removeGroupMember(
   groupId: string,
-  memberId: string,
+  userId: string,
 ): Promise<void> {
-  await request<void>("DELETE", `/api/groups/${groupId}/members/${memberId}`);
+  await request<void>("DELETE", `/api/groups/${groupId}/members/${userId}`);
 }
 
 export async function listGroupReadingLists(
@@ -76,6 +76,7 @@ export async function unshareListFromGroup(
   await request<void>("DELETE", `/api/groups/${groupId}/lists/${listId}`);
 }
 
+// TODO: used in upcoming member progress view
 export async function listGroupMemberProgress(
   groupId: string,
   bookId: string,

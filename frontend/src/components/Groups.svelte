@@ -7,7 +7,7 @@
   import TextInput from "./ui/TextInput.svelte";
   import GroupDetail from "./groups/GroupDetail.svelte";
 
-  let error: string | null = $state(null);
+  let error = $derived(groupStore.loadError);
   let showForm = $state(false);
   let newName = $state("");
   let newDescription = $state("");
@@ -21,14 +21,14 @@
     }
   });
 
-  $effect(() => {
-    if (groupStore.loadError) {
-      error = groupStore.loadError;
-    }
-  });
-
   let subPath = $derived(routerStore.subPath);
   let viewingGroup = $derived(subPath !== "" && subPath !== "new");
+
+  $effect(() => {
+    if (subPath === "new") {
+      showForm = true;
+    }
+  });
 
   async function handleCreate() {
     if (!newName.trim()) return;

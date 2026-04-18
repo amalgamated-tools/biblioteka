@@ -42,8 +42,10 @@
   let group = $state<ReadingGroup | null>(null);
   let error: string | null = $state(null);
   let members: ReadingGroupMember[] = $state.raw([]);
+  let membersLoading = $state(false);
   let membersError: string | null = $state(null);
   let sharedLists: ReadingList[] = $state.raw([]);
+  let sharedListsLoading = $state(false);
   let sharedListsError: string | null = $state(null);
 
   // Edit group
@@ -79,18 +81,18 @@
   let isOwner = $derived(group !== null && group.owner_id === currentUserId);
 
   $effect(() => {
+    if (!groupStore.loaded && !groupStore.loading) {
+      void groupStore.load();
+    }
+  });
+
+  $effect(() => {
     const found = groupStore.groups.find((g) => g.id === groupId) ?? null;
     group = found;
     error =
       !found && groupStore.loaded
         ? (groupStore.loadError ?? "Group not found.")
         : null;
-  });
-
-  $effect(() => {
-    if (!groupStore.loaded && !groupStore.loading) {
-      void groupStore.load();
-    }
   });
 
   $effect(() => {
@@ -107,21 +109,27 @@
   });
 
   async function loadMembers() {
+    membersLoading = true;
     membersError = null;
     try {
       members = await listGroupMembers(groupId);
     } catch (e) {
       membersError = e instanceof Error ? e.message : "Failed to load members";
+    } finally {
+      membersLoading = false;
     }
   }
 
   async function loadSharedLists() {
+    sharedListsLoading = true;
     sharedListsError = null;
     try {
       sharedLists = await listGroupReadingLists(groupId);
     } catch (e) {
       sharedListsError =
         e instanceof Error ? e.message : "Failed to load shared lists";
+    } finally {
+      sharedListsLoading = false;
     }
   }
 
@@ -179,7 +187,7 @@
       newMemberUserId = "";
       showAddMember = false;
       await loadMembers();
-      groupStore.adjustMemberCount(groupId, 1);
+      groupStore.setMemberCount(groupId, members.length);
     } catch (e) {
       addMemberError = e instanceof Error ? e.message : "Failed to add member";
     } finally {
@@ -187,13 +195,13 @@
     }
   }
 
-  async function handleRemoveMember(memberId: string) {
-    removingMemberId = memberId;
+  async function handleRemoveMember(userId: string) {
+    removingMemberId = userId;
     try {
-      await removeGroupMember(groupId, memberId);
+      await removeGroupMember(groupId, userId);
       confirmRemoveMemberId = null;
       await loadMembers();
-      groupStore.adjustMemberCount(groupId, -1);
+      groupStore.setMemberCount(groupId, members.length);
     } catch (e) {
       membersError = e instanceof Error ? e.message : "Failed to remove member";
     } finally {
@@ -532,7 +540,7 @@
             {/if}
           </li>
         {/each}
-        {#if members.length === 0}
+        {#if !membersLoading && members.length === 0}
           <li
             class="px-4 py-6 text-center text-sm text-ink-500 dark:text-ink-400"
           >
@@ -618,44 +626,47 @@
                 </p>
               </div>
             </div>
-            {#if confirmUnshareListId === list.id}
-              <div
-                class="flex items-center gap-2 flex-shrink-0"
-                role="group"
-                aria-labelledby={`unshare-list-prompt-${list.id}`}
-                use:autofocusFirstButton
-              >
-                <span
-                  id={`unshare-list-prompt-${list.id}`}
-                  class="text-xs text-ink-600 dark:text-ink-300">Unshare?</span
+            {#if isOwner || readingListStore.lists.some((rl) => rl.id === list.id)}
+              {#if confirmUnshareListId === list.id}
+                <div
+                  class="flex items-center gap-2 flex-shrink-0"
+                  role="group"
+                  aria-labelledby={`unshare-list-prompt-${list.id}`}
+                  use:autofocusFirstButton
                 >
-                <Button
-                  variant="danger"
-                  onclick={() => handleUnshareList(list.id)}
-                  disabled={unsharingListId === list.id}
+                  <span
+                    id={`unshare-list-prompt-${list.id}`}
+                    class="text-xs text-ink-600 dark:text-ink-300"
+                    >Unshare?</span
+                  >
+                  <Button
+                    variant="danger"
+                    onclick={() => handleUnshareList(list.id)}
+                    disabled={unsharingListId === list.id}
+                  >
+                    {unsharingListId === list.id ? "Removing…" : "Yes"}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onclick={() => (confirmUnshareListId = null)}
+                    disabled={unsharingListId === list.id}
+                  >
+                    No
+                  </Button>
+                </div>
+              {:else}
+                <button
+                  class="p-1.5 text-ink-400 hover:text-danger-500 dark:hover:text-danger-400 transition-colors rounded"
+                  onclick={() => (confirmUnshareListId = list.id)}
+                  aria-label={`Unshare ${list.name} from group`}
                 >
-                  {unsharingListId === list.id ? "Removing…" : "Yes"}
-                </Button>
-                <Button
-                  variant="secondary"
-                  onclick={() => (confirmUnshareListId = null)}
-                  disabled={unsharingListId === list.id}
-                >
-                  No
-                </Button>
-              </div>
-            {:else}
-              <button
-                class="p-1.5 text-ink-400 hover:text-danger-500 dark:hover:text-danger-400 transition-colors rounded"
-                onclick={() => (confirmUnshareListId = list.id)}
-                aria-label={`Unshare ${list.name} from group`}
-              >
-                <X class="w-4 h-4" aria-hidden="true" />
-              </button>
+                  <X class="w-4 h-4" aria-hidden="true" />
+                </button>
+              {/if}
             {/if}
           </li>
         {/each}
-        {#if sharedLists.length === 0}
+        {#if !sharedListsLoading && sharedLists.length === 0}
           <li
             class="px-4 py-6 text-center text-sm text-ink-500 dark:text-ink-400"
           >

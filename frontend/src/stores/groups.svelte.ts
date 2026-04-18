@@ -52,12 +52,21 @@ class GroupStore {
     this.groups = this.groups.filter((g) => g.id !== id);
   }
 
+  /** Sync the cached member_count for a group to an exact value. */
+  setMemberCount(id: string, count: number): void {
+    this.groups = this.groups.map((g) =>
+      g.id === id ? { ...g, member_count: count } : g,
+    );
+  }
+
   /** Adjust the cached member_count for a group by a delta (+1 or -1).
    *  Used to avoid a full reload after adding or removing a single member.
    */
   adjustMemberCount(id: string, delta: number): void {
     this.groups = this.groups.map((g) =>
-      g.id === id ? { ...g, member_count: g.member_count + delta } : g,
+      g.id === id
+        ? { ...g, member_count: Math.max(0, g.member_count + delta) }
+        : g,
     );
   }
 }
