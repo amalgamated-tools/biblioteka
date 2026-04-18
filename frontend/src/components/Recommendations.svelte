@@ -16,7 +16,6 @@
         books = data;
       })
       .catch((err) => {
-        console.error("Failed to fetch recommendations:", err);
         error =
           err instanceof Error ? err.message : "Failed to load recommendations";
       })
