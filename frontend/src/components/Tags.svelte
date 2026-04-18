@@ -143,7 +143,19 @@
   {/if}
 
   {#if deleteError}
-    <AlertBanner variant="error" class="mb-4">{deleteError}</AlertBanner>
+    <AlertBanner variant="error" class="mb-4">
+      <div class="flex items-start justify-between gap-3">
+        <span>{deleteError}</span>
+        <button
+          type="button"
+          class="shrink-0 hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 rounded-sm"
+          aria-label="Dismiss delete error"
+          onclick={() => (deleteError = null)}
+        >
+          <X class="w-4 h-4" aria-hidden="true" />
+        </button>
+      </div>
+    </AlertBanner>
   {/if}
 
   {#if showCreateForm}

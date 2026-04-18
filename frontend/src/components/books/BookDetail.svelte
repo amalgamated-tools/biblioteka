@@ -33,6 +33,8 @@
 
   async function loadBook(id: string) {
     const seq = ++fetchSeq;
+    book = null;
+    tags = [];
     loading = true;
     error = null;
     try {

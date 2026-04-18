@@ -211,7 +211,17 @@
   </div>
 
   {#if error}
-    <AlertBanner variant="error" class="mb-3">{error}</AlertBanner>
+    <AlertBanner variant="error" class="mb-3">
+      <div class="flex items-center justify-between gap-3">
+        <span>{error}</span>
+        <button
+          type="button"
+          class="text-xs font-medium underline underline-offset-2 hover:no-underline disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+          onclick={() => void loadData(bookId)}
+          disabled={loading}>Try again</button
+        >
+      </div>
+    </AlertBanner>
   {/if}
 
   {#if loading}
