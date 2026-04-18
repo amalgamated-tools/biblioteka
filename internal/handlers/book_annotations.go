@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -90,6 +91,12 @@ func (h *BookAnnotationHandler) HandleAnnotation(w http.ResponseWriter, r *http.
 	}
 }
 
+// handleListBookAnnotations handles GET /api/books/{id}/annotations.
+// Note: this returns both own and group-shared annotations, so a client may
+// receive IDs it does not own. GET /api/annotations/{id} (GetAnnotation)
+// filters strictly by user_id and will return 404 for group-shared IDs.
+// This asymmetry is intentional: the list shows shared context; individual
+// access is restricted to the annotation owner.
 func (h *BookAnnotationHandler) handleListBookAnnotations(w http.ResponseWriter, r *http.Request, bookID string) {
 	ctx := r.Context()
 	userID := auth.UserIDFromContext(ctx)
@@ -113,6 +120,11 @@ func (h *BookAnnotationHandler) handleCreateBookAnnotation(w http.ResponseWriter
 
 	var req createAnnotationRequest
 	if !decodeJSON(r, w, &req) {
+		return
+	}
+
+	if strings.TrimSpace(req.Text) == "" {
+		writeError(ctx, w, http.StatusBadRequest, "text is required")
 		return
 	}
 
@@ -152,6 +164,11 @@ func (h *BookAnnotationHandler) handleUpdateAnnotation(w http.ResponseWriter, r 
 
 	var req updateAnnotationRequest
 	if !decodeJSON(r, w, &req) {
+		return
+	}
+
+	if strings.TrimSpace(req.Text) == "" {
+		writeError(ctx, w, http.StatusBadRequest, "text is required")
 		return
 	}
 

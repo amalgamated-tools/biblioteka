@@ -135,6 +135,21 @@ func TestCreateBookAnnotation_InvalidJSON(t *testing.T) {
 	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
+func TestCreateBookAnnotation_BlankTextRejected(t *testing.T) {
+	h, _, userID, bookID := setupAnnotationHandler(t)
+
+	for _, text := range []string{"", "   ", "\t\n"} {
+		body := mustMarshal(t, createAnnotationRequest{Text: text})
+		r := httptest.NewRequest(http.MethodPost, "/api/books/"+bookID+"/annotations", bytes.NewReader(body))
+		r = withUserID(r, userID)
+		w := httptest.NewRecorder()
+
+		h.HandleBookRoutes(w, r)
+
+		require.Equal(t, http.StatusBadRequest, w.Code, "expected 400 for text=%q", text)
+	}
+}
+
 func TestCreateBookAnnotation_NonMemberGroupForbidden(t *testing.T) {
 	h, _, userID, bookID := setupAnnotationHandler(t)
 	ctx := t.Context()
@@ -252,6 +267,25 @@ func TestUpdateAnnotation_Success(t *testing.T) {
 	var dto annotationDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto))
 	require.Equal(t, "Updated text", dto.Text)
+}
+
+func TestUpdateAnnotation_BlankTextRejected(t *testing.T) {
+	_, ah, userID, bookID := setupAnnotationHandler(t)
+	ctx := t.Context()
+
+	a, err := ah.DB.CreateAnnotation(ctx, userID, bookID, "Original", nil, nil)
+	require.NoError(t, err)
+
+	for _, text := range []string{"", "   ", "\t\n"} {
+		body := mustMarshal(t, updateAnnotationRequest{Text: text})
+		r := httptest.NewRequest(http.MethodPut, "/api/annotations/"+a.ID, bytes.NewReader(body))
+		r = withUserID(r, userID)
+		w := httptest.NewRecorder()
+
+		ah.HandleAnnotation(w, r)
+
+		require.Equal(t, http.StatusBadRequest, w.Code, "expected 400 for text=%q", text)
+	}
 }
 
 func TestUpdateAnnotation_NotFound(t *testing.T) {
