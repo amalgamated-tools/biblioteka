@@ -322,4 +322,61 @@ describe("Auth", () => {
     expect(loginEmail).not.toHaveAttribute("aria-invalid", "true");
     expect(loginPassword).not.toHaveAttribute("aria-invalid", "true");
   });
+
+  it("marks only the email field invalid for an email-specific server error", async () => {
+    vi.mocked(authStore.signIn).mockResolvedValueOnce({
+      error: new Error("Email is not valid"),
+    });
+
+    const user = userEvent.setup();
+    await renderAuth();
+
+    const loginPanel = screen.getByRole("tabpanel", { name: "Login" });
+    const loginEmail = within(loginPanel).getByLabelText(/Email/i);
+    const loginPassword = within(loginPanel).getByLabelText(/Password/i);
+
+    await user.type(loginEmail, "reader@example.com");
+    await user.type(loginPassword, "securepass");
+    await user.click(screen.getByRole("button", { name: "Sign In" }));
+
+    await screen.findByRole("alert");
+
+    expect(loginEmail).toHaveAttribute("aria-invalid", "true");
+    expect(loginEmail).toHaveAttribute("aria-describedby", "login-auth-error");
+    expect(loginPassword).not.toHaveAttribute("aria-invalid", "true");
+    expect(loginPassword).not.toHaveAttribute(
+      "aria-describedby",
+      "login-auth-error",
+    );
+  });
+
+  it("marks only the password field invalid for a password-specific server error", async () => {
+    vi.mocked(authStore.signIn).mockResolvedValueOnce({
+      error: new Error("Incorrect password"),
+    });
+
+    const user = userEvent.setup();
+    await renderAuth();
+
+    const loginPanel = screen.getByRole("tabpanel", { name: "Login" });
+    const loginEmail = within(loginPanel).getByLabelText(/Email/i);
+    const loginPassword = within(loginPanel).getByLabelText(/Password/i);
+
+    await user.type(loginEmail, "reader@example.com");
+    await user.type(loginPassword, "securepass");
+    await user.click(screen.getByRole("button", { name: "Sign In" }));
+
+    await screen.findByRole("alert");
+
+    expect(loginEmail).not.toHaveAttribute("aria-invalid", "true");
+    expect(loginEmail).not.toHaveAttribute(
+      "aria-describedby",
+      "login-auth-error",
+    );
+    expect(loginPassword).toHaveAttribute("aria-invalid", "true");
+    expect(loginPassword).toHaveAttribute(
+      "aria-describedby",
+      "login-auth-error",
+    );
+  });
 });
