@@ -175,8 +175,7 @@ describe("Auth", () => {
   });
 
   it("shows required indicators and aria-required attributes on login fields", async () => {
-    const { container } = render(Auth);
-    await tick();
+    await renderAuth();
 
     const loginPanel = screen.getByRole("tabpanel", { name: "Login" });
     const notice = loginPanel.querySelector("form > p");
@@ -192,8 +191,8 @@ describe("Auth", () => {
     expect(loginEmail).toHaveAttribute("aria-required", "true");
     expect(loginPassword).toHaveAttribute("aria-required", "true");
 
-    const emailLabel = container.querySelector('label[for="login-email"]');
-    const passwordLabel = container.querySelector(
+    const emailLabel = loginPanel.querySelector('label[for="login-email"]');
+    const passwordLabel = loginPanel.querySelector(
       'label[for="login-password"]',
     );
     expect(
