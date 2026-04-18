@@ -81,13 +81,13 @@ func (d *DB) GetReadingStreak(ctx context.Context, userID string) (int, error) {
 // collectUniqueDates returns the distinct UTC calendar dates from timestamps,
 // each truncated to midnight UTC. The result is unsorted.
 func collectUniqueDates(timestamps []time.Time) []time.Time {
-	seen := map[string]struct{}{}
+	seen := map[time.Time]struct{}{}
 	dates := make([]time.Time, 0, len(timestamps))
 	for _, ts := range timestamps {
-		dayKey := ts.UTC().Format("2006-01-02")
-		if _, ok := seen[dayKey]; !ok {
-			seen[dayKey] = struct{}{}
-			dates = append(dates, ts.UTC().Truncate(24*time.Hour))
+		day := ts.UTC().Truncate(24 * time.Hour)
+		if _, ok := seen[day]; !ok {
+			seen[day] = struct{}{}
+			dates = append(dates, day)
 		}
 	}
 	return dates
