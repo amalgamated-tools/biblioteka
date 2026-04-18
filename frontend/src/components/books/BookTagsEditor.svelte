@@ -21,9 +21,16 @@
   let dropdownOpen = $state(false);
   let creatingTag = $state(false);
   let fetchSeq = 0;
+  let saveSeq = 0;
+  let activeIndex = $state(-1);
 
   $effect(() => {
     void loadData(bookId);
+  });
+
+  $effect(() => {
+    void searchText;
+    activeIndex = -1;
   });
 
   async function loadData(id: string) {
@@ -66,19 +73,33 @@
     searchText.trim().length > 0 && !exactMatch && !creatingTag,
   );
 
+  let activeOptionId: string | undefined = $derived(
+    (() => {
+      const total = filteredTags.length + (showCreateOption ? 1 : 0);
+      if (activeIndex < 0 || activeIndex >= total) return undefined;
+      if (activeIndex < filteredTags.length)
+        return `book-tags-option-${filteredTags[activeIndex].id}`;
+      return "book-tags-option-create";
+    })(),
+  );
+
   async function saveTags(tags: Tag[]) {
+    const seq = ++saveSeq;
+    const savedBookId = bookId;
     saving = true;
     error = null;
     try {
       const updated = await api.setBookTags(
-        bookId,
+        savedBookId,
         tags.map((t) => t.id),
       );
+      if (seq !== saveSeq || bookId !== savedBookId) return;
       assignedTags = updated;
     } catch (e) {
+      if (seq !== saveSeq || bookId !== savedBookId) return;
       error = e instanceof Error ? e.message : "Failed to save tags";
     } finally {
-      saving = false;
+      if (seq === saveSeq) saving = false;
     }
   }
 
@@ -111,12 +132,44 @@
   }
 
   function handleInputKeydown(e: KeyboardEvent) {
+    const total = filteredTags.length + (showCreateOption ? 1 : 0);
     if (e.key === "Escape") {
       dropdownOpen = false;
       searchText = "";
+      activeIndex = -1;
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (!dropdownOpen) {
+        dropdownOpen = true;
+        return;
+      }
+      activeIndex =
+        total > 0 ? (activeIndex < total - 1 ? activeIndex + 1 : 0) : -1;
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (!dropdownOpen) {
+        dropdownOpen = true;
+        return;
+      }
+      activeIndex =
+        total > 0 ? (activeIndex > 0 ? activeIndex - 1 : total - 1) : -1;
+    } else if (e.key === "Home") {
+      if (dropdownOpen && total > 0) {
+        e.preventDefault();
+        activeIndex = 0;
+      }
+    } else if (e.key === "End") {
+      if (dropdownOpen && total > 0) {
+        e.preventDefault();
+        activeIndex = total - 1;
+      }
     } else if (e.key === "Enter") {
       e.preventDefault();
-      if (filteredTags.length === 1) {
+      if (activeIndex >= 0 && activeIndex < filteredTags.length) {
+        void addTag(filteredTags[activeIndex]);
+      } else if (activeIndex === filteredTags.length && showCreateOption) {
+        void createAndAddTag();
+      } else if (filteredTags.length === 1) {
         void addTag(filteredTags[0]);
       } else if (showCreateOption) {
         void createAndAddTag();
@@ -132,6 +185,7 @@
     const related = e.relatedTarget as HTMLElement | null;
     if (!related?.closest("[data-tags-dropdown]")) {
       dropdownOpen = false;
+      activeIndex = -1;
     }
   }
 </script>
@@ -209,6 +263,7 @@
           role="combobox"
           aria-haspopup="listbox"
           aria-controls="book-tags-listbox"
+          aria-activedescendant={activeOptionId}
           class="w-full pl-8 pr-4 py-2 text-sm border border-ink-200 dark:border-ink-700 rounded-xl bg-white dark:bg-ink-800 text-ink-900 dark:text-cream-100 placeholder:text-ink-400 dark:placeholder:text-ink-500 focus:ring-2 focus:ring-accent-500 focus:border-transparent focus-visible:outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         />
       </div>
@@ -221,38 +276,42 @@
           aria-label="Available tags"
           class="absolute z-10 mt-1 w-full max-h-48 overflow-y-auto bg-white dark:bg-ink-800 border border-ink-200 dark:border-ink-700 rounded-xl shadow-lg py-1"
         >
-          {#each filteredTags as tag (tag.id)}
-            <li role="none">
-              <button
-                type="button"
-                role="option"
-                aria-selected={false}
-                data-tags-dropdown
-                onmousedown={(e) => e.preventDefault()}
-                onclick={() => void addTag(tag)}
-                disabled={disabled || saving}
-                class="w-full text-left px-3 py-2 text-sm text-ink-700 dark:text-ink-200 hover:bg-accent-50 dark:hover:bg-accent-800/20 transition-colors disabled:opacity-50"
-              >
-                {tag.name}
-              </button>
-            </li>
+          {#each filteredTags as tag, i (tag.id)}
+            <button
+              type="button"
+              id="book-tags-option-{tag.id}"
+              role="option"
+              aria-selected={activeIndex === i}
+              data-tags-dropdown
+              onmousedown={(e) => e.preventDefault()}
+              onclick={() => void addTag(tag)}
+              disabled={disabled || saving}
+              class="w-full text-left px-3 py-2 text-sm text-ink-700 dark:text-ink-200 hover:bg-accent-50 dark:hover:bg-accent-800/20 transition-colors disabled:opacity-50 {activeIndex ===
+              i
+                ? 'bg-accent-50 dark:bg-accent-800/20'
+                : ''}"
+            >
+              {tag.name}
+            </button>
           {/each}
           {#if showCreateOption}
-            <li role="none">
-              <button
-                type="button"
-                role="option"
-                aria-selected={false}
-                data-tags-dropdown
-                onmousedown={(e) => e.preventDefault()}
-                onclick={() => void createAndAddTag()}
-                disabled={disabled || saving || creatingTag}
-                class="w-full text-left px-3 py-2 text-sm text-accent-600 dark:text-accent-400 hover:bg-accent-50 dark:hover:bg-accent-800/20 transition-colors disabled:opacity-50 flex items-center gap-1.5"
-              >
-                <Plus class="w-3.5 h-3.5" aria-hidden="true" />
-                Create "{searchText.trim()}"
-              </button>
-            </li>
+            <button
+              type="button"
+              id="book-tags-option-create"
+              role="option"
+              aria-selected={activeIndex === filteredTags.length}
+              data-tags-dropdown
+              onmousedown={(e) => e.preventDefault()}
+              onclick={() => void createAndAddTag()}
+              disabled={disabled || saving || creatingTag}
+              class="w-full text-left px-3 py-2 text-sm text-accent-600 dark:text-accent-400 hover:bg-accent-50 dark:hover:bg-accent-800/20 transition-colors disabled:opacity-50 flex items-center gap-1.5 {activeIndex ===
+              filteredTags.length
+                ? 'bg-accent-50 dark:bg-accent-800/20'
+                : ''}"
+            >
+              <Plus class="w-3.5 h-3.5" aria-hidden="true" />
+              Create "{searchText.trim()}"
+            </button>
           {/if}
         </ul>
       {/if}
