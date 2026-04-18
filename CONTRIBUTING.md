@@ -337,13 +337,13 @@ Always commit the updated spec files alongside the handler changes that prompted
       return
   }
   ```
-- **Operation error handling**: For post-operation errors (delete, add, remove sub-resources) where you want `sql.ErrNoRows` → 404 and all other errors → 500 with a custom log message, use `handleOpErr` from `internal/handlers/dberrors.go`. It accepts optional `slog.Attr` values for extra log context and returns `true` when it wrote a response:
+- **Operation error handling**: For post-operation errors (delete, add, remove sub-resources) where you want `sql.ErrNoRows` → 404 and all other errors → 500, use `handleOpErr` from `internal/handlers/dberrors.go`. The `op` string is used as the client-facing 500 error message, so keep it generic, non-sensitive, and user-appropriate (for example, `"failed to delete group"` rather than including internal error details). It accepts optional `slog.Attr` values for extra log context and returns `true` when it wrote a response:
   ```go
-  if handleOpErr(ctx, w, h.DB.DeleteGroup(ctx, id, userID), "group", "failed to delete group") {
+  if handleOpErr(r.Context(), w, h.DB.DeleteGroup(r.Context(), id, userID), "group", "failed to delete group") {
       return
   }
   // With extra log attributes:
-  if handleOpErr(ctx, w, err, "reading list", "failed to add book to reading list",
+  if handleOpErr(r.Context(), w, err, "reading list", "failed to add book to reading list",
       slog.String(otelkeys.BookID, bookID)) {
       return
   }
