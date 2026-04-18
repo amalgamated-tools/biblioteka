@@ -2932,6 +2932,54 @@ The array always contains exactly `months` entries ordered oldest-first. Months 
 
 ---
 
+### `GET /api/stats/year-in-books` 🔒
+
+Returns annual reading and download statistics for the authenticated user for the specified calendar year. Useful for building "Year in Books" summary cards and streak visualizations.
+
+**Query parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `year` | integer | Current year (UTC) | Calendar year to summarize. Must be between `1` and the current year + 1 (inclusive). Invalid values return `400 Bad Request`. |
+
+**Response:** `200 OK`
+
+```json
+{
+  "year": 2026,
+  "books_finished": 14,
+  "active_days": 87,
+  "longest_streak": 12,
+  "total_downloads": 31
+}
+```
+
+**Response fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `year` | integer | The requested calendar year |
+| `books_finished` | integer | Documents where reading `percentage >= 0.99` and last updated within the requested year (UTC) |
+| `active_days` | integer | Number of distinct calendar dates (UTC) present in `reading_progress.updated_at` within the requested year |
+| `longest_streak` | integer | Longest run of consecutive calendar dates (UTC) present in `reading_progress.updated_at` within the requested year |
+| `total_downloads` | integer | Book file downloads initiated by the user within the year |
+
+All counts return `0` when there is no activity for the requested year — the response is never `null` or absent.
+
+**Status codes:**
+
+| Status | Meaning |
+|--------|---------|
+| `200 OK` | Success |
+| `400 Bad Request` | `year` is not a positive integer or exceeds the current year + 1 |
+| `401 Unauthorized` | Missing or invalid authentication |
+| `405 Method Not Allowed` | Non-`GET` request |
+| `500 Internal Server Error` | Database error |
+
+> **User isolation:** Year-in-books statistics are scoped to the authenticated user. Each user sees only their own reading history.
+
+---
+
 ### `GET /api/reading-progress/stats` 🔒
 
 Returns the authenticated user's reading streak, total-books-tracked count, finished-books count, and a list of documents currently in progress. Progress data is sourced from KOReader sync (KOSync) read-position records.
