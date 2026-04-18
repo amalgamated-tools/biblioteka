@@ -487,7 +487,7 @@ When SMTP is configured, any authenticated user can send a book file as an email
 
 If SMTP is not configured, the request is rejected with `400 Bad Request` and the UI disables the send button accordingly.
 
-See [API reference — `POST /api/book-files/{id}/email`](api/books.md#post-apibook-filesidemail-) for the full endpoint shape and error codes.
+See [API reference — `POST /api/book-files/{id}/email`](api/books.md#post-apibook-filesidemail) for the full endpoint shape and error codes.
 
 ---
 

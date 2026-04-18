@@ -88,7 +88,7 @@ Each download also records two tracking events (both best-effort — a failure d
 - **Download count**: the `download_count` column on the `book_files` row is incremented.
 - **Download event**: a timestamped row is inserted into the `book_downloads` table linked to the authenticated user. These events power the monthly downloads histogram visible on the Dashboard.
 
-> **Note on scanner support:** The library scanner automatically imports only `.epub`, `.mobi`, `.azw3`, and `.pdf` files. The additional formats listed above (`.cbz`, `.cbr`, `.fb2`, `.txt`, `.djvu`) are served correctly by the OPDS download endpoint if the corresponding `book_file` records exist in the database, but they are not picked up by the background scanner. To make non-scanned formats available in your catalog, create the book and book_file records manually via the [API](api/books.md#post-apibooksidfiles-).
+> **Note on scanner support:** The library scanner automatically imports only `.epub`, `.mobi`, `.azw3`, and `.pdf` files. The additional formats listed above (`.cbz`, `.cbr`, `.fb2`, `.txt`, `.djvu`) are served correctly by the OPDS download endpoint if the corresponding `book_file` records exist in the database, but they are not picked up by the background scanner. To make non-scanned formats available in your catalog, create the book and book_file records manually via the [API](api/books.md#post-apibooksidfiles).
 
 ### Cover images
 

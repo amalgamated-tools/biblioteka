@@ -281,7 +281,7 @@ curl -X POST https://your-server/api/books/upload \
 
 ### `GET /api/books/{id}/metadata` 🔒
 
-Return the most recent **pending** (unreviewed) metadata candidate for a book. Metadata candidates are fetched from Goodreads by the background enrichment job triggered via [`POST /api/books/{id}/metadata/fetch`](#post-apibooksidmetadatafetch-).
+Return the most recent **pending** (unreviewed) metadata candidate for a book. Metadata candidates are fetched from Goodreads by the background enrichment job triggered via [`POST /api/books/{id}/metadata/fetch`](#post-apibooksidmetadatafetch).
 
 **Path parameter:** `{id}` — book ID.
 
@@ -346,7 +346,7 @@ Return the most recent **pending** (unreviewed) metadata candidate for a book. M
 
 ### `POST /api/books/{id}/metadata/fetch` 🔒
 
-Enqueue a background job that searches Goodreads for metadata matching this book. When the job completes, the result appears as a pending candidate retrievable via [`GET /api/books/{id}/metadata`](#get-apibooksidmetadata-). Progress can be streamed in real time via [`GET /api/books/{id}/metadata/events`](#get-apibooksidmetadataevents-).
+Enqueue a background job that searches Goodreads for metadata matching this book. When the job completes, the result appears as a pending candidate retrievable via [`GET /api/books/{id}/metadata`](#get-apibooksidmetadata). Progress can be streamed in real time via [`GET /api/books/{id}/metadata/events`](#get-apibooksidmetadataevents).
 
 This endpoint is **idempotent**: if a pending candidate already exists for the user, or if the job is already running, the server returns `202` without enqueueing a duplicate job.
 
@@ -425,9 +425,9 @@ The stream also sends `: heartbeat` comment lines every 15 seconds to keep the c
 
 ### `POST /api/books/{id}/metadata/apply` 🔒
 
-Apply the pending metadata candidate to the book. All non-null, non-empty fields from the candidate overwrite the corresponding book fields (falling back to the existing book values for any blank or absent metadata field). Authors are **not** updated by this endpoint — manage author associations via [`PUT /api/books/{id}/authors`](#put-apibooksidauthors-).
+Apply the pending metadata candidate to the book. All non-null, non-empty fields from the candidate overwrite the corresponding book fields (falling back to the existing book values for any blank or absent metadata field). Authors are **not** updated by this endpoint — manage author associations via [`PUT /api/books/{id}/authors`](#put-apibooksidauthors).
 
-After a successful apply, the candidate's `status` changes to `"applied"` and the pending record no longer appears in [`GET /api/books/{id}/metadata`](#get-apibooksidmetadata-).
+After a successful apply, the candidate's `status` changes to `"applied"` and the pending record no longer appears in [`GET /api/books/{id}/metadata`](#get-apibooksidmetadata).
 
 > **Note:** The frontend typically uses a manual field-by-field workflow (copy fields into the edit form, save via `PUT /api/books/{id}`, then call `POST /api/books/{id}/metadata/reject`). Use this endpoint for programmatic or CLI-driven one-shot applies.
 
@@ -435,7 +435,7 @@ After a successful apply, the candidate's `status` changes to `"applied"` and th
 
 **Request body:** none
 
-**Response body (`200`):** Updated book object (same schema as the items in [`GET /api/books`](#get-apibooks-) — core fields only, without `authors`, `series`, or `files`).
+**Response body (`200`):** Updated book object (same schema as the items in [`GET /api/books`](#get-apibooks) — core fields only, without `authors`, `series`, or `files`).
 
 > A successful apply is recorded in the audit log as `metadata.applied`.
 
@@ -450,7 +450,7 @@ After a successful apply, the candidate's `status` changes to `"applied"` and th
 
 ### `POST /api/books/{id}/metadata/reject` 🔒
 
-Discard the pending metadata candidate without modifying the book. The candidate's `status` changes to `"rejected"` and it no longer appears in [`GET /api/books/{id}/metadata`](#get-apibooksidmetadata-).
+Discard the pending metadata candidate without modifying the book. The candidate's `status` changes to `"rejected"` and it no longer appears in [`GET /api/books/{id}/metadata`](#get-apibooksidmetadata).
 
 **Path parameter:** `{id}` — book ID.
 
@@ -471,7 +471,7 @@ Discard the pending metadata candidate without modifying the book. The candidate
 
 ### `GET /api/books/{id}/metadata/ai` 🔒
 
-Return the most recent pending AI enrichment candidate for a book. AI enrichment candidates are created by the background job triggered via [`POST /api/books/{id}/metadata/ai-fetch`](#post-apibooksidmetadataai-fetch-).
+Return the most recent pending AI enrichment candidate for a book. AI enrichment candidates are created by the background job triggered via [`POST /api/books/{id}/metadata/ai-fetch`](#post-apibooksidmetadataai-fetch).
 
 **Path parameter:** `{id}` — book ID.
 
@@ -518,7 +518,7 @@ Return the most recent pending AI enrichment candidate for a book. AI enrichment
 
 ### `POST /api/books/{id}/metadata/ai-fetch` 🔒
 
-Enqueue a background `enrich:ai` job that calls the configured LLM provider to generate metadata for this book. When the job completes, the result appears as a pending candidate retrievable via [`GET /api/books/{id}/metadata/ai`](#get-apibooksidmetadataai-). Progress events are published to the same SSE stream used by Goodreads enrichment ([`GET /api/books/{id}/metadata/events`](#get-apibooksidmetadataevents-)).
+Enqueue a background `enrich:ai` job that calls the configured LLM provider to generate metadata for this book. When the job completes, the result appears as a pending candidate retrievable via [`GET /api/books/{id}/metadata/ai`](#get-apibooksidmetadataai). Progress events are published to the same SSE stream used by Goodreads enrichment ([`GET /api/books/{id}/metadata/events`](#get-apibooksidmetadataevents)).
 
 This endpoint is **idempotent**: if a pending AI enrichment already exists for the user, or if the job is already running, the server returns `202` without enqueueing a duplicate job.
 
@@ -558,13 +558,13 @@ Apply the pending AI enrichment candidate to the book. The apply logic:
 - **Tags**: union-merges `suggested_tags` with the book's existing tags. New tags are created via `FindOrCreate` if they do not yet exist; no existing tags are removed.
 - **Description**: sets `description` only when the book has no existing description and the enrichment has a `generated_description`.
 
-After a successful apply, the candidate's `status` changes to `"applied"` and it no longer appears in [`GET /api/books/{id}/metadata/ai`](#get-apibooksidmetadataai-).
+After a successful apply, the candidate's `status` changes to `"applied"` and it no longer appears in [`GET /api/books/{id}/metadata/ai`](#get-apibooksidmetadataai).
 
 **Path parameter:** `{id}` — book ID.
 
 **Request body:** none
 
-**Response body (`200`):** The updated AI enrichment record (same schema as [`GET /api/books/{id}/metadata/ai`](#get-apibooksidmetadataai-), with `status` set to `"applied"`).
+**Response body (`200`):** The updated AI enrichment record (same schema as [`GET /api/books/{id}/metadata/ai`](#get-apibooksidmetadataai), with `status` set to `"applied"`).
 
 > A successful apply is recorded in the audit log as `ai_enrichment.applied`.
 
