@@ -282,12 +282,17 @@
         hidden={!isLogin}
       >
         <form onsubmit={handleSubmit} class="space-y-4">
+          <p class="text-xs text-ink-500 dark:text-ink-400">
+            Fields marked with
+            <span class="text-danger-600" aria-hidden="true">*</span>
+            <span class="sr-only">an asterisk</span> are required.
+          </p>
           <div>
             <label
               for="login-email"
               class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
             >
-              Email
+              Email <span class="text-danger-600" aria-hidden="true">*</span>
             </label>
             <TextInput
               id="login-email"
@@ -297,6 +302,7 @@
               class="w-full py-3"
               placeholder="you@example.com"
               disabled={loading}
+              aria-required={true}
               aria-invalid={loginErrorVisible}
               aria-describedby={loginErrorVisible
                 ? "login-auth-error"
@@ -309,7 +315,7 @@
               for="login-password"
               class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
             >
-              Password
+              Password <span class="text-danger-600" aria-hidden="true">*</span>
             </label>
             <TextInput
               id="login-password"
@@ -319,6 +325,7 @@
               class="w-full py-3"
               placeholder="••••••••"
               disabled={loading}
+              aria-required={true}
               aria-invalid={loginErrorVisible}
               aria-describedby={loginErrorVisible
                 ? "login-auth-error"
@@ -353,12 +360,17 @@
           hidden={isLogin}
         >
           <form onsubmit={handleSubmit} class="space-y-4">
+            <p class="text-xs text-ink-500 dark:text-ink-400">
+              Fields marked with
+              <span class="text-danger-600" aria-hidden="true">*</span>
+              <span class="sr-only">an asterisk</span> are required.
+            </p>
             <div>
               <label
                 for="signup-name"
                 class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
               >
-                Name
+                Name <span class="text-danger-600" aria-hidden="true">*</span>
               </label>
               <TextInput
                 id="signup-name"
@@ -368,6 +380,7 @@
                 class="w-full py-3"
                 placeholder="Your name"
                 disabled={loading}
+                aria-required={true}
                 aria-invalid={signupErrorVisible}
                 aria-describedby={signupErrorVisible
                   ? "signup-auth-error"
@@ -380,7 +393,7 @@
                 for="signup-email"
                 class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
               >
-                Email
+                Email <span class="text-danger-600" aria-hidden="true">*</span>
               </label>
               <TextInput
                 id="signup-email"
@@ -390,6 +403,7 @@
                 class="w-full py-3"
                 placeholder="you@example.com"
                 disabled={loading}
+                aria-required={true}
                 aria-invalid={signupErrorVisible}
                 aria-describedby={signupErrorVisible
                   ? "signup-auth-error"
@@ -402,7 +416,9 @@
                 for="signup-password"
                 class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
               >
-                Password
+                Password <span class="text-danger-600" aria-hidden="true"
+                  >*</span
+                >
               </label>
               <TextInput
                 id="signup-password"
@@ -412,6 +428,7 @@
                 class="w-full py-3"
                 placeholder="••••••••"
                 disabled={loading}
+                aria-required={true}
                 aria-invalid={signupErrorVisible}
                 aria-describedby={signupErrorVisible
                   ? "signup-auth-error"
