@@ -37,7 +37,10 @@ describe("DownloadsHistogram", () => {
 
   it("shows the empty state message when all counts are zero", () => {
     render(DownloadsHistogram, { data: emptyData });
-    expect(screen.getByText(/no downloads recorded yet/i)).toBeInTheDocument();
+    const emptyState = screen.getByText(/no downloads recorded yet/i);
+    expect(emptyState).toBeInTheDocument();
+    expect(emptyState).toHaveClass("text-ink-500");
+    expect(emptyState).toHaveClass("dark:text-ink-300");
     expect(screen.queryByTestId("histogram-bars")).not.toBeInTheDocument();
   });
 

@@ -48,7 +48,7 @@
 
   {#if isEmpty}
     <p
-      class="text-sm text-ink-400 dark:text-ink-400 text-center py-6"
+      class="text-sm text-ink-500 dark:text-ink-300 text-center py-6"
       aria-live="polite"
     >
       No downloads recorded yet.
