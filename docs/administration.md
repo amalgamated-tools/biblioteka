@@ -124,7 +124,7 @@ The following rows are deleted along with the user record via `ON DELETE CASCADE
 #### What is NOT deleted
 
 - **Books, authors, series, and tags** — catalog records are global and are not removed.
-- **Audit log entries** — `audit_logs` rows referencing the deleted `user_id` are retained for historical accountability. The `user_id` field on those rows becomes an orphaned reference (there is no foreign key constraint on `audit_logs.user_id`), which is intentional.
+- **Audit log entries** — `audit_logs` rows referencing the deleted `user_id` are retained for historical accountability. The `user_id` field on those rows becomes an orphaned reference, which is intentional: Biblioteka does not place a foreign key constraint on `audit_logs.user_id` so audit records survive account removal. This preserves the audit event and associated `user_id` even after the account no longer exists.
 
 > **SQLite note:** The cascades above only fire when `PRAGMA foreign_keys = ON` is set for the connection. The application always enables this pragma, but if you connect via a separate client (e.g. `sqlite3` CLI or a GUI tool), you must set it yourself before issuing the `DELETE`.
 
