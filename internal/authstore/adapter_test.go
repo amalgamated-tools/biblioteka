@@ -173,3 +173,251 @@ func TestCountUsers_DelegatesToDB(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, count)
 }
+
+// ---- PasskeyAdapter tests ----
+
+func newPasskeyAdapter(t *testing.T) (*PasskeyAdapter, *db.User) {
+	t.Helper()
+	d := newTestDB(t)
+	u, err := d.CreateUser(t.Context(), "Passkey User", "pk@example.com", "hash")
+	require.NoError(t, err)
+	return &PasskeyAdapter{DB: d}, u
+}
+
+func TestPasskeyAdapter_CreateChallenge_NilUserID(t *testing.T) {
+	a, _ := newPasskeyAdapter(t)
+
+	expiresAt := time.Now().UTC().Add(5 * time.Minute).Truncate(time.Second)
+	c, err := a.CreateChallenge(t.Context(), nil, `{"challenge":"login"}`, expiresAt)
+
+	require.NoError(t, err)
+	require.NotEmpty(t, c.ID)
+	require.Nil(t, c.UserID)
+	require.Equal(t, `{"challenge":"login"}`, c.SessionData)
+	require.WithinDuration(t, expiresAt, c.ExpiresAt, time.Second)
+	require.False(t, c.CreatedAt.IsZero())
+}
+
+func TestPasskeyAdapter_CreateChallenge_WithUserID(t *testing.T) {
+	a, u := newPasskeyAdapter(t)
+
+	expiresAt := time.Now().UTC().Add(5 * time.Minute)
+	c, err := a.CreateChallenge(t.Context(), &u.ID, `{"challenge":"register"}`, expiresAt)
+
+	require.NoError(t, err)
+	require.NotNil(t, c.UserID)
+	require.Equal(t, u.ID, *c.UserID)
+	require.Equal(t, `{"challenge":"register"}`, c.SessionData)
+}
+
+func TestPasskeyAdapter_GetAndDeleteChallenge_RemovesOnFirstFetch(t *testing.T) {
+	a, _ := newPasskeyAdapter(t)
+
+	expiresAt := time.Now().UTC().Add(5 * time.Minute)
+	created, err := a.CreateChallenge(t.Context(), nil, `{"challenge":"once"}`, expiresAt)
+	require.NoError(t, err)
+
+	// First call: succeeds.
+	got, err := a.GetAndDeleteChallenge(t.Context(), created.ID)
+	require.NoError(t, err)
+	require.Equal(t, created.ID, got.ID)
+	require.Equal(t, `{"challenge":"once"}`, got.SessionData)
+
+	// Second call: challenge is gone.
+	_, err = a.GetAndDeleteChallenge(t.Context(), created.ID)
+	require.ErrorIs(t, err, sql.ErrNoRows, "second fetch must fail — challenge was deleted")
+}
+
+func TestPasskeyAdapter_GetAndDeleteChallenge_MissingID(t *testing.T) {
+	a, _ := newPasskeyAdapter(t)
+
+	_, err := a.GetAndDeleteChallenge(t.Context(), "nonexistent-id")
+	require.ErrorIs(t, err, sql.ErrNoRows)
+}
+
+func TestPasskeyAdapter_DeleteExpiredChallenges(t *testing.T) {
+	a, _ := newPasskeyAdapter(t)
+	ctx := t.Context()
+
+	// Insert one already-expired challenge and one valid one.
+	expired := time.Now().UTC().Add(-1 * time.Minute)
+	future := time.Now().UTC().Add(10 * time.Minute)
+
+	expiredC, err := a.CreateChallenge(ctx, nil, `{"exp":"yes"}`, expired)
+	require.NoError(t, err)
+	validC, err := a.CreateChallenge(ctx, nil, `{"exp":"no"}`, future)
+	require.NoError(t, err)
+
+	require.NoError(t, a.DeleteExpiredChallenges(ctx))
+
+	// Expired one must be gone.
+	_, err = a.GetAndDeleteChallenge(ctx, expiredC.ID)
+	require.ErrorIs(t, err, sql.ErrNoRows)
+
+	// Valid one must still exist.
+	got, err := a.GetAndDeleteChallenge(ctx, validC.ID)
+	require.NoError(t, err)
+	require.Equal(t, validC.ID, got.ID)
+}
+
+func TestPasskeyAdapter_CreateCredential_MapsAllFields(t *testing.T) {
+	a, u := newPasskeyAdapter(t)
+
+	c, err := a.CreateCredential(t.Context(), u.ID, "My Key", "cred-id-1", `{"data":"v1"}`, "aaguid-abc")
+
+	require.NoError(t, err)
+	require.NotEmpty(t, c.ID)
+	require.Equal(t, u.ID, c.UserID)
+	require.Equal(t, "My Key", c.Name)
+	require.Equal(t, "cred-id-1", c.CredentialID)
+	require.Equal(t, `{"data":"v1"}`, c.CredentialData)
+	require.Equal(t, "aaguid-abc", c.AAGUID)
+	require.False(t, c.CreatedAt.IsZero())
+}
+
+func TestPasskeyAdapter_ListCredentialsByUser_EmptyAndPopulated(t *testing.T) {
+	a, u := newPasskeyAdapter(t)
+	ctx := t.Context()
+
+	// Empty initially.
+	creds, err := a.ListCredentialsByUser(ctx, u.ID)
+	require.NoError(t, err)
+	require.Empty(t, creds)
+
+	// Add two credentials.
+	_, err = a.CreateCredential(ctx, u.ID, "Key A", "cred-a", `{"k":"a"}`, "aaguid-a")
+	require.NoError(t, err)
+	_, err = a.CreateCredential(ctx, u.ID, "Key B", "cred-b", `{"k":"b"}`, "aaguid-b")
+	require.NoError(t, err)
+
+	creds, err = a.ListCredentialsByUser(ctx, u.ID)
+	require.NoError(t, err)
+	require.Len(t, creds, 2)
+}
+
+func TestPasskeyAdapter_ListCredentialsByUser_Isolation(t *testing.T) {
+	d := newTestDB(t)
+	ctx := t.Context()
+
+	u1, err := d.CreateUser(ctx, "User One", "u1@example.com", "hash")
+	require.NoError(t, err)
+	u2, err := d.CreateUser(ctx, "User Two", "u2@example.com", "hash")
+	require.NoError(t, err)
+
+	a := &PasskeyAdapter{DB: d}
+	_, err = a.CreateCredential(ctx, u1.ID, "Key A", "cred-u1", `{}`, "")
+	require.NoError(t, err)
+
+	// u2 must not see u1's credentials.
+	creds, err := a.ListCredentialsByUser(ctx, u2.ID)
+	require.NoError(t, err)
+	require.Empty(t, creds)
+}
+
+func TestPasskeyAdapter_FindCredentialByCredentialID(t *testing.T) {
+	a, u := newPasskeyAdapter(t)
+	ctx := t.Context()
+
+	created, err := a.CreateCredential(ctx, u.ID, "My Key", "cred-find-1", `{"v":1}`, "guid-1")
+	require.NoError(t, err)
+
+	found, err := a.FindCredentialByCredentialID(ctx, "cred-find-1")
+	require.NoError(t, err)
+	require.Equal(t, created.ID, found.ID)
+	require.Equal(t, "cred-find-1", found.CredentialID)
+
+	// Missing credential ID returns sql.ErrNoRows.
+	_, err = a.FindCredentialByCredentialID(ctx, "not-found")
+	require.ErrorIs(t, err, sql.ErrNoRows)
+}
+
+func TestPasskeyAdapter_FindCredentialByIDAndUser(t *testing.T) {
+	a, u := newPasskeyAdapter(t)
+	ctx := t.Context()
+
+	created, err := a.CreateCredential(ctx, u.ID, "My Key", "cred-byid-1", `{}`, "guid-1")
+	require.NoError(t, err)
+
+	// Correct user: found.
+	found, err := a.FindCredentialByIDAndUser(ctx, created.ID, u.ID)
+	require.NoError(t, err)
+	require.Equal(t, created.ID, found.ID)
+
+	// Wrong user: not found.
+	_, err = a.FindCredentialByIDAndUser(ctx, created.ID, "wrong-user-id")
+	require.ErrorIs(t, err, sql.ErrNoRows)
+}
+
+func TestPasskeyAdapter_UpdateCredentialData(t *testing.T) {
+	a, u := newPasskeyAdapter(t)
+	ctx := t.Context()
+
+	_, err := a.CreateCredential(ctx, u.ID, "My Key", "cred-upd-1", `{"sign_count":0}`, "guid-1")
+	require.NoError(t, err)
+
+	// Update the stored data.
+	require.NoError(t, a.UpdateCredentialData(ctx, u.ID, "cred-upd-1", `{"sign_count":1}`))
+
+	// Verify the change is visible.
+	found, err := a.FindCredentialByCredentialID(ctx, "cred-upd-1")
+	require.NoError(t, err)
+	require.Equal(t, `{"sign_count":1}`, found.CredentialData)
+
+	// Wrong user: credential not affected, returns sql.ErrNoRows.
+	err = a.UpdateCredentialData(ctx, "wrong-user", "cred-upd-1", `{"sign_count":99}`)
+	require.ErrorIs(t, err, sql.ErrNoRows)
+}
+
+func TestPasskeyAdapter_DeleteCredential(t *testing.T) {
+	a, u := newPasskeyAdapter(t)
+	ctx := t.Context()
+
+	created, err := a.CreateCredential(ctx, u.ID, "My Key", "cred-del-1", `{}`, "guid-1")
+	require.NoError(t, err)
+
+	// Correct user: deleted.
+	require.NoError(t, a.DeleteCredential(ctx, created.ID, u.ID))
+
+	// Credential is gone.
+	_, err = a.FindCredentialByCredentialID(ctx, "cred-del-1")
+	require.ErrorIs(t, err, sql.ErrNoRows)
+}
+
+func TestPasskeyAdapter_DeleteCredential_WrongUser(t *testing.T) {
+	a, u := newPasskeyAdapter(t)
+	ctx := t.Context()
+
+	created, err := a.CreateCredential(ctx, u.ID, "My Key", "cred-del-2", `{}`, "guid-2")
+	require.NoError(t, err)
+
+	// Wrong user: returns sql.ErrNoRows (credential not affected).
+	err = a.DeleteCredential(ctx, created.ID, "wrong-user")
+	require.ErrorIs(t, err, sql.ErrNoRows)
+
+	// Credential still exists.
+	_, err = a.FindCredentialByCredentialID(ctx, "cred-del-2")
+	require.NoError(t, err)
+}
+
+// TestPasskeyAdapter_ReturnType_IsAuthPasskeyCredential verifies that CreateCredential
+// returns *auth.PasskeyCredential and ListCredentialsByUser returns []auth.PasskeyCredential,
+// confirming the field mapping is correct.
+func TestPasskeyAdapter_ReturnType_IsAuthPasskeyCredential(t *testing.T) {
+	a, u := newPasskeyAdapter(t)
+	ctx := t.Context()
+
+	created, err := a.CreateCredential(ctx, u.ID, "My Key", "cred-type-1", `{"type":"check"}`, "guid-x")
+	require.NoError(t, err)
+
+	// ListCredentialsByUser must return auth.PasskeyCredential elements.
+	creds, err := a.ListCredentialsByUser(ctx, u.ID)
+	require.NoError(t, err)
+	require.Len(t, creds, 1)
+
+	require.Equal(t, created.ID, creds[0].ID)
+	require.Equal(t, u.ID, creds[0].UserID)
+	require.Equal(t, "My Key", creds[0].Name)
+	require.Equal(t, "cred-type-1", creds[0].CredentialID)
+	require.Equal(t, `{"type":"check"}`, creds[0].CredentialData)
+	require.Equal(t, "guid-x", creds[0].AAGUID)
+}
