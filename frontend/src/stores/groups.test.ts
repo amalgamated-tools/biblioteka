@@ -124,6 +124,29 @@ describe("groupStore", () => {
     expect(groupStore.groups[1].member_count).toBe(2);
   });
 
+  it("setMemberCount sets an exact value for the targeted group", () => {
+    groupStore.groups = [{ ...fakeGroup, member_count: 5 }];
+
+    groupStore.setMemberCount("g-1", 3);
+
+    expect(groupStore.groups[0].member_count).toBe(3);
+  });
+
+  it("setMemberCount does not modify other groups", () => {
+    const other: ReadingGroup = {
+      ...fakeGroup,
+      id: "g-2",
+      name: "Other",
+      member_count: 4,
+    };
+    groupStore.groups = [fakeGroup, other];
+
+    groupStore.setMemberCount("g-2", 7);
+
+    expect(groupStore.groups[0].member_count).toBe(1);
+    expect(groupStore.groups[1].member_count).toBe(7);
+  });
+
   it("reload forces a fresh fetch", async () => {
     vi.mocked(api.listGroups).mockResolvedValue([fakeGroup]);
     groupStore.loaded = true;
