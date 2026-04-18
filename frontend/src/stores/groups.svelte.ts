@@ -1,4 +1,8 @@
-import type { ReadingGroup, ReadingGroupInput } from "../types";
+import type {
+  ReadingGroup,
+  ReadingGroupInput,
+  ReadingGroupUpdateInput,
+} from "../types";
 import * as api from "../lib/api";
 
 class GroupStore {
@@ -39,7 +43,10 @@ class GroupStore {
     return created;
   }
 
-  async update(id: string, input: ReadingGroupInput): Promise<ReadingGroup> {
+  async update(
+    id: string,
+    input: ReadingGroupUpdateInput,
+  ): Promise<ReadingGroup> {
     const updated = await api.updateGroup(id, input);
     this.groups = this.groups
       .map((g) => (g.id === id ? updated : g))

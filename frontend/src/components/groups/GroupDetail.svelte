@@ -108,13 +108,16 @@
     }
   });
 
-  async function loadMembers() {
+  async function loadMembers(): Promise<ReadingGroupMember[] | null> {
     membersLoading = true;
     membersError = null;
     try {
-      members = await listGroupMembers(groupId);
+      const fetched = await listGroupMembers(groupId);
+      members = fetched;
+      return fetched;
     } catch (e) {
       membersError = e instanceof Error ? e.message : "Failed to load members";
+      return null;
     } finally {
       membersLoading = false;
     }
@@ -186,8 +189,10 @@
       await addGroupMember(groupId, uid);
       newMemberUserId = "";
       showAddMember = false;
-      await loadMembers();
-      groupStore.setMemberCount(groupId, members.length);
+      const fetched = await loadMembers();
+      if (fetched !== null) {
+        groupStore.setMemberCount(groupId, fetched.length);
+      }
     } catch (e) {
       addMemberError = e instanceof Error ? e.message : "Failed to add member";
     } finally {
@@ -200,8 +205,10 @@
     try {
       await removeGroupMember(groupId, userId);
       confirmRemoveMemberId = null;
-      await loadMembers();
-      groupStore.setMemberCount(groupId, members.length);
+      const fetched = await loadMembers();
+      if (fetched !== null) {
+        groupStore.setMemberCount(groupId, fetched.length);
+      }
     } catch (e) {
       membersError = e instanceof Error ? e.message : "Failed to remove member";
     } finally {

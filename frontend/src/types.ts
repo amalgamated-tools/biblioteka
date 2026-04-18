@@ -412,6 +412,11 @@ export interface ReadingGroupInput {
   description?: string | null;
 }
 
+export interface ReadingGroupUpdateInput {
+  name: string;
+  description: string | null;
+}
+
 export interface ReadingGroupMember {
   group_id: string;
   user_id: string;

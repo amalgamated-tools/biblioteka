@@ -83,7 +83,7 @@ describe("groupStore", () => {
     const updated: ReadingGroup = { ...fakeGroup, name: "Updated Club" };
     vi.mocked(api.updateGroup).mockResolvedValue(updated);
 
-    await groupStore.update("g-1", { name: "Updated Club" });
+    await groupStore.update("g-1", { name: "Updated Club", description: null });
 
     expect(groupStore.groups[0].name).toBe("Updated Club");
   });

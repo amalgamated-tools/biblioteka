@@ -1,6 +1,7 @@
 import type {
   ReadingGroup,
   ReadingGroupInput,
+  ReadingGroupUpdateInput,
   ReadingGroupMember,
   GroupMemberProgress,
   ReadingList,
@@ -23,7 +24,7 @@ export async function createGroup(
 
 export async function updateGroup(
   id: string,
-  input: ReadingGroupInput,
+  input: ReadingGroupUpdateInput,
 ): Promise<ReadingGroup> {
   return request<ReadingGroup>("PUT", `/api/groups/${id}`, input);
 }

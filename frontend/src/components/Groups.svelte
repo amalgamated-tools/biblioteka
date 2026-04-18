@@ -27,6 +27,8 @@
   $effect(() => {
     if (subPath === "new") {
       showForm = true;
+    } else if (!viewingGroup) {
+      showForm = false;
     }
   });
 
