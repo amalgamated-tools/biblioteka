@@ -238,39 +238,60 @@ describe("BookList table view accessibility", () => {
 });
 
 describe("BookList pagination accessibility", () => {
+  const makePageBooks = (offset: number): PaginatedBooks => ({
+    books: Array.from({ length: 2 }, (_, i) => ({
+      id: `b${offset + i}`,
+      title: `Book ${offset + i}`,
+      description: null,
+      asin: null,
+      isbn10: null,
+      isbn13: null,
+      goodreads_id: null,
+      hardcover_id: null,
+      google_books_id: null,
+      publication_date: null,
+      publisher: null,
+      language: null,
+      cover_image_url: null,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    })),
+    total: 50,
+    limit: 2,
+    offset,
+  });
+
+  let fetchBooks: (
+    limit: number,
+    offset: number,
+    query?: string,
+  ) => Promise<PaginatedBooks>;
+
+  beforeEach(() => {
+    fetchBooks = vi
+      .fn()
+      .mockImplementation((_size: number, off: number) =>
+        Promise.resolve(makePageBooks(off)),
+      );
+  });
+
   afterEach(() => cleanup());
 
-  it("pagination counter has aria-atomic but no duplicate aria-live (WCAG 4.1.3)", async () => {
-    const manyBooks: PaginatedBooks = {
-      books: Array.from({ length: 2 }, (_, i) => ({
-        id: `b${i}`,
-        title: `Book ${i}`,
-        description: null,
-        asin: null,
-        isbn10: null,
-        isbn13: null,
-        goodreads_id: null,
-        hardcover_id: null,
-        google_books_id: null,
-        publication_date: null,
-        publisher: null,
-        language: null,
-        cover_image_url: null,
-        created_at: "2026-01-01T00:00:00Z",
-        updated_at: "2026-01-01T00:00:00Z",
-      })),
-      total: 50,
-      limit: 2,
-      offset: 0,
-    };
-    const fetchBooks = vi.fn().mockResolvedValue(manyBooks);
+  it("page counter has aria-live/aria-atomic and updates text on navigation (WCAG 4.1.3)", async () => {
     render(BookList, { props: { fetchBooks, pageSize: 2 } });
     await tick();
     await tick();
 
-    const pageCounter = screen.getByText(/Page 1 of/);
-    expect(pageCounter).not.toHaveAttribute("aria-live");
+    const pageCounter = screen.getByText(/Page 1 of 25/);
+    expect(pageCounter).toHaveAttribute("aria-live", "polite");
     expect(pageCounter).toHaveAttribute("aria-atomic", "true");
+
+    const nextButton = screen.getByRole("button", { name: /Next page/ });
+    await fireEvent.click(nextButton);
+    await tick();
+    await tick();
+
+    expect(screen.getByText(/Page 2 of 25/)).toBeInTheDocument();
   });
 
   it("pagination buttons have descriptive aria-label (WCAG 2.4.6)", async () => {
