@@ -68,6 +68,11 @@ describe("TextInput", () => {
     );
   });
 
+  it("forwards aria-invalid attribute", () => {
+    render(TextInput, { "aria-invalid": true });
+    expect(screen.getByRole("textbox")).toHaveAttribute("aria-invalid", "true");
+  });
+
   it("forwards id attribute", () => {
     render(TextInput, { id: "my-input" });
     expect(screen.getByRole("textbox")).toHaveAttribute("id", "my-input");
@@ -85,6 +90,15 @@ describe("TextInput", () => {
     const classes = container.querySelector("input")!.className;
     expect(classes).toContain("dark:border-ink-400");
     expect(classes).not.toContain("dark:border-ink-700");
+  });
+
+  it("includes invalid-state styles for aria-invalid inputs", () => {
+    const { container } = render(TextInput, { "aria-invalid": true });
+    const input = container.querySelector("input")!;
+    expect(input.className).toContain("aria-invalid:border-danger-600");
+    expect(input.className).toContain("aria-invalid:focus:ring-danger-600");
+    expect(input.className).toContain("aria-invalid:focus:border-danger-600");
+    expect(input).toHaveAttribute("aria-invalid", "true");
   });
 
   it("uses ink-300 for dark-mode placeholder contrast (WCAG 1.4.3)", () => {
