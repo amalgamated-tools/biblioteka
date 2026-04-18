@@ -74,6 +74,7 @@ type Server struct {
 	authorHandler          *handlers.AuthorHandler
 	seriesHandler          *handlers.SeriesHandler
 	bookHandler            *handlers.BookHandler
+	annotationHandler      *handlers.BookAnnotationHandler
 	readingListHandler     *handlers.ReadingListHandler
 	bookFileHandler        *handlers.BookFileHandler
 	auditLogHandler        *handlers.AuditLogHandler

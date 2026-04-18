@@ -2,6 +2,7 @@ export * from "./api/core";
 export * from "./api/auth";
 export * from "./api/config";
 export * from "./api/admin";
+export * from "./api/annotations";
 export * from "./api/credentials";
 export * from "./api/libraries";
 export * from "./api/authors";
