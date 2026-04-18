@@ -34,7 +34,12 @@ func lookupProtocolCred(
 		if errors.Is(err, sql.ErrNoRows) {
 			slog.DebugContext(ctx, notFoundMsg, usernameAttr)
 		} else {
-			slog.ErrorContext(ctx, failedMsg, usernameAttr, slog.Any(otelkeys.Error, err))
+			slog.ErrorContext(
+				ctx,
+				failedMsg,
+				usernameAttr,
+				slog.Any(otelkeys.Error, err),
+			)
 		}
 		return nil, fmt.Errorf("%s for username %s: %w", failedMsg, username, err)
 	}
