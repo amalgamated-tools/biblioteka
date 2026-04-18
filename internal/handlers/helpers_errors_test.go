@@ -156,6 +156,70 @@ func Test_HandleDBErr(t *testing.T) {
 	}
 }
 
+func Test_HandleOpErr(t *testing.T) {
+	tests := []struct {
+		name        string
+		err         error
+		resource    string
+		op          string
+		wantHandled bool
+		wantCode    int
+		wantMsg     string
+	}{
+		{
+			name:        "nil error returns false and writes nothing",
+			err:         nil,
+			resource:    "group",
+			op:          "failed to get group",
+			wantHandled: false,
+		},
+		{
+			name:        "sql.ErrNoRows yields 404",
+			err:         sql.ErrNoRows,
+			resource:    "group",
+			op:          "failed to get group",
+			wantHandled: true,
+			wantCode:    http.StatusNotFound,
+			wantMsg:     "group not found",
+		},
+		{
+			name:        "wrapped sql.ErrNoRows yields 404",
+			err:         fmt.Errorf("context: %w", sql.ErrNoRows),
+			resource:    "group",
+			op:          "failed to get group",
+			wantHandled: true,
+			wantCode:    http.StatusNotFound,
+			wantMsg:     "group not found",
+		},
+		{
+			name:        "generic error yields 500 with op as body",
+			err:         errors.New("connection refused"),
+			resource:    "group",
+			op:          "failed to list group members",
+			wantHandled: true,
+			wantCode:    http.StatusInternalServerError,
+			wantMsg:     "failed to list group members",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			got := handleOpErr(t.Context(), w, tt.err, tt.resource, tt.op)
+			require.Equal(t, tt.wantHandled, got, "handleOpErr()")
+			if !tt.wantHandled {
+				require.Equal(t, http.StatusOK, w.Code)
+				require.Equal(t, 0, w.Body.Len())
+				return
+			}
+			require.Equal(t, tt.wantCode, w.Code)
+			var result map[string]string
+			require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result), "failed to unmarshal")
+			require.Equal(t, tt.wantMsg, result["error"])
+		})
+	}
+}
+
 func Test_HandleUpdateErr(t *testing.T) {
 	var (
 		errInvalid = errors.New("invalid name")
