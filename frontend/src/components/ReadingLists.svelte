@@ -106,6 +106,11 @@
           >
         {/if}
         <div class="space-y-3">
+          <p class="text-xs text-ink-500 dark:text-ink-300">
+            Fields marked with <span aria-hidden="true">*</span><span
+              class="sr-only">an asterisk</span
+            > are required.
+          </p>
           <div>
             <label
               for="new-list-name"
@@ -118,6 +123,7 @@
               bind:value={newName}
               placeholder="e.g. To Read, Favorites…"
               disabled={creating}
+              aria-required={true}
               aria-invalid={createNameInvalid}
               aria-describedby={createNameInvalid
                 ? "create-reading-list-error"

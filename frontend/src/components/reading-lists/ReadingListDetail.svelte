@@ -135,6 +135,11 @@
             >
           {/if}
           <div class="space-y-3">
+            <p class="text-xs text-ink-500 dark:text-ink-300">
+              Fields marked with <span aria-hidden="true">*</span><span
+                class="sr-only">an asterisk</span
+              > are required.
+            </p>
             <div>
               <label
                 for="edit-list-name"
@@ -146,6 +151,7 @@
                 id="edit-list-name"
                 bind:value={editName}
                 disabled={saving}
+                aria-required={true}
                 aria-invalid={editNameInvalid}
                 aria-describedby={editNameInvalid
                   ? "edit-reading-list-error"
