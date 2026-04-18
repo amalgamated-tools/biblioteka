@@ -131,3 +131,39 @@ func TestHandleAPIKey_DELETE_EmptyID(t *testing.T) {
 	// URLParamFunc returns "" for trailing-slash path; goauth returns 400.
 	require.Equal(t, http.StatusBadRequest, rec.Code)
 }
+
+// stubAPIKeyStoreEmptyID returns an APIKey with an empty ID to simulate a
+// malformed goauth response.
+type stubAPIKeyStoreEmptyID struct{ stubAPIKeyStore }
+
+func (s *stubAPIKeyStoreEmptyID) CreateAPIKey(_ context.Context, _, name, _, _ string) (*auth.APIKey, error) {
+	return &auth.APIKey{ID: "", Name: name}, nil
+}
+
+func TestAPIKeyHandler_Create_EmptyIDProducesNoAudit(t *testing.T) {
+	d := newTestDB(t)
+
+	h := &APIKeyHandler{
+		APIKeyHandler: goauthhandler.APIKeyHandler{
+			APIKeys: &stubAPIKeyStoreEmptyID{},
+			Prefix:  "bib_",
+			URLParamFunc: func(r *http.Request, _ string) string {
+				return strings.TrimPrefix(r.URL.Path, "/api/api-keys/")
+			},
+		},
+		DB: d,
+	}
+
+	body := `{"name":"My Key"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/api-keys", strings.NewReader(body))
+	req = withUserID(req, "user-123")
+	rec := httptest.NewRecorder()
+
+	h.Create(rec, req)
+
+	require.Equal(t, http.StatusCreated, rec.Code)
+
+	logs, _, err := d.ListAuditLogs(t.Context(), 10, 0)
+	require.NoError(t, err)
+	require.Empty(t, logs, "expected no audit entry when goauth returns empty ID")
+}

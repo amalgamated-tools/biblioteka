@@ -96,7 +96,7 @@ func (h *APIKeyHandler) Create(w http.ResponseWriter, r *http.Request) {
 			slog.WarnContext(r.Context(), "failed to parse API key create response for audit",
 				slog.Any(otelkeys.Error, err),
 			)
-		} else {
+		} else if resp.ID != "" {
 			logAudit(r.Context(), h.DB, userID, db.AuditActionAPIKeyCreated, "api_key", resp.ID, map[string]any{"name": resp.Name})
 		}
 	}
