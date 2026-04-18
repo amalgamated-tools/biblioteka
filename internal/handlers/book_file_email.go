@@ -7,6 +7,7 @@ import (
 	"net/mail"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -136,7 +137,7 @@ func (h *BookFileHandler) handleEmailBookFile(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	msg, err := smtp.BuildAttachmentMessage(params, to, bf.FileName, bf.FileType, data)
+	msg, err := smtp.BuildAttachmentMessage(params, to, bf.FileName, bf.FileType, data, time.Now().UTC())
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to build email message",
 			slog.String(otelkeys.BookFileID, id),

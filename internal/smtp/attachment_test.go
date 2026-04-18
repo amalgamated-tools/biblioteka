@@ -3,9 +3,13 @@ package smtp
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
+
+// fixedNow is a fixed timestamp used in tests to make Date header assertions deterministic.
+var fixedNow = time.Date(2024, 1, 15, 12, 0, 0, 0, time.UTC)
 
 func TestBuildAttachmentMessage(t *testing.T) {
 	params := SendParams{
@@ -15,14 +19,14 @@ func TestBuildAttachmentMessage(t *testing.T) {
 		TLS:        "starttls",
 	}
 	data := []byte("fake epub content")
-	msg, err := BuildAttachmentMessage(params, "reader@example.com", "MyBook.epub", "epub", data)
+	msg, err := BuildAttachmentMessage(params, "reader@example.com", "MyBook.epub", "epub", data, fixedNow)
 	require.NoError(t, err)
 
 	msgStr := string(msg)
 
 	require.Contains(t, msgStr, "From: noreply@example.com\r\n")
 	require.Contains(t, msgStr, "To: reader@example.com\r\n")
-	require.Contains(t, msgStr, "Date: ")
+	require.Contains(t, msgStr, "Date: Mon, 15 Jan 2024 12:00:00 +0000\r\n")
 	require.Contains(t, msgStr, "Subject: Book: MyBook.epub\r\n")
 	require.Contains(t, msgStr, "MIME-Version: 1.0\r\n")
 	require.Contains(t, msgStr, "multipart/mixed")
@@ -39,7 +43,7 @@ func TestBuildAttachmentMessage_DisplayNameFrom(t *testing.T) {
 		TLS:        "starttls",
 	}
 	data := []byte("content")
-	msg, err := BuildAttachmentMessage(params, "reader@example.com", "Book.pdf", "pdf", data)
+	msg, err := BuildAttachmentMessage(params, "reader@example.com", "Book.pdf", "pdf", data, fixedNow)
 	require.NoError(t, err)
 
 	msgStr := string(msg)
@@ -58,7 +62,7 @@ func TestBuildAttachmentMessage_UnknownFileType(t *testing.T) {
 		TLS:        "starttls",
 	}
 	data := []byte("binary content")
-	msg, err := BuildAttachmentMessage(params, "reader@example.com", "Book.xyz", "xyz", data)
+	msg, err := BuildAttachmentMessage(params, "reader@example.com", "Book.xyz", "xyz", data, fixedNow)
 	require.NoError(t, err)
 
 	msgStr := string(msg)
@@ -73,7 +77,7 @@ func TestBuildAttachmentMessage_ControlCharsStripped(t *testing.T) {
 		TLS:        "starttls",
 	}
 	data := []byte("content")
-	msg, err := BuildAttachmentMessage(params, "reader@example.com", "bad\r\nfile.epub", "epub", data)
+	msg, err := BuildAttachmentMessage(params, "reader@example.com", "bad\r\nfile.epub", "epub", data, fixedNow)
 	require.NoError(t, err)
 
 	msgStr := string(msg)
@@ -90,7 +94,7 @@ func TestBuildAttachmentMessage_NonASCIISubjectEncoded(t *testing.T) {
 		TLS:        "starttls",
 	}
 	data := []byte("content")
-	msg, err := BuildAttachmentMessage(params, "reader@example.com", "Ünïcödé.epub", "epub", data)
+	msg, err := BuildAttachmentMessage(params, "reader@example.com", "Ünïcödé.epub", "epub", data, fixedNow)
 	require.NoError(t, err)
 
 	msgStr := string(msg)
