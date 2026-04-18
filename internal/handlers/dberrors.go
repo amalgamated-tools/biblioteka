@@ -29,6 +29,30 @@ func handleDBErr(ctx context.Context, w http.ResponseWriter, err error, resource
 	return true
 }
 
+// handleOpErr handles operation errors with a shared pattern:
+// sql.ErrNoRows → 404 "<resource> not found", otherwise logs and writes
+// 500 "<op>". Returns true when it wrote a response.
+func handleOpErr(ctx context.Context, w http.ResponseWriter, err error, resource, op string, attrs ...slog.Attr) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(ctx, w, http.StatusNotFound, resource+" not found")
+		return true
+	}
+
+	logAttrs := make([]any, 0, len(attrs)+2)
+	logAttrs = append(logAttrs, slog.String(otelkeys.Resource, resource))
+	for _, attr := range attrs {
+		logAttrs = append(logAttrs, attr)
+	}
+	logAttrs = append(logAttrs, slog.Any(otelkeys.Error, err))
+
+	slog.ErrorContext(ctx, op, logAttrs...)
+	writeError(ctx, w, http.StatusInternalServerError, op)
+	return true
+}
+
 // handleNameErr handles the ErrInvalidName / ErrNameExists error pattern that is
 // common to all named-resource create and update handlers. resourceArticle should
 // be the resource noun with its indefinite article, e.g. "an author" or "a series".
@@ -66,33 +90,6 @@ func handleUpdateErr(ctx context.Context, w http.ResponseWriter, err, errInvalid
 		slog.Any(otelkeys.Error, err),
 	)
 	writeError(ctx, w, http.StatusInternalServerError, "failed to update "+resource)
-	return true
-}
-
-// handleOpErr handles the common pattern of:
-//   - nil error → false (no response written)
-//   - sql.ErrNoRows → 404 "<resource> not found"
-//   - other errors → log the op message with attrs, then 500 <op>
-//
-// resource is used for the 404 body (e.g. "group"). op is used for the log
-// message and the 500 body (e.g. "failed to list group members"). attrs are
-// additional slog.Attr values to include in the error log. Returns true when
-// it wrote a response (caller should return).
-func handleOpErr(ctx context.Context, w http.ResponseWriter, err error, resource, op string, attrs ...slog.Attr) bool {
-	if err == nil {
-		return false
-	}
-	if errors.Is(err, sql.ErrNoRows) {
-		writeError(ctx, w, http.StatusNotFound, resource+" not found")
-		return true
-	}
-	logAttrs := make([]any, 0, len(attrs)+1)
-	for _, attr := range attrs {
-		logAttrs = append(logAttrs, attr)
-	}
-	logAttrs = append(logAttrs, slog.Any(otelkeys.Error, err))
-	slog.ErrorContext(ctx, op, logAttrs...)
-	writeError(ctx, w, http.StatusInternalServerError, op)
 	return true
 }
 
