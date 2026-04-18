@@ -300,4 +300,26 @@ describe("Auth", () => {
       "login-auth-error",
     );
   });
+
+  it("does not mark login fields invalid for ambiguous credential errors", async () => {
+    vi.mocked(authStore.signIn).mockResolvedValueOnce({
+      error: new Error("Invalid email or password"),
+    });
+
+    const user = userEvent.setup();
+    await renderAuth();
+
+    const loginPanel = screen.getByRole("tabpanel", { name: "Login" });
+    const loginEmail = within(loginPanel).getByLabelText(/Email/i);
+    const loginPassword = within(loginPanel).getByLabelText(/Password/i);
+
+    await user.type(loginEmail, "reader@example.com");
+    await user.type(loginPassword, "securepass");
+    await user.click(screen.getByRole("button", { name: "Sign In" }));
+
+    await screen.findByRole("alert");
+
+    expect(loginEmail).not.toHaveAttribute("aria-invalid", "true");
+    expect(loginPassword).not.toHaveAttribute("aria-invalid", "true");
+  });
 });

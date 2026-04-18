@@ -35,6 +35,16 @@
     password: boolean;
   } {
     const loweredError = message.toLowerCase();
+
+    // Deliberately ambiguous messages (e.g. anti-enumeration) — don't mark any field.
+    const ambiguous = [
+      /\bemail\s+or\s+password\b/,
+      /\bemail\s+and\s+password\b/,
+    ].some((pattern) => pattern.test(loweredError));
+    if (ambiguous) {
+      return { email: false, password: false };
+    }
+
     const mentionsEmail = [
       /\binvalid email\b/,
       /\bemail is invalid\b/,
