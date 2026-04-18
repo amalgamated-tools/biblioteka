@@ -33,6 +33,7 @@ vi.mock("lucide-svelte", () => ({
   BookCheck: () => {},
   BookMarked: () => {},
   Settings2: () => {},
+  Users: () => {},
 }));
 
 import Sidebar from "./Sidebar.svelte";
@@ -71,6 +72,9 @@ describe("Sidebar navigation accessibility", () => {
 
     const settings = screen.getByRole("link", { name: "Settings" });
     expect(settings).toHaveAttribute("href", "#settings");
+
+    const groups = screen.getByRole("link", { name: "Reading Groups" });
+    expect(groups).toHaveAttribute("href", "#groups");
   });
 
   it("renders Logout as a button, not a link", () => {
@@ -89,6 +93,18 @@ describe("Sidebar navigation accessibility", () => {
 
     const settings = screen.getByRole("link", { name: "Settings" });
     expect(settings).toHaveAttribute("aria-current", "page");
+
+    const dashboard = screen.getByRole("link", { name: "Dashboard" });
+    expect(dashboard).not.toHaveAttribute("aria-current");
+  });
+
+  it("sets aria-current='page' on the Reading Groups link when active", () => {
+    render(Sidebar, {
+      props: { currentView: "groups", open: true, onClose: () => {} },
+    });
+
+    const groups = screen.getByRole("link", { name: "Reading Groups" });
+    expect(groups).toHaveAttribute("aria-current", "page");
 
     const dashboard = screen.getByRole("link", { name: "Dashboard" });
     expect(dashboard).not.toHaveAttribute("aria-current");

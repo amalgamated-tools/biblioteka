@@ -1,7 +1,9 @@
 import type {
-  GroupMemberProgress,
   ReadingGroup,
+  ReadingGroupInput,
+  ReadingGroupUpdateInput,
   ReadingGroupMember,
+  GroupMemberProgress,
   ReadingList,
 } from "../../types";
 import { request } from "./core";
@@ -10,30 +12,21 @@ export async function listGroups(): Promise<ReadingGroup[]> {
   return request<ReadingGroup[]>("GET", "/api/groups");
 }
 
-export async function createGroup(
-  name: string,
-  description?: string | null,
-): Promise<ReadingGroup> {
-  return request<ReadingGroup>("POST", "/api/groups", { name, description });
-}
-
 export async function getGroup(id: string): Promise<ReadingGroup> {
   return request<ReadingGroup>("GET", `/api/groups/${id}`);
 }
 
-/**
- * Replaces the group's name and description.
- * Pass the current description explicitly if you do not want to clear it.
- */
+export async function createGroup(
+  input: ReadingGroupInput,
+): Promise<ReadingGroup> {
+  return request<ReadingGroup>("POST", "/api/groups", input);
+}
+
 export async function updateGroup(
   id: string,
-  name: string,
-  description: string | null,
+  input: ReadingGroupUpdateInput,
 ): Promise<ReadingGroup> {
-  return request<ReadingGroup>("PUT", `/api/groups/${id}`, {
-    name,
-    description,
-  });
+  return request<ReadingGroup>("PUT", `/api/groups/${id}`, input);
 }
 
 export async function deleteGroup(id: string): Promise<void> {
@@ -57,19 +50,18 @@ export async function addGroupMember(
 
 export async function removeGroupMember(
   groupId: string,
-  memberUserId: string,
+  userId: string,
 ): Promise<void> {
-  await request<void>(
-    "DELETE",
-    `/api/groups/${groupId}/members/${memberUserId}`,
-  );
+  await request<void>("DELETE", `/api/groups/${groupId}/members/${userId}`);
 }
 
-export async function listGroupLists(groupId: string): Promise<ReadingList[]> {
+export async function listGroupReadingLists(
+  groupId: string,
+): Promise<ReadingList[]> {
   return request<ReadingList[]>("GET", `/api/groups/${groupId}/lists`);
 }
 
-export async function addGroupList(
+export async function shareListWithGroup(
   groupId: string,
   listId: string,
 ): Promise<void> {
@@ -78,14 +70,15 @@ export async function addGroupList(
   });
 }
 
-export async function removeGroupList(
+export async function unshareListFromGroup(
   groupId: string,
   listId: string,
 ): Promise<void> {
   await request<void>("DELETE", `/api/groups/${groupId}/lists/${listId}`);
 }
 
-export async function getGroupProgress(
+// TODO: used in upcoming member progress view
+export async function listGroupMemberProgress(
   groupId: string,
   bookId: string,
 ): Promise<GroupMemberProgress[]> {

@@ -9,6 +9,7 @@
   import MyLibrary from "./components/MyLibrary.svelte";
   import Libraries from "./components/Libraries.svelte";
   import ReadingLists from "./components/ReadingLists.svelte";
+  import Groups from "./components/Groups.svelte";
   import NotFound from "./components/NotFound.svelte";
   import Sidebar from "./components/Sidebar.svelte";
   import Settings from "./components/Settings.svelte";
@@ -171,6 +172,8 @@
           <Libraries />
         {:else if routerStore.currentView === "reading-lists"}
           <ReadingLists />
+        {:else if routerStore.currentView === "groups"}
+          <Groups />
         {:else if routerStore.currentView === "settings"}
           <Settings />
         {/if}
