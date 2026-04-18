@@ -98,6 +98,32 @@ describe("groupStore", () => {
     expect(groupStore.groups).toHaveLength(0);
   });
 
+  it("adjustMemberCount increments count for the given group", () => {
+    groupStore.groups = [fakeGroup];
+
+    groupStore.adjustMemberCount("g-1", 1);
+
+    expect(groupStore.groups[0].member_count).toBe(2);
+  });
+
+  it("adjustMemberCount decrements count for the given group", () => {
+    groupStore.groups = [{ ...fakeGroup, member_count: 3 }];
+
+    groupStore.adjustMemberCount("g-1", -1);
+
+    expect(groupStore.groups[0].member_count).toBe(2);
+  });
+
+  it("adjustMemberCount does not modify other groups", () => {
+    const other: ReadingGroup = { ...fakeGroup, id: "g-2", name: "Other" };
+    groupStore.groups = [fakeGroup, other];
+
+    groupStore.adjustMemberCount("g-2", 1);
+
+    expect(groupStore.groups[0].member_count).toBe(1);
+    expect(groupStore.groups[1].member_count).toBe(2);
+  });
+
   it("reload forces a fresh fetch", async () => {
     vi.mocked(api.listGroups).mockResolvedValue([fakeGroup]);
     groupStore.loaded = true;

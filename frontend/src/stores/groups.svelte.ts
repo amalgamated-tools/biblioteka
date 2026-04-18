@@ -51,6 +51,15 @@ class GroupStore {
     await api.deleteGroup(id);
     this.groups = this.groups.filter((g) => g.id !== id);
   }
+
+  /** Adjust the cached member_count for a group by a delta (+1 or -1).
+   *  Used to avoid a full reload after adding or removing a single member.
+   */
+  adjustMemberCount(id: string, delta: number): void {
+    this.groups = this.groups.map((g) =>
+      g.id === id ? { ...g, member_count: g.member_count + delta } : g,
+    );
+  }
 }
 
 export const groupStore = new GroupStore();

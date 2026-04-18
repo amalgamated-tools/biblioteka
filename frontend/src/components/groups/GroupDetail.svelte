@@ -179,7 +179,7 @@
       newMemberUserId = "";
       showAddMember = false;
       await loadMembers();
-      await groupStore.reload();
+      groupStore.adjustMemberCount(groupId, 1);
     } catch (e) {
       addMemberError = e instanceof Error ? e.message : "Failed to add member";
     } finally {
@@ -193,7 +193,7 @@
       await removeGroupMember(groupId, memberId);
       confirmRemoveMemberId = null;
       await loadMembers();
-      await groupStore.reload();
+      groupStore.adjustMemberCount(groupId, -1);
     } catch (e) {
       membersError = e instanceof Error ? e.message : "Failed to remove member";
     } finally {
