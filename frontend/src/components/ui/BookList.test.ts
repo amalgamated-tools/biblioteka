@@ -238,46 +238,65 @@ describe("BookList table view accessibility", () => {
 });
 
 describe("BookList pagination accessibility", () => {
-  const makePageBooks = (offset: number): PaginatedBooks => ({
-    books: Array.from({ length: 2 }, (_, i) => ({
-      id: `b${offset + i}`,
-      title: `Book ${offset + i}`,
-      description: null,
-      asin: null,
-      isbn10: null,
-      isbn13: null,
-      goodreads_id: null,
-      hardcover_id: null,
-      google_books_id: null,
-      publication_date: null,
-      publisher: null,
-      language: null,
-      cover_image_url: null,
-      created_at: "2026-01-01T00:00:00Z",
-      updated_at: "2026-01-01T00:00:00Z",
-    })),
-    total: 50,
-    limit: 2,
-    offset,
-  });
-
-  let fetchBooks: (
-    limit: number,
-    offset: number,
-    query?: string,
-  ) => Promise<PaginatedBooks>;
-
-  beforeEach(() => {
-    fetchBooks = vi
-      .fn()
-      .mockImplementation((_size: number, off: number) =>
-        Promise.resolve(makePageBooks(off)),
-      );
-  });
-
   afterEach(() => cleanup());
 
-  it("page counter has aria-live/aria-atomic and updates text on navigation (WCAG 4.1.3)", async () => {
+  it("wraps pagination controls in a named navigation landmark (WCAG 2.4.1)", async () => {
+    const manyBooks: PaginatedBooks = {
+      books: Array.from({ length: 2 }, (_, i) => ({
+        id: `b${i}`,
+        title: `Book ${i}`,
+        description: null,
+        asin: null,
+        isbn10: null,
+        isbn13: null,
+        goodreads_id: null,
+        hardcover_id: null,
+        google_books_id: null,
+        publication_date: null,
+        publisher: null,
+        language: null,
+        cover_image_url: null,
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+      })),
+      total: 50,
+      limit: 2,
+      offset: 0,
+    };
+    const fetchBooks = vi.fn().mockResolvedValue(manyBooks);
+    render(BookList, { props: { fetchBooks, pageSize: 2 } });
+    await tick();
+    await tick();
+
+    expect(
+      screen.getByRole("navigation", { name: "Pagination" }),
+    ).toBeInTheDocument();
+  });
+
+  it("pagination counter has aria-atomic but no duplicate aria-live (WCAG 4.1.3)", async () => {
+    const manyBooks: PaginatedBooks = {
+      books: Array.from({ length: 2 }, (_, i) => ({
+        id: `b${i}`,
+        title: `Book ${i}`,
+        description: null,
+        asin: null,
+        isbn10: null,
+        isbn13: null,
+        goodreads_id: null,
+        hardcover_id: null,
+        google_books_id: null,
+        publication_date: null,
+        publisher: null,
+        language: null,
+        cover_image_url: null,
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+      })),
+      total: 50,
+      limit: 2,
+      offset: 0,
+    };
+    const fetchBooks = vi.fn().mockResolvedValue(manyBooks);
     render(BookList, { props: { fetchBooks, pageSize: 2 } });
     await tick();
     await tick();
