@@ -362,6 +362,7 @@ func (h *ReadingListHandler) handleReadingListBook(w http.ResponseWriter, r *htt
 //	@Param			bookID	path		string	true	"Book ID"
 //	@Success		204		"No Content"
 //	@Failure		400		{object}	errorResponse
+//	@Failure		404		{object}	errorResponse
 //	@Failure		500		{object}	errorResponse
 //	@Router			/reading-lists/{id}/books/{bookID} [delete]
 func (h *ReadingListHandler) removeBookFromReadingList(w http.ResponseWriter, r *http.Request, listID, bookID string) {

@@ -67,15 +67,14 @@ func TestShareListWithGroup_NonOwnerOfListIsRejected(t *testing.T) {
 
 func TestShareListWithGroup_NonMemberIsRejected(t *testing.T) {
 	d := newTestDB(t)
-	ownerID, groupID, _ := setupGroupAndList(t, d)
+	_, groupID, _ := setupGroupAndList(t, d)
 
 	// Create a user who is NOT a member of the group but owns a reading list.
 	outsiderID := createTestUserForGroup(t, d, "outsider@example.com")
 	outsiderList, err := d.CreateReadingList(t.Context(), outsiderID, "Outsider List", nil)
 	require.NoError(t, err)
 
-	// ownerID owns the group; outsiderID owns the list but is not in the group.
-	_ = ownerID
+	// outsiderID owns the list but is not in the group.
 	_, err = d.ShareListWithGroup(t.Context(), groupID, outsiderList.ID, outsiderID)
 	require.ErrorIs(t, err, sql.ErrNoRows)
 }

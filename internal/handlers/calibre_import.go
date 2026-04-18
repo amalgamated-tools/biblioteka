@@ -51,6 +51,8 @@ type calibreSource struct {
 //	@Accept			multipart/form-data,json
 //	@Produce		json
 //	@Security		BearerAuth
+//	@Param			metadata_db	formData	file	false	"Calibre metadata.db file (multipart upload)"
+//	@Param			library_id	formData	string	false	"Library ID to associate with imported books (multipart upload)"
 //	@Failure		401	{object}	errorResponse
 //	@Failure		403	{object}	errorResponse
 //	@Success		200	{object}	calibre.Preview
@@ -98,6 +100,8 @@ func (h *CalibreImportHandler) HandlePreview(w http.ResponseWriter, r *http.Requ
 //	@Accept			multipart/form-data,json
 //	@Produce		json
 //	@Security		BearerAuth
+//	@Param			metadata_db	formData	file	false	"Calibre metadata.db file (multipart upload)"
+//	@Param			library_id	formData	string	false	"Library ID to associate with imported books (multipart upload)"
 //	@Failure		401	{object}	errorResponse
 //	@Failure		403	{object}	errorResponse
 //	@Success		200	{object}	calibre.ImportResult

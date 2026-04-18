@@ -397,6 +397,7 @@ func (h *GroupHandler) handleGroupMember(w http.ResponseWriter, r *http.Request,
 //	@Param			memberID	path	string	true	"Member user ID"
 //	@Success		204			"No Content"
 //	@Failure		400			{object}	errorResponse
+//	@Failure		404			{object}	errorResponse
 //	@Failure		500			{object}	errorResponse
 //	@Router			/groups/{id}/members/{memberID} [delete]
 func (h *GroupHandler) removeGroupMember(w http.ResponseWriter, r *http.Request, groupID, memberID string) {
