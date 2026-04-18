@@ -212,12 +212,10 @@ func (h *GroupHandler) updateGroup(w http.ResponseWriter, r *http.Request, id st
 func (h *GroupHandler) deleteGroup(w http.ResponseWriter, r *http.Request, id string) {
 	ctx := r.Context()
 	userID := auth.UserIDFromContext(ctx)
-	if err := h.DB.DeleteGroup(ctx, id, userID); err != nil {
-		if handleOpErr(ctx, w, err, "group", "failed to delete group",
-			slog.String(otelkeys.GroupID, id),
-		) {
-			return
-		}
+	if handleOpErr(ctx, w, h.DB.DeleteGroup(ctx, id, userID), "group", "failed to delete group",
+		slog.String(otelkeys.GroupID, id),
+	) {
+		return
 	}
 
 	logAudit(ctx, h.DB, userID, db.AuditActionGroupDeleted, "group", id, nil)
@@ -292,16 +290,15 @@ func (h *GroupHandler) handleGroupMember(w http.ResponseWriter, r *http.Request,
 func (h *GroupHandler) removeGroupMember(w http.ResponseWriter, r *http.Request, groupID, memberID string) {
 	ctx := r.Context()
 	userID := auth.UserIDFromContext(ctx)
-	if err := h.DB.RemoveGroupMember(ctx, groupID, userID, memberID); err != nil {
-		if errors.Is(err, db.ErrOwnerCannotLeaveGroup) {
-			writeError(ctx, w, http.StatusBadRequest, "owner cannot leave their own group")
-			return
-		}
-		if handleOpErr(ctx, w, err, "group", "failed to remove group member",
-			slog.String(otelkeys.GroupID, groupID),
-		) {
-			return
-		}
+	err := h.DB.RemoveGroupMember(ctx, groupID, userID, memberID)
+	if errors.Is(err, db.ErrOwnerCannotLeaveGroup) {
+		writeError(ctx, w, http.StatusBadRequest, "owner cannot leave their own group")
+		return
+	}
+	if handleOpErr(ctx, w, err, "group", "failed to remove group member",
+		slog.String(otelkeys.GroupID, groupID),
+	) {
+		return
 	}
 
 	logAudit(ctx, h.DB, userID, db.AuditActionGroupMemberRemoved, "group", groupID,
@@ -371,13 +368,11 @@ func (h *GroupHandler) handleGroupList(w http.ResponseWriter, r *http.Request, g
 func (h *GroupHandler) unshareList(w http.ResponseWriter, r *http.Request, groupID, listID string) {
 	ctx := r.Context()
 	userID := auth.UserIDFromContext(ctx)
-	if err := h.DB.UnshareListFromGroup(ctx, groupID, listID, userID); err != nil {
-		if handleOpErr(ctx, w, err, "reading list", "failed to unshare reading list from group",
-			slog.String(otelkeys.GroupID, groupID),
-			slog.String(otelkeys.ReadingListID, listID),
-		) {
-			return
-		}
+	if handleOpErr(ctx, w, h.DB.UnshareListFromGroup(ctx, groupID, listID, userID), "reading list", "failed to unshare reading list from group",
+		slog.String(otelkeys.GroupID, groupID),
+		slog.String(otelkeys.ReadingListID, listID),
+	) {
+		return
 	}
 
 	logAudit(ctx, h.DB, userID, db.AuditActionGroupListUnshared, "group", groupID,
