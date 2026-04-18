@@ -241,4 +241,31 @@ describe("Auth", () => {
       passwordLabel?.querySelector('span[aria-hidden="true"]'),
     ).toHaveTextContent("*");
   });
+
+  it("marks only the password field invalid for a password-only login error", async () => {
+    const user = userEvent.setup();
+    await renderAuth();
+
+    const loginPanel = screen.getByRole("tabpanel", { name: "Login" });
+    const loginEmail = within(loginPanel).getByLabelText("Email");
+    const loginPassword = within(loginPanel).getByLabelText("Password");
+
+    await user.type(loginEmail, "reader@example.com");
+    await user.type(loginPassword, "12345");
+    await user.click(screen.getByRole("button", { name: "Sign In" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Password must be at least 6 characters");
+
+    expect(loginEmail).not.toHaveAttribute("aria-invalid", "true");
+    expect(loginEmail).not.toHaveAttribute(
+      "aria-describedby",
+      "login-auth-error",
+    );
+    expect(loginPassword).toHaveAttribute("aria-invalid", "true");
+    expect(loginPassword).toHaveAttribute(
+      "aria-describedby",
+      "login-auth-error",
+    );
+  });
 });

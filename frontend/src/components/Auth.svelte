@@ -25,6 +25,8 @@
   let passkeyEnabled = $state(false);
   let initError: string | null = $state(null);
   let passkeyLoading = $state(false);
+  let loginEmailInvalid = $state(false);
+  let loginPasswordInvalid = $state(false);
   let loginErrorVisible = $derived(!!error && isLogin);
   let signupErrorVisible = $derived(!!error && !isLogin);
 
@@ -120,11 +122,18 @@
     e.preventDefault();
     error = null;
     loading = true;
+    loginEmailInvalid = false;
+    loginPasswordInvalid = false;
 
-    const requiredFields = isLogin
-      ? [email, password]
-      : [name, email, password];
-    if (requiredFields.some((f) => required()(f) !== null)) {
+    if (isLogin) {
+      loginEmailInvalid = required()(email) !== null;
+      loginPasswordInvalid = required()(password) !== null;
+      if (loginEmailInvalid || loginPasswordInvalid) {
+        error = "Please fill in all fields";
+        loading = false;
+        return;
+      }
+    } else if ([name, email, password].some((f) => required()(f) !== null)) {
       error = "Please fill in all fields";
       loading = false;
       return;
@@ -135,6 +144,9 @@
     ]);
     if (pwdError) {
       error = pwdError;
+      if (isLogin) {
+        loginPasswordInvalid = true;
+      }
       loading = false;
       return;
     }
@@ -145,6 +157,16 @@
 
     if (result.error) {
       error = result.error.message;
+      if (isLogin) {
+        const loweredError = result.error.message.toLowerCase();
+        const mentionsEmail =
+          loweredError.includes("email") ||
+          loweredError.includes("account") ||
+          loweredError.includes("user");
+        const mentionsPassword = loweredError.includes("password");
+        loginEmailInvalid = mentionsEmail || !mentionsPassword;
+        loginPasswordInvalid = mentionsPassword || !mentionsEmail;
+      }
     }
 
     loading = false;
@@ -303,8 +325,8 @@
               placeholder="you@example.com"
               disabled={loading}
               aria-required={true}
-              aria-invalid={loginErrorVisible}
-              aria-describedby={loginErrorVisible
+              aria-invalid={loginEmailInvalid}
+              aria-describedby={loginEmailInvalid
                 ? "login-auth-error"
                 : undefined}
             />
@@ -326,8 +348,8 @@
               placeholder="••••••••"
               disabled={loading}
               aria-required={true}
-              aria-invalid={loginErrorVisible}
-              aria-describedby={loginErrorVisible
+              aria-invalid={loginPasswordInvalid}
+              aria-describedby={loginPasswordInvalid
                 ? "login-auth-error"
                 : undefined}
             />
