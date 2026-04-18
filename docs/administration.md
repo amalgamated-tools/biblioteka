@@ -614,14 +614,14 @@ Admins can trigger a full rebuild via **Settings → Search Index** in the web U
 
 This is useful after bulk imports (Calibre import, library scan) that may temporarily leave the search index stale, after running `VACUUM` on the database file outside of normal server operation, or whenever you suspect the index is out of sync.
 
-**Web UI:** Navigate to **Settings → Search Index** and click **Rebuild Search Index**. A success or error banner confirms the outcome.
+**Web UI:** Navigate to **Settings → Search Index** and click **Rebuild Search Index**. A success banner confirms the request was accepted and the rebuild has started. Completion is indicated later by an `fts.rebuilt` entry in the audit log (see below).
 
 **API:**
 
 ```bash
-curl -sf -X POST http://localhost:8080/api/admin/search/reindex \
+curl -i -X POST http://localhost:8080/api/admin/search/reindex \
   -H "Authorization: Bearer <admin-jwt>"
-# → 202 Accepted
+# HTTP/1.1 202 Accepted
 # → {"message":"search index rebuild started"}
 ```
 
