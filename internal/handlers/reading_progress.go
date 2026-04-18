@@ -83,7 +83,7 @@ func (h *ReadingProgressHandler) HandleReadingProgressStats(w http.ResponseWrite
 			inProgress = append(inProgress, toReadingProgressItemDTO(p))
 		}
 	}
-	streak := db.ComputeReadingStreak(timestamps)
+	streak := db.ComputeReadingStreak(timestamps, time.Now().UTC())
 
 	writeJSON(ctx, w, http.StatusOK, readingProgressStatsResponse{
 		CurrentStreak: streak,

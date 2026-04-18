@@ -75,36 +75,44 @@ func (d *DB) GetReadingStreak(ctx context.Context, userID string) (int, error) {
 	for i, item := range items {
 		timestamps[i] = item.UpdatedAt.Time
 	}
-	return ComputeReadingStreak(timestamps), nil
+	return ComputeReadingStreak(timestamps, time.Now().UTC()), nil
+}
+
+// collectUniqueDates returns the distinct UTC calendar dates from timestamps,
+// each truncated to midnight UTC. The result is unsorted.
+func collectUniqueDates(timestamps []time.Time) []time.Time {
+	seen := map[time.Time]struct{}{}
+	dates := make([]time.Time, 0, len(timestamps))
+	for _, ts := range timestamps {
+		day := ts.UTC().Truncate(24 * time.Hour)
+		if _, ok := seen[day]; !ok {
+			seen[day] = struct{}{}
+			dates = append(dates, day)
+		}
+	}
+	return dates
 }
 
 // ComputeReadingStreak calculates the current consecutive-day reading streak
-// from a slice of timestamps. The timestamps need not be sorted or unique.
-// A streak is the number of calendar days (in UTC) ending today or yesterday
-// on which at least one timestamp exists. Returns 0 when there is no activity
-// or the most-recent activity was before yesterday.
-func ComputeReadingStreak(timestamps []time.Time) int {
+// from a slice of timestamps relative to the given reference time now.
+// The timestamps need not be sorted or unique. A streak is the number of
+// calendar days (in UTC) ending today or yesterday on which at least one
+// timestamp exists. Returns 0 when there is no activity or the most-recent
+// activity was before yesterday. Pass time.Now().UTC() for production use;
+// pass a fixed time in tests for deterministic results.
+func ComputeReadingStreak(timestamps []time.Time, now time.Time) int {
 	if len(timestamps) == 0 {
 		return 0
 	}
 
-	// Collect distinct calendar dates (UTC).
-	seen := map[string]struct{}{}
-	var dates []time.Time
-	for _, ts := range timestamps {
-		dayKey := ts.UTC().Format("2006-01-02")
-		if _, ok := seen[dayKey]; !ok {
-			seen[dayKey] = struct{}{}
-			dates = append(dates, ts.UTC().Truncate(24*time.Hour))
-		}
-	}
+	dates := collectUniqueDates(timestamps)
 
 	// Sort descending (most recent first).
 	slices.SortFunc(dates, func(a, b time.Time) int {
 		return b.Compare(a)
 	})
 
-	today := time.Now().UTC().Truncate(24 * time.Hour)
+	today := now.UTC().Truncate(24 * time.Hour)
 	yesterday := today.Add(-24 * time.Hour)
 
 	// The streak must end today or yesterday; otherwise it is broken.
@@ -133,16 +141,7 @@ func ComputeLongestStreak(timestamps []time.Time) int {
 		return 0
 	}
 
-	// Collect distinct calendar dates (UTC).
-	seen := map[string]struct{}{}
-	var dates []time.Time
-	for _, ts := range timestamps {
-		dayKey := ts.UTC().Format("2006-01-02")
-		if _, ok := seen[dayKey]; !ok {
-			seen[dayKey] = struct{}{}
-			dates = append(dates, ts.UTC().Truncate(24*time.Hour))
-		}
-	}
+	dates := collectUniqueDates(timestamps)
 
 	// Sort ascending (oldest first) to walk forward through consecutive days.
 	slices.SortFunc(dates, func(a, b time.Time) int {
