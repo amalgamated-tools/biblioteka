@@ -281,7 +281,7 @@
         aria-labelledby="login-tab"
         hidden={!isLogin}
       >
-        <form onsubmit={handleSubmit} class="space-y-4">
+        <form onsubmit={handleSubmit} novalidate class="space-y-4">
           <p class="text-xs text-ink-500 dark:text-ink-400">
             Fields marked with
             <span class="text-danger-600" aria-hidden="true">*</span>
@@ -361,7 +361,7 @@
           aria-labelledby="signup-tab"
           hidden={isLogin}
         >
-          <form onsubmit={handleSubmit} class="space-y-4">
+          <form onsubmit={handleSubmit} novalidate class="space-y-4">
             <p class="text-xs text-ink-500 dark:text-ink-400">
               Fields marked with
               <span class="text-danger-600" aria-hidden="true">*</span>
