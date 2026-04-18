@@ -373,6 +373,12 @@ The dashboard lets you:
 - Retry or delete failed jobs
 - See queue statistics and throughput
 
+**Common failure causes:**
+
+| Cause | Details |
+|-------|---------|
+| Library deleted during scan | If a library is deleted while a `scan:library` job is already queued, the job still completes successfully — filesystem paths are embedded in the payload at enqueue time and no database lookup occurs. Downstream `process:file` jobs treat a missing library record as a warning rather than an error, so no entries appear in the Asynqmon Failed tab. The observable consequence is that scanned books are created without a library association (orphaned books). To recover, re-add the library and run a fresh scan, or delete the orphaned book records directly. |
+
 ## Project Layout
 
 ```
