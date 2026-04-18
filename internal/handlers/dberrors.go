@@ -41,7 +41,8 @@ func handleOpErr(ctx context.Context, w http.ResponseWriter, err error, resource
 		return true
 	}
 
-	logAttrs := make([]any, 0, len(attrs)+1)
+	logAttrs := make([]any, 0, len(attrs)+2)
+	logAttrs = append(logAttrs, slog.String(otelkeys.Resource, resource))
 	for _, attr := range attrs {
 		logAttrs = append(logAttrs, attr)
 	}
