@@ -96,10 +96,64 @@
   });
 
   $effect(() => {
-    if (groupId) {
-      void loadMembers();
-      void loadSharedLists();
-    }
+    if (!groupId) return;
+    let cancelled = false;
+
+    // Reset all transient UI state so previous-group flows can't bleed into the new group.
+    editing = false;
+    editName = "";
+    editDescription = "";
+    saving = false;
+    saveError = null;
+    confirmDelete = false;
+    deleting = false;
+    showAddMember = false;
+    newMemberUserId = "";
+    addingMember = false;
+    addMemberError = null;
+    confirmRemoveMemberId = null;
+    removingMemberId = null;
+    shareListId = "";
+    sharingList = false;
+    shareListError = null;
+    confirmUnshareListId = null;
+    unsharingListId = null;
+    members = [];
+    sharedLists = [];
+
+    membersLoading = true;
+    membersError = null;
+    listGroupMembers(groupId)
+      .then((fetched) => {
+        if (!cancelled) members = fetched;
+      })
+      .catch((e) => {
+        if (!cancelled)
+          membersError =
+            e instanceof Error ? e.message : "Failed to load members";
+      })
+      .finally(() => {
+        if (!cancelled) membersLoading = false;
+      });
+
+    sharedListsLoading = true;
+    sharedListsError = null;
+    listGroupReadingLists(groupId)
+      .then((fetched) => {
+        if (!cancelled) sharedLists = fetched;
+      })
+      .catch((e) => {
+        if (!cancelled)
+          sharedListsError =
+            e instanceof Error ? e.message : "Failed to load shared lists";
+      })
+      .finally(() => {
+        if (!cancelled) sharedListsLoading = false;
+      });
+
+    return () => {
+      cancelled = true;
+    };
   });
 
   $effect(() => {
