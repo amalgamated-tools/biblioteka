@@ -2959,7 +2959,7 @@ Creates a new reading group. The authenticated user becomes the owner and is aut
 | `201 Created` | Group created successfully |
 | `400 Bad Request` | Missing or blank `name` |
 | `401 Unauthorized` | Missing or invalid authentication |
-| `409 Conflict` | A group with that name already exists |
+| `409 Conflict` | You already own a group with that name |
 | `500 Internal Server Error` | Database error |
 
 ---
@@ -3003,7 +3003,7 @@ Updates a group's name and description. Only the group owner may call this endpo
 | `400 Bad Request` | Missing or blank `name` |
 | `401 Unauthorized` | Missing or invalid authentication |
 | `404 Not Found` | Group not found or user is not the owner |
-| `409 Conflict` | Another group with that name already exists |
+| `409 Conflict` | You already own a group with that name |
 | `500 Internal Server Error` | Database error |
 
 ---
@@ -3137,7 +3137,7 @@ Returns all reading lists shared with a reading group. The authenticated user mu
 
 ### `POST /api/groups/{id}/lists` 🔒
 
-Shares a reading list with a group. The authenticated user must own the reading list **and** be a member of the group. Returns `204 No Content`.
+Shares a reading list with a group. The authenticated user must own the reading list **and** be a member of the group. The operation is idempotent — sharing a list that is already shared with the group succeeds without error. Returns `204 No Content`.
 
 **Request body:**
 
@@ -3179,7 +3179,7 @@ Removes a reading list from a group. The authenticated user must own the reading
 
 ### `GET /api/groups/{id}/progress` 🔒
 
-Returns each group member's reading progress for a specific book. The authenticated user must be a member of the group. Progress values come from the member's KOSync or Kobo reading data.
+Returns each group member's reading progress for a specific book. The authenticated user must be a member of the group. Progress values come from the member's Kobo reading data.
 
 **Query parameters:**
 
@@ -3219,7 +3219,7 @@ Returns each group member's reading progress for a specific book. The authentica
 
 | Status | Meaning |
 |--------|---------|
-| `200 OK` | Success (empty array if no members have progress for the book) |
+| `200 OK` | Success (all group members are returned; members without recorded progress have `percentage: 0` and `updated_at: null`) |
 | `400 Bad Request` | Missing or empty group ID, or missing `book_id` query parameter |
 | `401 Unauthorized` | Missing or invalid authentication |
 | `404 Not Found` | Group not found or user is not a member |
