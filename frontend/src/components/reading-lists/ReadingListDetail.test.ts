@@ -123,7 +123,7 @@ describe("ReadingListDetail", () => {
   it("announces required fields in the edit form", async () => {
     const user = userEvent.setup();
 
-    const { container } = render(ReadingListDetail, {
+    render(ReadingListDetail, {
       props: { listId: fakeList.id },
     });
     await tick();
@@ -133,12 +133,12 @@ describe("ReadingListDetail", () => {
     const nameInput = screen.getByLabelText(/Name/i);
     expect(nameInput).toHaveAttribute("aria-required", "true");
 
-    const legend = container.querySelector(".space-y-3 > p");
+    const legend = screen.getByText(/Fields marked with/i, { exact: false });
     expect(legend).toBeInTheDocument();
-    expect(legend?.textContent).toMatch(/are required/i);
-    const visual = legend?.querySelector('span[aria-hidden="true"]');
+    expect(legend.textContent).toMatch(/are required/i);
+    const visual = legend.querySelector('span[aria-hidden="true"]');
     expect(visual).toHaveTextContent("*");
-    const srOnly = legend?.querySelector(".sr-only");
+    const srOnly = legend.querySelector(".sr-only");
     expect(srOnly).toHaveTextContent("an asterisk");
   });
 
