@@ -96,6 +96,7 @@
 
   function cancelDelete() {
     pendingDeleteId = null;
+    deleteError = null;
   }
 
   function cancelCreate() {

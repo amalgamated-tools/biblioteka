@@ -37,6 +37,11 @@
     const seq = ++fetchSeq;
     loading = true;
     error = null;
+    assignedTags = [];
+    allTags = [];
+    searchText = "";
+    dropdownOpen = false;
+    activeIndex = -1;
     try {
       const [bookTags, tags] = await Promise.all([
         api.getBookTags(id),
