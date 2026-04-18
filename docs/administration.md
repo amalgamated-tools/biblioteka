@@ -68,8 +68,65 @@ curl -X PUT http://localhost:8080/api/admin/users/<user-id> \
 ```
 
 **Notes:**
-- There is no user deletion API. Remove accounts directly in the database if needed.
+- There is no user deletion API. Remove accounts directly in the database if needed (see [Deleting a user account](#deleting-a-user-account) below).
 - An admin cannot revoke their own admin status via the API. Use a second admin account or edit the database directly.
+
+### Deleting a user account
+
+Biblioteka does not expose a user deletion endpoint. To remove an account, connect to the database directly and issue a `DELETE` statement against the `users` table.
+
+**SQLite**
+
+```bash
+# Connect to the SQLite database (adjust path as needed)
+sqlite3 /data/biblioteka.db
+```
+
+```sql
+-- Enable foreign-key enforcement (required for cascades to fire in SQLite)
+PRAGMA foreign_keys = ON;
+
+-- Delete the user — all owned data cascades automatically (see below)
+DELETE FROM users WHERE id = '<user-id>';
+```
+
+**PostgreSQL**
+
+```sql
+-- Foreign-key cascades fire automatically in PostgreSQL
+DELETE FROM users WHERE id = '<user-id>';
+```
+
+#### What is deleted automatically (cascades)
+
+The following rows are deleted along with the user record via `ON DELETE CASCADE` foreign keys to `users`:
+
+| Table | Contents removed |
+|-------|-----------------|
+| `api_keys` | All API keys belonging to the user |
+| `opds_credentials` | The user's OPDS Basic Auth credential |
+| `kosync_credentials` | The user's KOSync credential |
+| `kobo_tokens` | All Kobo sync tokens |
+| `kobo_reading_states` | All Kobo reading progress records |
+| `reading_progress` | All KOReader sync progress records |
+| `reading_lists` and `reading_list_books` | All reading lists and their book entries |
+| `reading_groups` | All reading groups owned by the user |
+| `reading_group_members` | All reading group memberships for the user |
+| `reading_group_lists` | All reading lists the user shared into groups |
+| `passkey_credentials` and `passkey_challenges` | Any registered passkeys |
+| `goodreads_metadata` | Any Goodreads enrichment data linked to the user |
+| `book_annotations` | All annotations created by the user |
+| `book_downloads` | All download-tracking events for the user |
+| `ai_enrichments` | Any AI metadata enrichment requests |
+
+> **Libraries are not deleted.** Libraries are global resources managed by admins. Deleting a user does not remove any libraries. Existing library–book associations (`library_books`) are also unaffected. **Books themselves are not deleted** — they remain in the catalog and retain their authors, series, and tags.
+
+#### What is NOT deleted
+
+- **Books, authors, series, and tags** — catalog records are global and are not removed.
+- **Audit log entries** — `audit_logs` rows referencing the deleted `user_id` are retained for historical accountability. The `user_id` field on those rows becomes an orphaned reference (there is no foreign key constraint on `audit_logs.user_id`), which is intentional.
+
+> **SQLite note:** The cascades above only fire when `PRAGMA foreign_keys = ON` is set for the connection. The application always enables this pragma, but if you connect via a separate client (e.g. `sqlite3` CLI or a GUI tool), you must set it yourself before issuing the `DELETE`.
 
 ### The `oidc_linked` field
 
