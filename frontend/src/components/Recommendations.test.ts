@@ -49,7 +49,9 @@ const fakeBookWithCover: BookSummary = {
 
 describe("Recommendations", () => {
   beforeEach(() => {
-    vi.mocked(getRecommendations).mockReturnValue(new Promise(() => {}));
+    vi.mocked(getRecommendations).mockReturnValue(
+      new Promise<BookSummary[]>(() => {}),
+    );
   });
 
   afterEach(() => {
@@ -137,7 +139,9 @@ describe("Recommendations", () => {
 
       await waitFor(() => {
         expect(
-          screen.getByText(/Read some books to get personalized recommendations/i),
+          screen.getByText(
+            /Read some books to get personalized recommendations/i,
+          ),
         ).toBeInTheDocument();
       });
     });
@@ -166,7 +170,10 @@ describe("Recommendations", () => {
 
   describe("books list", () => {
     it("renders a book card for each recommendation", async () => {
-      vi.mocked(getRecommendations).mockResolvedValue([fakeBook, fakeBookWithCover]);
+      vi.mocked(getRecommendations).mockResolvedValue([
+        fakeBook,
+        fakeBookWithCover,
+      ]);
       render(Recommendations);
 
       await waitFor(() => {
