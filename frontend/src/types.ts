@@ -407,6 +407,11 @@ export interface ReadingGroup {
   updated_at: string;
 }
 
+export interface ReadingGroupInput {
+  name: string;
+  description?: string | null;
+}
+
 export interface ReadingGroupMember {
   group_id: string;
   user_id: string;
