@@ -416,7 +416,9 @@
                 for="signup-password"
                 class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
               >
-                Password <span class="text-danger-600" aria-hidden="true">*</span>
+                Password <span class="text-danger-600" aria-hidden="true"
+                  >*</span
+                >
               </label>
               <TextInput
                 id="signup-password"

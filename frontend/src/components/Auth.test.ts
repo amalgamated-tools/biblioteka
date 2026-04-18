@@ -205,8 +205,7 @@ describe("Auth", () => {
 
   it("shows required indicators and aria-required attributes on signup fields", async () => {
     const user = userEvent.setup();
-    const { container } = render(Auth);
-    await tick();
+    await renderAuth();
 
     await user.click(screen.getByRole("tab", { name: "Sign Up" }));
     await tick();
@@ -227,9 +226,9 @@ describe("Auth", () => {
     expect(signupEmail).toHaveAttribute("aria-required", "true");
     expect(signupPassword).toHaveAttribute("aria-required", "true");
 
-    const nameLabel = container.querySelector('label[for="signup-name"]');
-    const emailLabel = container.querySelector('label[for="signup-email"]');
-    const passwordLabel = container.querySelector(
+    const nameLabel = signupPanel.querySelector('label[for="signup-name"]');
+    const emailLabel = signupPanel.querySelector('label[for="signup-email"]');
+    const passwordLabel = signupPanel.querySelector(
       'label[for="signup-password"]',
     );
     expect(
