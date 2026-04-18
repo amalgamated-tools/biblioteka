@@ -36,13 +36,18 @@
     loading = true;
     error = null;
     try {
-      const [result, bookTags] = await Promise.all([
+      const [bookResult, tagsResult] = await Promise.allSettled([
         api.getBook(id),
         api.getBookTags(id),
       ]);
       if (seq !== fetchSeq) return;
-      book = result;
-      tags = bookTags;
+
+      if (bookResult.status === "rejected") {
+        throw bookResult.reason;
+      }
+
+      book = bookResult.value;
+      tags = tagsResult.status === "fulfilled" ? tagsResult.value : [];
     } catch (e) {
       if (seq !== fetchSeq) return;
       error = e instanceof Error ? e.message : "Failed to load book";

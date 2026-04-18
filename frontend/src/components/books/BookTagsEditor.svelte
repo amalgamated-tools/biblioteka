@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Tag } from "../../types";
   import * as api from "../../lib/api";
+  import { tagStore } from "../../stores/tags.svelte";
   import { X, Tag as TagIcon, Plus, Loader } from "lucide-svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
 
@@ -19,12 +20,14 @@
   let searchText = $state("");
   let dropdownOpen = $state(false);
   let creatingTag = $state(false);
+  let fetchSeq = 0;
 
   $effect(() => {
     void loadData(bookId);
   });
 
   async function loadData(id: string) {
+    const seq = ++fetchSeq;
     loading = true;
     error = null;
     try {
@@ -32,12 +35,14 @@
         api.getBookTags(id),
         api.listTags(),
       ]);
+      if (seq !== fetchSeq) return;
       assignedTags = bookTags;
       allTags = tags;
     } catch (e) {
+      if (seq !== fetchSeq) return;
       error = e instanceof Error ? e.message : "Failed to load tags";
     } finally {
-      loading = false;
+      if (seq === fetchSeq) loading = false;
     }
   }
 
@@ -95,7 +100,7 @@
     creatingTag = true;
     error = null;
     try {
-      const created = await api.createTag({ name });
+      const created = await tagStore.add({ name });
       allTags = [...allTags, created];
       await addTag(created);
     } catch (e) {
@@ -217,7 +222,7 @@
           class="absolute z-10 mt-1 w-full max-h-48 overflow-y-auto bg-white dark:bg-ink-800 border border-ink-200 dark:border-ink-700 rounded-xl shadow-lg py-1"
         >
           {#each filteredTags as tag (tag.id)}
-            <li>
+            <li role="none">
               <button
                 type="button"
                 role="option"
@@ -233,7 +238,7 @@
             </li>
           {/each}
           {#if showCreateOption}
-            <li>
+            <li role="none">
               <button
                 type="button"
                 role="option"

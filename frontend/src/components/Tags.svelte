@@ -14,7 +14,7 @@
   import DeleteConfirmation from "./ui/DeleteConfirmation.svelte";
 
   $effect(() => {
-    if (!tagStore.loaded && !tagStore.loading) {
+    if (!tagStore.loaded && !tagStore.loading && !tagStore.error) {
       void tagStore.load();
     }
   });
