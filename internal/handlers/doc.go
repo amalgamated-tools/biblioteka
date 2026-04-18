@@ -3,6 +3,6 @@
 // Kobo, OPDS, KOSync, OIDC, admin, config) has a dedicated handler struct that
 // holds the database connection and other dependencies. Shared utilities for
 // JSON responses, pagination, audit logging, and generic CRUD patterns live in
-// helpers.go and the named_entity.go / book_subresource.go / credentials.go
-// / tokens.go files.
+// crud.go, dberrors.go, response.go, and the named_entity.go / book_subresource.go
+// / credentials.go / tokens_compat.go files.
 package handlers
