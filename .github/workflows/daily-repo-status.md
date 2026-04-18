@@ -14,7 +14,12 @@ permissions:
   issues: read
   pull-requests: read
 
-network: defaults
+network:
+  allowed:
+  - defaults
+  - node
+  - python
+  - go
 
 tools:
   github:
