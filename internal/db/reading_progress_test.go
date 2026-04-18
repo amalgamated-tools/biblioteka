@@ -259,6 +259,90 @@ func TestGetReadingStreak_OldActivityReturnsZero(t *testing.T) {
 	require.Equal(t, 0, streak)
 }
 
+// ---- ComputeReadingStreak tests ----
+
+func TestComputeReadingStreak_Empty(t *testing.T) {
+	now := time.Date(2025, 6, 15, 12, 0, 0, 0, time.UTC)
+	require.Equal(t, 0, ComputeReadingStreak(nil, now))
+	require.Equal(t, 0, ComputeReadingStreak([]time.Time{}, now))
+}
+
+func TestComputeReadingStreak_TodayOnly(t *testing.T) {
+	now := time.Date(2025, 6, 15, 12, 0, 0, 0, time.UTC)
+	ts := []time.Time{now}
+	require.Equal(t, 1, ComputeReadingStreak(ts, now))
+}
+
+func TestComputeReadingStreak_YesterdayOnly(t *testing.T) {
+	now := time.Date(2025, 6, 15, 12, 0, 0, 0, time.UTC)
+	yesterday := now.AddDate(0, 0, -1)
+	ts := []time.Time{yesterday}
+	require.Equal(t, 1, ComputeReadingStreak(ts, now))
+}
+
+func TestComputeReadingStreak_TodayAndYesterday(t *testing.T) {
+	now := time.Date(2025, 6, 15, 12, 0, 0, 0, time.UTC)
+	yesterday := now.AddDate(0, 0, -1)
+	ts := []time.Time{now, yesterday}
+	require.Equal(t, 2, ComputeReadingStreak(ts, now))
+}
+
+func TestComputeReadingStreak_ConsecutiveDays(t *testing.T) {
+	now := time.Date(2025, 6, 15, 12, 0, 0, 0, time.UTC)
+	ts := []time.Time{
+		now,
+		now.AddDate(0, 0, -1),
+		now.AddDate(0, 0, -2),
+		now.AddDate(0, 0, -3),
+	}
+	require.Equal(t, 4, ComputeReadingStreak(ts, now))
+}
+
+func TestComputeReadingStreak_GapBreaksStreak(t *testing.T) {
+	now := time.Date(2025, 6, 15, 12, 0, 0, 0, time.UTC)
+	ts := []time.Time{
+		now,
+		now.AddDate(0, 0, -2), // gap: yesterday is missing
+	}
+	require.Equal(t, 1, ComputeReadingStreak(ts, now))
+}
+
+func TestComputeReadingStreak_OldActivityReturnsZero(t *testing.T) {
+	now := time.Date(2025, 6, 15, 12, 0, 0, 0, time.UTC)
+	// Most recent activity was 3 days ago — before yesterday.
+	ts := []time.Time{now.AddDate(0, 0, -3)}
+	require.Equal(t, 0, ComputeReadingStreak(ts, now))
+}
+
+func TestComputeReadingStreak_DuplicatesDeduped(t *testing.T) {
+	now := time.Date(2025, 6, 15, 12, 0, 0, 0, time.UTC)
+	// Multiple entries on the same day should count as one.
+	ts := []time.Time{
+		now,
+		now.Add(2 * time.Hour),
+		now.Add(4 * time.Hour),
+	}
+	require.Equal(t, 1, ComputeReadingStreak(ts, now))
+}
+
+func TestComputeReadingStreak_MidnightBoundary(t *testing.T) {
+	// One second before midnight: still "today".
+	now := time.Date(2025, 6, 15, 23, 59, 59, 0, time.UTC)
+	ts := []time.Time{now}
+	require.Equal(t, 1, ComputeReadingStreak(ts, now))
+}
+
+func TestComputeReadingStreak_StreakStartsYesterday(t *testing.T) {
+	// Streak of 3 ending yesterday (not today) is still valid.
+	now := time.Date(2025, 6, 15, 12, 0, 0, 0, time.UTC)
+	ts := []time.Time{
+		now.AddDate(0, 0, -1),
+		now.AddDate(0, 0, -2),
+		now.AddDate(0, 0, -3),
+	}
+	require.Equal(t, 3, ComputeReadingStreak(ts, now))
+}
+
 // ---- ComputeLongestStreak tests ----
 
 func TestComputeLongestStreak_Empty(t *testing.T) {

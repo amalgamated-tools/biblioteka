@@ -83,7 +83,7 @@ func (h *ReadingProgressHandler) HandleReadingProgressStats(w http.ResponseWrite
 			inProgress = append(inProgress, toReadingProgressItemDTO(p))
 		}
 	}
-	streak := db.ComputeReadingStreak(timestamps)
+	streak := db.ComputeReadingStreak(timestamps, time.Now().UTC())
 
 	writeJSON(ctx, w, http.StatusOK, readingProgressStatsResponse{
 		CurrentStreak: streak,
@@ -119,7 +119,7 @@ func estimateMinutesRemaining(p *db.ReadingProgress) *int64 {
 	if p.Percentage <= 0.01 {
 		return nil
 	}
-	elapsed := p.UpdatedAt.Sub(p.CreatedAt.Time)
+	elapsed := p.UpdatedAt.Time.Sub(p.CreatedAt.Time)
 	if elapsed < 5*time.Minute {
 		return nil
 	}
