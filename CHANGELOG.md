@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.15.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.14.0...v0.15.0) (2026-04-18)
+
+
+### Features
+
+* update network permissions in Dependabot workflow to allow additional domains ([a06cdd3](https://github.com/amalgamated-tools/biblioteka/commit/a06cdd3dd6b88dc74262de1697eec3e453b4d578))
+* use goauth ([#2101](https://github.com/amalgamated-tools/biblioteka/issues/2101)) ([c4d9b34](https://github.com/amalgamated-tools/biblioteka/commit/c4d9b34d98242052bde79cb998c26a5e68153e79))
+
+
+### Bug Fixes
+
+* **accessibility:** add required-field semantics to reading list create/edit forms ([#2183](https://github.com/amalgamated-tools/biblioteka/issues/2183)) ([bb2e126](https://github.com/amalgamated-tools/biblioteka/commit/bb2e1262765bb2450dc9157b780fcca98c803657))
+* **accessibility:** add visible invalid-state styling to TextInput ([#2124](https://github.com/amalgamated-tools/biblioteka/issues/2124)) ([16e0a5d](https://github.com/amalgamated-tools/biblioteka/commit/16e0a5daebf1eb32cca5f32e36193d82ff7e8001))
+* **accessibility:** announce BookList page position via live region ([#2129](https://github.com/amalgamated-tools/biblioteka/issues/2129)) ([c338553](https://github.com/amalgamated-tools/biblioteka/commit/c338553b3e871582b9aa5b5ed769aae256f15230))
+* **accessibility:** expose BookList pagination as a named navigation landmark ([#2185](https://github.com/amalgamated-tools/biblioteka/issues/2185)) ([c03cfd6](https://github.com/amalgamated-tools/biblioteka/commit/c03cfd642f9303ad475ceabbf4dc4b6abc42823c))
+* **accessibility:** focus Email Book modal container on open ([#2128](https://github.com/amalgamated-tools/biblioteka/issues/2128)) ([e5cba3d](https://github.com/amalgamated-tools/biblioteka/commit/e5cba3d335b18bc83008d58d3bbb20edfd97d456))
+* **accessibility:** mark Auth required fields and add required-field guidance ([#2179](https://github.com/amalgamated-tools/biblioteka/issues/2179)) ([4f7c156](https://github.com/amalgamated-tools/biblioteka/commit/4f7c1562977a0cbf81b1c58833e5d18f3ee9627a))
+* **accessibility:** raise low-contrast ink-400 text usages to AA-compliant tokens ([#2186](https://github.com/amalgamated-tools/biblioteka/issues/2186)) ([b474584](https://github.com/amalgamated-tools/biblioteka/commit/b474584bb85f80e15c046488982ec332a11e56b7))
+* add otelkeys.Months, fix stats.go log key, fmt.Errorf in config_watch_folder, remove dead validate tag ([#2109](https://github.com/amalgamated-tools/biblioteka/issues/2109)) ([16c9ae4](https://github.com/amalgamated-tools/biblioteka/commit/16c9ae455bccbc392c4e6c6c10175a28402e5a98))
+* **auth:** add required-field indicators to login and sign-up forms ([#2126](https://github.com/amalgamated-tools/biblioteka/issues/2126)) ([534b4c3](https://github.com/amalgamated-tools/biblioteka/commit/534b4c3bcb852a9e4bd561c6ba15d4092d4b97ad))
+* **auth:** scope login aria-invalid to the field in error ([#2181](https://github.com/amalgamated-tools/biblioteka/issues/2181)) ([788dfdf](https://github.com/amalgamated-tools/biblioteka/commit/788dfdff7a65e0fe70fe9e762e624ad8af706d64))
+* **repo assist:** test(db): add tests for ai_enrichments.go ([#2150](https://github.com/amalgamated-tools/biblioteka/issues/2150)) ([057f590](https://github.com/amalgamated-tools/biblioteka/commit/057f590f812c1cf3aac8649bd031e906642dcb0c))
+
+
+### Performance Improvements
+
+* Add missing FK cascade indexes on reading_group_lists and passkey_challenges ([#2107](https://github.com/amalgamated-tools/biblioteka/issues/2107)) ([0dff8cc](https://github.com/amalgamated-tools/biblioteka/commit/0dff8ccb0ced8d634877b4201f25795e659dced0))
+* Add missing FK indexes on kobo_reading_states, ai_enrichments, goodreads_metadata, book_annotations ([#2168](https://github.com/amalgamated-tools/biblioteka/issues/2168)) ([a30b33a](https://github.com/amalgamated-tools/biblioteka/commit/a30b33aa0050c53a8fb285a58288759d1ca055ed))
+
 ## [0.14.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.13.0...v0.14.0) (2026-04-16)
 
 
