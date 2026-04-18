@@ -29,6 +29,9 @@
       showForm = true;
     } else if (!viewingGroup) {
       showForm = false;
+      newName = "";
+      newDescription = "";
+      createError = null;
     }
   });
 
