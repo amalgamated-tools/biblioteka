@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -326,7 +327,7 @@ func BenchmarkGetYearInBooks(b *testing.B) {
 		require.NoError(b, err, "UpsertReadingProgress")
 	}
 
-	year := 2026
+	year := time.Now().UTC().Year()
 	b.ResetTimer()
 	b.ReportAllocs()
 	for range b.N {
