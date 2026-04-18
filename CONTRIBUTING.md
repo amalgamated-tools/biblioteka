@@ -319,21 +319,32 @@ Always commit the updated spec files alongside the handler changes that prompted
 - **No new dependencies** without a discussion issue first. The project values minimal dependencies.
 - **Standard library routing**: Routes are registered on `http.ServeMux` via `setupRoutes` in `internal/server/routes.go`. No router framework.
 - **Handler structure**: Each domain has a handler struct (e.g., `BookHandler`) holding a `*db.DB` and other dependencies. Handlers live in `internal/handlers/`.
-- **JSON responses**: Use `writeJSON(r.Context(), w, status, data)` and `writeError(r.Context(), w, status, message)` from `internal/handlers/helpers.go`.
-- **JSON request decoding**: Use `decodeJSON(r, w, &req)` from `internal/handlers/helpers.go` to decode the request body. It caps the body at 1 MiB, writes a `400 Bad Request` error on failure, and returns `false` so callers can simply `return`:
+- **JSON responses**: Use `writeJSON(r.Context(), w, status, data)` and `writeError(r.Context(), w, status, message)` from `internal/handlers/response.go`.
+- **JSON request decoding**: Use `decodeJSON(r, w, &req)` from `internal/handlers/response.go` to decode the request body. It caps the body at 1 MiB, writes a `400 Bad Request` error on failure, and returns `false` so callers can simply `return`:
   ```go
   var req createBookRequest
   if !decodeJSON(r, w, &req) {
       return
   }
   ```
-- **Path parameters**: Two helpers in `internal/handlers/helpers.go` extract URL segments — there is no router with named params:
+- **Path parameters**: Two helpers in `internal/handlers/request.go` extract URL segments — there is no router with named params:
   - `extractPathID(path, prefix)` — extracts a single resource ID. Example: `id, ok := extractPathID(r.URL.Path, "/api/books/")`.
   - `extractPathSegments(path, prefix)` — extracts a resource ID **and** an optional sub-resource. Example: `id, sub, ok := extractPathSegments(r.URL.Path, "/api/books/")` where `sub` holds the trailing segment (e.g., `"authors"`, `"files"`).
-- **Database error handling**: Use `handleDBErr(ctx, w, err, resource)` from `internal/handlers/helpers.go` after a DB lookup. It returns `true` and writes the appropriate HTTP error when the error is non-nil (404 for `sql.ErrNoRows`, 500 otherwise), so callers can simply `return`:
+- **Database error handling**: Use `handleDBErr(ctx, w, err, resource)` from `internal/handlers/dberrors.go` after a DB lookup. It returns `true` and writes the appropriate HTTP error when the error is non-nil (404 for `sql.ErrNoRows`, 500 otherwise), so callers can simply `return`:
   ```go
   book, err := h.DB.GetBook(r.Context(), id)
   if handleDBErr(r.Context(), w, err, "book") {
+      return
+  }
+  ```
+- **Operation error handling**: For post-operation errors (delete, add, remove sub-resources) where you want `sql.ErrNoRows` → 404 and all other errors → 500, use `handleOpErr` from `internal/handlers/dberrors.go`. The `op` string is used as the client-facing 500 error message, so keep it generic, non-sensitive, and user-appropriate (for example, `"failed to delete group"` rather than including internal error details). It accepts optional `slog.Attr` values for extra log context and returns `true` when it wrote a response:
+  ```go
+  if handleOpErr(r.Context(), w, h.DB.DeleteGroup(r.Context(), id, userID), "group", "failed to delete group") {
+      return
+  }
+  // With extra log attributes:
+  if handleOpErr(r.Context(), w, err, "reading list", "failed to add book to reading list",
+      slog.String(otelkeys.BookID, bookID)) {
       return
   }
   ```
@@ -342,7 +353,7 @@ Always commit the updated spec files alongside the handler changes that prompted
   limit, offset := parseLimitOffset(r, defaultPageLimit, maxPageLimit)
   ```
   The package-level constants `defaultPageLimit = 50` and `maxPageLimit = 200` are the standard values for most list endpoints.
-- **Admin-only endpoints**: Use the package-level `requireAdmin(h.DB, w, r) bool` function from `internal/handlers/helpers.go` to protect admin endpoints. Return early if it returns `false` — the function already writes the error response:
+- **Admin-only endpoints**: Use the package-level `requireAdmin(h.DB, w, r) bool` function from `internal/handlers/crud.go` to protect admin endpoints. Return early if it returns `false` — the function already writes the error response:
   ```go
   if !requireAdmin(h.DB, w, r) {
       return
@@ -373,9 +384,9 @@ Always commit the updated spec files alongside the handler changes that prompted
       listEntities(w, r, "authors", h.DB.ListAuthors, toAuthorDTO)
   }
   ```
-- **Deleting a resource**: For DELETE handlers on global resources, use `deleteResource` from `internal/handlers/helpers.go` instead of hand-rolling the fetch-delete-audit pattern. It fetches the entity, deletes it, writes an audit log entry, and responds with `204 No Content`. Always `return` immediately after the call:
+- **Deleting a resource**: For DELETE handlers on global resources, use `deleteResource` from `internal/handlers/crud.go` instead of hand-rolling the fetch-delete-audit pattern. It fetches the entity, deletes it, writes an audit log entry, and responds with `204 No Content`. Always `return` immediately after the call:
   ```go
-  deleteResource(h.DB, w, r, id, "author", otelkeys.AuthorID,
+  deleteResource(h.DB, w, r, id, "author", "author", otelkeys.AuthorID,
       h.DB.GetAuthor, h.DB.DeleteAuthor,
       db.AuditActionAuthorDeleted,
       func(a *db.Author) map[string]any { return map[string]any{"name": a.Name} },
