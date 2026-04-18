@@ -403,7 +403,7 @@ If the library has a `book_per_folder` or `book_per_file` organization type, new
 
 > **Audit trail:** Changes to the watch folder configuration are recorded in the audit log as `watch_folder.config_updated`.
 
-See [API Reference — Watch folder endpoints](api/config.md#get-apiconfigwatch-folder-admin-jwt-only) for the full endpoint shape and error codes.
+See [API Reference — Watch folder endpoints](api/config.md#get-apiconfigwatch-folder--admin--jwt-only) for the full endpoint shape and error codes.
 
 ---
 
@@ -479,7 +479,7 @@ All six SMTP settings (`host`, `port`, `username`, `password`, `from`, `tls`) ar
 
 **Precedence:** When the `SMTP_HOST` environment variable is set, all SMTP settings are read exclusively from environment variables (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM`, `SMTP_TLS`) and the database values are ignored. The runtime configuration UI will appear read-only. When `SMTP_HOST` is unset (the default), the values stored in the database via the API or Settings UI are used.
 
-See [API reference — SMTP config endpoints](api/config.md#get-apiconfigsmtp--admin) for full request/response shapes.
+See [API reference — SMTP config endpoints](api/config.md#get-apiconfigsmtp--admin--jwt-only) for full request/response shapes.
 
 ### Emailing book files to readers
 

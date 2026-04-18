@@ -95,7 +95,7 @@ Key-value store for runtime configuration. Used for OIDC provider settings and S
 | `oidc_client_secret`   | OIDC application client secret           |
 | `oidc_redirect_uri`    | OAuth2 redirect URI for the callback     |
 
-*SMTP settings* (see [API reference — `GET /api/config/smtp`](api/config.md#get-apiconfigsmtp--admin)):
+*SMTP settings* (see [API reference — `GET /api/config/smtp`](api/config.md#get-apiconfigsmtp--admin--jwt-only)):
 
 | Key               | Description                                                      |
 |-------------------|------------------------------------------------------------------|
