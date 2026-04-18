@@ -306,3 +306,33 @@ func BenchmarkLoadBookRelations(b *testing.B) {
 		}
 	}
 }
+
+// ---- GetYearInBooks ----
+
+// BenchmarkGetYearInBooks measures the concurrent four-query fetch for a user's
+// year-in-books statistics (books finished, active days, total downloads, and
+// longest streak). The four queries run concurrently via errgroup.
+func BenchmarkGetYearInBooks(b *testing.B) {
+	d := newBenchDB(b)
+	ctx := b.Context()
+
+	user, err := d.CreateUser(ctx, "bench-user", "bench@example.com", "hashedpw")
+	require.NoError(b, err, "CreateUser")
+
+	// Seed 30 reading progress records across distinct documents.
+	for i := range 30 {
+		doc := fmt.Sprintf("doc-%02d", i)
+		_, err := d.UpsertReadingProgress(ctx, user.ID, doc, "/p[1]", 0.5, nil, nil)
+		require.NoError(b, err, "UpsertReadingProgress")
+	}
+
+	year := 2026
+	b.ResetTimer()
+	b.ReportAllocs()
+	for range b.N {
+		_, err := d.GetYearInBooks(ctx, user.ID, year)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
