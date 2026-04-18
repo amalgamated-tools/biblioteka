@@ -6,7 +6,7 @@
 
 ## Kobo Tokens
 
-Kobo sync tokens authenticate a Kobo e-reader device against the built-in Kobo device API served under `/kobo/<token>/`. Each token is scoped to a single user; multiple tokens can exist per user (one per device is recommended). See the [Kobo Sync guide](kobo.md) for setup instructions and a full feature overview.
+Kobo sync tokens authenticate a Kobo e-reader device against the built-in Kobo device API served under `/kobo/<token>/`. Each token is scoped to a single user; multiple tokens can exist per user (one per device is recommended). See the [Kobo Sync guide](../kobo.md) for setup instructions and a full feature overview.
 
 All three endpoints require a **JWT** — API keys are not accepted (see [JWT-only endpoints](../api-reference.md#jwt-only-endpoints)).
 
@@ -92,7 +92,7 @@ Delete a Kobo sync token. The device using this token will receive `401` on its 
 
 ## KOReader / KOSync
 
-Biblioteka implements the [kosync](https://github.com/koreader/koreader-sync-server) protocol so that [KOReader](https://koreader.rocks/) can back up and synchronise reading positions to your self-hosted server. See the [KOReader Sync guide](koreader.md) for setup instructions.
+Biblioteka implements the [kosync](https://github.com/koreader/koreader-sync-server) protocol so that [KOReader](https://koreader.rocks/) can back up and synchronise reading positions to your self-hosted server. See the [KOReader Sync guide](../koreader.md) for setup instructions.
 
 ### Credential management (JWT-protected)
 

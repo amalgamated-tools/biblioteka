@@ -6,7 +6,7 @@
 
 ## OPDS Credentials
 
-Each user can configure one set of OPDS credentials (a separate username and password) for use with OPDS reading apps. Credentials are stored as a bcrypt hash. See the [OPDS Catalog guide](opds.md) for the full feature overview.
+Each user can configure one set of OPDS credentials (a separate username and password) for use with OPDS reading apps. Credentials are stored as a bcrypt hash. See the [OPDS Catalog guide](../opds.md) for the full feature overview.
 
 ### `GET /api/opds/credentials` 🔒 **JWT only**
 
@@ -74,7 +74,7 @@ Delete the current user's OPDS credential. Any OPDS client using those credentia
 
 The OPDS catalog is served under `/opds` (not under `/api`). It uses **HTTP Basic Authentication** with the OPDS-specific credentials set via [the credentials endpoints above](#opds-credentials)—not the account JWT.
 
-All responses are `application/atom+xml` Atom feeds compliant with [OPDS 1.2](https://specs.opds.io/opds-1.2). Even error responses are returned as Atom XML so that OPDS clients can parse them. See the [OPDS Catalog guide](opds.md) for setup instructions and client examples.
+All responses are `application/atom+xml` Atom feeds compliant with [OPDS 1.2](https://specs.opds.io/opds-1.2). Even error responses are returned as Atom XML so that OPDS clients can parse them. See the [OPDS Catalog guide](../opds.md) for setup instructions and client examples.
 
 ### `GET /opds` — Root catalog
 
@@ -219,7 +219,7 @@ Serve a book's cover image. When the stored `cover_image_url` is a `data:` URL (
 | `404 Not Found` | Book not found, no cover image set, or stored `cover_image_url` is rejected because it is not HTTPS |
 | `500 Internal Server Error` | Stored data URL is malformed or its payload is not a valid image |
 
-See [Cover images](opds.md#cover-images) in the OPDS guide for MIME-type detection rules and details on the `data:` URL content-sniffing behaviour.
+See [Cover images](../opds.md#cover-images) in the OPDS guide for MIME-type detection rules and details on the `data:` URL content-sniffing behaviour.
 
 ---
 

@@ -86,7 +86,7 @@ Update a library. All fields are replaced (full update).
 
 Delete a library. Returns `204 No Content`.
 
-> **Cascade:** Deleting a library also removes all `library_books` join entries for that library. Books themselves are **not** deleted — only their membership in this library. See [Cascade Deletion Summary](database-schema.md#cascade-deletion-summary).
+> **Cascade:** Deleting a library also removes all `library_books` join entries for that library. Books themselves are **not** deleted — only their membership in this library. See [Cascade Deletion Summary](../database-schema.md#cascade-deletion-summary).
 
 **Errors:**
 

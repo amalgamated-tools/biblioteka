@@ -91,7 +91,7 @@ Update a series (full update).
 
 Delete a series. Returns `204 No Content`.
 
-> **Cascade:** Deleting a series also removes all `book_series` join entries for that series. Books themselves are **not** deleted. See [Cascade Deletion Summary](database-schema.md#cascade-deletion-summary).
+> **Cascade:** Deleting a series also removes all `book_series` join entries for that series. Books themselves are **not** deleted. See [Cascade Deletion Summary](../database-schema.md#cascade-deletion-summary).
 
 ---
 

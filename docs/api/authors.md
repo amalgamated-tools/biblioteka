@@ -93,7 +93,7 @@ Update an author (full update).
 
 Delete an author. Returns `204 No Content`.
 
-> **Cascade:** Deleting an author also removes all `book_authors` join entries for that author. Books themselves are **not** deleted. See [Cascade Deletion Summary](database-schema.md#cascade-deletion-summary).
+> **Cascade:** Deleting an author also removes all `book_authors` join entries for that author. Books themselves are **not** deleted. See [Cascade Deletion Summary](../database-schema.md#cascade-deletion-summary).
 
 ---
 

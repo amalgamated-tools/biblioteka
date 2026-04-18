@@ -77,7 +77,7 @@ If `query` is omitted or trims to an empty string (for example, `query=%20%20`),
 | `publication_date` | string\|null | ISO date (`YYYY-MM-DD`) |
 | `publisher`        | string\|null | Publisher name |
 | `language`         | string\|null | BCP 47 language tag |
-| `cover_image_url`  | string\|null | Cover art URL or `data:image/...;base64,...` string. For EPUB books imported with an embedded cover, this field is automatically set to a base64-encoded `data:` URL; the encoded value can be up to 20 MB. For other formats or manually set covers it is a plain `https://` URL. Prefer the [OPDS cover endpoint](opds.md#get-opdscoversbookid) to serve cover images rather than decoding this field in application code. |
+| `cover_image_url`  | string\|null | Cover art URL or `data:image/...;base64,...` string. For EPUB books imported with an embedded cover, this field is automatically set to a base64-encoded `data:` URL; the encoded value can be up to 20 MB. For other formats or manually set covers it is a plain `https://` URL. Prefer the [OPDS cover endpoint](opds.md#get-opds-covers-bookid--book-cover-image) to serve cover images rather than decoding this field in application code. |
 | `created_at`       | string  | ISO 8601 creation timestamp |
 | `updated_at`       | string  | ISO 8601 last-updated timestamp |
 
@@ -208,7 +208,7 @@ Update a book's metadata. This is a **full replacement** — every field not inc
 
 Delete a book. Returns `204 No Content`.
 
-> **Cascade:** Deleting a book also removes all associated `book_files`, `book_authors`, `book_series`, and `library_books` records. See [Cascade Deletion Summary](database-schema.md#cascade-deletion-summary).
+> **Cascade:** Deleting a book also removes all associated `book_files`, `book_authors`, `book_series`, and `library_books` records. See [Cascade Deletion Summary](../database-schema.md#cascade-deletion-summary).
 
 ---
 
