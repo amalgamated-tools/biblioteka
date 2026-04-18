@@ -142,6 +142,26 @@ describe("ReadingLists", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("announces required fields in the create form", async () => {
+    vi.mocked(readingListStore).loaded = true;
+    const { container } = render(ReadingLists);
+    await tick();
+
+    await fireEvent.click(screen.getByRole("button", { name: /New List/i }));
+    await tick();
+
+    const nameInput = screen.getByLabelText(/Name/i);
+    expect(nameInput).toHaveAttribute("aria-required", "true");
+
+    const legend = container.querySelector(".space-y-3 > p");
+    expect(legend).toBeInTheDocument();
+    expect(legend?.textContent).toMatch(/are required/i);
+    const visual = legend?.querySelector('span[aria-hidden="true"]');
+    expect(visual).toHaveTextContent("*");
+    const srOnly = legend?.querySelector(".sr-only");
+    expect(srOnly).toHaveTextContent("an asterisk");
+  });
+
   it("marks the create name field invalid after a create error", async () => {
     vi.mocked(readingListStore).loaded = true;
     vi.mocked(readingListStore).create = vi

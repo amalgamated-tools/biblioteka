@@ -120,6 +120,28 @@ describe("ReadingListDetail", () => {
     });
   });
 
+  it("announces required fields in the edit form", async () => {
+    const user = userEvent.setup();
+
+    const { container } = render(ReadingListDetail, {
+      props: { listId: fakeList.id },
+    });
+    await tick();
+
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+
+    const nameInput = screen.getByLabelText(/Name/i);
+    expect(nameInput).toHaveAttribute("aria-required", "true");
+
+    const legend = container.querySelector(".space-y-3 > p");
+    expect(legend).toBeInTheDocument();
+    expect(legend?.textContent).toMatch(/are required/i);
+    const visual = legend?.querySelector('span[aria-hidden="true"]');
+    expect(visual).toHaveTextContent("*");
+    const srOnly = legend?.querySelector(".sr-only");
+    expect(srOnly).toHaveTextContent("an asterisk");
+  });
+
   it("saves edits through the reading list store", async () => {
     const user = userEvent.setup();
 
