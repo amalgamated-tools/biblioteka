@@ -85,7 +85,7 @@
       </div>
       <div>
         <p class="text-lg font-display font-bold tracking-tight">biblioteka</p>
-        <p class="text-xs text-ink-400 truncate">
+        <p class="text-xs text-ink-300 truncate">
           {authStore.user?.name || authStore.user?.email}
         </p>
       </div>
@@ -100,7 +100,7 @@
     <div role="group" aria-labelledby="sidebar-home-heading">
       <h2
         id="sidebar-home-heading"
-        class="px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-ink-400"
+        class="px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-ink-300"
       >
         Home
       </h2>
@@ -151,7 +151,7 @@
       <div class="flex items-center justify-between px-3 mb-2">
         <h2
           id="sidebar-libraries-heading"
-          class="text-[10px] font-semibold uppercase tracking-[0.15em] text-ink-400"
+          class="text-[10px] font-semibold uppercase tracking-[0.15em] text-ink-300"
         >
           Libraries
         </h2>
@@ -226,7 +226,7 @@
     <button
       id="logout-button"
       onclick={handleLogout}
-      class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-ink-400 hover:bg-ink-800/70 hover:text-white transition-all"
+      class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-ink-300 hover:bg-ink-800/70 hover:text-white transition-all"
     >
       <LogOut class="w-5 h-5" aria-hidden="true" />
       Logout

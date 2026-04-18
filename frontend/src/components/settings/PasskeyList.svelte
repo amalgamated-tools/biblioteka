@@ -26,7 +26,7 @@
             class="text-sm font-medium text-ink-800 dark:text-cream-100 truncate"
             >{passkey.name}</span
           >
-          <span class="text-xs text-ink-400 dark:text-ink-400 shrink-0">
+          <span class="text-xs text-ink-500 dark:text-ink-300 shrink-0">
             {new Date(passkey.created_at).toLocaleDateString()}
           </span>
         </div>
@@ -43,7 +43,7 @@
     {/each}
   </ul>
 {:else}
-  <p class="text-sm text-ink-400 dark:text-ink-400 mb-4">
+  <p class="text-sm text-ink-500 dark:text-ink-300 mb-4">
     No passkeys registered yet.
   </p>
 {/if}

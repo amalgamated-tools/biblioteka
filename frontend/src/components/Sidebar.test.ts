@@ -155,6 +155,27 @@ describe("Sidebar navigation accessibility", () => {
     ).toBeVisible();
   });
 
+  it("uses higher-contrast classes for sidebar metadata text", () => {
+    render(Sidebar, {
+      props: { currentView: "dashboard", open: true, onClose: () => {} },
+    });
+
+    const userMeta = screen.getByText("test@example.com");
+    expect(userMeta).toHaveClass("text-ink-300");
+
+    const homeHeading = screen.getByRole("heading", { name: "Home", level: 2 });
+    expect(homeHeading).toHaveClass("text-ink-300");
+
+    const librariesHeading = screen.getByRole("heading", {
+      name: "Libraries",
+      level: 2,
+    });
+    expect(librariesHeading).toHaveClass("text-ink-300");
+
+    const logout = screen.getByRole("button", { name: "Logout" });
+    expect(logout).toHaveClass("text-ink-300");
+  });
+
   it("does not render the app name as a heading", () => {
     render(Sidebar, {
       props: { currentView: "dashboard", open: true, onClose: () => {} },
