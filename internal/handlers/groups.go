@@ -76,6 +76,15 @@ func toGroupMemberDTO(m *db.ReadingGroupMember) groupMemberDTO {
 	}
 }
 
+func toGroupMemberProgressDTO(p *db.GroupMemberProgress) groupMemberProgressDTO {
+	return groupMemberProgressDTO{
+		UserID:     p.UserID,
+		UserName:   p.UserName,
+		Percentage: p.Percentage,
+		UpdatedAt:  p.UpdatedAt,
+	}
+}
+
 // HandleGroups handles GET /api/groups and POST /api/groups.
 func (h *GroupHandler) HandleGroups(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
@@ -204,15 +213,11 @@ func (h *GroupHandler) deleteGroup(w http.ResponseWriter, r *http.Request, id st
 	ctx := r.Context()
 	userID := auth.UserIDFromContext(ctx)
 	if err := h.DB.DeleteGroup(ctx, id, userID); err != nil {
-		if handleDBErr(ctx, w, err, "group") {
+		if handleOpErr(ctx, w, err, "group", "failed to delete group",
+			slog.String(otelkeys.GroupID, id),
+		) {
 			return
 		}
-		slog.ErrorContext(ctx, "failed to delete group",
-			slog.String(otelkeys.GroupID, id),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(ctx, w, http.StatusInternalServerError, "failed to delete group")
-		return
 	}
 
 	logAudit(ctx, h.DB, userID, db.AuditActionGroupDeleted, "group", id, nil)
@@ -234,15 +239,9 @@ func (h *GroupHandler) listGroupMembers(w http.ResponseWriter, r *http.Request, 
 	ctx := r.Context()
 	userID := auth.UserIDFromContext(ctx)
 	members, err := h.DB.ListGroupMembers(ctx, groupID, userID)
-	if err != nil {
-		if handleDBErr(ctx, w, err, "group") {
-			return
-		}
-		slog.ErrorContext(ctx, "failed to list group members",
-			slog.String(otelkeys.GroupID, groupID),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(ctx, w, http.StatusInternalServerError, "failed to list group members")
+	if handleOpErr(ctx, w, err, "group", "failed to list group members",
+		slog.String(otelkeys.GroupID, groupID),
+	) {
 		return
 	}
 	writeJSON(ctx, w, http.StatusOK, mapSlice(members, toGroupMemberDTO))
@@ -266,15 +265,11 @@ func (h *GroupHandler) addGroupMember(w http.ResponseWriter, r *http.Request, gr
 			writeError(ctx, w, http.StatusNotFound, "user not found")
 			return
 		}
-		if handleDBErr(ctx, w, err, "group") {
+		if handleOpErr(ctx, w, err, "group", "failed to add group member",
+			slog.String(otelkeys.GroupID, groupID),
+		) {
 			return
 		}
-		slog.ErrorContext(ctx, "failed to add group member",
-			slog.String(otelkeys.GroupID, groupID),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(ctx, w, http.StatusInternalServerError, "failed to add group member")
-		return
 	}
 
 	if added {
@@ -302,15 +297,11 @@ func (h *GroupHandler) removeGroupMember(w http.ResponseWriter, r *http.Request,
 			writeError(ctx, w, http.StatusBadRequest, "owner cannot leave their own group")
 			return
 		}
-		if handleDBErr(ctx, w, err, "group") {
+		if handleOpErr(ctx, w, err, "group", "failed to remove group member",
+			slog.String(otelkeys.GroupID, groupID),
+		) {
 			return
 		}
-		slog.ErrorContext(ctx, "failed to remove group member",
-			slog.String(otelkeys.GroupID, groupID),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(ctx, w, http.StatusInternalServerError, "failed to remove group member")
-		return
 	}
 
 	logAudit(ctx, h.DB, userID, db.AuditActionGroupMemberRemoved, "group", groupID,
@@ -334,15 +325,9 @@ func (h *GroupHandler) listGroupLists(w http.ResponseWriter, r *http.Request, gr
 	ctx := r.Context()
 	userID := auth.UserIDFromContext(ctx)
 	lists, err := h.DB.ListGroupReadingLists(ctx, groupID, userID)
-	if err != nil {
-		if handleDBErr(ctx, w, err, "group") {
-			return
-		}
-		slog.ErrorContext(ctx, "failed to list group reading lists",
-			slog.String(otelkeys.GroupID, groupID),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(ctx, w, http.StatusInternalServerError, "failed to list group reading lists")
+	if handleOpErr(ctx, w, err, "group", "failed to list group reading lists",
+		slog.String(otelkeys.GroupID, groupID),
+	) {
 		return
 	}
 	writeJSON(ctx, w, http.StatusOK, mapSlice(lists, toReadingListDTO))
@@ -361,16 +346,10 @@ func (h *GroupHandler) shareList(w http.ResponseWriter, r *http.Request, groupID
 
 	userID := auth.UserIDFromContext(ctx)
 	_, err := h.DB.ShareListWithGroup(ctx, groupID, req.ListID, userID)
-	if err != nil {
-		if handleDBErr(ctx, w, err, "reading list") {
-			return
-		}
-		slog.ErrorContext(ctx, "failed to share list with group",
-			slog.String(otelkeys.GroupID, groupID),
-			slog.String(otelkeys.ReadingListID, req.ListID),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(ctx, w, http.StatusInternalServerError, "failed to share reading list with group")
+	if handleOpErr(ctx, w, err, "reading list", "failed to share reading list with group",
+		slog.String(otelkeys.GroupID, groupID),
+		slog.String(otelkeys.ReadingListID, req.ListID),
+	) {
 		return
 	}
 
@@ -393,16 +372,12 @@ func (h *GroupHandler) unshareList(w http.ResponseWriter, r *http.Request, group
 	ctx := r.Context()
 	userID := auth.UserIDFromContext(ctx)
 	if err := h.DB.UnshareListFromGroup(ctx, groupID, listID, userID); err != nil {
-		if handleDBErr(ctx, w, err, "reading list") {
-			return
-		}
-		slog.ErrorContext(ctx, "failed to unshare list from group",
+		if handleOpErr(ctx, w, err, "reading list", "failed to unshare reading list from group",
 			slog.String(otelkeys.GroupID, groupID),
 			slog.String(otelkeys.ReadingListID, listID),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(ctx, w, http.StatusInternalServerError, "failed to unshare reading list from group")
-		return
+		) {
+			return
+		}
 	}
 
 	logAudit(ctx, h.DB, userID, db.AuditActionGroupListUnshared, "group", groupID,
@@ -425,27 +400,12 @@ func (h *GroupHandler) handleGroupProgress(w http.ResponseWriter, r *http.Reques
 
 	userID := auth.UserIDFromContext(ctx)
 	progress, err := h.DB.ListGroupMemberProgress(ctx, groupID, bookID, userID)
-	if err != nil {
-		if handleDBErr(ctx, w, err, "group") {
-			return
-		}
-		slog.ErrorContext(ctx, "failed to list group member progress",
-			slog.String(otelkeys.GroupID, groupID),
-			slog.String(otelkeys.BookID, bookID),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(ctx, w, http.StatusInternalServerError, "failed to list group member progress")
+	if handleOpErr(ctx, w, err, "group", "failed to list group member progress",
+		slog.String(otelkeys.GroupID, groupID),
+		slog.String(otelkeys.BookID, bookID),
+	) {
 		return
 	}
 
-	dtos := make([]groupMemberProgressDTO, len(progress))
-	for i, p := range progress {
-		dtos[i] = groupMemberProgressDTO{
-			UserID:     p.UserID,
-			UserName:   p.UserName,
-			Percentage: p.Percentage,
-			UpdatedAt:  p.UpdatedAt,
-		}
-	}
-	writeJSON(ctx, w, http.StatusOK, dtos)
+	writeJSON(ctx, w, http.StatusOK, mapSlice(progress, toGroupMemberProgressDTO))
 }
