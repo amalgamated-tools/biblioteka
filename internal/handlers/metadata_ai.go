@@ -47,6 +47,19 @@ func toAIEnrichmentDTO(e *db.AIEnrichment) aiEnrichmentDTO {
 }
 
 // fetchAIEnrichment enqueues an AI enrichment job for the given book.
+//
+//	@Summary		Fetch AI enrichment
+//	@Description	Enqueue a background job to generate AI enrichment (tags, description, reading level) for a book. Returns 202 if already running or already fetched.
+//	@Tags			Book Metadata
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401	{object}	errorResponse
+//	@Param			id	path		string	true	"Book ID"
+//	@Success		202	{object}	fetchMetadataResponse
+//	@Failure		404	{object}	errorResponse
+//	@Failure		500	{object}	errorResponse
+//	@Failure		503	{object}	errorResponse
+//	@Router			/books/{id}/metadata/ai-fetch [post]
 func (h *MetadataHandler) fetchAIEnrichment(w http.ResponseWriter, r *http.Request, bookID string) {
 	userID := auth.UserIDFromContext(r.Context())
 
@@ -106,6 +119,18 @@ func (h *MetadataHandler) fetchAIEnrichment(w http.ResponseWriter, r *http.Reque
 }
 
 // getPendingAIEnrichment returns the most recent pending AI enrichment for a book.
+//
+//	@Summary		Get pending AI enrichment
+//	@Description	Returns the most recent pending AI enrichment for a book
+//	@Tags			Book Metadata
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401	{object}	errorResponse
+//	@Param			id	path		string	true	"Book ID"
+//	@Success		200	{object}	aiEnrichmentDTO
+//	@Failure		404	{object}	errorResponse
+//	@Failure		500	{object}	errorResponse
+//	@Router			/books/{id}/metadata/ai [get]
 func (h *MetadataHandler) getPendingAIEnrichment(w http.ResponseWriter, r *http.Request, bookID string) {
 	userID := auth.UserIDFromContext(r.Context())
 
@@ -129,6 +154,19 @@ func (h *MetadataHandler) getPendingAIEnrichment(w http.ResponseWriter, r *http.
 // applyAIEnrichment applies a pending AI enrichment to the book.
 // It union-merges suggested tags and sets the description if the book has none.
 // All mutations (tags, description, status) are applied atomically.
+//
+//	@Summary		Apply AI enrichment
+//	@Description	Atomically applies a pending AI enrichment to the book: union-merges suggested tags and optionally sets the description (only if the book has none)
+//	@Tags			Book Metadata
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401	{object}	errorResponse
+//	@Param			id	path		string	true	"Book ID"
+//	@Success		200	{object}	aiEnrichmentDTO
+//	@Failure		404	{object}	errorResponse
+//	@Failure		409	{object}	errorResponse
+//	@Failure		500	{object}	errorResponse
+//	@Router			/books/{id}/metadata/ai-apply [post]
 func (h *MetadataHandler) applyAIEnrichment(w http.ResponseWriter, r *http.Request, bookID string) {
 	userID := auth.UserIDFromContext(r.Context())
 
@@ -203,6 +241,18 @@ func (h *MetadataHandler) applyAIEnrichment(w http.ResponseWriter, r *http.Reque
 }
 
 // rejectAIEnrichment marks the pending AI enrichment as rejected.
+//
+//	@Summary		Reject AI enrichment
+//	@Description	Marks the pending AI enrichment for a book as rejected
+//	@Tags			Book Metadata
+//	@Security		BearerAuth
+//	@Failure		401	{object}	errorResponse
+//	@Param			id	path		string	true	"Book ID"
+//	@Success		204	"No Content"
+//	@Failure		404	{object}	errorResponse
+//	@Failure		409	{object}	errorResponse
+//	@Failure		500	{object}	errorResponse
+//	@Router			/books/{id}/metadata/ai-reject [post]
 func (h *MetadataHandler) rejectAIEnrichment(w http.ResponseWriter, r *http.Request, bookID string) {
 	userID := auth.UserIDFromContext(r.Context())
 

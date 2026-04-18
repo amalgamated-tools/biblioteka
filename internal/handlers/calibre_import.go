@@ -44,6 +44,23 @@ type calibreSource struct {
 // JSON body with a server-side filesystem path, parses the database, and returns
 // a summary of the books that would be imported — without writing anything to
 // the Biblioteka database.
+//
+//	@Summary		Preview Calibre import
+//	@Description	Parse a Calibre metadata.db (uploaded as multipart/form-data or provided as a server-side path via JSON) and return a preview of the books that would be imported, without writing to the database. Admin only.
+//	@Tags			Calibre Import
+//	@Accept			multipart/form-data,json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			metadata_db	formData	file	false	"Calibre metadata.db file (multipart upload)"
+//	@Param			library_id	formData	string	false	"Library ID to associate with imported books (multipart upload)"
+//	@Failure		401	{object}	errorResponse
+//	@Failure		403	{object}	errorResponse
+//	@Success		200	{object}	calibre.Preview
+//	@Failure		400	{object}	errorResponse
+//	@Failure		413	{object}	errorResponse
+//	@Failure		415	{object}	errorResponse
+//	@Failure		500	{object}	errorResponse
+//	@Router			/calibre-import/preview [post]
 func (h *CalibreImportHandler) HandlePreview(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
@@ -76,6 +93,23 @@ func (h *CalibreImportHandler) HandlePreview(w http.ResponseWriter, r *http.Requ
 // an optional library_id field) or a JSON body with a server-side path and
 // optional library_id. It imports book metadata (title, authors, series,
 // identifiers) into Biblioteka without creating file records.
+//
+//	@Summary		Execute Calibre import
+//	@Description	Import book metadata from a Calibre metadata.db into Biblioteka. Accepts either a multipart/form-data upload (with optional library_id field) or a JSON body with a server-side path and optional library_id. Does not create file records. Admin only.
+//	@Tags			Calibre Import
+//	@Accept			multipart/form-data,json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			metadata_db	formData	file	false	"Calibre metadata.db file (multipart upload)"
+//	@Param			library_id	formData	string	false	"Library ID to associate with imported books (multipart upload)"
+//	@Failure		401	{object}	errorResponse
+//	@Failure		403	{object}	errorResponse
+//	@Success		200	{object}	calibre.ImportResult
+//	@Failure		400	{object}	errorResponse
+//	@Failure		413	{object}	errorResponse
+//	@Failure		415	{object}	errorResponse
+//	@Failure		500	{object}	errorResponse
+//	@Router			/calibre-import/confirm [post]
 func (h *CalibreImportHandler) HandleImport(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")

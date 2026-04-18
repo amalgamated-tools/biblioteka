@@ -84,11 +84,35 @@ func (h *ReadingListHandler) HandleReadingListRoutes(w http.ResponseWriter, r *h
 }
 
 // listReadingLists returns all reading lists for the authenticated user.
+//
+//	@Summary		List reading lists
+//	@Description	Returns all reading lists owned by the authenticated user
+//	@Tags			Reading Lists
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401	{object}	errorResponse
+//	@Success		200	{array}		readingListDTO
+//	@Failure		500	{object}	errorResponse
+//	@Router			/reading-lists [get]
 func (h *ReadingListHandler) listReadingLists(w http.ResponseWriter, r *http.Request) {
 	listUserEntities(w, r, "reading lists", h.DB.ListReadingLists, toReadingListDTO)
 }
 
 // createReadingList creates a new reading list for the authenticated user.
+//
+//	@Summary		Create a reading list
+//	@Description	Create a new reading list for the authenticated user
+//	@Tags			Reading Lists
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401		{object}	errorResponse
+//	@Param			body	body		readingListRequest	true	"Reading list data"
+//	@Success		201		{object}	readingListDTO
+//	@Failure		400		{object}	errorResponse
+//	@Failure		409		{object}	errorResponse
+//	@Failure		500		{object}	errorResponse
+//	@Router			/reading-lists [post]
 func (h *ReadingListHandler) createReadingList(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	var req readingListRequest
@@ -137,6 +161,19 @@ func (h *ReadingListHandler) handleReadingList(w http.ResponseWriter, r *http.Re
 }
 
 // getReadingList returns a single reading list by ID scoped to the authenticated user.
+//
+//	@Summary		Get a reading list
+//	@Description	Returns a single reading list by ID for the authenticated user
+//	@Tags			Reading Lists
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401	{object}	errorResponse
+//	@Param			id	path		string	true	"Reading list ID"
+//	@Success		200	{object}	readingListDTO
+//	@Failure		400	{object}	errorResponse
+//	@Failure		404	{object}	errorResponse
+//	@Failure		500	{object}	errorResponse
+//	@Router			/reading-lists/{id} [get]
 func (h *ReadingListHandler) getReadingList(w http.ResponseWriter, r *http.Request, id string) {
 	ctx := r.Context()
 	userID := auth.UserIDFromContext(ctx)
@@ -148,6 +185,22 @@ func (h *ReadingListHandler) getReadingList(w http.ResponseWriter, r *http.Reque
 }
 
 // updateReadingList updates the name and description of a reading list.
+//
+//	@Summary		Update a reading list
+//	@Description	Update the name and description of a reading list owned by the authenticated user
+//	@Tags			Reading Lists
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401		{object}	errorResponse
+//	@Param			id		path		string				true	"Reading list ID"
+//	@Param			body	body		readingListRequest	true	"Reading list data"
+//	@Success		200		{object}	readingListDTO
+//	@Failure		400		{object}	errorResponse
+//	@Failure		404		{object}	errorResponse
+//	@Failure		409		{object}	errorResponse
+//	@Failure		500		{object}	errorResponse
+//	@Router			/reading-lists/{id} [put]
 func (h *ReadingListHandler) updateReadingList(w http.ResponseWriter, r *http.Request, id string) {
 	ctx := r.Context()
 	var req readingListRequest
@@ -172,6 +225,18 @@ func (h *ReadingListHandler) updateReadingList(w http.ResponseWriter, r *http.Re
 }
 
 // deleteReadingList deletes a reading list owned by the authenticated user.
+//
+//	@Summary		Delete a reading list
+//	@Description	Delete a reading list owned by the authenticated user
+//	@Tags			Reading Lists
+//	@Security		BearerAuth
+//	@Failure		401	{object}	errorResponse
+//	@Param			id	path		string	true	"Reading list ID"
+//	@Success		204	"No Content"
+//	@Failure		400	{object}	errorResponse
+//	@Failure		404	{object}	errorResponse
+//	@Failure		500	{object}	errorResponse
+//	@Router			/reading-lists/{id} [delete]
 func (h *ReadingListHandler) deleteReadingList(w http.ResponseWriter, r *http.Request, id string) {
 	deleteUserOwnedResource(h.DB, w, r, id, "reading list", "reading_list", otelkeys.ReadingListID,
 		h.DB.GetReadingList, h.DB.DeleteReadingList,
@@ -193,6 +258,21 @@ func (h *ReadingListHandler) handleReadingListBooks(w http.ResponseWriter, r *ht
 }
 
 // listReadingListBooks returns a paginated list of books in a reading list.
+//
+//	@Summary		List books in a reading list
+//	@Description	Returns a paginated list of books in a reading list owned by the authenticated user
+//	@Tags			Reading Lists
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401		{object}	errorResponse
+//	@Param			id		path		string	true	"Reading list ID"
+//	@Param			limit	query		int		false	"Max items per page (default 50, max 200)"
+//	@Param			offset	query		int		false	"Number of items to skip (default 0)"
+//	@Success		200		{object}	bookListDTO
+//	@Failure		400		{object}	errorResponse
+//	@Failure		404		{object}	errorResponse
+//	@Failure		500		{object}	errorResponse
+//	@Router			/reading-lists/{id}/books [get]
 func (h *ReadingListHandler) listReadingListBooks(w http.ResponseWriter, r *http.Request, listID string) {
 	ctx := r.Context()
 	userID := auth.UserIDFromContext(ctx)
@@ -214,6 +294,20 @@ func (h *ReadingListHandler) listReadingListBooks(w http.ResponseWriter, r *http
 }
 
 // addBookToReadingList adds a book to a reading list (idempotent).
+//
+//	@Summary		Add a book to a reading list
+//	@Description	Add a book to a reading list owned by the authenticated user (idempotent)
+//	@Tags			Reading Lists
+//	@Accept			json
+//	@Security		BearerAuth
+//	@Failure		401		{object}	errorResponse
+//	@Param			id		path		string						true	"Reading list ID"
+//	@Param			body	body		addBookToReadingListRequest	true	"Book to add"
+//	@Success		204		"No Content"
+//	@Failure		400		{object}	errorResponse
+//	@Failure		404		{object}	errorResponse
+//	@Failure		500		{object}	errorResponse
+//	@Router			/reading-lists/{id}/books [post]
 func (h *ReadingListHandler) addBookToReadingList(w http.ResponseWriter, r *http.Request, listID string) {
 	ctx := r.Context()
 	var req addBookToReadingListRequest
@@ -258,6 +352,19 @@ func (h *ReadingListHandler) handleReadingListBook(w http.ResponseWriter, r *htt
 }
 
 // removeBookFromReadingList removes a book from a reading list.
+//
+//	@Summary		Remove a book from a reading list
+//	@Description	Remove a book from a reading list owned by the authenticated user
+//	@Tags			Reading Lists
+//	@Security		BearerAuth
+//	@Failure		401		{object}	errorResponse
+//	@Param			id		path		string	true	"Reading list ID"
+//	@Param			bookID	path		string	true	"Book ID"
+//	@Success		204		"No Content"
+//	@Failure		400		{object}	errorResponse
+//	@Failure		404		{object}	errorResponse
+//	@Failure		500		{object}	errorResponse
+//	@Router			/reading-lists/{id}/books/{bookID} [delete]
 func (h *ReadingListHandler) removeBookFromReadingList(w http.ResponseWriter, r *http.Request, listID, bookID string) {
 	ctx := r.Context()
 	userID := auth.UserIDFromContext(ctx)

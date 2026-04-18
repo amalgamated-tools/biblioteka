@@ -171,6 +171,18 @@ func getPendingMetadataOrErr(ctx context.Context, d *db.DB, w http.ResponseWrite
 }
 
 // getPendingMetadata returns the most recent pending metadata for a book.
+//
+//	@Summary		Get pending book metadata
+//	@Description	Returns the most recent pending Goodreads/Hardcover metadata for a book
+//	@Tags			Book Metadata
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401	{object}	errorResponse
+//	@Param			id	path		string	true	"Book ID"
+//	@Success		200	{object}	metadataDTO
+//	@Failure		404	{object}	errorResponse
+//	@Failure		500	{object}	errorResponse
+//	@Router			/books/{id}/metadata [get]
 func (h *MetadataHandler) getPendingMetadata(w http.ResponseWriter, r *http.Request, bookID string) {
 	userID := auth.UserIDFromContext(r.Context())
 
@@ -188,6 +200,19 @@ type fetchMetadataResponse struct {
 }
 
 // fetchMetadata enqueues a metadata enrichment job for the given book.
+//
+//	@Summary		Fetch book metadata
+//	@Description	Enqueue a background job to fetch book metadata from Goodreads/Hardcover. Returns 202 if already running or already fetched.
+//	@Tags			Book Metadata
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401	{object}	errorResponse
+//	@Param			id	path		string	true	"Book ID"
+//	@Success		202	{object}	fetchMetadataResponse
+//	@Failure		404	{object}	errorResponse
+//	@Failure		500	{object}	errorResponse
+//	@Failure		503	{object}	errorResponse
+//	@Router			/books/{id}/metadata/fetch [post]
 func (h *MetadataHandler) fetchMetadata(w http.ResponseWriter, r *http.Request, bookID string) {
 	userID := auth.UserIDFromContext(r.Context())
 
@@ -253,6 +278,19 @@ const sseHeartbeatInterval = 15 * time.Second
 
 // streamEvents opens an SSE connection that streams metadata fetch progress
 // events from Redis pub/sub.
+//
+//	@Summary		Stream metadata fetch events
+//	@Description	Opens a Server-Sent Events (SSE) stream for metadata fetch progress. Events are JSON objects with an "event" field (e.g. "complete", "error", "not_found"). The connection closes automatically on a terminal event or after 2 minutes.
+//	@Tags			Book Metadata
+//	@Produce		text/event-stream
+//	@Security		BearerAuth
+//	@Failure		401	{object}	errorResponse
+//	@Param			id	path		string	true	"Book ID"
+//	@Success		200	{string}	string	"SSE event stream"
+//	@Failure		404	{object}	errorResponse
+//	@Failure		500	{object}	errorResponse
+//	@Failure		503	{object}	errorResponse
+//	@Router			/books/{id}/metadata/events [get]
 func (h *MetadataHandler) streamEvents(w http.ResponseWriter, r *http.Request, bookID string) {
 	flusher, ok := w.(http.Flusher)
 	if !ok {
@@ -349,6 +387,18 @@ func (h *MetadataHandler) streamEvents(w http.ResponseWriter, r *http.Request, b
 // The frontend UI currently uses a field-by-field workflow (copy into form, save
 // via UpdateBook, then reject the pending record), so this endpoint is primarily
 // intended for programmatic/CLI consumers that want a one-shot apply.
+//
+//	@Summary		Apply pending metadata to a book
+//	@Description	Applies the pending Goodreads/Hardcover metadata to the book and marks it as applied. Primarily for programmatic/CLI consumers; the frontend uses a field-by-field workflow.
+//	@Tags			Book Metadata
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401	{object}	errorResponse
+//	@Param			id	path		string	true	"Book ID"
+//	@Success		200	{object}	bookSummaryDTO
+//	@Failure		404	{object}	errorResponse
+//	@Failure		500	{object}	errorResponse
+//	@Router			/books/{id}/metadata/apply [post]
 func (h *MetadataHandler) applyMetadata(w http.ResponseWriter, r *http.Request, bookID string) {
 	userID := auth.UserIDFromContext(r.Context())
 
@@ -409,6 +459,17 @@ func (h *MetadataHandler) applyMetadata(w http.ResponseWriter, r *http.Request, 
 }
 
 // rejectMetadata marks the pending metadata as rejected.
+//
+//	@Summary		Reject pending metadata
+//	@Description	Marks the pending Goodreads/Hardcover metadata for a book as rejected
+//	@Tags			Book Metadata
+//	@Security		BearerAuth
+//	@Failure		401	{object}	errorResponse
+//	@Param			id	path		string	true	"Book ID"
+//	@Success		204	"No Content"
+//	@Failure		404	{object}	errorResponse
+//	@Failure		500	{object}	errorResponse
+//	@Router			/books/{id}/metadata/reject [post]
 func (h *MetadataHandler) rejectMetadata(w http.ResponseWriter, r *http.Request, bookID string) {
 	userID := auth.UserIDFromContext(r.Context())
 
