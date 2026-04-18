@@ -467,7 +467,7 @@ describe("Dashboard", () => {
           percentage: 0.42,
           device: "KOReader",
           last_synced: "2026-04-12T10:00:00Z",
-          estimated_minutes_remaining: null,
+          estimated_minutes_remaining: undefined,
         },
       ],
     });
@@ -495,7 +495,7 @@ describe("Dashboard", () => {
         {
           document: "timed-book",
           percentage: 0.5,
-          device: null,
+          device: undefined,
           last_synced: "2026-04-12T10:00:00Z",
           estimated_minutes_remaining: 45,
         },

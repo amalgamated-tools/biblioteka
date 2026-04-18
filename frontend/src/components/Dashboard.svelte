@@ -358,7 +358,7 @@
                     {#if item.device}
                       <span>{item.device}</span>
                     {/if}
-                    {#if item.estimated_minutes_remaining != null}
+                    {#if item.estimated_minutes_remaining !== undefined}
                       <span
                         >{formatEstimate(
                           item.estimated_minutes_remaining,
