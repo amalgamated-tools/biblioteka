@@ -93,11 +93,12 @@ describe("TextInput", () => {
   });
 
   it("includes invalid-state styles for aria-invalid inputs", () => {
-    const { container } = render(TextInput);
-    const classes = container.querySelector("input")!.className;
-    expect(classes).toContain("aria-invalid:border-danger-500");
-    expect(classes).toContain("aria-invalid:focus:ring-danger-500");
-    expect(classes).toContain("aria-invalid:focus:border-danger-500");
+    const { container } = render(TextInput, { "aria-invalid": true });
+    const input = container.querySelector("input")!;
+    expect(input.className).toContain("aria-invalid:border-danger-600");
+    expect(input.className).toContain("aria-invalid:focus:ring-danger-600");
+    expect(input.className).toContain("aria-invalid:focus:border-danger-600");
+    expect(input).toHaveAttribute("aria-invalid", "true");
   });
 
   it("uses ink-300 for dark-mode placeholder contrast (WCAG 1.4.3)", () => {

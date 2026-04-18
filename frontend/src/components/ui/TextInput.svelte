@@ -27,6 +27,6 @@
   {type}
   bind:value
   {disabled}
-  class="px-4 border border-ink-400 dark:border-ink-400 rounded-xl transition-all aria-invalid:border-danger-500 aria-invalid:focus:ring-danger-500 aria-invalid:focus:border-danger-500 {stateClasses} {extraClass ??
+  class="px-4 border border-ink-400 dark:border-ink-400 rounded-xl transition-all aria-invalid:border-danger-600 dark:aria-invalid:border-danger-400 aria-invalid:focus:ring-danger-600 dark:aria-invalid:focus:ring-danger-400 aria-invalid:focus:border-danger-600 dark:aria-invalid:focus:border-danger-400 {stateClasses} {extraClass ??
     ''}"
 />
