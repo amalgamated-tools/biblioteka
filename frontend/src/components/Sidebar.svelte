@@ -13,6 +13,7 @@
     BookCheck,
     Settings2,
     BookMarked,
+    Users,
   } from "lucide-svelte";
 
   interface Props {
@@ -142,6 +143,18 @@
         >
           <BookMarked class="w-5 h-5" aria-hidden="true" />
           Reading Lists
+        </a>
+        <a
+          href="#groups"
+          aria-current={currentView === "groups" ? "page" : undefined}
+          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all {currentView ===
+          'groups'
+            ? 'bg-accent-600 text-white shadow-md shadow-accent-700/30'
+            : 'text-ink-300 hover:bg-ink-800/70 hover:text-white'}"
+          onclick={onClose}
+        >
+          <Users class="w-5 h-5" aria-hidden="true" />
+          Reading Groups
         </a>
       </div>
     </div>
