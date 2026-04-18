@@ -63,7 +63,8 @@ func (lw *lineWrapWriter) Write(p []byte) (int, error) {
 // BuildAttachmentMessage constructs an RFC 5322 multipart/mixed email message
 // that carries filename as a base64-encoded attachment. The plain-text body is
 // a short human-readable note. params supplies the envelope From header.
-func BuildAttachmentMessage(params SendParams, to, filename, fileType string, data []byte) ([]byte, error) {
+// now is used as the message Date header; pass time.Now().UTC() in production.
+func BuildAttachmentMessage(params SendParams, to, filename, fileType string, data []byte, now time.Time) ([]byte, error) {
 	mimeType := filetype.MIMETypeOrOctetStream(fileType)
 	safeName := sanitizeFilename(filename)
 	subject := mime.QEncoding.Encode("UTF-8", "Book: "+safeName)
@@ -75,7 +76,7 @@ func BuildAttachmentMessage(params SendParams, to, filename, fileType string, da
 	// RFC 5322 message headers.
 	fmt.Fprintf(&buf, "From: %s\r\n", params.FromHeader)
 	fmt.Fprintf(&buf, "To: %s\r\n", to)
-	fmt.Fprintf(&buf, "Date: %s\r\n", time.Now().UTC().Format(time.RFC1123Z))
+	fmt.Fprintf(&buf, "Date: %s\r\n", now.UTC().Format(time.RFC1123Z))
 	fmt.Fprintf(&buf, "Subject: %s\r\n", subject)
 	fmt.Fprintf(&buf, "MIME-Version: 1.0\r\n")
 	fmt.Fprintf(&buf, "Content-Type: multipart/mixed; boundary=%q\r\n", boundary)
