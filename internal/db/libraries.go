@@ -13,6 +13,13 @@ import (
 // ErrLibraryNameExists is returned when a library with the given name already exists.
 var ErrLibraryNameExists = errors.New("library name already exists")
 
+// ErrInvalidLibraryName is returned when a library name is blank after normalization.
+var ErrInvalidLibraryName = errors.New("library name cannot be blank")
+
+// NormalizeLibraryName normalizes a library name by trimming whitespace and
+// collapsing internal runs to a single space while preserving capitalization.
+func NormalizeLibraryName(name string) string { return normalizeName(name) }
+
 const (
 	LibraryOrganizationBookPerFolder = "book_per_folder"
 	LibraryOrganizationBookPerFile   = "book_per_file"
@@ -69,20 +76,18 @@ func scanLibrary(row interface{ Scan(...any) error }) (*Library, error) {
 }
 
 // CreateLibrary inserts a new library and returns it.
+// The name is normalized before storage.
+// Returns ErrInvalidLibraryName if the name is blank after normalization.
 // Returns ErrLibraryNameExists if a library with that name already exists.
 func (d *DB) CreateLibrary(ctx context.Context, name, paths, organizationType string, monitored bool) (*Library, error) {
-	slog.DebugContext(ctx, "db: creating library", slog.String(otelkeys.Name, name))
-	lib, err := scanLibrary(d.QueryRowContext(ctx,
-		`INSERT INTO libraries (name, paths, organization_type, monitored) VALUES ($1, $2, $3, $4) RETURNING `+libraryColumns,
-		name, paths, organizationType, monitored,
-	))
-	if err != nil {
-		if isUniqueViolation(err) {
-			return nil, ErrLibraryNameExists
-		}
-		return nil, err
-	}
-	return lib, nil
+	return namedEntityCreate(ctx, "library", name, NormalizeLibraryName, ErrInvalidLibraryName, ErrLibraryNameExists,
+		func(ctx context.Context, n string) (*Library, error) {
+			return scanLibrary(d.QueryRowContext(ctx,
+				`INSERT INTO libraries (name, paths, organization_type, monitored) VALUES ($1, $2, $3, $4) RETURNING `+libraryColumns,
+				n, paths, organizationType, monitored,
+			))
+		},
+	)
 }
 
 // GetLibrary returns a library by ID, or sql.ErrNoRows if not found.
@@ -101,24 +106,19 @@ func (d *DB) ListLibraries(ctx context.Context) ([]Library, error) {
 }
 
 // UpdateLibrary updates a library's fields and returns the updated library.
+// The name is normalized before storage.
 // Returns sql.ErrNoRows if the library doesn't exist.
+// Returns ErrInvalidLibraryName if the name is blank after normalization.
 // Returns ErrLibraryNameExists if the new name conflicts with another library.
 func (d *DB) UpdateLibrary(ctx context.Context, id, name, paths, organizationType string, monitored bool) (*Library, error) {
-	slog.DebugContext(ctx, "db: updating library",
-		slog.String(otelkeys.LibraryID, id),
-		slog.String(otelkeys.Name, name),
+	return namedEntityUpdate(ctx, "library", id, name, NormalizeLibraryName, ErrInvalidLibraryName, ErrLibraryNameExists,
+		func(ctx context.Context, entityID, n string) (*Library, error) {
+			return scanLibrary(d.QueryRowContext(ctx,
+				`UPDATE libraries SET name = $1, paths = $2, organization_type = $3, monitored = $4, updated_at = `+d.now()+` WHERE id = $5 RETURNING `+libraryColumns,
+				n, paths, organizationType, monitored, entityID,
+			))
+		},
 	)
-	lib, err := scanLibrary(d.QueryRowContext(ctx,
-		`UPDATE libraries SET name = $1, paths = $2, organization_type = $3, monitored = $4, updated_at = `+d.now()+` WHERE id = $5 RETURNING `+libraryColumns,
-		name, paths, organizationType, monitored, id,
-	))
-	if err != nil {
-		if isUniqueViolation(err) {
-			return nil, ErrLibraryNameExists
-		}
-		return nil, err
-	}
-	return lib, nil
 }
 
 // DeleteLibrary removes a library by ID.

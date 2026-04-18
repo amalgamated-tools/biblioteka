@@ -21,6 +21,40 @@ func TestCreateLibrary(t *testing.T) {
 	require.False(t, lib.UpdatedAt.IsZero())
 }
 
+func TestCreateLibrary_NormalizesName(t *testing.T) {
+	d := newTestDB(t)
+
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"  Fiction  ", "Fiction"},
+		{"Non  Fiction", "Non Fiction"},
+		{" My  Library ", "My Library"},
+	}
+
+	for _, tt := range tests {
+		lib, err := d.CreateLibrary(t.Context(), tt.input, `["/mnt/books"]`, LibraryOrganizationBookPerFolder, false)
+		require.NoError(t, err, "CreateLibrary(%q) error", tt.input)
+		require.Equal(t, tt.want, lib.Name)
+		require.NoError(t, d.DeleteLibrary(t.Context(), lib.ID), "cleanup")
+	}
+}
+
+func TestCreateLibrary_BlankName(t *testing.T) {
+	d := newTestDB(t)
+
+	_, err := d.CreateLibrary(t.Context(), "", `["/mnt/books"]`, LibraryOrganizationBookPerFolder, false)
+	require.ErrorIs(t, err, ErrInvalidLibraryName)
+}
+
+func TestCreateLibrary_WhitespaceOnlyName(t *testing.T) {
+	d := newTestDB(t)
+
+	_, err := d.CreateLibrary(t.Context(), "   ", `["/mnt/books"]`, LibraryOrganizationBookPerFolder, false)
+	require.ErrorIs(t, err, ErrInvalidLibraryName)
+}
+
 func TestCreateLibrary_DuplicateName(t *testing.T) {
 	d := newTestDB(t)
 
@@ -76,6 +110,37 @@ func TestUpdateLibrary(t *testing.T) {
 	require.Equal(t, "Novels", updated.Name)
 	require.Equal(t, `["/mnt/novels","/mnt/fiction"]`, updated.Paths)
 	require.True(t, updated.Monitored)
+}
+
+func TestUpdateLibrary_NormalizesName(t *testing.T) {
+	d := newTestDB(t)
+
+	created, err := d.CreateLibrary(t.Context(), "Fiction", `["/mnt/fiction"]`, LibraryOrganizationBookPerFolder, false)
+	require.NoError(t, err, "CreateLibrary() error")
+
+	updated, err := d.UpdateLibrary(t.Context(), created.ID, "  Novels  ", `["/mnt/novels"]`, LibraryOrganizationBookPerFolder, false)
+	require.NoError(t, err, "UpdateLibrary() error")
+	require.Equal(t, "Novels", updated.Name)
+}
+
+func TestUpdateLibrary_BlankName(t *testing.T) {
+	d := newTestDB(t)
+
+	created, err := d.CreateLibrary(t.Context(), "Fiction", `["/mnt/fiction"]`, LibraryOrganizationBookPerFolder, false)
+	require.NoError(t, err, "CreateLibrary() error")
+
+	_, err = d.UpdateLibrary(t.Context(), created.ID, "", `["/mnt/fiction"]`, LibraryOrganizationBookPerFolder, false)
+	require.ErrorIs(t, err, ErrInvalidLibraryName)
+}
+
+func TestUpdateLibrary_WhitespaceOnlyName(t *testing.T) {
+	d := newTestDB(t)
+
+	created, err := d.CreateLibrary(t.Context(), "Fiction", `["/mnt/fiction"]`, LibraryOrganizationBookPerFolder, false)
+	require.NoError(t, err, "CreateLibrary() error")
+
+	_, err = d.UpdateLibrary(t.Context(), created.ID, "   ", `["/mnt/fiction"]`, LibraryOrganizationBookPerFolder, false)
+	require.ErrorIs(t, err, ErrInvalidLibraryName)
 }
 
 func TestUpdateLibrary_DuplicateName(t *testing.T) {
