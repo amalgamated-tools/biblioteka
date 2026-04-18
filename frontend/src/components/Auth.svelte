@@ -9,7 +9,12 @@
     finishPasskeyLogin,
     prepareRequestOptions,
   } from "../lib/api";
-  import { required, minLength, validate } from "../lib/validation";
+  import {
+    required,
+    minLength,
+    email as emailRule,
+    validate,
+  } from "../lib/validation";
   import AlertBanner from "./ui/AlertBanner.svelte";
   import Button from "./ui/Button.svelte";
   import TextInput from "./ui/TextInput.svelte";
@@ -208,6 +213,15 @@
       return;
     }
 
+    const emailError = validate(email, [
+      emailRule("Please enter a valid email address"),
+    ]);
+    if (emailError) {
+      error = emailError;
+      loading = false;
+      return;
+    }
+
     const result = isLogin
       ? await authStore.signIn(email, password)
       : await authStore.signUp(name, email, password);
@@ -355,7 +369,7 @@
         aria-labelledby="login-tab"
         hidden={!isLogin}
       >
-        <form onsubmit={handleSubmit} class="space-y-4">
+        <form onsubmit={handleSubmit} novalidate class="space-y-4">
           <p class="text-xs text-ink-500 dark:text-ink-400">
             Fields marked with
             <span class="text-danger-600" aria-hidden="true">*</span>
@@ -373,6 +387,7 @@
               type="email"
               bind:value={email}
               autocomplete="email"
+              required
               class="w-full py-3"
               placeholder="you@example.com"
               disabled={loading}
@@ -396,6 +411,7 @@
               type="password"
               bind:value={password}
               autocomplete="current-password"
+              required
               class="w-full py-3"
               placeholder="••••••••"
               disabled={loading}
@@ -433,7 +449,7 @@
           aria-labelledby="signup-tab"
           hidden={isLogin}
         >
-          <form onsubmit={handleSubmit} class="space-y-4">
+          <form onsubmit={handleSubmit} novalidate class="space-y-4">
             <p class="text-xs text-ink-500 dark:text-ink-400">
               Fields marked with
               <span class="text-danger-600" aria-hidden="true">*</span>
@@ -451,6 +467,7 @@
                 type="text"
                 bind:value={name}
                 autocomplete="name"
+                required
                 class="w-full py-3"
                 placeholder="Your name"
                 disabled={loading}
@@ -474,6 +491,7 @@
                 type="email"
                 bind:value={email}
                 autocomplete="email"
+                required
                 class="w-full py-3"
                 placeholder="you@example.com"
                 disabled={loading}
@@ -499,6 +517,7 @@
                 type="password"
                 bind:value={password}
                 autocomplete="new-password"
+                required
                 class="w-full py-3"
                 placeholder="••••••••"
                 disabled={loading}
