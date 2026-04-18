@@ -1,7 +1,7 @@
 # Test Improver Memory — biblioteka
 
 ## Last Updated
-2026-04-17
+2026-04-18
 
 ## Build/Test/Coverage Commands
 
@@ -27,7 +27,8 @@ cd frontend && pnpm run lint && pnpm run check
 ```
 
 ## Agent Environment Note
-Go 1.26.1 is available (GOTOOLCHAIN=auto auto-downloads it). Tests run successfully.
+Go 1.26.2 is available (GOTOOLCHAIN=auto auto-downloads it). Tests run successfully.
+go.mod requires go >= 1.26.2; use GOTOOLCHAIN=auto.
 
 ## Testing Notes
 - Uses testify/require for all assertions (not t.Fatal/t.Fatalf)
@@ -60,26 +61,32 @@ Packages with no test files (intentional):
 - 2026-04-14: Tasks 4, 6, 7 (no open Test Improver PRs; books reading-lists handler PR; new monthly issue)
 - 2026-04-15: Tasks 2, 3, 7 (BuildEnrichPrompt tests PR; new monthly issue #1944 closed by maintainer)
 - 2026-04-17: Tasks 3, 7 (PasskeyAdapter tests PR; new monthly issue created)
-- Next run: Tasks 4, 5, 2, 7 (maintain PRs, comment on testing issues, identify opportunities)
+- 2026-04-18: Tasks 4, 2, 3, 7 (no open test-assist PRs to maintain; reading_group_lists DB tests PR; new monthly issue)
+- Next run: Tasks 5, 6, 2, 7 (comment on testing issues, test infrastructure, identify opportunities)
 
 ## Testing Backlog (prioritized)
 
-1. **db/ai_enrichments.go** — No direct DB-level test for ApplyAIEnrichment (complex transactional logic). Covered indirectly via handler tests. Medium value.
-2. **db/reading_group_lists.go** — ShareListWithGroup, UnshareListFromGroup, ListGroupReadingLists have no direct DB-level tests. Low-medium value.
-3. **smtp/send.go** — tests exist now (PR merged).
-4. **pathparser internal helpers** — isLikelyPersonName, stripTrailingAuthor have no direct tests. Covered via ParseBookPath table tests. Low-medium value.
-5. **organize path-escape defense-in-depth test** — the filepath.Rel escape guard in organize.go has no test. Likely unreachable in practice. Low value.
+1. **pathparser internal helpers** — isLikelyPersonName, stripTrailingAuthor have no direct tests. Covered via ParseBookPath table tests. Low-medium value.
+2. **organize path-escape defense-in-depth test** — the filepath.Rel escape guard in organize.go has no test. Likely unreachable in practice. Low value.
+3. ~~**db/ai_enrichments.go**~~ — Covered by PR #2150 (merged) and PR #2204 (open).
+4. ~~**db/reading_group_lists.go**~~ — Covered by PR #2201 (open) and my 2026-04-18 PR.
+5. ~~**authstore/PasskeyAdapter**~~ — PR #2143 merged ✅.
 
 ## Maintainer Priorities
 - All previous monthly issues closed by veverkap as "completed"
 - Signals strong positive reception; maintainer is actively merging Test Improver PRs
-- Merged: #1689, #1771, #1792, #1845, #1943, #2021
+- Merged: #1689, #1771, #1792, #1845, #1943, #2021, #2143
 
 ## Completed Work
 
-### 2026-04-17
-- New monthly activity issue created
-- Submitted PR on branch `test-assist/passkey-adapter-tests`: 15 tests for PasskeyAdapter (all 9 store methods: CreateChallenge, GetAndDeleteChallenge, DeleteExpiredChallenges, CreateCredential, ListCredentialsByUser, FindCredentialByCredentialID, FindCredentialByIDAndUser, UpdateCredentialData, DeleteCredential)
+### 2026-04-18
+- New monthly activity issue created (prior #2144 closed by veverkap)
+- Created PR on branch `test-assist/reading-group-list-db-tests`: 11 DB-level tests for ShareListWithGroup, UnshareListFromGroup, ListGroupReadingLists
+- NOTE: PR #2201 (Copilot SWE) covers same ground + gofumpt CI; my PR may be duplicate
+
+### 2026-04-17 (PR #2143 — merged ✅)
+- New monthly activity issue #2144 created
+- Submitted PR #2143 on branch `test-assist/passkey-adapter-tests`: 15 tests for PasskeyAdapter
 
 ### 2026-04-15
 - New monthly activity issue created (prior #1944 closed by maintainer)
