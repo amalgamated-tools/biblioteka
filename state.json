@@ -1,13 +1,13 @@
 {
-  "last_run": "2026-04-17T20:27:03Z",
+  "last_run": "2026-04-18T20:27:05Z",
   "tasks_run": ["task2", "task3", "task7"],
   "commands": {
     "build": "make build (requires frontend first)",
-    "test": "go test ./... (Go 1.26.1 auto-downloaded; internal/jobs failures are pre-existing)",
+    "test": "go test ./... (Go 1.26.2 auto-downloaded; internal/jobs failures are pre-existing)",
     "lint": "make lint",
     "fmt": "make fmt && make hardfmt",
     "bench": "go test -bench=. -benchmem ./internal/db/",
-    "note": "Go 1.26.1 is auto-downloaded when needed. internal/jobs tests have pre-existing failures."
+    "note": "Go 1.26.2 is auto-downloaded when needed. internal/jobs tests have pre-existing failures."
   },
   "backlog": [
     {
@@ -63,18 +63,25 @@
     },
     {
       "id": "kobo-ai-goodreads-annotation-indexes",
-      "status": "pr_created",
+      "status": "merged",
       "description": "idx_kobo_reading_states_book_id, idx_ai_enrichments_book_id, idx_goodreads_metadata_book_id, idx_book_annotations_user_id",
-      "pr_branch": "perf-assist/missing-fk-book-annotation-indexes",
-      "evidence": "EXPLAIN QUERY PLAN: before=SCAN, after=SEARCH USING INDEX for all 4"
+      "pr_number": 2168
     },
     {
-      "id": "handler-n-plus-one",
+      "id": "tags-name-sort-index",
+      "status": "pr_created",
+      "description": "Add idx_tags_name_sort on tags(name) to eliminate temp B-tree for ListTags ORDER BY",
+      "pr_branch": "perf-assist/tags-name-sort-index-20260418",
+      "evidence": "BEFORE: SCAN tags + USE TEMP B-TREE FOR ORDER BY; AFTER: SCAN tags USING INDEX idx_tags_name_sort"
+    },
+    {
+      "id": "book-annotations-sort-index",
       "status": "pending",
-      "description": "Investigate handler code for N+1 query patterns",
+      "description": "Add (book_id, created_at) index on book_annotations to avoid temp B-tree for ListAnnotationsForBook; low priority since result sets are small",
       "priority": "low"
     }
   ],
-  "monthly_activity_issue_number": 2052,
+  "monthly_activity_issue_number": null,
+  "monthly_activity_issue_note": "Issue #2052 was closed by veverkap on 2026-04-18; new issue created for April 2026",
   "checked_off_items": []
 }
