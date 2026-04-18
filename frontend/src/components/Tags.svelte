@@ -131,7 +131,14 @@
   </div>
 
   {#if tagStore.error}
-    <AlertBanner variant="error" class="mb-4">{tagStore.error}</AlertBanner>
+    <AlertBanner variant="error" class="mb-4">
+      {tagStore.error}
+      <button
+        type="button"
+        onclick={() => void tagStore.load()}
+        class="underline hover:no-underline font-medium ml-2">Try again</button
+      >
+    </AlertBanner>
   {/if}
 
   {#if deleteError}

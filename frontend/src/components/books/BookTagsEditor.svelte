@@ -269,7 +269,7 @@
       </div>
 
       {#if dropdownOpen && (filteredTags.length > 0 || showCreateOption)}
-        <ul
+        <div
           id="book-tags-listbox"
           data-tags-dropdown
           role="listbox"
@@ -313,7 +313,7 @@
               Create "{searchText.trim()}"
             </button>
           {/if}
-        </ul>
+        </div>
       {/if}
     </div>
   {/if}
