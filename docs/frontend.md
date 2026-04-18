@@ -51,7 +51,7 @@ frontend/
       ui/                 Generic reusable UI components
         AlertBanner.svelte   Dismissible alert / error banner
         BookCard.svelte      Card widget displaying a single book summary
-        BookList.svelte      Paginated book list with grid / table view toggle; accepts a `fetchBooks` callback; supports optional polling for scan-aware empty states; table-view rows are keyboard-accessible via `tabindex="0"` and Enter-key navigation (WCAG 2.1.1)
+        BookList.svelte      Paginated book list with grid / table view toggle; accepts a `fetchBooks` callback; supports optional polling for scan-aware empty states; table view uses native `<a>` links for keyboard navigation (WCAG 2.1.1); the current page position is announced to screen readers via an `aria-live="polite"` live region (WCAG 4.1.3)
         Button.svelte        Reusable button with `primary`, `secondary`, and `danger` variants and two sizes (`sm`, `md`); renders as `inline-flex items-center justify-center` with built-in padding per size
         DeleteConfirmation.svelte  Accessible inline delete-confirmation dialog (`role="alertdialog"`, Escape-to-dismiss, autofocus on open); encapsulates the standard pattern for accessible destructive-action confirmations (WCAG 4.1.2)
         DownloadsHistogram.svelte  Bar chart showing monthly download counts; visual bars are `aria-hidden` and paired with a screen-reader-only data table (`Month` + `Downloads`) as the accessible equivalent; count tooltip uses `text-ink-600 dark:text-ink-200` and month labels use `text-ink-600 dark:text-ink-400` to meet the WCAG 1.4.3 Contrast Minimum (Level AA)
@@ -1840,11 +1840,13 @@ Setting durations to `0.01ms` (instead of `0`) avoids edge cases in some browser
 
 ### Live regions in `BookList.svelte`
 
-`BookList.svelte` uses two distinct live-region techniques to keep screen-reader users informed of page state changes without moving keyboard focus:
+`BookList.svelte` uses three distinct live-region techniques to keep screen-reader users informed of page state changes without moving keyboard focus:
 
 1. **Loading state** — The initial-load `<p role="status">Loading books...</p>` uses `role="status"` (implicit `aria-live="polite"`) so assistive technologies announce the loading message after any current speech completes. No explicit `aria-live` attribute is needed because `role="status"` already implies it.
 
-2. **Scan-in-progress and pagination count** — The "Scanning library…" message and the "Showing X–Y of Z books" pagination summary both carry `aria-live="polite"` and `aria-atomic="true"`. `aria-atomic="true"` ensures the entire text string is re-read as a unit when the count updates (e.g. going from page 1 to page 2), rather than announcing only the changed numbers.
+2. **Scan-in-progress** — The "Scanning library…" message carries `aria-live="polite"` and `aria-atomic="true"`. `aria-atomic="true"` ensures the entire text string is re-read as a unit when the message updates, rather than announcing only the changed characters.
+
+3. **Page position** — The "Page N of M" indicator inside the pagination controls carries `aria-live="polite"` and `aria-atomic="true"`. Whenever the user navigates to a new page, screen readers announce the updated position (e.g. "Page 2 of 5") without requiring focus to move to the pagination controls. `aria-atomic="true"` ensures the full string is read rather than just the changed digit. The Previous and Next buttons also carry descriptive `aria-label` attributes that identify the target page (e.g. "Previous page, page 1 of 5") so users know their destination before activating the control.
 
 **Rule:** Use `role="status"` for state messages that appear on initial render and that you own via markup (`role` implies the live region). Use explicit `aria-live="polite"` with `aria-atomic="true"` for messages whose text content changes dynamically in-place (e.g. a count or progress string that updates repeatedly).
 
