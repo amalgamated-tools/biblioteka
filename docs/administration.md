@@ -99,23 +99,27 @@ DELETE FROM users WHERE id = '<user-id>';
 
 #### What is deleted automatically (cascades)
 
-The following rows are deleted along with the user record because every child table carries an `ON DELETE CASCADE` foreign key to `users`:
+The following rows are deleted along with the user record via `ON DELETE CASCADE` foreign keys to `users`:
 
 | Table | Contents removed |
 |-------|-----------------|
 | `api_keys` | All API keys belonging to the user |
 | `opds_credentials` | The user's OPDS Basic Auth credential |
+| `kosync_credentials` | The user's KOSync credential |
 | `kobo_tokens` | All Kobo sync tokens |
 | `kobo_reading_states` | All Kobo reading progress records |
 | `reading_progress` | All KOReader sync progress records |
 | `reading_lists` and `reading_list_books` | All reading lists and their book entries |
+| `reading_groups` | All reading groups owned by the user |
+| `reading_group_members` | All reading group memberships for the user |
+| `reading_group_lists` | All reading lists the user shared into groups |
 | `passkey_credentials` and `passkey_challenges` | Any registered passkeys |
 | `goodreads_metadata` | Any Goodreads enrichment data linked to the user |
 | `book_annotations` | All annotations created by the user |
 | `book_downloads` | All download-tracking events for the user |
 | `ai_enrichments` | Any AI metadata enrichment requests |
 
-> **Libraries are also deleted.** Each library is owned by the user who created it. Deleting a user deletes all libraries they created, and the `library_books` junction rows for those libraries are deleted with them. **Books themselves are not deleted** — they remain in the catalog and retain their authors, series, and tags. Only the library-membership associations are removed.
+> **Libraries are not deleted.** Libraries are global resources managed by admins. Deleting a user does not remove any libraries. Existing library–book associations (`library_books`) are also unaffected. **Books themselves are not deleted** — they remain in the catalog and retain their authors, series, and tags.
 
 #### What is NOT deleted
 
