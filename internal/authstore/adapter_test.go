@@ -225,7 +225,7 @@ func TestPasskeyAdapter_GetAndDeleteChallenge_RemovesOnFirstFetch(t *testing.T) 
 
 	// Second call: challenge is gone.
 	_, err = a.GetAndDeleteChallenge(t.Context(), created.ID)
-	require.Error(t, err, "second fetch must fail — challenge was deleted")
+	require.ErrorIs(t, err, sql.ErrNoRows, "second fetch must fail — challenge was deleted")
 }
 
 func TestPasskeyAdapter_GetAndDeleteChallenge_MissingID(t *testing.T) {
@@ -252,7 +252,7 @@ func TestPasskeyAdapter_DeleteExpiredChallenges(t *testing.T) {
 
 	// Expired one must be gone.
 	_, err = a.GetAndDeleteChallenge(ctx, expiredC.ID)
-	require.Error(t, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 
 	// Valid one must still exist.
 	got, err := a.GetAndDeleteChallenge(ctx, validC.ID)
@@ -362,6 +362,10 @@ func TestPasskeyAdapter_UpdateCredentialData(t *testing.T) {
 	found, err := a.FindCredentialByCredentialID(ctx, "cred-upd-1")
 	require.NoError(t, err)
 	require.Equal(t, `{"sign_count":1}`, found.CredentialData)
+
+	// Wrong user: credential not affected, returns sql.ErrNoRows.
+	err = a.UpdateCredentialData(ctx, "wrong-user", "cred-upd-1", `{"sign_count":99}`)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestPasskeyAdapter_DeleteCredential(t *testing.T) {
@@ -396,7 +400,7 @@ func TestPasskeyAdapter_DeleteCredential_WrongUser(t *testing.T) {
 }
 
 // TestPasskeyAdapter_ReturnType_IsAuthPasskeyCredential verifies that CreateCredential
-// and ListCredentialsByUser return auth.PasskeyCredential values (not db.PasskeyCredential),
+// returns *auth.PasskeyCredential and ListCredentialsByUser returns []auth.PasskeyCredential,
 // confirming the field mapping is correct.
 func TestPasskeyAdapter_ReturnType_IsAuthPasskeyCredential(t *testing.T) {
 	a, u := newPasskeyAdapter(t)
@@ -410,7 +414,6 @@ func TestPasskeyAdapter_ReturnType_IsAuthPasskeyCredential(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, creds, 1)
 
-	var _ auth.PasskeyCredential = creds[0]
 	require.Equal(t, created.ID, creds[0].ID)
 	require.Equal(t, u.ID, creds[0].UserID)
 	require.Equal(t, "My Key", creds[0].Name)
