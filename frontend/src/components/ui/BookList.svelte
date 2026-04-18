@@ -245,11 +245,7 @@
 {:else}
   <!-- Toolbar -->
   <div class="flex items-center justify-between mb-4">
-    <p
-      aria-live="polite"
-      aria-atomic="true"
-      class="text-sm text-ink-500 dark:text-ink-300"
-    >
+    <p class="text-sm text-ink-500 dark:text-ink-300">
       Showing {rangeStart}–{rangeEnd} of {total} books
     </p>
     <div class="flex items-center gap-1">
@@ -382,7 +378,11 @@
         <ChevronLeft class="w-4 h-4" aria-hidden="true" />
         Previous
       </button>
-      <span class="text-sm text-ink-500 dark:text-ink-300">
+      <span
+        aria-live="polite"
+        aria-atomic="true"
+        class="text-sm text-ink-500 dark:text-ink-300"
+      >
         Page {currentPage} of {totalPages}
       </span>
       <button

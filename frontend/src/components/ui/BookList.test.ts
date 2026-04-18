@@ -283,7 +283,7 @@ describe("BookList pagination accessibility", () => {
     expect(screen.getByText(/Page 2 of 25/)).toBeInTheDocument();
   });
 
-  it("toolbar live region announces range updates on page change (WCAG 4.1.3)", async () => {
+  it("page counter announces page updates with a polite live region (WCAG 4.1.3)", async () => {
     const makePageBooks = (offset: number): PaginatedBooks => ({
       books: Array.from({ length: 2 }, (_, i) => ({
         id: `b${offset + i}`,
@@ -316,16 +316,16 @@ describe("BookList pagination accessibility", () => {
     await tick();
     await tick();
 
-    const rangeRegion = screen.getByText(/Showing 1–2 of 50 books/);
-    expect(rangeRegion).toHaveAttribute("aria-live", "polite");
-    expect(rangeRegion).toHaveAttribute("aria-atomic", "true");
+    const pageCounter = screen.getByText(/Page 1 of 25/);
+    expect(pageCounter).toHaveAttribute("aria-live", "polite");
+    expect(pageCounter).toHaveAttribute("aria-atomic", "true");
 
     const nextButton = screen.getByRole("button", { name: /Next page/ });
     await fireEvent.click(nextButton);
     await tick();
     await tick();
 
-    expect(screen.getByText(/Showing 3–4 of 50 books/)).toBeInTheDocument();
+    expect(screen.getByText(/Page 2 of 25/)).toBeInTheDocument();
   });
 
   it("pagination buttons have descriptive aria-label (WCAG 2.4.6)", async () => {
