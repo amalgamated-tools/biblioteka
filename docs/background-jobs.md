@@ -373,6 +373,12 @@ The dashboard lets you:
 - Retry or delete failed jobs
 - See queue statistics and throughput
 
+**Common failure causes:**
+
+| Cause | Details |
+|-------|---------|
+| Library deleted during scan | If a `scan:library` job is already queued when the owning user is deleted, the job dequeues and fails because the library record no longer exists. The job will exhaust its retry budget. Check the Asynqmon dashboard Failed tab and dismiss the entry. |
+
 ## Project Layout
 
 ```
