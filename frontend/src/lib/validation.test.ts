@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { required, minLength, matches, validate } from "./validation";
+import { required, minLength, matches, email, validate } from "./validation";
 
 describe("required", () => {
   it("returns null for a non-empty value", () => {
@@ -106,5 +106,39 @@ describe("validate", () => {
     };
     validate("", [required("Required"), secondRule]);
     expect(secondRuleCalled).toBe(false);
+  });
+});
+
+describe("email", () => {
+  it("returns null for a valid email address", () => {
+    expect(email()("user@example.com")).toBeNull();
+  });
+
+  it("returns null for a valid email with subdomains", () => {
+    expect(email()("user@mail.example.co.uk")).toBeNull();
+  });
+
+  it("returns an error for a value with no @", () => {
+    expect(email()("notanemail")).not.toBeNull();
+  });
+
+  it("returns an error for a value missing the domain part", () => {
+    expect(email()("user@")).not.toBeNull();
+  });
+
+  it("returns an error for a value missing the TLD", () => {
+    expect(email()("user@example")).not.toBeNull();
+  });
+
+  it("returns an error for an empty string", () => {
+    expect(email()("")).not.toBeNull();
+  });
+
+  it("uses the default message when none is supplied", () => {
+    expect(email()("bad")).toBe("Please enter a valid email address");
+  });
+
+  it("uses a custom message when supplied", () => {
+    expect(email("Invalid email")("bad")).toBe("Invalid email");
   });
 });

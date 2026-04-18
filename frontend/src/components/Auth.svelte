@@ -9,7 +9,12 @@
     finishPasskeyLogin,
     prepareRequestOptions,
   } from "../lib/api";
-  import { required, minLength, validate } from "../lib/validation";
+  import {
+    required,
+    minLength,
+    email as emailRule,
+    validate,
+  } from "../lib/validation";
   import AlertBanner from "./ui/AlertBanner.svelte";
   import Button from "./ui/Button.svelte";
   import TextInput from "./ui/TextInput.svelte";
@@ -135,6 +140,15 @@
     ]);
     if (pwdError) {
       error = pwdError;
+      loading = false;
+      return;
+    }
+
+    const emailError = validate(email, [
+      emailRule("Please enter a valid email address"),
+    ]);
+    if (emailError) {
+      error = emailError;
       loading = false;
       return;
     }

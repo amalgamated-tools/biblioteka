@@ -184,7 +184,9 @@ describe("Auth", () => {
     await renderAuth();
 
     const loginPanel = screen.getByRole("tabpanel", { name: "Login" });
-    const loginLegend = within(loginPanel).getByText(/are required/i);
+    const loginLegend = within(loginPanel).getByText(/are required/i, {
+      selector: "p",
+    });
     const loginAsterisk = loginLegend.querySelector('span[aria-hidden="true"]');
     expect(loginAsterisk).toBeInTheDocument();
     expect(loginAsterisk).toHaveTextContent("*");
@@ -203,7 +205,9 @@ describe("Auth", () => {
     await tick();
 
     const signupPanel = screen.getByRole("tabpanel", { name: "Sign Up" });
-    const signupLegend = within(signupPanel).getByText(/are required/i);
+    const signupLegend = within(signupPanel).getByText(/are required/i, {
+      selector: "p",
+    });
     const signupAsterisk = signupLegend.querySelector(
       'span[aria-hidden="true"]',
     );

@@ -35,6 +35,17 @@ export function minLength(
 }
 
 /**
+ * Returns a rule that fails when the value is not a valid email address.
+ * Matches the same pattern as the HTML5 `type="email"` constraint.
+ * @param message - Error message (default: "Please enter a valid email address")
+ */
+export function email(
+  message = "Please enter a valid email address",
+): ValidationRule {
+  return (value) => (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value) ? null : message);
+}
+
+/**
  * Returns a rule that fails when the value does not equal `other`.
  * @param other - The string the value must match
  * @param message - Error message (default: "Values do not match")
