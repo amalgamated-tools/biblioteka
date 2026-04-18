@@ -426,6 +426,38 @@ export interface CurrentValues {
   cover_image_url: string | null;
 }
 
+// Reading Groups
+
+export interface ReadingGroup {
+  id: string;
+  owner_id: string;
+  name: string;
+  description: string | null;
+  member_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ReadingGroupInput {
+  name: string;
+  description?: string | null;
+}
+
+export interface ReadingGroupMember {
+  group_id: string;
+  user_id: string;
+  user_name: string;
+  role: string;
+  joined_at: string;
+}
+
+export interface GroupMemberProgress {
+  user_id: string;
+  user_name: string;
+  percentage: number;
+  updated_at: string | null;
+}
+
 // Calibre Import
 
 export interface CalibrePreviewSeriesEntry {
