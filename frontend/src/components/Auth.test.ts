@@ -1,11 +1,5 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
-import {
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-  within,
-} from "@testing-library/svelte";
+import { cleanup, render, screen, within } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { tick } from "svelte";
 
@@ -168,9 +162,9 @@ describe("Auth", () => {
     const loginPassword = within(loginPanel).getByLabelText(/Password/i);
     await user.type(loginEmail, "you@example.com");
     await user.type(loginPassword, "123");
-    const loginForm = loginPanel.querySelector("form");
-    expect(loginForm).toBeInTheDocument();
-    await fireEvent.submit(loginForm!);
+    await user.click(
+      within(loginPanel).getByRole("button", { name: "Sign In" }),
+    );
     await tick();
 
     const alert = await screen.findByRole("alert");
@@ -191,12 +185,12 @@ describe("Auth", () => {
 
     const loginPanel = screen.getByRole("tabpanel", { name: "Login" });
     const loginLegend = within(loginPanel).getByText(/are required/i);
-    expect(
-      loginLegend.querySelector('span[aria-hidden="true"]'),
-    ).toHaveTextContent("*");
-    expect(loginLegend.querySelector(".sr-only")).toHaveTextContent(
-      "an asterisk",
-    );
+    const loginAsterisk = loginLegend.querySelector('span[aria-hidden="true"]');
+    expect(loginAsterisk).toBeInTheDocument();
+    expect(loginAsterisk).toHaveTextContent("*");
+    const loginSrOnly = loginLegend.querySelector(".sr-only");
+    expect(loginSrOnly).toBeInTheDocument();
+    expect(loginSrOnly).toHaveTextContent("an asterisk");
 
     const loginEmail = within(loginPanel).getByLabelText(/Email/i);
     const loginPassword = within(loginPanel).getByLabelText(/Password/i);
@@ -210,12 +204,14 @@ describe("Auth", () => {
 
     const signupPanel = screen.getByRole("tabpanel", { name: "Sign Up" });
     const signupLegend = within(signupPanel).getByText(/are required/i);
-    expect(
-      signupLegend.querySelector('span[aria-hidden="true"]'),
-    ).toHaveTextContent("*");
-    expect(signupLegend.querySelector(".sr-only")).toHaveTextContent(
-      "an asterisk",
+    const signupAsterisk = signupLegend.querySelector(
+      'span[aria-hidden="true"]',
     );
+    expect(signupAsterisk).toBeInTheDocument();
+    expect(signupAsterisk).toHaveTextContent("*");
+    const signupSrOnly = signupLegend.querySelector(".sr-only");
+    expect(signupSrOnly).toBeInTheDocument();
+    expect(signupSrOnly).toHaveTextContent("an asterisk");
 
     const signupName = within(signupPanel).getByLabelText(/Name/i);
     const signupEmail = within(signupPanel).getByLabelText(/Email/i);
