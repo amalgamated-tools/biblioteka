@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/svelte";
 import PasskeyList from "./PasskeyList.svelte";
 
@@ -8,7 +8,13 @@ vi.mock("lucide-svelte", () => ({
 }));
 
 describe("PasskeyList contrast classes", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("uses higher-contrast classes for passkey text metadata", () => {
+    vi.spyOn(Date.prototype, "toLocaleDateString").mockReturnValue("1/15/2026");
+
     render(PasskeyList, {
       props: {
         passkeys: [
@@ -24,9 +30,7 @@ describe("PasskeyList contrast classes", () => {
       },
     });
 
-    const createdDate = screen.getByText(
-      new Date("2026-01-15T12:00:00Z").toLocaleDateString(),
-    );
+    const createdDate = screen.getByText("1/15/2026");
     expect(createdDate).toHaveClass("text-ink-500");
     expect(createdDate).toHaveClass("dark:text-ink-300");
   });
