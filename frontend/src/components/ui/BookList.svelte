@@ -362,7 +362,10 @@
 
   <!-- Pagination -->
   {#if totalPages > 1}
-    <div class="flex items-center justify-center gap-4 mt-6">
+    <nav
+      aria-label="Pagination"
+      class="flex items-center justify-center gap-4 mt-6"
+    >
       <button
         onclick={prevPage}
         disabled={currentPage <= 1}
@@ -400,6 +403,6 @@
         Next
         <ChevronRight class="w-4 h-4" aria-hidden="true" />
       </button>
-    </div>
+    </nav>
   {/if}
 {/if}
