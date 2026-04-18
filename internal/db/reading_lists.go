@@ -62,7 +62,7 @@ func (d *DB) CreateReadingList(ctx context.Context, userID, name string, descrip
 // GetReadingList retrieves a reading list by ID scoped to the given user.
 // Returns sql.ErrNoRows if not found or not owned by userID.
 func (d *DB) GetReadingList(ctx context.Context, id, userID string) (*ReadingList, error) {
-	slog.DebugContext(ctx, "fetching reading list",
+	slog.DebugContext(ctx, "db: fetching reading list",
 		slog.String(otelkeys.ReadingListID, id),
 		slog.String(otelkeys.UserID, userID),
 	)
@@ -77,7 +77,7 @@ func (d *DB) GetReadingList(ctx context.Context, id, userID string) (*ReadingLis
 // ListReadingLists returns all reading lists for a user ordered by name,
 // including a book_count populated via a LEFT JOIN.
 func (d *DB) ListReadingLists(ctx context.Context, userID string) ([]ReadingList, error) {
-	slog.DebugContext(ctx, "listing reading lists", slog.String(otelkeys.UserID, userID))
+	slog.DebugContext(ctx, "db: listing reading lists", slog.String(otelkeys.UserID, userID))
 	rows, err := d.QueryContext(ctx,
 		`SELECT `+readingListColumns+` `+readingListBaseFrom+`
          WHERE rl.user_id = $1
@@ -115,7 +115,7 @@ func (d *DB) UpdateReadingList(ctx context.Context, id, userID, name string, des
 // DeleteReadingList removes the reading list with the given ID, scoped to
 // userID. Returns sql.ErrNoRows if not found or not owned by userID.
 func (d *DB) DeleteReadingList(ctx context.Context, id, userID string) error {
-	slog.DebugContext(ctx, "deleting reading list",
+	slog.DebugContext(ctx, "db: deleting reading list",
 		slog.String(otelkeys.ReadingListID, id),
 		slog.String(otelkeys.UserID, userID),
 	)
@@ -146,7 +146,7 @@ func (d *DB) verifyReadingListOwnership(ctx context.Context, listID, userID stri
 // Returns (true, nil) if the book was newly added, (false, nil) if it was
 // already present (idempotent).
 func (d *DB) AddBookToReadingList(ctx context.Context, listID, userID, bookID string) (bool, error) {
-	slog.DebugContext(ctx, "adding book to reading list",
+	slog.DebugContext(ctx, "db: adding book to reading list",
 		slog.String(otelkeys.ReadingListID, listID),
 		slog.String(otelkeys.UserID, userID),
 		slog.String(otelkeys.BookID, bookID),
@@ -187,7 +187,7 @@ func (d *DB) AddBookToReadingList(ctx context.Context, listID, userID, bookID st
 // not owned by the user. Returns (true, nil) if the book was removed,
 // (false, nil) if it was not present.
 func (d *DB) RemoveBookFromReadingList(ctx context.Context, listID, userID, bookID string) (bool, error) {
-	slog.DebugContext(ctx, "removing book from reading list",
+	slog.DebugContext(ctx, "db: removing book from reading list",
 		slog.String(otelkeys.ReadingListID, listID),
 		slog.String(otelkeys.UserID, userID),
 		slog.String(otelkeys.BookID, bookID),
@@ -213,7 +213,7 @@ func (d *DB) RemoveBookFromReadingList(ctx context.Context, listID, userID, book
 // ordered by added_at. The list must be owned by userID.
 // Returns sql.ErrNoRows if the list doesn't exist or is not owned by the user.
 func (d *DB) ListReadingListBooks(ctx context.Context, listID, userID string, limit, offset int) ([]Book, int, error) {
-	slog.DebugContext(ctx, "listing reading list books",
+	slog.DebugContext(ctx, "db: listing reading list books",
 		slog.String(otelkeys.ReadingListID, listID),
 		slog.String(otelkeys.UserID, userID),
 		slog.Int(otelkeys.Limit, limit),
@@ -250,7 +250,7 @@ func (d *DB) ListReadingListBooks(ctx context.Context, listID, userID string, li
 // GetReadingListsForBook returns all reading lists owned by userID that contain
 // the given book, ordered by name.
 func (d *DB) GetReadingListsForBook(ctx context.Context, bookID, userID string) ([]ReadingList, error) {
-	slog.DebugContext(ctx, "getting reading lists for book",
+	slog.DebugContext(ctx, "db: getting reading lists for book",
 		slog.String(otelkeys.BookID, bookID),
 		slog.String(otelkeys.UserID, userID),
 	)

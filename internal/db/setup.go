@@ -24,7 +24,7 @@ var _, b, _, _ = runtime.Caller(0)
 // otherwise, where the project root is derived by getProjectRoot().
 // Migrations are applied automatically before returning.
 func SetupDatabase(ctx context.Context) (*DB, error) {
-	slog.DebugContext(ctx, "Setting up database")
+	slog.DebugContext(ctx, "db: Setting up database")
 
 	if databaseURL := os.Getenv("DATABASE_URL"); isPostgresURL(databaseURL) {
 		return setupPostgres(ctx, databaseURL)
@@ -37,7 +37,7 @@ func isPostgresURL(url string) bool {
 }
 
 func setupPostgres(ctx context.Context, databaseURL string) (*DB, error) {
-	slog.DebugContext(ctx, "Opening PostgreSQL database")
+	slog.DebugContext(ctx, "db: Opening PostgreSQL database")
 	sqlDB, err := sql.Open("pgx", databaseURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open postgres database: %w", err)
@@ -48,7 +48,7 @@ func setupPostgres(ctx context.Context, databaseURL string) (*DB, error) {
 		return nil, fmt.Errorf("failed to ping postgres database: %w", err)
 	}
 
-	slog.DebugContext(ctx, "PostgreSQL connection established")
+	slog.DebugContext(ctx, "db: PostgreSQL connection established")
 
 	d := &DB{DB: sqlDB, Dialect: DialectPostgres}
 
@@ -66,10 +66,10 @@ func setupSQLite(ctx context.Context) (*DB, error) {
 	var dbFilePath string
 	if _, err := os.Stat("/data"); err == nil {
 		dbFilePath = "/data/biblioteka.db"
-		slog.DebugContext(ctx, "Using mounted /data folder", slog.String(otelkeys.Path, dbFilePath))
+		slog.DebugContext(ctx, "db: Using mounted /data folder", slog.String(otelkeys.Path, dbFilePath))
 	} else {
 		dbFilePath = filepath.Join(getProjectRoot(), "db", "biblioteka.db")
-		slog.DebugContext(ctx, "Using local db folder", slog.String(otelkeys.Path, dbFilePath))
+		slog.DebugContext(ctx, "db: Using local db folder", slog.String(otelkeys.Path, dbFilePath))
 	}
 
 	// Ensure parent directory exists
@@ -83,7 +83,7 @@ func setupSQLite(ctx context.Context) (*DB, error) {
 	}
 
 	// Open database with modernc.org/sqlite pure Go driver
-	slog.DebugContext(ctx, "Opening database", slog.String(otelkeys.Path, dbFilePath))
+	slog.DebugContext(ctx, "db: Opening database", slog.String(otelkeys.Path, dbFilePath))
 	sqlDB, err := sql.Open("sqlite", dbFilePath)
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed to open database",
@@ -103,7 +103,7 @@ func setupSQLite(ctx context.Context) (*DB, error) {
 		return nil, fmt.Errorf("failed to ping database at %s: %w", dbFilePath, err)
 	}
 
-	slog.DebugContext(ctx, "Database connection established", slog.String(otelkeys.Path, dbFilePath))
+	slog.DebugContext(ctx, "db: Database connection established", slog.String(otelkeys.Path, dbFilePath))
 
 	// Set PRAGMAs for better performance and integrity
 	if _, err := sqlDB.Exec(`
@@ -119,7 +119,7 @@ func setupSQLite(ctx context.Context) (*DB, error) {
 		return nil, fmt.Errorf("failed to set PRAGMAs on database at %s: %w", dbFilePath, err)
 	}
 
-	slog.DebugContext(ctx, "PRAGMAs set successfully", slog.String(otelkeys.Path, dbFilePath))
+	slog.DebugContext(ctx, "db: PRAGMAs set successfully", slog.String(otelkeys.Path, dbFilePath))
 
 	d := &DB{DB: sqlDB, Dialect: DialectSQLite}
 

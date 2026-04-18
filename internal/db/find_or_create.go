@@ -35,7 +35,7 @@ func findOrCreate[T any](
 		return nil, errInvalid
 	}
 
-	slog.DebugContext(ctx, "find or create entity",
+	slog.DebugContext(ctx, "db: find or create entity",
 		slog.String(otelkeys.EntityType, entityLabel),
 		slog.String(otelkeys.Name, name),
 	)

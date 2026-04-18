@@ -69,7 +69,7 @@ type BookInput struct {
 
 // CreateBook inserts a new book and returns it.
 func (d *DB) CreateBook(ctx context.Context, input BookInput) (*Book, error) {
-	slog.DebugContext(ctx, "creating book", slog.String(otelkeys.Title, input.Title))
+	slog.DebugContext(ctx, "db: creating book", slog.String(otelkeys.Title, input.Title))
 	b, err := scanBook(d.QueryRowContext(ctx,
 		`INSERT INTO books (title, description, asin, isbn10, isbn13, goodreads_id, hardcover_id, google_books_id, publication_date, publisher, language, cover_image_url) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING `+bookColumns,
 		input.Title, input.Description, input.ASIN, input.ISBN10, input.ISBN13, input.GoodreadsID, input.HardcoverID, input.GoogleBooksID, input.PublicationDate, input.Publisher, input.Language, input.CoverImageURL,
@@ -83,7 +83,7 @@ func (d *DB) CreateBook(ctx context.Context, input BookInput) (*Book, error) {
 // CreateBookWithFile atomically creates a book and its associated file record
 // within a single transaction. If either insert fails the transaction is rolled back.
 func (d *DB) CreateBookWithFile(ctx context.Context, input BookInput, fileType, fileName string, fileSize int64, fileHash *string, filePath string) (*Book, *BookFile, error) {
-	slog.DebugContext(ctx, "creating book with file",
+	slog.DebugContext(ctx, "db: creating book with file",
 		slog.String(otelkeys.Title, input.Title),
 		slog.String(otelkeys.FileName, fileName),
 	)
@@ -118,7 +118,7 @@ func (d *DB) CreateBookWithFile(ctx context.Context, input BookInput, fileType, 
 
 // GetBook returns a book by ID, or sql.ErrNoRows if not found.
 func (d *DB) GetBook(ctx context.Context, id string) (*Book, error) {
-	slog.DebugContext(ctx, "fetching book", slog.String(otelkeys.BookID, id))
+	slog.DebugContext(ctx, "db: fetching book", slog.String(otelkeys.BookID, id))
 	return scanBook(d.QueryRowContext(ctx,
 		`SELECT `+bookColumns+` FROM books WHERE id = $1`,
 		id,
@@ -176,7 +176,7 @@ func (d *DB) FindBookByExternalID(ctx context.Context, isbn13, isbn10, asin, goo
 
 // ListBooks returns all books ordered by title.
 func (d *DB) ListBooks(ctx context.Context) ([]Book, error) {
-	slog.DebugContext(ctx, "listing books")
+	slog.DebugContext(ctx, "db: listing books")
 	orderBy := d.dialectOrderBy("title", "ASC")
 	rows, err := d.QueryContext(ctx,
 		`SELECT `+bookColumns+` FROM books `+orderBy,
@@ -189,7 +189,7 @@ func (d *DB) ListBooks(ctx context.Context) ([]Book, error) {
 
 // ListBooksByLibrary returns all books in a specific library.
 func (d *DB) ListBooksByLibrary(ctx context.Context, libraryID string) ([]Book, error) {
-	slog.DebugContext(ctx, "listing books by library", slog.String(otelkeys.LibraryID, libraryID))
+	slog.DebugContext(ctx, "db: listing books by library", slog.String(otelkeys.LibraryID, libraryID))
 	orderBy := d.dialectOrderBy("b.title", "ASC")
 	rows, err := d.QueryContext(ctx,
 		`SELECT `+bookColumnsWithPrefix("b.")+` FROM books b INNER JOIN library_books lb ON lb.book_id = b.id WHERE lb.library_id = $1 `+orderBy,
@@ -203,7 +203,7 @@ func (d *DB) ListBooksByLibrary(ctx context.Context, libraryID string) ([]Book, 
 
 // ListBooksByLibraryPaginated returns books in a specific library with pagination and total count.
 func (d *DB) ListBooksByLibraryPaginated(ctx context.Context, libraryID string, limit, offset int) ([]Book, int, error) {
-	slog.DebugContext(ctx, "listing books by library paginated",
+	slog.DebugContext(ctx, "db: listing books by library paginated",
 		slog.String(otelkeys.LibraryID, libraryID),
 		slog.Int(otelkeys.Limit, limit),
 		slog.Int(otelkeys.Offset, offset),
@@ -234,7 +234,7 @@ func (d *DB) ListBooksByLibraryPaginated(ctx context.Context, libraryID string, 
 
 // UpdateBook updates a book's fields and returns the updated book.
 func (d *DB) UpdateBook(ctx context.Context, id string, input BookInput) (*Book, error) {
-	slog.DebugContext(ctx, "updating book",
+	slog.DebugContext(ctx, "db: updating book",
 		slog.String(otelkeys.BookID, id),
 		slog.String(otelkeys.Title, input.Title),
 	)
@@ -250,13 +250,13 @@ func (d *DB) UpdateBook(ctx context.Context, id string, input BookInput) (*Book,
 
 // DeleteBook removes a book by ID.
 func (d *DB) DeleteBook(ctx context.Context, id string) error {
-	slog.DebugContext(ctx, "deleting book", slog.String(otelkeys.BookID, id))
+	slog.DebugContext(ctx, "db: deleting book", slog.String(otelkeys.BookID, id))
 	return d.execAffected(ctx, `DELETE FROM books WHERE id = $1`, id)
 }
 
 // AddBookToLibrary creates an association between a book and a library.
 func (d *DB) AddBookToLibrary(ctx context.Context, libraryID, bookID string) error {
-	slog.DebugContext(ctx, "adding book to library",
+	slog.DebugContext(ctx, "db: adding book to library",
 		slog.String(otelkeys.LibraryID, libraryID),
 		slog.String(otelkeys.BookID, bookID),
 	)
@@ -269,7 +269,7 @@ func (d *DB) AddBookToLibrary(ctx context.Context, libraryID, bookID string) err
 
 // RemoveBookFromLibrary removes the association between a book and a library.
 func (d *DB) RemoveBookFromLibrary(ctx context.Context, libraryID, bookID string) error {
-	slog.DebugContext(ctx, "removing book from library",
+	slog.DebugContext(ctx, "db: removing book from library",
 		slog.String(otelkeys.LibraryID, libraryID),
 		slog.String(otelkeys.BookID, bookID),
 	)
@@ -294,7 +294,7 @@ func bookColumnsWithPrefix(prefix string) string {
 // should also pass the last seen book ID as lastID to avoid skipping rows that share
 // the same updated_at across pages.
 func (d *DB) ListBooksModifiedSince(ctx context.Context, since time.Time, lastID string, limit int) ([]Book, error) {
-	slog.DebugContext(ctx, "listing books modified since",
+	slog.DebugContext(ctx, "db: listing books modified since",
 		slog.Int(otelkeys.Limit, limit),
 	)
 	// Use a stable, deterministic ordering that matches the tie-breaker used in the
@@ -337,7 +337,7 @@ func (d *DB) GetSeriesForBooks(ctx context.Context, bookIDs []string) (map[strin
 	if len(bookIDs) == 0 {
 		return nil, nil
 	}
-	slog.DebugContext(ctx, "batch fetching series for books", slog.Int(otelkeys.BookCount, len(bookIDs)))
+	slog.DebugContext(ctx, "db: batch fetching series for books", slog.Int(otelkeys.BookCount, len(bookIDs)))
 
 	inClause, args := buildInClause(bookIDs, 1)
 

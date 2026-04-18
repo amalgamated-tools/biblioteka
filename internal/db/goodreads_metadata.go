@@ -95,7 +95,7 @@ type GoodreadsMetadataInput struct {
 // goodreads_metadata row for the given book and user, or sql.ErrNoRows if none
 // exists.
 func (d *DB) GetPendingGoodreadsMetadataByBook(ctx context.Context, userID, bookID string) (*GoodreadsMetadata, error) {
-	slog.DebugContext(ctx, "fetching pending goodreads metadata by book",
+	slog.DebugContext(ctx, "db: fetching pending goodreads metadata by book",
 		slog.String(otelkeys.BookID, bookID),
 		slog.String(otelkeys.UserID, userID),
 	)
@@ -107,7 +107,7 @@ func (d *DB) GetPendingGoodreadsMetadataByBook(ctx context.Context, userID, book
 
 // CreateGoodreadsMetadata inserts a new goodreads_metadata row and returns it.
 func (d *DB) CreateGoodreadsMetadata(ctx context.Context, userID string, input GoodreadsMetadataInput) (*GoodreadsMetadata, error) {
-	slog.DebugContext(ctx, "creating goodreads metadata", slog.String(otelkeys.UserID, userID))
+	slog.DebugContext(ctx, "db: creating goodreads metadata", slog.String(otelkeys.UserID, userID))
 	return scanGoodreadsMetadata(d.QueryRowContext(ctx,
 		`INSERT INTO goodreads_metadata (user_id, book_id, title, description, asin, isbn10, isbn13, goodreads_id, hardcover_id, google_books_id, publication_date, publisher, language, cover_image_url, author_name, author_goodreads_id, author_image_url, goodreads_work_id, goodreads_book_legacy_id, goodreads_work_legacy_id, goodreads_author_legacy_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21) RETURNING `+goodreadsMetadataColumns,
 		userID, input.BookID, input.Title, input.Description, input.ASIN, input.ISBN10, input.ISBN13, input.GoodreadsID, input.HardcoverID, input.GoogleBooksID, input.PublicationDate, input.Publisher, input.Language, input.CoverImageURL, input.AuthorName, input.AuthorGoodreadsID, input.AuthorImageURL, input.GoodreadsWorkID, input.GoodreadsBookLegacyID, input.GoodreadsWorkLegacyID, input.GoodreadsAuthorLegacyID,
@@ -116,7 +116,7 @@ func (d *DB) CreateGoodreadsMetadata(ctx context.Context, userID string, input G
 
 // GetGoodreadsMetadata returns a goodreads_metadata row by ID for the given user.
 func (d *DB) GetGoodreadsMetadata(ctx context.Context, userID, id string) (*GoodreadsMetadata, error) {
-	slog.DebugContext(ctx, "fetching goodreads metadata",
+	slog.DebugContext(ctx, "db: fetching goodreads metadata",
 		slog.String(otelkeys.GoodreadsMetadataID, id),
 		slog.String(otelkeys.UserID, userID),
 	)
@@ -128,7 +128,7 @@ func (d *DB) GetGoodreadsMetadata(ctx context.Context, userID, id string) (*Good
 
 // ListGoodreadsMetadataByUser returns all goodreads_metadata rows for a user, ordered by created_at DESC.
 func (d *DB) ListGoodreadsMetadataByUser(ctx context.Context, userID string, limit, offset int) ([]GoodreadsMetadata, error) {
-	slog.DebugContext(ctx, "listing goodreads metadata by user",
+	slog.DebugContext(ctx, "db: listing goodreads metadata by user",
 		slog.String(otelkeys.UserID, userID),
 		slog.Int(otelkeys.Limit, limit),
 		slog.Int(otelkeys.Offset, offset),
@@ -145,7 +145,7 @@ func (d *DB) ListGoodreadsMetadataByUser(ctx context.Context, userID string, lim
 
 // ListGoodreadsMetadataByStatus returns goodreads_metadata rows for a user filtered by status.
 func (d *DB) ListGoodreadsMetadataByStatus(ctx context.Context, userID, status string, limit, offset int) ([]GoodreadsMetadata, error) {
-	slog.DebugContext(ctx, "listing goodreads metadata by status",
+	slog.DebugContext(ctx, "db: listing goodreads metadata by status",
 		slog.String(otelkeys.UserID, userID),
 		slog.String(otelkeys.Status, status),
 		slog.Int(otelkeys.Limit, limit),
@@ -171,7 +171,7 @@ func (d *DB) UpdateGoodreadsMetadataStatus(ctx context.Context, userID, id, stat
 	default:
 		return nil, fmt.Errorf("%w: %q", ErrInvalidGoodreadsMetadataStatus, status)
 	}
-	slog.DebugContext(ctx, "updating goodreads metadata status",
+	slog.DebugContext(ctx, "db: updating goodreads metadata status",
 		slog.String(otelkeys.GoodreadsMetadataID, id),
 		slog.String(otelkeys.UserID, userID),
 		slog.String(otelkeys.Status, status),
@@ -184,7 +184,7 @@ func (d *DB) UpdateGoodreadsMetadataStatus(ctx context.Context, userID, id, stat
 
 // DeleteGoodreadsMetadata deletes a goodreads_metadata row by ID for the given user.
 func (d *DB) DeleteGoodreadsMetadata(ctx context.Context, userID, id string) error {
-	slog.DebugContext(ctx, "deleting goodreads metadata",
+	slog.DebugContext(ctx, "db: deleting goodreads metadata",
 		slog.String(otelkeys.GoodreadsMetadataID, id),
 		slog.String(otelkeys.UserID, userID),
 	)

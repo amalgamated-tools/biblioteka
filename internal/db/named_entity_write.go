@@ -24,7 +24,7 @@ func namedEntityCreate[T any](
 		slog.WarnContext(ctx, "rejecting entity with blank name after normalization", slog.String(otelkeys.EntityType, entityLabel))
 		return nil, errInvalid
 	}
-	slog.DebugContext(ctx, "creating entity",
+	slog.DebugContext(ctx, "db: creating entity",
 		slog.String(otelkeys.EntityType, entityLabel),
 		slog.String(otelkeys.Name, name),
 	)
@@ -55,7 +55,7 @@ func namedEntityUpdate[T any](
 		slog.WarnContext(ctx, "rejecting entity update with blank name after normalization", slog.String(otelkeys.EntityType, entityLabel))
 		return nil, errInvalid
 	}
-	slog.DebugContext(ctx, "updating entity",
+	slog.DebugContext(ctx, "db: updating entity",
 		slog.String(otelkeys.EntityType, entityLabel),
 		slog.String(otelkeys.EntityID, id),
 		slog.String(otelkeys.Name, name),

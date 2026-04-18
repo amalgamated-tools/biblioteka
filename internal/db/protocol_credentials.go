@@ -51,7 +51,7 @@ type protocolCredentialConfig struct {
 }
 
 func getCredentialByUserID(ctx context.Context, d *DB, cfg protocolCredentialConfig, userID string) (*ProtocolCredential, error) {
-	slog.DebugContext(ctx, "fetching protocol credential by user ID",
+	slog.DebugContext(ctx, "db: fetching protocol credential by user ID",
 		slog.String(otelkeys.Protocol, cfg.logPrefix),
 		slog.String(otelkeys.UserID, userID),
 	)
@@ -62,7 +62,7 @@ func getCredentialByUserID(ctx context.Context, d *DB, cfg protocolCredentialCon
 }
 
 func getCredentialByUsername(ctx context.Context, d *DB, cfg protocolCredentialConfig, username string) (*ProtocolCredential, error) {
-	slog.DebugContext(ctx, "fetching protocol credential by username",
+	slog.DebugContext(ctx, "db: fetching protocol credential by username",
 		slog.String(otelkeys.Protocol, cfg.logPrefix),
 		cfg.usernameAttr(username),
 	)
@@ -75,7 +75,7 @@ func getCredentialByUsername(ctx context.Context, d *DB, cfg protocolCredentialC
 }
 
 func upsertCredential(ctx context.Context, d *DB, cfg protocolCredentialConfig, userID, username, passwordHash string) (*ProtocolCredential, error) {
-	slog.DebugContext(ctx, "upserting protocol credential",
+	slog.DebugContext(ctx, "db: upserting protocol credential",
 		slog.String(otelkeys.Protocol, cfg.logPrefix),
 		slog.String(otelkeys.UserID, userID),
 		cfg.usernameAttr(username),
@@ -94,7 +94,7 @@ func upsertCredential(ctx context.Context, d *DB, cfg protocolCredentialConfig, 
 }
 
 func deleteCredential(ctx context.Context, d *DB, cfg protocolCredentialConfig, userID string) error {
-	slog.DebugContext(ctx, "deleting protocol credential",
+	slog.DebugContext(ctx, "db: deleting protocol credential",
 		slog.String(otelkeys.Protocol, cfg.logPrefix),
 		slog.String(otelkeys.UserID, userID),
 	)
