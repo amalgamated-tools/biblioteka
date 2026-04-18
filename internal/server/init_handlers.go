@@ -132,6 +132,8 @@ func (s *Server) initHandlers(
 	}
 
 	s.bookHandler.MetadataHandler = metadataHandler
+	s.annotationHandler = &handlers.BookAnnotationHandler{DB: s.DB}
+	s.bookHandler.AnnotationHandler = s.annotationHandler
 	s.tagHandler = &handlers.TagHandler{DB: s.DB}
 	s.bookFileHandler = &handlers.BookFileHandler{DB: s.DB, Secrets: secretEncrypter}
 	s.auditLogHandler = &handlers.AuditLogHandler{DB: s.DB}

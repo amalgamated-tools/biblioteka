@@ -10,9 +10,10 @@ import (
 
 // BookHandler holds dependencies for book endpoints.
 type BookHandler struct {
-	DB              *db.DB
-	Enqueuer        jobs.Enqueuer
-	MetadataHandler *MetadataHandler
+	DB                *db.DB
+	Enqueuer          jobs.Enqueuer
+	MetadataHandler   *MetadataHandler
+	AnnotationHandler *BookAnnotationHandler
 }
 
 // HandleBooks handles GET /api/books and POST /api/books.
@@ -80,6 +81,12 @@ func (h *BookHandler) HandleBookRoutes(w http.ResponseWriter, r *http.Request) {
 			h.putBookTags(w, r, id)
 		default:
 			writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
+		}
+	case "annotations":
+		if h.AnnotationHandler != nil {
+			h.AnnotationHandler.HandleBookAnnotations(w, r, id)
+		} else {
+			writeError(r.Context(), w, http.StatusNotFound, "not found")
 		}
 	default:
 		// Metadata is a nested sub-resource with its own action paths

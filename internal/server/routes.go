@@ -91,6 +91,9 @@ func (s *Server) setupRoutes(ctx context.Context) {
 	s.mux.Handle("/api/books", s.requireAuth(http.HandlerFunc(s.bookHandler.HandleBooks)))
 	s.mux.Handle("/api/books/", s.requireAuth(http.HandlerFunc(s.bookHandler.HandleBookRoutes)))
 
+	// Protected annotation routes
+	s.mux.Handle("/api/annotations/", s.requireAuth(http.HandlerFunc(s.annotationHandler.HandleAnnotation)))
+
 	// Protected book file routes
 	s.mux.Handle("/api/book-files/", s.requireAuth(http.HandlerFunc(s.bookFileHandler.HandleBookFile)))
 

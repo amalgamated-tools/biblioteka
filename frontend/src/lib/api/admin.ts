@@ -23,3 +23,7 @@ export async function getAuditLogs(
     `/api/audit-logs?limit=${limit}&offset=${offset}`,
   );
 }
+
+export async function rebuildSearchIndex(): Promise<{ message: string }> {
+  return request<{ message: string }>("POST", "/api/admin/search/reindex");
+}

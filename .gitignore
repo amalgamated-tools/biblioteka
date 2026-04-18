@@ -6,6 +6,7 @@ db/biblioteka.db*
 /biblioteka
 /cli
 *.exe
+*.test
 
 # IDE
 .idea/
