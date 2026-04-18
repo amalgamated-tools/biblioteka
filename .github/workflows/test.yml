@@ -210,6 +210,15 @@ jobs:
             exit 1
           fi
 
+      - name: Check strict Go formatting (gofumpt)
+        id: gofumpt
+        run: |
+          if [ "$(go tool gofumpt -l . | wc -l)" -gt 0 ]; then
+            echo "Go files are not strictly formatted. Please run 'make hardfmt'."
+            go tool gofumpt -d .
+            exit 1
+          fi
+
       - name: Verify go.mod is tidy
         id: gomod
         run: |
@@ -232,12 +241,15 @@ jobs:
           {
             echo "### Go Lint Check Outcomes"
             echo "- go formatting: ${{ steps.gofmt.outcome }}"
+            echo "- strict go formatting (gofumpt): ${{ steps.gofumpt.outcome }}"
             echo "- go.mod tidy: ${{ steps.gomod.outcome }}"
             echo "- golangci-lint: ${{ steps.golangci.outcome }}"
           } >> "$GITHUB_STEP_SUMMARY"
 
           if [ "${{ steps.gofmt.outcome }}" = "failure" ]; then
             echo "::error::Go Lint failed check: go formatting"
+          elif [ "${{ steps.gofumpt.outcome }}" = "failure" ]; then
+            echo "::error::Go Lint failed check: strict go formatting (gofumpt)"
           elif [ "${{ steps.gomod.outcome }}" = "failure" ]; then
             echo "::error::Go Lint failed check: go.mod tidy"
           elif [ "${{ steps.golangci.outcome }}" = "failure" ]; then

@@ -7,215 +7,222 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// setupGroupAndList creates a group with an owner who also has a reading list.
-// It returns the owner's user ID, the group ID, and the reading list ID.
-func setupGroupAndList(t *testing.T, d *DB) (ownerID, groupID, listID string) {
+// createTestGroupAndMember creates a group owned by ownerID and adds memberID as a member.
+// It returns the group ID.
+func createTestGroupAndMember(t *testing.T, d *DB, ownerID, memberID string) string {
 	t.Helper()
-	ownerID = createTestUserForGroup(t, d, "owner@example.com")
-
 	g, err := d.CreateGroup(t.Context(), ownerID, "Book Club", nil)
-	require.NoError(t, err, "CreateGroup")
-	groupID = g.ID
+	require.NoError(t, err)
+	_, err = d.AddGroupMember(t.Context(), g.ID, ownerID, memberID)
+	require.NoError(t, err)
+	return g.ID
+}
+
+// TestShareListWithGroup_OwnerCanShare verifies that a list owner who is also
+// a group member can share their list with the group.
+func TestShareListWithGroup_OwnerCanShare(t *testing.T) {
+	d := newTestDB(t)
+	ownerID := createTestUserForGroup(t, d, "owner@example.com")
+	memberID := createTestUserForGroup(t, d, "member@example.com")
+	groupID := createTestGroupAndMember(t, d, ownerID, memberID)
 
 	rl, err := d.CreateReadingList(t.Context(), ownerID, "Favorites", nil)
-	require.NoError(t, err, "CreateReadingList")
-	listID = rl.ID
-	return
-}
-
-// --- ShareListWithGroup ---
-
-func TestShareListWithGroup_OwnerMember(t *testing.T) {
-	d := newTestDB(t)
-	ownerID, groupID, listID := setupGroupAndList(t, d)
-
-	shared, err := d.ShareListWithGroup(t.Context(), groupID, listID, ownerID)
 	require.NoError(t, err)
-	require.True(t, shared, "first share should return true (newly shared)")
+
+	shared, err := d.ShareListWithGroup(t.Context(), groupID, rl.ID, ownerID)
+	require.NoError(t, err)
+	require.True(t, shared, "first share should return true")
 }
 
+// TestShareListWithGroup_Idempotent verifies that sharing the same list twice
+// is idempotent and returns false on the second call.
 func TestShareListWithGroup_Idempotent(t *testing.T) {
 	d := newTestDB(t)
-	ownerID, groupID, listID := setupGroupAndList(t, d)
-
-	_, err := d.ShareListWithGroup(t.Context(), groupID, listID, ownerID)
-	require.NoError(t, err)
-
-	// Second call should succeed but indicate no new row was inserted.
-	shared, err := d.ShareListWithGroup(t.Context(), groupID, listID, ownerID)
-	require.NoError(t, err)
-	require.False(t, shared, "second share should return false (already shared)")
-}
-
-func TestShareListWithGroup_NonOwnerOfListIsRejected(t *testing.T) {
-	d := newTestDB(t)
-	ownerID, groupID, _ := setupGroupAndList(t, d)
-
-	// Create a second member who joins the group but does not own the list.
+	ownerID := createTestUserForGroup(t, d, "owner@example.com")
 	memberID := createTestUserForGroup(t, d, "member@example.com")
-	_, err := d.AddGroupMember(t.Context(), groupID, ownerID, memberID)
+	groupID := createTestGroupAndMember(t, d, ownerID, memberID)
+
+	rl, err := d.CreateReadingList(t.Context(), ownerID, "Favorites", nil)
 	require.NoError(t, err)
 
-	// Create a separate reading list owned by memberID.
-	memberList, err := d.CreateReadingList(t.Context(), memberID, "Member List", nil)
+	shared, err := d.ShareListWithGroup(t.Context(), groupID, rl.ID, ownerID)
 	require.NoError(t, err)
+	require.True(t, shared)
 
-	// ownerID does not own memberList → should be rejected.
-	_, err = d.ShareListWithGroup(t.Context(), groupID, memberList.ID, ownerID)
-	require.ErrorIs(t, err, sql.ErrNoRows)
+	shared, err = d.ShareListWithGroup(t.Context(), groupID, rl.ID, ownerID)
+	require.NoError(t, err)
+	require.False(t, shared, "second share should return false (idempotent)")
 }
 
-func TestShareListWithGroup_NonMemberIsRejected(t *testing.T) {
+// TestShareListWithGroup_NonOwnerRejected verifies that a group member who
+// does not own the list cannot share it.
+func TestShareListWithGroup_NonOwnerRejected(t *testing.T) {
 	d := newTestDB(t)
-	_, groupID, _ := setupGroupAndList(t, d)
+	ownerID := createTestUserForGroup(t, d, "owner@example.com")
+	memberID := createTestUserForGroup(t, d, "member@example.com")
+	groupID := createTestGroupAndMember(t, d, ownerID, memberID)
 
-	// Create a user who is NOT a member of the group but owns a reading list.
+	rl, err := d.CreateReadingList(t.Context(), ownerID, "Favorites", nil)
+	require.NoError(t, err)
+
+	_, err = d.ShareListWithGroup(t.Context(), groupID, rl.ID, memberID)
+	require.ErrorIs(t, err, sql.ErrNoRows, "non-owner should not be able to share the list")
+}
+
+// TestShareListWithGroup_NonMemberRejected verifies that a list owner who is
+// not a group member cannot share the list with that group.
+func TestShareListWithGroup_NonMemberRejected(t *testing.T) {
+	d := newTestDB(t)
+	ownerID := createTestUserForGroup(t, d, "owner@example.com")
 	outsiderID := createTestUserForGroup(t, d, "outsider@example.com")
-	outsiderList, err := d.CreateReadingList(t.Context(), outsiderID, "Outsider List", nil)
+
+	g, err := d.CreateGroup(t.Context(), ownerID, "Book Club", nil)
 	require.NoError(t, err)
 
-	// outsiderID owns the list but is not in the group.
-	_, err = d.ShareListWithGroup(t.Context(), groupID, outsiderList.ID, outsiderID)
+	rl, err := d.CreateReadingList(t.Context(), outsiderID, "Favorites", nil)
+	require.NoError(t, err)
+
+	_, err = d.ShareListWithGroup(t.Context(), g.ID, rl.ID, outsiderID)
+	require.ErrorIs(t, err, sql.ErrNoRows, "non-member should not be able to share into the group")
+}
+
+// TestShareListWithGroup_NonExistentList verifies that sharing a non-existent
+// list returns an error.
+func TestShareListWithGroup_NonExistentList(t *testing.T) {
+	d := newTestDB(t)
+	ownerID := createTestUserForGroup(t, d, "owner@example.com")
+
+	g, err := d.CreateGroup(t.Context(), ownerID, "Book Club", nil)
+	require.NoError(t, err)
+
+	_, err = d.ShareListWithGroup(t.Context(), g.ID, "nonexistent-list-id", ownerID)
 	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
-func TestShareListWithGroup_NonexistentList(t *testing.T) {
+// TestUnshareListFromGroup_OwnerCanUnshare verifies that a list owner can
+// unshare their list from a group.
+func TestUnshareListFromGroup_OwnerCanUnshare(t *testing.T) {
 	d := newTestDB(t)
-	ownerID, groupID, _ := setupGroupAndList(t, d)
+	ownerID := createTestUserForGroup(t, d, "owner@example.com")
+	memberID := createTestUserForGroup(t, d, "member@example.com")
+	groupID := createTestGroupAndMember(t, d, ownerID, memberID)
 
-	_, err := d.ShareListWithGroup(t.Context(), groupID, "nonexistent-list-id", ownerID)
+	rl, err := d.CreateReadingList(t.Context(), ownerID, "Favorites", nil)
+	require.NoError(t, err)
+	_, err = d.ShareListWithGroup(t.Context(), groupID, rl.ID, ownerID)
+	require.NoError(t, err)
+
+	err = d.UnshareListFromGroup(t.Context(), groupID, rl.ID, ownerID)
+	require.NoError(t, err)
+}
+
+// TestUnshareListFromGroup_NonOwnerRejected verifies that a group member who
+// does not own the list cannot unshare it.
+func TestUnshareListFromGroup_NonOwnerRejected(t *testing.T) {
+	d := newTestDB(t)
+	ownerID := createTestUserForGroup(t, d, "owner@example.com")
+	memberID := createTestUserForGroup(t, d, "member@example.com")
+	groupID := createTestGroupAndMember(t, d, ownerID, memberID)
+
+	rl, err := d.CreateReadingList(t.Context(), ownerID, "Favorites", nil)
+	require.NoError(t, err)
+	_, err = d.ShareListWithGroup(t.Context(), groupID, rl.ID, ownerID)
+	require.NoError(t, err)
+
+	err = d.UnshareListFromGroup(t.Context(), groupID, rl.ID, memberID)
+	require.ErrorIs(t, err, sql.ErrNoRows, "non-owner should not be able to unshare the list")
+}
+
+// TestUnshareListFromGroup_NeverShared verifies that unsharing a list that was
+// never shared with the group returns sql.ErrNoRows.
+func TestUnshareListFromGroup_NeverShared(t *testing.T) {
+	d := newTestDB(t)
+	ownerID := createTestUserForGroup(t, d, "owner@example.com")
+
+	g, err := d.CreateGroup(t.Context(), ownerID, "Book Club", nil)
+	require.NoError(t, err)
+
+	rl, err := d.CreateReadingList(t.Context(), ownerID, "Favorites", nil)
+	require.NoError(t, err)
+
+	err = d.UnshareListFromGroup(t.Context(), g.ID, rl.ID, ownerID)
 	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
-// --- UnshareListFromGroup ---
-
-func TestUnshareListFromGroup(t *testing.T) {
+// TestListGroupReadingLists_MemberSeesSharedLists verifies that a group member
+// can see lists shared with the group, returned in alphabetical order.
+func TestListGroupReadingLists_MemberSeesSharedLists(t *testing.T) {
 	d := newTestDB(t)
-	ownerID, groupID, listID := setupGroupAndList(t, d)
+	ownerID := createTestUserForGroup(t, d, "owner@example.com")
+	memberID := createTestUserForGroup(t, d, "member@example.com")
+	groupID := createTestGroupAndMember(t, d, ownerID, memberID)
 
-	_, err := d.ShareListWithGroup(t.Context(), groupID, listID, ownerID)
+	rl1, err := d.CreateReadingList(t.Context(), ownerID, "Zebra", nil)
+	require.NoError(t, err)
+	rl2, err := d.CreateReadingList(t.Context(), ownerID, "Alpha", nil)
 	require.NoError(t, err)
 
-	err = d.UnshareListFromGroup(t.Context(), groupID, listID, ownerID)
+	_, err = d.ShareListWithGroup(t.Context(), groupID, rl1.ID, ownerID)
+	require.NoError(t, err)
+	_, err = d.ShareListWithGroup(t.Context(), groupID, rl2.ID, ownerID)
 	require.NoError(t, err)
 
-	// List should no longer appear in group lists.
-	lists, err := d.ListGroupReadingLists(t.Context(), groupID, ownerID)
+	lists, err := d.ListGroupReadingLists(t.Context(), groupID, memberID)
+	require.NoError(t, err)
+	require.Len(t, lists, 2)
+	require.Equal(t, "Alpha", lists[0].Name, "lists should be ordered alphabetically")
+	require.Equal(t, "Zebra", lists[1].Name)
+}
+
+// TestListGroupReadingLists_EmptyWhenNothingShared verifies that the list is
+// empty when no reading lists have been shared with the group.
+func TestListGroupReadingLists_EmptyWhenNothingShared(t *testing.T) {
+	d := newTestDB(t)
+	ownerID := createTestUserForGroup(t, d, "owner@example.com")
+
+	g, err := d.CreateGroup(t.Context(), ownerID, "Book Club", nil)
+	require.NoError(t, err)
+
+	lists, err := d.ListGroupReadingLists(t.Context(), g.ID, ownerID)
 	require.NoError(t, err)
 	require.Empty(t, lists)
 }
 
-func TestUnshareListFromGroup_NotShared(t *testing.T) {
+// TestListGroupReadingLists_NonMemberRejected verifies that a non-member
+// cannot list the group's reading lists.
+func TestListGroupReadingLists_NonMemberRejected(t *testing.T) {
 	d := newTestDB(t)
-	ownerID, groupID, listID := setupGroupAndList(t, d)
-
-	// Unsharing a list that was never shared should return sql.ErrNoRows.
-	err := d.UnshareListFromGroup(t.Context(), groupID, listID, ownerID)
-	require.ErrorIs(t, err, sql.ErrNoRows)
-}
-
-func TestUnshareListFromGroup_NonOwnerIsRejected(t *testing.T) {
-	d := newTestDB(t)
-	ownerID, groupID, listID := setupGroupAndList(t, d)
-
-	_, err := d.ShareListWithGroup(t.Context(), groupID, listID, ownerID)
-	require.NoError(t, err)
-
-	// A second member should not be able to unshare the owner's list.
-	memberID := createTestUserForGroup(t, d, "member@example.com")
-	_, err = d.AddGroupMember(t.Context(), groupID, ownerID, memberID)
-	require.NoError(t, err)
-
-	err = d.UnshareListFromGroup(t.Context(), groupID, listID, memberID)
-	require.ErrorIs(t, err, sql.ErrNoRows)
-}
-
-// --- ListGroupReadingLists ---
-
-func TestListGroupReadingLists_MemberSeesSharedList(t *testing.T) {
-	d := newTestDB(t)
-	ownerID, groupID, listID := setupGroupAndList(t, d)
-
-	_, err := d.ShareListWithGroup(t.Context(), groupID, listID, ownerID)
-	require.NoError(t, err)
-
-	lists, err := d.ListGroupReadingLists(t.Context(), groupID, ownerID)
-	require.NoError(t, err)
-	require.Len(t, lists, 1)
-	require.Equal(t, listID, lists[0].ID)
-}
-
-func TestListGroupReadingLists_EmptyWhenNoneShared(t *testing.T) {
-	d := newTestDB(t)
-	ownerID, groupID, _ := setupGroupAndList(t, d)
-
-	lists, err := d.ListGroupReadingLists(t.Context(), groupID, ownerID)
-	require.NoError(t, err)
-	require.Empty(t, lists)
-}
-
-func TestListGroupReadingLists_NonMemberIsRejected(t *testing.T) {
-	d := newTestDB(t)
-	ownerID, groupID, listID := setupGroupAndList(t, d)
-
-	_, err := d.ShareListWithGroup(t.Context(), groupID, listID, ownerID)
-	require.NoError(t, err)
-
+	ownerID := createTestUserForGroup(t, d, "owner@example.com")
 	outsiderID := createTestUserForGroup(t, d, "outsider@example.com")
-	_, err = d.ListGroupReadingLists(t.Context(), groupID, outsiderID)
+
+	g, err := d.CreateGroup(t.Context(), ownerID, "Book Club", nil)
+	require.NoError(t, err)
+
+	_, err = d.ListGroupReadingLists(t.Context(), g.ID, outsiderID)
 	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
-func TestListGroupReadingLists_SecondMemberSeesSharedList(t *testing.T) {
+// TestListGroupReadingLists_UnsharedListDisappears verifies that a list
+// disappears from the group after it is unshared.
+func TestListGroupReadingLists_UnsharedListDisappears(t *testing.T) {
 	d := newTestDB(t)
-	ownerID, groupID, listID := setupGroupAndList(t, d)
-
+	ownerID := createTestUserForGroup(t, d, "owner@example.com")
 	memberID := createTestUserForGroup(t, d, "member@example.com")
-	_, err := d.AddGroupMember(t.Context(), groupID, ownerID, memberID)
-	require.NoError(t, err)
+	groupID := createTestGroupAndMember(t, d, ownerID, memberID)
 
-	_, err = d.ShareListWithGroup(t.Context(), groupID, listID, ownerID)
+	rl, err := d.CreateReadingList(t.Context(), ownerID, "Favorites", nil)
+	require.NoError(t, err)
+	_, err = d.ShareListWithGroup(t.Context(), groupID, rl.ID, ownerID)
 	require.NoError(t, err)
 
 	lists, err := d.ListGroupReadingLists(t.Context(), groupID, memberID)
 	require.NoError(t, err)
 	require.Len(t, lists, 1)
-	require.Equal(t, listID, lists[0].ID)
-}
 
-func TestListGroupReadingLists_MultipleListsOrderedByName(t *testing.T) {
-	d := newTestDB(t)
-	ownerID, groupID, _ := setupGroupAndList(t, d)
-
-	// Create two additional lists with predictable names.
-	alpha, err := d.CreateReadingList(t.Context(), ownerID, "Alpha", nil)
-	require.NoError(t, err)
-	zeta, err := d.CreateReadingList(t.Context(), ownerID, "Zeta", nil)
+	err = d.UnshareListFromGroup(t.Context(), groupID, rl.ID, ownerID)
 	require.NoError(t, err)
 
-	_, err = d.ShareListWithGroup(t.Context(), groupID, zeta.ID, ownerID)
+	lists, err = d.ListGroupReadingLists(t.Context(), groupID, memberID)
 	require.NoError(t, err)
-	_, err = d.ShareListWithGroup(t.Context(), groupID, alpha.ID, ownerID)
-	require.NoError(t, err)
-
-	lists, err := d.ListGroupReadingLists(t.Context(), groupID, ownerID)
-	require.NoError(t, err)
-	require.Len(t, lists, 2)
-	require.Equal(t, "Alpha", lists[0].Name)
-	require.Equal(t, "Zeta", lists[1].Name)
-}
-
-func TestListGroupReadingLists_UnsharedListIsHidden(t *testing.T) {
-	d := newTestDB(t)
-	ownerID, groupID, listID := setupGroupAndList(t, d)
-
-	_, err := d.ShareListWithGroup(t.Context(), groupID, listID, ownerID)
-	require.NoError(t, err)
-
-	err = d.UnshareListFromGroup(t.Context(), groupID, listID, ownerID)
-	require.NoError(t, err)
-
-	lists, err := d.ListGroupReadingLists(t.Context(), groupID, ownerID)
-	require.NoError(t, err)
-	require.Empty(t, lists)
+	require.Empty(t, lists, "list should disappear after unsharing")
 }
