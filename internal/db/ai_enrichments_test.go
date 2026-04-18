@@ -102,6 +102,30 @@ func TestGetAIEnrichment(t *testing.T) {
 	require.Equal(t, []string{"fiction", "adventure"}, fetched.SuggestedTags)
 }
 
+func TestGetAIEnrichment_AllFields(t *testing.T) {
+	d := newTestDB(t)
+	userID := createTestUserForEnrichment(t, d, "user@example.com")
+
+	created := makeAIEnrichment(t, d, userID, nil)
+
+	fetched, err := d.GetAIEnrichment(t.Context(), userID, created.ID)
+	require.NoError(t, err)
+	require.Equal(t, created.ID, fetched.ID)
+	require.Equal(t, userID, fetched.UserID)
+	require.Nil(t, fetched.BookID)
+	require.Equal(t, AIEnrichmentStatusPending, fetched.Status)
+	require.Equal(t, "openai", fetched.Provider)
+	require.Equal(t, "gpt-4", fetched.Model)
+	require.Equal(t, []string{"fiction", "adventure"}, fetched.SuggestedTags)
+	require.NotNil(t, fetched.ReadingLevel)
+	require.Equal(t, "young adult", *fetched.ReadingLevel)
+	require.NotNil(t, fetched.GeneratedDescription)
+	require.Equal(t, "A thrilling adventure.", *fetched.GeneratedDescription)
+	require.Equal(t, `{"raw":"data"}`, fetched.RawResponse)
+	require.False(t, fetched.CreatedAt.IsZero())
+	require.False(t, fetched.UpdatedAt.IsZero())
+}
+
 func TestGetAIEnrichment_NotFound(t *testing.T) {
 	d := newTestDB(t)
 	userID := createTestUserForEnrichment(t, d, "user@example.com")
@@ -248,6 +272,14 @@ func TestUpdateAIEnrichmentStatus_WrongUser(t *testing.T) {
 	e := makeAIEnrichment(t, d, ownerID, nil)
 
 	_, err := d.UpdateAIEnrichmentStatus(t.Context(), otherID, e.ID, AIEnrichmentStatusApplied)
+	require.ErrorIs(t, err, sql.ErrNoRows)
+}
+
+func TestUpdateAIEnrichmentStatus_NotFound(t *testing.T) {
+	d := newTestDB(t)
+	userID := createTestUserForEnrichment(t, d, "user@example.com")
+
+	_, err := d.UpdateAIEnrichmentStatus(t.Context(), userID, "nonexistent-id", AIEnrichmentStatusApplied)
 	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
@@ -496,4 +528,19 @@ func TestApplyAIEnrichment_DeduplicatesNewTagIDs(t *testing.T) {
 	tags, err := d.GetBookTags(t.Context(), book.ID)
 	require.NoError(t, err)
 	require.Len(t, tags, 1)
+}
+
+func TestApplyAIEnrichment_EnrichmentNotFound(t *testing.T) {
+	d := newTestDB(t)
+	userID := createTestUserForEnrichment(t, d, "user@example.com")
+	book, err := d.CreateBook(t.Context(), BookInput{Title: "Test Book"})
+	require.NoError(t, err)
+
+	_, err = d.ApplyAIEnrichment(t.Context(), ApplyAIEnrichmentInput{
+		BookID:       book.ID,
+		UserID:       userID,
+		EnrichmentID: "nonexistent-id",
+		NewTagIDs:    []string{},
+	})
+	require.ErrorIs(t, err, ErrAIEnrichmentNotPending)
 }
