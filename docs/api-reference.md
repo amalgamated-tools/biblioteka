@@ -2934,7 +2934,7 @@ The array always contains exactly `months` entries ordered oldest-first. Months 
 
 ### `GET /api/stats/year-in-books` 🔒
 
-Returns annual reading and download statistics for the authenticated user for a given calendar year. Useful for building "Year in Books" summary cards and streak visualizations.
+Returns annual reading and download statistics for the authenticated user for the specified calendar year. Useful for building "Year in Books" summary cards and streak visualizations.
 
 **Query parameters:**
 
