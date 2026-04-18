@@ -395,6 +395,33 @@ export interface PasskeyCredential {
   created_at: string;
 }
 
+// Reading Groups
+
+export interface ReadingGroup {
+  id: string;
+  owner_id: string;
+  name: string;
+  description: string | null;
+  member_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ReadingGroupMember {
+  group_id: string;
+  user_id: string;
+  user_name: string;
+  role: "owner" | "member";
+  joined_at: string;
+}
+
+export interface GroupMemberProgress {
+  user_id: string;
+  user_name: string;
+  percentage: number;
+  updated_at: string | null;
+}
+
 // Reading Lists
 
 export interface ReadingList {
