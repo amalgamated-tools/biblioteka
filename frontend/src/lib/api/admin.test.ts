@@ -7,7 +7,13 @@ import {
   vi,
   type Mock,
 } from "vitest";
-import { listUsers, setUserAdmin, getAuditLogs, clearToken } from "../api";
+import {
+  listUsers,
+  setUserAdmin,
+  getAuditLogs,
+  rebuildSearchIndex,
+  clearToken,
+} from "../api";
 import type { AdminUser, PaginatedAuditLogs } from "../../types";
 import { mockFetchResponse as _mockFetchResponse } from "./testUtils";
 
@@ -100,6 +106,19 @@ describe("Admin API", () => {
 
       const [url] = fetchMock.mock.calls[0];
       expect(url).toBe("/api/audit-logs?limit=10&offset=20");
+    });
+  });
+
+  describe("rebuildSearchIndex", () => {
+    it("sends POST /api/admin/search/reindex and returns the message", async () => {
+      mockFetchResponse({ message: "search index rebuild started" });
+
+      const result = await rebuildSearchIndex();
+
+      const [url, options] = fetchMock.mock.calls[0];
+      expect(url).toBe("/api/admin/search/reindex");
+      expect(options.method).toBe("POST");
+      expect(result).toEqual({ message: "search index rebuild started" });
     });
   });
 });
