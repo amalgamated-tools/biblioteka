@@ -42,7 +42,7 @@ func bookFileColumnsWithPrefix(prefix string) string {
 
 // CreateBookFile inserts a new book file record and returns it.
 func (d *DB) CreateBookFile(ctx context.Context, bookID, fileType, fileName string, fileSize int64, fileHash *string, filePath string) (*BookFile, error) {
-	slog.DebugContext(ctx, "creating book file",
+	slog.DebugContext(ctx, "db: creating book file",
 		slog.String(otelkeys.BookID, bookID),
 		slog.String(otelkeys.FileName, fileName),
 	)
@@ -58,7 +58,7 @@ func (d *DB) CreateBookFile(ctx context.Context, bookID, fileType, fileName stri
 
 // GetBookFile returns a book file by ID, or sql.ErrNoRows if not found.
 func (d *DB) GetBookFile(ctx context.Context, id string) (*BookFile, error) {
-	slog.DebugContext(ctx, "fetching book file", slog.String(otelkeys.BookFileID, id))
+	slog.DebugContext(ctx, "db: fetching book file", slog.String(otelkeys.BookFileID, id))
 	return scanBookFile(d.QueryRowContext(ctx,
 		`SELECT `+bookFileColumns+` FROM book_files WHERE id = $1`,
 		id,
@@ -67,7 +67,7 @@ func (d *DB) GetBookFile(ctx context.Context, id string) (*BookFile, error) {
 
 // ListBookFiles returns all files for a given book.
 func (d *DB) ListBookFiles(ctx context.Context, bookID string) ([]BookFile, error) {
-	slog.DebugContext(ctx, "listing book files", slog.String(otelkeys.BookID, bookID))
+	slog.DebugContext(ctx, "db: listing book files", slog.String(otelkeys.BookID, bookID))
 	orderBy := d.dialectOrderBy("file_name", "ASC")
 	rows, err := d.QueryContext(ctx,
 		`SELECT `+bookFileColumns+` FROM book_files WHERE book_id = $1 `+orderBy,
@@ -81,7 +81,7 @@ func (d *DB) ListBookFiles(ctx context.Context, bookID string) ([]BookFile, erro
 
 // GetBookFileByPath returns a book file by its file path, or sql.ErrNoRows if not found.
 func (d *DB) GetBookFileByPath(ctx context.Context, filePath string) (*BookFile, error) {
-	slog.DebugContext(ctx, "fetching book file by path", slog.String(otelkeys.Path, filePath))
+	slog.DebugContext(ctx, "db: fetching book file by path", slog.String(otelkeys.Path, filePath))
 	return scanBookFile(d.QueryRowContext(ctx,
 		`SELECT `+bookFileColumns+` FROM book_files WHERE file_path = $1`,
 		filePath,
@@ -90,7 +90,7 @@ func (d *DB) GetBookFileByPath(ctx context.Context, filePath string) (*BookFile,
 
 // DeleteBookFile removes a book file by ID.
 func (d *DB) DeleteBookFile(ctx context.Context, id string) error {
-	slog.DebugContext(ctx, "deleting book file", slog.String(otelkeys.BookFileID, id))
+	slog.DebugContext(ctx, "db: deleting book file", slog.String(otelkeys.BookFileID, id))
 	return d.execAffected(ctx, `DELETE FROM book_files WHERE id = $1`, id)
 }
 
@@ -99,7 +99,7 @@ func (d *DB) GetFilesForBooks(ctx context.Context, bookIDs []string) (map[string
 	if len(bookIDs) == 0 {
 		return nil, nil
 	}
-	slog.DebugContext(ctx, "batch fetching files for books", slog.Int(otelkeys.BookCount, len(bookIDs)))
+	slog.DebugContext(ctx, "db: batch fetching files for books", slog.Int(otelkeys.BookCount, len(bookIDs)))
 
 	inClause, args := buildInClause(bookIDs, 1)
 
@@ -127,6 +127,6 @@ func (d *DB) GetFilesForBooks(ctx context.Context, bookIDs []string) (map[string
 // IncrementBookFileDownloadCount atomically increments the download_count for the
 // given book file by 1. Returns sql.ErrNoRows if the file does not exist.
 func (d *DB) IncrementBookFileDownloadCount(ctx context.Context, id string) error {
-	slog.DebugContext(ctx, "incrementing book file download count", slog.String(otelkeys.BookFileID, id))
+	slog.DebugContext(ctx, "db: incrementing book file download count", slog.String(otelkeys.BookFileID, id))
 	return d.execAffected(ctx, `UPDATE book_files SET download_count = download_count + 1 WHERE id = $1`, id)
 }

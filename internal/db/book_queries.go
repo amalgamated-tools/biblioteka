@@ -14,7 +14,7 @@ var searchLikeReplacer = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
 
 // ListBooksPaginated returns books ordered by title with pagination and total count.
 func (d *DB) ListBooksPaginated(ctx context.Context, limit, offset int) ([]Book, int, error) {
-	slog.DebugContext(ctx, "listing books paginated",
+	slog.DebugContext(ctx, "db: listing books paginated",
 		slog.Int(otelkeys.Limit, limit),
 		slog.Int(otelkeys.Offset, offset),
 	)
@@ -39,7 +39,7 @@ func (d *DB) ListBooksPaginated(ctx context.Context, limit, offset int) ([]Book,
 
 // ListRecentBooks returns books ordered by creation time (newest first) with pagination and total count.
 func (d *DB) ListRecentBooks(ctx context.Context, limit, offset int) ([]Book, int, error) {
-	slog.DebugContext(ctx, "listing recent books",
+	slog.DebugContext(ctx, "db: listing recent books",
 		slog.Int(otelkeys.Limit, limit),
 		slog.Int(otelkeys.Offset, offset),
 	)
@@ -64,7 +64,7 @@ func (d *DB) ListRecentBooks(ctx context.Context, limit, offset int) ([]Book, in
 
 // ListBooksByAuthor returns all books for a specific author.
 func (d *DB) ListBooksByAuthor(ctx context.Context, authorID string) ([]Book, error) {
-	slog.DebugContext(ctx, "listing books by author", slog.String(otelkeys.AuthorID, authorID))
+	slog.DebugContext(ctx, "db: listing books by author", slog.String(otelkeys.AuthorID, authorID))
 	orderBy := d.dialectOrderBy("b.title", "ASC")
 	rows, err := d.QueryContext(ctx,
 		`SELECT `+bookColumnsWithPrefix("b.")+` FROM books b INNER JOIN book_authors ba ON ba.book_id = b.id WHERE ba.author_id = $1 `+orderBy,
@@ -78,7 +78,7 @@ func (d *DB) ListBooksByAuthor(ctx context.Context, authorID string) ([]Book, er
 
 // ListBooksByAuthorPaginated returns books for a specific author with pagination and total count.
 func (d *DB) ListBooksByAuthorPaginated(ctx context.Context, authorID string, limit, offset int) ([]Book, int, error) {
-	slog.DebugContext(ctx, "listing books by author paginated",
+	slog.DebugContext(ctx, "db: listing books by author paginated",
 		slog.String(otelkeys.AuthorID, authorID),
 		slog.Int(otelkeys.Limit, limit),
 		slog.Int(otelkeys.Offset, offset),
@@ -116,7 +116,7 @@ func (d *DB) seriesPositionOrderBy() string {
 
 // ListBooksBySeries returns all books in a specific series, ordered by position.
 func (d *DB) ListBooksBySeries(ctx context.Context, seriesID string) ([]Book, error) {
-	slog.DebugContext(ctx, "listing books by series", slog.String(otelkeys.SeriesID, seriesID))
+	slog.DebugContext(ctx, "db: listing books by series", slog.String(otelkeys.SeriesID, seriesID))
 	rows, err := d.QueryContext(ctx,
 		`SELECT `+bookColumnsWithPrefix("b.")+` FROM books b INNER JOIN book_series bs ON bs.book_id = b.id WHERE bs.series_id = $1 `+d.seriesPositionOrderBy(),
 		seriesID,
@@ -129,7 +129,7 @@ func (d *DB) ListBooksBySeries(ctx context.Context, seriesID string) ([]Book, er
 
 // ListBooksBySeriesPaginated returns books in a specific series with pagination and total count.
 func (d *DB) ListBooksBySeriesPaginated(ctx context.Context, seriesID string, limit, offset int) ([]Book, int, error) {
-	slog.DebugContext(ctx, "listing books by series paginated",
+	slog.DebugContext(ctx, "db: listing books by series paginated",
 		slog.String(otelkeys.SeriesID, seriesID),
 		slog.Int(otelkeys.Limit, limit),
 		slog.Int(otelkeys.Offset, offset),
@@ -205,7 +205,7 @@ func buildILIKESearchWhere(query string, startIdx int) (string, []any) {
 //
 // An empty or whitespace-only query returns zero results on all dialects.
 func (d *DB) SearchBooks(ctx context.Context, query string, limit, offset int) ([]Book, int, error) {
-	slog.DebugContext(ctx, "searching books",
+	slog.DebugContext(ctx, "db: searching books",
 		slog.String(otelkeys.Query, query),
 		slog.Int(otelkeys.Limit, limit),
 		slog.Int(otelkeys.Offset, offset),

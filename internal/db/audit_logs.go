@@ -99,7 +99,7 @@ func scanAuditLogAndTotal(row interface{ Scan(...any) error }) (*AuditLog, int, 
 // to JSON; a nil map stores a NULL metadata value. The userID may be empty for
 // system-initiated actions.
 func (d *DB) CreateAuditLog(ctx context.Context, userID, action, entityType, entityID string, metadata map[string]any) error {
-	slog.DebugContext(ctx, "creating audit log",
+	slog.DebugContext(ctx, "db: creating audit log",
 		slog.String(otelkeys.Action, action),
 		slog.String(otelkeys.EntityType, entityType),
 		slog.String(otelkeys.EntityID, entityID),
@@ -134,7 +134,7 @@ func (d *DB) CreateAuditLog(ctx context.Context, userID, action, entityType, ent
 // produce no total; in that case a standalone COUNT(*) is issued instead and an
 // empty slice is returned with the correct total.
 func (d *DB) ListAuditLogs(ctx context.Context, limit, offset int) ([]AuditLog, int, error) {
-	slog.DebugContext(ctx, "listing audit logs",
+	slog.DebugContext(ctx, "db: listing audit logs",
 		slog.Int(otelkeys.Limit, limit),
 		slog.Int(otelkeys.Offset, offset),
 	)
