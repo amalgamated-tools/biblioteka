@@ -287,6 +287,24 @@ func TestComputeReadingStreak_TodayAndYesterday(t *testing.T) {
 	require.Equal(t, 2, ComputeReadingStreak(ts, now))
 }
 
+func TestComputeReadingStreak_StreakBrokenTwoDaysAgo(t *testing.T) {
+	// Only 2 days ago — streak requires today or yesterday as most recent entry.
+	now := time.Date(2025, 6, 15, 12, 0, 0, 0, time.UTC)
+	twoDaysAgo := now.AddDate(0, 0, -2)
+	threeDaysAgo := now.AddDate(0, 0, -3)
+	ts := []time.Time{twoDaysAgo, threeDaysAgo}
+	require.Equal(t, 0, ComputeReadingStreak(ts, now))
+}
+
+func TestComputeReadingStreak_AtMidnightBoundary(t *testing.T) {
+	// now is exactly at midnight UTC; today = that midnight, yesterday = day before.
+	now := time.Date(2025, 6, 15, 0, 0, 0, 0, time.UTC)
+	today := now
+	yesterday := now.AddDate(0, 0, -1)
+	ts := []time.Time{today, yesterday}
+	require.Equal(t, 2, ComputeReadingStreak(ts, now))
+}
+
 func TestComputeReadingStreak_ConsecutiveDays(t *testing.T) {
 	now := time.Date(2025, 6, 15, 12, 0, 0, 0, time.UTC)
 	ts := []time.Time{
