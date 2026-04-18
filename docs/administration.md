@@ -75,6 +75,21 @@ curl -X PUT http://localhost:8080/api/admin/users/<user-id> \
 
 Biblioteka does not expose a user deletion endpoint. To remove an account, connect to the database directly and issue a `DELETE` statement against the `users` table.
 
+#### Before deleting a user
+
+Work through this checklist before issuing the `DELETE` statement:
+
+1. **Reassign libraries created by the user.** Libraries are global resources and are not automatically reassigned. If the user created libraries that other users depend on, transfer ownership by updating `user_id` in the `libraries` table to a different admin account, or recreate the libraries under a different account and update any references.
+
+   ```sql
+   -- Reassign all libraries owned by the user to a different admin
+   UPDATE libraries SET user_id = '<new-owner-id>' WHERE user_id = '<user-id>';
+   ```
+
+2. **Verify no active background jobs reference the user's libraries.** Check the job queue (Redis) or the Asynq inspector for any in-progress or pending `scan:library` jobs that reference library IDs owned by the user. Allow running jobs to finish, or cancel them, before proceeding. Deleting the user while a scan job is active against one of their libraries may cause the job to complete against an orphaned `user_id`.
+
+3. **Confirm audit log retention.** Rows in `audit_logs` that reference the deleted `user_id` are intentionally retained for accountability — there is no foreign key constraint on `audit_logs.user_id`. After deletion those rows will contain an orphaned `user_id` value, which is expected behavior. Ensure your compliance or audit policies accept this before proceeding.
+
 **SQLite**
 
 ```bash
