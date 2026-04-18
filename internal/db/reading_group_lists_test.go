@@ -140,8 +140,7 @@ func TestUnshareListFromGroup_NotShared(t *testing.T) {
 
 func TestListGroupReadingLists_Empty(t *testing.T) {
 	d := newTestDB(t)
-	ownerID, memberID, groupID := setupGroupWithMember(t, d)
-	_ = ownerID
+	_, memberID, groupID := setupGroupWithMember(t, d)
 
 	lists, err := d.ListGroupReadingLists(t.Context(), groupID, memberID)
 	require.NoError(t, err)
