@@ -163,8 +163,8 @@ describe("Auth", () => {
     expect(alert).toHaveAttribute("id", "login-auth-error");
 
     const loginPanel = screen.getByRole("tabpanel", { name: "Login" });
-    const loginEmail = within(loginPanel).getByLabelText("Email");
-    const loginPassword = within(loginPanel).getByLabelText("Password");
+    const loginEmail = within(loginPanel).getByLabelText(/Email/i);
+    const loginPassword = within(loginPanel).getByLabelText(/Password/i);
     expect(loginEmail).toHaveAttribute("aria-invalid", "true");
     expect(loginEmail).toHaveAttribute("aria-describedby", "login-auth-error");
     expect(loginPassword).toHaveAttribute("aria-invalid", "true");
@@ -172,5 +172,73 @@ describe("Auth", () => {
       "aria-describedby",
       "login-auth-error",
     );
+  });
+
+  it("shows required indicators and aria-required attributes on login fields", async () => {
+    await renderAuth();
+
+    const loginPanel = screen.getByRole("tabpanel", { name: "Login" });
+    const notice = loginPanel.querySelector("form > p");
+    expect(notice).toBeInTheDocument();
+    expect(notice?.textContent).toMatch(/are required/i);
+    expect(notice?.querySelector('span[aria-hidden="true"]')).toHaveTextContent(
+      "*",
+    );
+    expect(notice?.querySelector(".sr-only")).toHaveTextContent("an asterisk");
+
+    const loginEmail = within(loginPanel).getByLabelText(/Email/i);
+    const loginPassword = within(loginPanel).getByLabelText(/Password/i);
+    expect(loginEmail).toHaveAttribute("aria-required", "true");
+    expect(loginPassword).toHaveAttribute("aria-required", "true");
+
+    const emailLabel = loginPanel.querySelector('label[for="login-email"]');
+    const passwordLabel = loginPanel.querySelector(
+      'label[for="login-password"]',
+    );
+    expect(
+      emailLabel?.querySelector('span[aria-hidden="true"]'),
+    ).toHaveTextContent("*");
+    expect(
+      passwordLabel?.querySelector('span[aria-hidden="true"]'),
+    ).toHaveTextContent("*");
+  });
+
+  it("shows required indicators and aria-required attributes on signup fields", async () => {
+    const user = userEvent.setup();
+    await renderAuth();
+
+    await user.click(screen.getByRole("tab", { name: "Sign Up" }));
+    await tick();
+
+    const signupPanel = screen.getByRole("tabpanel", { name: "Sign Up" });
+    const notice = signupPanel.querySelector("form > p");
+    expect(notice).toBeInTheDocument();
+    expect(notice?.textContent).toMatch(/are required/i);
+    expect(notice?.querySelector('span[aria-hidden="true"]')).toHaveTextContent(
+      "*",
+    );
+    expect(notice?.querySelector(".sr-only")).toHaveTextContent("an asterisk");
+
+    const signupName = within(signupPanel).getByLabelText(/Name/i);
+    const signupEmail = within(signupPanel).getByLabelText(/Email/i);
+    const signupPassword = within(signupPanel).getByLabelText(/Password/i);
+    expect(signupName).toHaveAttribute("aria-required", "true");
+    expect(signupEmail).toHaveAttribute("aria-required", "true");
+    expect(signupPassword).toHaveAttribute("aria-required", "true");
+
+    const nameLabel = signupPanel.querySelector('label[for="signup-name"]');
+    const emailLabel = signupPanel.querySelector('label[for="signup-email"]');
+    const passwordLabel = signupPanel.querySelector(
+      'label[for="signup-password"]',
+    );
+    expect(
+      nameLabel?.querySelector('span[aria-hidden="true"]'),
+    ).toHaveTextContent("*");
+    expect(
+      emailLabel?.querySelector('span[aria-hidden="true"]'),
+    ).toHaveTextContent("*");
+    expect(
+      passwordLabel?.querySelector('span[aria-hidden="true"]'),
+    ).toHaveTextContent("*");
   });
 });

@@ -996,7 +996,7 @@ A pure-CSS bar-chart component that renders monthly download counts fetched from
 
 ### `TextInput.svelte`
 
-A styled text input with focus ring, dark-mode support, disabled styling, and ARIA attribute forwarding. In dark mode, placeholder text uses `dark:placeholder:text-ink-300` to maintain sufficient contrast against the dark background (WCAG 1.4.3 Contrast Minimum, Level AA). Form control borders use `border-ink-400 dark:border-ink-400` to meet the WCAG 1.4.11 Non-text Contrast minimum of 3:1. The active state class string uses `focus-visible:outline-none` (not `outline-none`) to suppress the browser's default outline when `:focus-visible` matches (keyboard-initiated focus), so the component's explicit `focus:ring-*` accent ring is the sole visible indicator — avoiding a double ring while still meeting WCAG 2.4.7 Focus Visible (Level AA).
+A styled text input with focus ring, dark-mode support, disabled styling, and ARIA attribute forwarding. In dark mode, placeholder text uses `dark:placeholder:text-ink-300` to maintain sufficient contrast against the dark background (WCAG 1.4.3 Contrast Minimum, Level AA). Form control borders use `border-ink-400 dark:border-ink-400` to meet the WCAG 1.4.11 Non-text Contrast minimum of 3:1. When `aria-invalid="true"` is present, the input applies `aria-invalid:border-danger-500` and danger-colored focus styles to provide a visible error cue for sighted users while preserving the ARIA semantics. The active state class string uses `focus-visible:outline-none` (not `outline-none`) to suppress the browser's default outline when `:focus-visible` matches (keyboard-initiated focus), so the component's explicit `focus:ring-*` accent ring is the sole visible indicator — avoiding a double ring while still meeting WCAG 2.4.7 Focus Visible (Level AA).
 
 **Props:**
 
@@ -1395,7 +1395,7 @@ A modal dialog that lets users email a book file to an email address. It fetches
 
 ### `TextInput.svelte`
 
-A styled text input that forwards all standard HTML `<input>` attributes. Use this instead of a raw `<input>` element so focus-ring, border, dark-mode, and disabled styles are consistent. In dark mode, placeholder text uses `dark:placeholder:text-ink-300` (not `dark:placeholder:text-ink-500`) to satisfy the WCAG 1.4.3 Contrast Minimum (Level AA) for non-active UI text. The border uses `border-ink-400 dark:border-ink-400` to satisfy the WCAG 1.4.11 Non-text Contrast minimum of 3:1 in both light and dark modes.
+A styled text input that forwards all standard HTML `<input>` attributes. Use this instead of a raw `<input>` element so focus-ring, border, dark-mode, and disabled styles are consistent. In dark mode, placeholder text uses `dark:placeholder:text-ink-300` (not `dark:placeholder:text-ink-500`) to satisfy the WCAG 1.4.3 Contrast Minimum (Level AA) for non-active UI text. The border uses `border-ink-400 dark:border-ink-400` to satisfy the WCAG 1.4.11 Non-text Contrast minimum of 3:1 in both light and dark modes. When `aria-invalid="true"` is set, the input also uses danger border/focus styling so error fields are visually identifiable.
 
 **Props:**
 
