@@ -98,6 +98,8 @@ func (h *APIKeyHandler) Create(w http.ResponseWriter, r *http.Request) {
 			)
 		} else if resp.ID != "" {
 			logAudit(r.Context(), h.DB, userID, db.AuditActionAPIKeyCreated, "api_key", resp.ID, map[string]any{"name": resp.Name})
+		} else {
+			slog.WarnContext(r.Context(), "API key created but response ID is empty; audit skipped")
 		}
 	}
 }
