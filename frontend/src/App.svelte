@@ -10,6 +10,7 @@
   import Libraries from "./components/Libraries.svelte";
   import ReadingLists from "./components/ReadingLists.svelte";
   import Groups from "./components/Groups.svelte";
+  import Tags from "./components/Tags.svelte";
   import NotFound from "./components/NotFound.svelte";
   import Sidebar from "./components/Sidebar.svelte";
   import Settings from "./components/Settings.svelte";
@@ -174,6 +175,8 @@
           <ReadingLists />
         {:else if routerStore.currentView === "groups"}
           <Groups />
+        {:else if routerStore.currentView === "tags"}
+          <Tags />
         {:else if routerStore.currentView === "settings"}
           <Settings />
         {/if}
