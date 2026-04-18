@@ -248,8 +248,8 @@ describe("Auth", () => {
     await renderAuth();
 
     const loginPanel = screen.getByRole("tabpanel", { name: "Login" });
-    const loginEmail = within(loginPanel).getByLabelText("Email");
-    const loginPassword = within(loginPanel).getByLabelText("Password");
+    const loginEmail = within(loginPanel).getByLabelText(/Email/i);
+    const loginPassword = within(loginPanel).getByLabelText(/Password/i);
 
     await user.type(loginEmail, "reader@example.com");
     await user.type(loginPassword, "12345");
@@ -279,8 +279,8 @@ describe("Auth", () => {
     await renderAuth();
 
     const loginPanel = screen.getByRole("tabpanel", { name: "Login" });
-    const loginEmail = within(loginPanel).getByLabelText("Email");
-    const loginPassword = within(loginPanel).getByLabelText("Password");
+    const loginEmail = within(loginPanel).getByLabelText(/Email/i);
+    const loginPassword = within(loginPanel).getByLabelText(/Password/i);
 
     await user.type(loginEmail, "reader@example.com");
     await user.type(loginPassword, "securepass");
