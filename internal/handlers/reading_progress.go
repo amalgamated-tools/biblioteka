@@ -119,7 +119,7 @@ func estimateMinutesRemaining(p *db.ReadingProgress) *int64 {
 	if p.Percentage <= 0.01 {
 		return nil
 	}
-	elapsed := p.UpdatedAt.Time.Sub(p.CreatedAt.Time)
+	elapsed := p.UpdatedAt.Sub(p.CreatedAt.Time)
 	if elapsed < 5*time.Minute {
 		return nil
 	}
