@@ -57,6 +57,9 @@
     newName = "";
     newDescription = "";
     createError = null;
+    if (subPath === "new") {
+      routerStore.navigate("groups");
+    }
   }
 </script>
 
