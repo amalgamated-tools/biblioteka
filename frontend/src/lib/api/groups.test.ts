@@ -16,10 +16,10 @@ import {
   listGroupMembers,
   addGroupMember,
   removeGroupMember,
-  listGroupLists,
-  addGroupList,
-  removeGroupList,
-  getGroupProgress,
+  listGroupReadingLists,
+  shareListWithGroup,
+  unshareListFromGroup,
+  listGroupMemberProgress,
   clearToken,
 } from "../api";
 import type {
@@ -105,14 +105,13 @@ describe("Groups API", () => {
     it("sends POST /api/groups with name and returns created group", async () => {
       mockFetchResponse(fakeGroup, 201);
 
-      const result = await createGroup("Book Club");
+      const result = await createGroup({ name: "Book Club" });
 
       const [url, options] = fetchMock.mock.calls[0];
       expect(url).toBe("/api/groups");
       expect(options.method).toBe("POST");
       expect(JSON.parse(options.body)).toEqual({
         name: "Book Club",
-        description: undefined,
       });
       expect(result).toEqual(fakeGroup);
     });
@@ -120,7 +119,7 @@ describe("Groups API", () => {
     it("passes description when provided", async () => {
       mockFetchResponse(fakeGroup, 201);
 
-      await createGroup("Book Club", "Our club");
+      await createGroup({ name: "Book Club", description: "Our club" });
 
       const [, options] = fetchMock.mock.calls[0];
       expect(JSON.parse(options.body)).toEqual({
@@ -148,7 +147,10 @@ describe("Groups API", () => {
       const updated: ReadingGroup = { ...fakeGroup, name: "Updated Club" };
       mockFetchResponse(updated);
 
-      const result = await updateGroup("g-1", "Updated Club", "Our club");
+      const result = await updateGroup("g-1", {
+        name: "Updated Club",
+        description: "Our club",
+      });
 
       const [url, options] = fetchMock.mock.calls[0];
       expect(url).toBe("/api/groups/g-1");
@@ -163,7 +165,7 @@ describe("Groups API", () => {
     it("sends null description to clear it", async () => {
       mockFetchResponse(fakeGroup);
 
-      await updateGroup("g-1", "Book Club", null);
+      await updateGroup("g-1", { name: "Book Club", description: null });
 
       const [, options] = fetchMock.mock.calls[0];
       expect(JSON.parse(options.body)).toEqual({
@@ -225,11 +227,11 @@ describe("Groups API", () => {
     });
   });
 
-  describe("listGroupLists", () => {
+  describe("listGroupReadingLists", () => {
     it("sends GET /api/groups/:id/lists and returns lists", async () => {
       mockFetchResponse([fakeList]);
 
-      const result = await listGroupLists("g-1");
+      const result = await listGroupReadingLists("g-1");
 
       const [url, options] = fetchMock.mock.calls[0];
       expect(url).toBe("/api/groups/g-1/lists");
@@ -238,11 +240,11 @@ describe("Groups API", () => {
     });
   });
 
-  describe("addGroupList", () => {
+  describe("shareListWithGroup", () => {
     it("sends POST /api/groups/:id/lists with list_id", async () => {
       mockNoContentResponse();
 
-      await addGroupList("g-1", "rl-1");
+      await shareListWithGroup("g-1", "rl-1");
 
       const [url, options] = fetchMock.mock.calls[0];
       expect(url).toBe("/api/groups/g-1/lists");
@@ -251,11 +253,11 @@ describe("Groups API", () => {
     });
   });
 
-  describe("removeGroupList", () => {
+  describe("unshareListFromGroup", () => {
     it("sends DELETE /api/groups/:groupId/lists/:listId", async () => {
       mockNoContentResponse();
 
-      const result = await removeGroupList("g-1", "rl-1");
+      const result = await unshareListFromGroup("g-1", "rl-1");
 
       const [url, options] = fetchMock.mock.calls[0];
       expect(url).toBe("/api/groups/g-1/lists/rl-1");
@@ -264,11 +266,11 @@ describe("Groups API", () => {
     });
   });
 
-  describe("getGroupProgress", () => {
+  describe("listGroupMemberProgress", () => {
     it("sends GET /api/groups/:id/progress with book_id query param", async () => {
       mockFetchResponse([fakeProgress]);
 
-      const result = await getGroupProgress("g-1", "book-42");
+      const result = await listGroupMemberProgress("g-1", "book-42");
 
       const [url, options] = fetchMock.mock.calls[0];
       expect(url).toBe("/api/groups/g-1/progress?book_id=book-42");
