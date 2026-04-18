@@ -176,9 +176,9 @@ export interface PaginatedBooks {
 export interface ReadingProgressItem {
   document: string;
   percentage: number;
-  device?: string | null;
+  device?: string;
   last_synced: string;
-  estimated_minutes_remaining?: number | null;
+  estimated_minutes_remaining?: number;
 }
 
 export interface ReadingProgressStats {
