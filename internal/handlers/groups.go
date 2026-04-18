@@ -133,10 +133,36 @@ func (h *GroupHandler) HandleGroupRoutes(w http.ResponseWriter, r *http.Request)
 	}
 }
 
+// listGroups returns all groups for the authenticated user.
+//
+//	@Summary		List groups
+//	@Description	Returns all reading groups the authenticated user belongs to
+//	@Tags			Groups
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401	{object}	errorResponse
+//	@Success		200	{array}		groupDTO
+//	@Failure		500	{object}	errorResponse
+//	@Router			/groups [get]
 func (h *GroupHandler) listGroups(w http.ResponseWriter, r *http.Request) {
 	listUserEntities(w, r, "groups", h.DB.ListGroups, toGroupDTO)
 }
 
+// createGroup creates a new reading group.
+//
+//	@Summary		Create a group
+//	@Description	Create a new reading group owned by the authenticated user
+//	@Tags			Groups
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401		{object}	errorResponse
+//	@Param			body	body		groupRequest	true	"Group data"
+//	@Success		201		{object}	groupDTO
+//	@Failure		400		{object}	errorResponse
+//	@Failure		409		{object}	errorResponse
+//	@Failure		500		{object}	errorResponse
+//	@Router			/groups [post]
 func (h *GroupHandler) createGroup(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	var req groupRequest
@@ -177,6 +203,20 @@ func (h *GroupHandler) handleGroup(w http.ResponseWriter, r *http.Request, id st
 	}
 }
 
+// getGroup returns a single group by ID.
+//
+//	@Summary		Get a group
+//	@Description	Returns a single reading group by ID (requester must be a member)
+//	@Tags			Groups
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401	{object}	errorResponse
+//	@Param			id	path		string	true	"Group ID"
+//	@Success		200	{object}	groupDTO
+//	@Failure		400	{object}	errorResponse
+//	@Failure		404	{object}	errorResponse
+//	@Failure		500	{object}	errorResponse
+//	@Router			/groups/{id} [get]
 func (h *GroupHandler) getGroup(w http.ResponseWriter, r *http.Request, id string) {
 	ctx := r.Context()
 	userID := auth.UserIDFromContext(ctx)
@@ -187,6 +227,23 @@ func (h *GroupHandler) getGroup(w http.ResponseWriter, r *http.Request, id strin
 	writeJSON(ctx, w, http.StatusOK, toGroupDTO(g))
 }
 
+// updateGroup updates an existing group.
+//
+//	@Summary		Update a group
+//	@Description	Update the name and description of a reading group (owner only)
+//	@Tags			Groups
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401		{object}	errorResponse
+//	@Param			id		path		string			true	"Group ID"
+//	@Param			body	body		groupRequest	true	"Group data"
+//	@Success		200		{object}	groupDTO
+//	@Failure		400		{object}	errorResponse
+//	@Failure		404		{object}	errorResponse
+//	@Failure		409		{object}	errorResponse
+//	@Failure		500		{object}	errorResponse
+//	@Router			/groups/{id} [put]
 func (h *GroupHandler) updateGroup(w http.ResponseWriter, r *http.Request, id string) {
 	ctx := r.Context()
 	var req groupRequest
@@ -209,6 +266,19 @@ func (h *GroupHandler) updateGroup(w http.ResponseWriter, r *http.Request, id st
 	writeJSON(ctx, w, http.StatusOK, toGroupDTO(g))
 }
 
+// deleteGroup deletes a reading group.
+//
+//	@Summary		Delete a group
+//	@Description	Delete a reading group (owner only)
+//	@Tags			Groups
+//	@Security		BearerAuth
+//	@Failure		401	{object}	errorResponse
+//	@Param			id	path		string	true	"Group ID"
+//	@Success		204	"No Content"
+//	@Failure		400	{object}	errorResponse
+//	@Failure		404	{object}	errorResponse
+//	@Failure		500	{object}	errorResponse
+//	@Router			/groups/{id} [delete]
 func (h *GroupHandler) deleteGroup(w http.ResponseWriter, r *http.Request, id string) {
 	ctx := r.Context()
 	userID := auth.UserIDFromContext(ctx)
@@ -233,6 +303,20 @@ func (h *GroupHandler) handleGroupMembers(w http.ResponseWriter, r *http.Request
 	}
 }
 
+// listGroupMembers returns all members of a group.
+//
+//	@Summary		List group members
+//	@Description	Returns all members of a reading group (requester must be a member)
+//	@Tags			Groups
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401	{object}	errorResponse
+//	@Param			id	path		string	true	"Group ID"
+//	@Success		200	{array}		groupMemberDTO
+//	@Failure		400	{object}	errorResponse
+//	@Failure		404	{object}	errorResponse
+//	@Failure		500	{object}	errorResponse
+//	@Router			/groups/{id}/members [get]
 func (h *GroupHandler) listGroupMembers(w http.ResponseWriter, r *http.Request, groupID string) {
 	ctx := r.Context()
 	userID := auth.UserIDFromContext(ctx)
@@ -245,6 +329,21 @@ func (h *GroupHandler) listGroupMembers(w http.ResponseWriter, r *http.Request, 
 	writeJSON(ctx, w, http.StatusOK, mapSlice(members, toGroupMemberDTO))
 }
 
+// addGroupMember adds a user to a reading group.
+//
+//	@Summary		Add a group member
+//	@Description	Add a user to a reading group (owner only; idempotent)
+//	@Tags			Groups
+//	@Accept			json
+//	@Security		BearerAuth
+//	@Failure		401		{object}	errorResponse
+//	@Param			id		path		string					true	"Group ID"
+//	@Param			body	body		addGroupMemberRequest	true	"Member to add"
+//	@Success		204		"No Content"
+//	@Failure		400		{object}	errorResponse
+//	@Failure		404		{object}	errorResponse
+//	@Failure		500		{object}	errorResponse
+//	@Router			/groups/{id}/members [post]
 func (h *GroupHandler) addGroupMember(w http.ResponseWriter, r *http.Request, groupID string) {
 	ctx := r.Context()
 	var req addGroupMemberRequest
@@ -287,6 +386,19 @@ func (h *GroupHandler) handleGroupMember(w http.ResponseWriter, r *http.Request,
 	}
 }
 
+// removeGroupMember removes a member from a reading group.
+//
+//	@Summary		Remove a group member
+//	@Description	Remove a member from a reading group. The owner can remove any member; members can remove themselves.
+//	@Tags			Groups
+//	@Security		BearerAuth
+//	@Failure		401		{object}	errorResponse
+//	@Param			id			path	string	true	"Group ID"
+//	@Param			memberID	path	string	true	"Member user ID"
+//	@Success		204			"No Content"
+//	@Failure		400			{object}	errorResponse
+//	@Failure		500			{object}	errorResponse
+//	@Router			/groups/{id}/members/{memberID} [delete]
 func (h *GroupHandler) removeGroupMember(w http.ResponseWriter, r *http.Request, groupID, memberID string) {
 	ctx := r.Context()
 	userID := auth.UserIDFromContext(ctx)
@@ -318,6 +430,20 @@ func (h *GroupHandler) handleGroupLists(w http.ResponseWriter, r *http.Request, 
 	}
 }
 
+// listGroupLists returns all reading lists shared with a group.
+//
+//	@Summary		List group reading lists
+//	@Description	Returns all reading lists shared with a reading group (requester must be a member)
+//	@Tags			Groups
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401	{object}	errorResponse
+//	@Param			id	path		string	true	"Group ID"
+//	@Success		200	{array}		readingListDTO
+//	@Failure		400	{object}	errorResponse
+//	@Failure		404	{object}	errorResponse
+//	@Failure		500	{object}	errorResponse
+//	@Router			/groups/{id}/lists [get]
 func (h *GroupHandler) listGroupLists(w http.ResponseWriter, r *http.Request, groupID string) {
 	ctx := r.Context()
 	userID := auth.UserIDFromContext(ctx)
@@ -330,6 +456,21 @@ func (h *GroupHandler) listGroupLists(w http.ResponseWriter, r *http.Request, gr
 	writeJSON(ctx, w, http.StatusOK, mapSlice(lists, toReadingListDTO))
 }
 
+// shareList shares a reading list with a group.
+//
+//	@Summary		Share a reading list with a group
+//	@Description	Share a reading list with a reading group. The user must own the list and be a group member.
+//	@Tags			Groups
+//	@Accept			json
+//	@Security		BearerAuth
+//	@Failure		401		{object}	errorResponse
+//	@Param			id		path		string				true	"Group ID"
+//	@Param			body	body		shareListRequest	true	"List to share"
+//	@Success		204		"No Content"
+//	@Failure		400		{object}	errorResponse
+//	@Failure		404		{object}	errorResponse
+//	@Failure		500		{object}	errorResponse
+//	@Router			/groups/{id}/lists [post]
 func (h *GroupHandler) shareList(w http.ResponseWriter, r *http.Request, groupID string) {
 	ctx := r.Context()
 	var req shareListRequest
@@ -365,6 +506,20 @@ func (h *GroupHandler) handleGroupList(w http.ResponseWriter, r *http.Request, g
 	}
 }
 
+// unshareList removes a reading list from a group.
+//
+//	@Summary		Unshare a reading list from a group
+//	@Description	Remove a reading list from a reading group. The user must own the list.
+//	@Tags			Groups
+//	@Security		BearerAuth
+//	@Failure		401		{object}	errorResponse
+//	@Param			id		path		string	true	"Group ID"
+//	@Param			listID	path		string	true	"Reading list ID"
+//	@Success		204		"No Content"
+//	@Failure		400		{object}	errorResponse
+//	@Failure		404		{object}	errorResponse
+//	@Failure		500		{object}	errorResponse
+//	@Router			/groups/{id}/lists/{listID} [delete]
 func (h *GroupHandler) unshareList(w http.ResponseWriter, r *http.Request, groupID, listID string) {
 	ctx := r.Context()
 	userID := auth.UserIDFromContext(ctx)
@@ -381,6 +536,21 @@ func (h *GroupHandler) unshareList(w http.ResponseWriter, r *http.Request, group
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// handleGroupProgress dispatches GET for /api/groups/{id}/progress.
+//
+//	@Summary		Get group reading progress
+//	@Description	Returns reading progress for all group members on a specific book (requester must be a member)
+//	@Tags			Groups
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401		{object}	errorResponse
+//	@Param			id		path		string	true	"Group ID"
+//	@Param			book_id	query		string	true	"Book ID"
+//	@Success		200		{array}		groupMemberProgressDTO
+//	@Failure		400		{object}	errorResponse
+//	@Failure		404		{object}	errorResponse
+//	@Failure		500		{object}	errorResponse
+//	@Router			/groups/{id}/progress [get]
 func (h *GroupHandler) handleGroupProgress(w http.ResponseWriter, r *http.Request, groupID string) {
 	if r.Method != http.MethodGet {
 		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
