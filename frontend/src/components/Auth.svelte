@@ -113,8 +113,7 @@
         .then((enabled) => {
           oidcEnabled = enabled;
         })
-        .catch((e) => {
-          console.error("Failed to check OIDC status", e);
+        .catch(() => {
           initError ??= "Unable to reach the server to load auth settings";
         });
       getSignupEnabled()
@@ -124,16 +123,15 @@
             isLogin = true;
           }
         })
-        .catch((e) => {
-          console.error("Failed to check signup status", e);
+        .catch(() => {
           initError ??= "Unable to reach the server to load auth settings";
         });
       getPasskeyEnabled()
         .then((enabled) => {
           passkeyEnabled = enabled;
         })
-        .catch((e) => {
-          console.error("Failed to check passkey status", e);
+        .catch(() => {
+          // Passkey availability is optional; silently disable the feature on error.
         });
     }
   });
