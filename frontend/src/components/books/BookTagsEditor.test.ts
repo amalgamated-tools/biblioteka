@@ -14,12 +14,16 @@ const mockGetBookTags = vi.fn();
 const mockListTags = vi.fn();
 const mockSetBookTags = vi.fn();
 const mockCreateTag = vi.fn();
+const mockUpdateTag = vi.fn();
+const mockDeleteTag = vi.fn();
 
 vi.mock("../../lib/api", () => ({
   getBookTags: (...args: unknown[]) => mockGetBookTags(...args),
   listTags: (...args: unknown[]) => mockListTags(...args),
   setBookTags: (...args: unknown[]) => mockSetBookTags(...args),
   createTag: (...args: unknown[]) => mockCreateTag(...args),
+  updateTag: (...args: unknown[]) => mockUpdateTag(...args),
+  deleteTag: (...args: unknown[]) => mockDeleteTag(...args),
 }));
 
 import BookTagsEditor from "./BookTagsEditor.svelte";

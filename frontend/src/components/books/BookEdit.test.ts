@@ -27,6 +27,9 @@ const mockRejectMetadata = vi.fn();
 const mockSubscribeToMetadataEvents = vi.fn();
 const mockGetBookTags = vi.fn();
 const mockListTags = vi.fn();
+const mockCreateTag = vi.fn();
+const mockUpdateTag = vi.fn();
+const mockDeleteTag = vi.fn();
 
 vi.mock("../../lib/api", () => ({
   getBook: (...args: unknown[]) => mockGetBook(...args),
@@ -38,6 +41,9 @@ vi.mock("../../lib/api", () => ({
     mockSubscribeToMetadataEvents(...args),
   getBookTags: (...args: unknown[]) => mockGetBookTags(...args),
   listTags: (...args: unknown[]) => mockListTags(...args),
+  createTag: (...args: unknown[]) => mockCreateTag(...args),
+  updateTag: (...args: unknown[]) => mockUpdateTag(...args),
+  deleteTag: (...args: unknown[]) => mockDeleteTag(...args),
 }));
 
 import BookEdit from "./BookEdit.svelte";
