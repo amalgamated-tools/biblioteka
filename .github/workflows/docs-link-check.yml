@@ -1,0 +1,37 @@
+name: Docs Link Check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**/*.md'
+      - 'mkdocs.yml'
+      - '.mlc_config.json'
+      - '.github/workflows/docs-link-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docs/**/*.md'
+      - 'mkdocs.yml'
+    types: [synchronize, opened, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  link-check:
+    runs-on: ubuntu-latest
+    # markdown-link-check is fast for local-only checks; 5 minutes is generous.
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
+
+      - name: Check markdown links
+        run: |
+          find docs -name '*.md' | sort | xargs npx --yes markdown-link-check@3.12.2 \
+            --config .mlc_config.json \
+            --quiet
