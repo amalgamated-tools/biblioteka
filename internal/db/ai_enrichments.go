@@ -130,12 +130,27 @@ func (d *DB) UpdateAIEnrichmentStatus(ctx context.Context, userID, id, status st
 		slog.String(otelkeys.UserID, userID),
 		slog.String(otelkeys.Status, status),
 	)
+
+	// First verify the record exists and is owned by this user; return
+	// sql.ErrNoRows when not found (distinct from ErrAIEnrichmentNotPending).
+	var currentStatus string
+	if err := d.QueryRowContext(ctx,
+		`SELECT status FROM ai_enrichments WHERE id = $1 AND user_id = $2`,
+		id, userID,
+	).Scan(&currentStatus); err != nil {
+		return nil, err
+	}
+	if currentStatus != AIEnrichmentStatusPending {
+		return nil, ErrAIEnrichmentNotPending
+	}
+
 	e, err := scanAIEnrichment(d.QueryRowContext(ctx,
 		`UPDATE ai_enrichments SET status = $1, updated_at = `+d.now()+` WHERE id = $2 AND user_id = $3 AND status = 'pending' RETURNING `+aiEnrichmentColumns,
 		status, id, userID,
 	))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
+			// Lost a race; another concurrent update changed the status.
 			return nil, ErrAIEnrichmentNotPending
 		}
 		return nil, err

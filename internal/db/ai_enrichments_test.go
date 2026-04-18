@@ -248,7 +248,7 @@ func TestUpdateAIEnrichmentStatus_WrongUser(t *testing.T) {
 	e := makeAIEnrichment(t, d, ownerID, nil)
 
 	_, err := d.UpdateAIEnrichmentStatus(t.Context(), otherID, e.ID, AIEnrichmentStatusApplied)
-	require.ErrorIs(t, err, ErrAIEnrichmentNotPending)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 // --- DeleteAIEnrichment ---
@@ -418,6 +418,12 @@ func TestApplyAIEnrichment_NotPending(t *testing.T) {
 	book, err := d.CreateBook(t.Context(), BookInput{Title: "Test Book"})
 	require.NoError(t, err)
 
+	// Pre-seed a tag to verify the transaction rollback preserves it.
+	tag, err := d.CreateTag(t.Context(), "Existing")
+	require.NoError(t, err)
+	err = d.SetBookTags(t.Context(), book.ID, []string{tag.ID})
+	require.NoError(t, err)
+
 	e := makeAIEnrichment(t, d, userID, &book.ID)
 
 	// Reject first, then try to apply.
@@ -431,6 +437,40 @@ func TestApplyAIEnrichment_NotPending(t *testing.T) {
 		NewTagIDs:    []string{},
 	})
 	require.ErrorIs(t, err, ErrAIEnrichmentNotPending)
+
+	// Book tags must be unchanged (transaction rolled back).
+	bookTags, err := d.GetBookTags(t.Context(), book.ID)
+	require.NoError(t, err)
+	require.Len(t, bookTags, 1)
+}
+
+func TestApplyAIEnrichment_WrongUser(t *testing.T) {
+	d := newTestDB(t)
+	ownerID := createTestUserForEnrichment(t, d, "owner@example.com")
+	otherID := createTestUserForEnrichment(t, d, "other@example.com")
+	book, err := d.CreateBook(t.Context(), BookInput{Title: "Test Book"})
+	require.NoError(t, err)
+
+	// Pre-seed a tag to verify the transaction rollback preserves it.
+	tag, err := d.CreateTag(t.Context(), "Tag")
+	require.NoError(t, err)
+	err = d.SetBookTags(t.Context(), book.ID, []string{tag.ID})
+	require.NoError(t, err)
+
+	e := makeAIEnrichment(t, d, ownerID, &book.ID)
+
+	_, err = d.ApplyAIEnrichment(t.Context(), ApplyAIEnrichmentInput{
+		BookID:       book.ID,
+		UserID:       otherID,
+		EnrichmentID: e.ID,
+		NewTagIDs:    []string{},
+	})
+	require.ErrorIs(t, err, ErrAIEnrichmentNotPending)
+
+	// Book tags must be unchanged (transaction rolled back).
+	bookTags, err := d.GetBookTags(t.Context(), book.ID)
+	require.NoError(t, err)
+	require.Len(t, bookTags, 1)
 }
 
 func TestApplyAIEnrichment_DeduplicatesNewTagIDs(t *testing.T) {
