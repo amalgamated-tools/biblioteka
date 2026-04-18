@@ -181,7 +181,7 @@ func TestListGroupReadingLists_MultipleLists(t *testing.T) {
 	d := newTestDB(t)
 	ownerID, memberID, groupID := setupGroupWithMember(t, d)
 
-	for _, name := range []string{"Alpha List", "Beta List", "Gamma List"} {
+	for _, name := range []string{"Gamma List", "Alpha List", "Beta List"} {
 		rl, err := d.CreateReadingList(t.Context(), ownerID, name, nil)
 		require.NoError(t, err)
 		_, err = d.ShareListWithGroup(t.Context(), groupID, rl.ID, ownerID)
