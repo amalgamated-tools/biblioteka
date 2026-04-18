@@ -10,6 +10,7 @@ vi.mock("lucide-svelte", () => ({
   FileText: () => {},
   User: () => {},
   BookMarked: () => {},
+  Tag: () => {},
 }));
 
 vi.mock("../../stores/router.svelte", () => ({
@@ -17,11 +18,13 @@ vi.mock("../../stores/router.svelte", () => ({
 }));
 
 const mockGetBook = vi.fn();
+const mockGetBookTags = vi.fn();
 const mockBookFileDownloadUrl = vi.fn(
   (id: string) => `/api/book-files/${id}/download`,
 );
 vi.mock("../../lib/api", () => ({
   getBook: (...args: unknown[]) => mockGetBook(...args),
+  getBookTags: (...args: unknown[]) => mockGetBookTags(...args),
   bookFileDownloadUrl: (...args: [string]) => mockBookFileDownloadUrl(...args),
 }));
 
@@ -92,6 +95,7 @@ const fakeBookWithFiles: Book = {
 describe("BookDetail", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetBookTags.mockResolvedValue([]);
     mockBookFileDownloadUrl.mockImplementation(
       (id: string) => `/api/book-files/${id}/download`,
     );
@@ -180,5 +184,43 @@ describe("BookDetail", () => {
     expect(
       screen.getByRole("link", { name: "Download the-hobbit.pdf (PDF)" }),
     ).toBeInTheDocument();
+  });
+
+  it("renders tags when book has tags", async () => {
+    mockGetBook.mockResolvedValue(fakeBook);
+    mockGetBookTags.mockResolvedValue([
+      {
+        id: "t1",
+        name: "fiction",
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+      },
+      {
+        id: "t2",
+        name: "fantasy",
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+      },
+    ]);
+    render(BookDetail, { bookId: "b1" });
+
+    await waitFor(() => {
+      expect(screen.getByText("fiction")).toBeInTheDocument();
+      expect(screen.getByText("fantasy")).toBeInTheDocument();
+    });
+  });
+
+  it("does not render tags section when book has no tags", async () => {
+    mockGetBook.mockResolvedValue(fakeBook);
+    mockGetBookTags.mockResolvedValue([]);
+    render(BookDetail, { bookId: "b1" });
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+        "The Hobbit",
+      );
+    });
+
+    expect(screen.queryByLabelText("Tags")).not.toBeInTheDocument();
   });
 });

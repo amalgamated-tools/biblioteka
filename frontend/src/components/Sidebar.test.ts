@@ -34,6 +34,7 @@ vi.mock("lucide-svelte", () => ({
   BookMarked: () => {},
   Settings2: () => {},
   Users: () => {},
+  Tag: () => {},
 }));
 
 import Sidebar from "./Sidebar.svelte";

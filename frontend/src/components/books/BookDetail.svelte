@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Book } from "../../types";
+  import type { Book, Tag } from "../../types";
   import { routerStore } from "../../stores/router.svelte";
   import * as api from "../../lib/api";
   import {
@@ -10,6 +10,7 @@
     FileText,
     User,
     BookMarked,
+    Tag as TagIcon,
   } from "lucide-svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
   import Button from "../ui/Button.svelte";
@@ -21,6 +22,7 @@
   let { bookId }: Props = $props();
 
   let book: Book | null = $state(null);
+  let tags: Tag[] = $state.raw([]);
   let loading = $state(true);
   let error: string | null = $state(null);
   let fetchSeq = 0;
@@ -34,9 +36,13 @@
     loading = true;
     error = null;
     try {
-      const result = await api.getBook(id);
+      const [result, bookTags] = await Promise.all([
+        api.getBook(id),
+        api.getBookTags(id),
+      ]);
       if (seq !== fetchSeq) return;
       book = result;
+      tags = bookTags;
     } catch (e) {
       if (seq !== fetchSeq) return;
       error = e instanceof Error ? e.message : "Failed to load book";
@@ -204,6 +210,29 @@
                 </li>
               {/each}
             </ul>
+          </div>
+        {/if}
+
+        <!-- Tags -->
+        {#if tags.length > 0}
+          <div
+            class="bg-white dark:bg-ink-900 rounded-2xl shadow-sm border border-ink-100 dark:border-ink-800 p-6"
+          >
+            <h2
+              class="text-lg font-display font-bold text-ink-900 dark:text-cream-100 mb-3"
+            >
+              <TagIcon class="w-4 h-4 inline mr-1.5" aria-hidden="true" />
+              Tags
+            </h2>
+            <div class="flex flex-wrap gap-1.5" aria-label="Tags">
+              {#each tags as tag (tag.id)}
+                <span
+                  class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-accent-100 text-accent-800 dark:bg-accent-800/30 dark:text-accent-300"
+                >
+                  {tag.name}
+                </span>
+              {/each}
+            </div>
           </div>
         {/if}
 
