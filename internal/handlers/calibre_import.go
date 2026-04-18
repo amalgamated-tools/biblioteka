@@ -48,7 +48,7 @@ type calibreSource struct {
 //	@Summary		Preview Calibre import
 //	@Description	Parse a Calibre metadata.db (uploaded as multipart/form-data or provided as a server-side path via JSON) and return a preview of the books that would be imported, without writing to the database. Admin only.
 //	@Tags			Calibre Import
-//	@Accept			mpfd,json
+//	@Accept			multipart/form-data,json
 //	@Produce		json
 //	@Security		BearerAuth
 //	@Failure		401	{object}	errorResponse
@@ -95,7 +95,7 @@ func (h *CalibreImportHandler) HandlePreview(w http.ResponseWriter, r *http.Requ
 //	@Summary		Execute Calibre import
 //	@Description	Import book metadata from a Calibre metadata.db into Biblioteka. Accepts either a multipart/form-data upload (with optional library_id field) or a JSON body with a server-side path and optional library_id. Does not create file records. Admin only.
 //	@Tags			Calibre Import
-//	@Accept			mpfd,json
+//	@Accept			multipart/form-data,json
 //	@Produce		json
 //	@Security		BearerAuth
 //	@Failure		401	{object}	errorResponse
