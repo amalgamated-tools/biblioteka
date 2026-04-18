@@ -6,7 +6,7 @@ NOTE: Use American English spelling in all code, comments, and documentation (e.
 
 ## Tech Stack
 
-- **Backend**: Go 1.26.1, standard `net/http` (no router framework), `database/sql`
+- **Backend**: Go 1.26.2, standard `net/http` (no router framework), `database/sql`
 - **Databases**: SQLite (default) and PostgreSQL — both are supported; use dialect-aware helpers
 - **Background jobs**: `asynq` (Redis-backed) via `internal/worker`
 - **Auth**: [`goauth`](https://github.com/amalgamated-tools/goauth) for JWT, rate limiting, and bcrypt; OIDC via `github.com/coreos/go-oidc/v3`; passkeys via `github.com/go-webauthn/webauthn`
