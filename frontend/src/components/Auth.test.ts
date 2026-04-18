@@ -155,6 +155,10 @@ describe("Auth", () => {
   });
 
   it("marks login fields invalid and associates them with the error banner", async () => {
+    vi.mocked(authStore.signIn).mockResolvedValueOnce({
+      error: new Error("Invalid credentials"),
+    });
+
     const user = userEvent.setup();
     await renderAuth();
 
@@ -162,7 +166,7 @@ describe("Auth", () => {
     const loginEmail = within(loginPanel).getByLabelText(/Email/i);
     const loginPassword = within(loginPanel).getByLabelText(/Password/i);
     await user.type(loginEmail, "you@example.com");
-    await user.type(loginPassword, "123");
+    await user.type(loginPassword, "securepass");
     await user.click(
       within(loginPanel).getByRole("button", { name: "Sign In" }),
     );
