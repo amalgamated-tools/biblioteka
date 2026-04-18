@@ -299,6 +299,7 @@
               type="email"
               bind:value={email}
               autocomplete="email"
+              required
               class="w-full py-3"
               placeholder="you@example.com"
               disabled={loading}
@@ -322,6 +323,7 @@
               type="password"
               bind:value={password}
               autocomplete="current-password"
+              required
               class="w-full py-3"
               placeholder="••••••••"
               disabled={loading}
@@ -377,6 +379,7 @@
                 type="text"
                 bind:value={name}
                 autocomplete="name"
+                required
                 class="w-full py-3"
                 placeholder="Your name"
                 disabled={loading}
@@ -400,6 +403,7 @@
                 type="email"
                 bind:value={email}
                 autocomplete="email"
+                required
                 class="w-full py-3"
                 placeholder="you@example.com"
                 disabled={loading}
@@ -425,6 +429,7 @@
                 type="password"
                 bind:value={password}
                 autocomplete="new-password"
+                required
                 class="w-full py-3"
                 placeholder="••••••••"
                 disabled={loading}
