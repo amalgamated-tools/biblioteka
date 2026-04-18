@@ -19,7 +19,12 @@ concurrency:
 
 permissions: read-all
 
-network: defaults
+network:
+  allowed:
+  - defaults
+  - node
+  - python
+  - go
 
 safe-outputs:
   create-pull-request:

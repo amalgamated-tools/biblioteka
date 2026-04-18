@@ -13,7 +13,12 @@ on:
 
 permissions: read-all
 
-network: defaults
+network:
+  allowed:
+  - defaults
+  - node
+  - python
+  - go
 
 tools:
   web-fetch:

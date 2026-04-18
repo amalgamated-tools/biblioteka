@@ -13,7 +13,12 @@ timeout-minutes: 15
 
 permissions: read-all
 
-network: defaults
+network:
+  allowed:
+  - defaults
+  - node
+  - python
+  - go
 
 safe-outputs:
   mentions: false

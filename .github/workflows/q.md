@@ -16,7 +16,12 @@ permissions:
   pull-requests: read
 
 tracker-id: q-workflow
-network: defaults
+network:
+  allowed:
+  - defaults
+  - node
+  - python
+  - go
 
 safe-outputs:
   add-comment:
