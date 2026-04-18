@@ -89,19 +89,6 @@ func TestCreateAIEnrichment_NilSuggestedTagsBecomesEmpty(t *testing.T) {
 
 // --- GetAIEnrichment ---
 
-func TestGetAIEnrichment(t *testing.T) {
-	d := newTestDB(t)
-	userID := createTestUserForEnrichment(t, d, "user@example.com")
-
-	created := makeAIEnrichment(t, d, userID, nil)
-
-	fetched, err := d.GetAIEnrichment(t.Context(), userID, created.ID)
-	require.NoError(t, err)
-	require.Equal(t, created.ID, fetched.ID)
-	require.Equal(t, userID, fetched.UserID)
-	require.Equal(t, []string{"fiction", "adventure"}, fetched.SuggestedTags)
-}
-
 func TestGetAIEnrichment_AllFields(t *testing.T) {
 	d := newTestDB(t)
 	userID := createTestUserForEnrichment(t, d, "user@example.com")
@@ -536,6 +523,12 @@ func TestApplyAIEnrichment_EnrichmentNotFound(t *testing.T) {
 	book, err := d.CreateBook(t.Context(), BookInput{Title: "Test Book"})
 	require.NoError(t, err)
 
+	// Pre-seed a tag to verify the transaction rollback preserves it.
+	tag, err := d.CreateTag(t.Context(), "Existing")
+	require.NoError(t, err)
+	err = d.SetBookTags(t.Context(), book.ID, []string{tag.ID})
+	require.NoError(t, err)
+
 	_, err = d.ApplyAIEnrichment(t.Context(), ApplyAIEnrichmentInput{
 		BookID:       book.ID,
 		UserID:       userID,
@@ -543,4 +536,9 @@ func TestApplyAIEnrichment_EnrichmentNotFound(t *testing.T) {
 		NewTagIDs:    []string{},
 	})
 	require.ErrorIs(t, err, ErrAIEnrichmentNotPending)
+
+	// Book tags must be unchanged (transaction rolled back).
+	bookTags, err := d.GetBookTags(t.Context(), book.ID)
+	require.NoError(t, err)
+	require.Len(t, bookTags, 1)
 }
