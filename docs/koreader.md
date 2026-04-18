@@ -190,7 +190,7 @@ Authentication uses the `x-auth-user` (username) and `x-auth-key` (hex-encoded M
 
 ## Audit log
 
-KOSync credential changes are recorded in the [audit log](api-reference.md#get-apiaudit-logs--admin):
+KOSync credential changes are recorded in the [audit log](api/admin.md#get-apiaudit-logs--admin):
 
 | Action | Object type | Metadata |
 |--------|------------|----------|

@@ -95,7 +95,7 @@ Key-value store for runtime configuration. Used for OIDC provider settings and S
 | `oidc_client_secret`   | OIDC application client secret           |
 | `oidc_redirect_uri`    | OAuth2 redirect URI for the callback     |
 
-*SMTP settings* (see [API reference — `GET /api/config/smtp`](api-reference.md#get-apiconfigsmtp--admin)):
+*SMTP settings* (see [API reference — `GET /api/config/smtp`](api/config.md#get-apiconfigsmtp--admin)):
 
 | Key               | Description                                                      |
 |-------------------|------------------------------------------------------------------|
@@ -289,7 +289,7 @@ Free-form labels that can be applied to books to aid organization and discovery.
 - Names are normalized before storage (`NormalizeTagName`); duplicate normalized names are rejected with `ErrTagNameExists`.
 - Tags are global (not per-user); any authenticated user can view and apply them.
 - Deleting a tag cascades and removes all `book_tags` rows that reference it.
-- See [API Reference — Tags](api-reference.md#tags) for the REST API.
+- See [API Reference — Tags](api/tags.md) for the REST API.
 
 ---
 
@@ -508,7 +508,7 @@ Append-only record of create, update, and delete actions performed on entities.
 **Notes:**
 - This table is append-only. Rows are never updated or deleted.
 - `user_id` is not a hard foreign key — if a user is deleted, their audit log entries are retained with the original `user_id` value.
-- See the [Audit Logs API reference](api-reference.md#get-apiaudit-logs--admin) for the full list of `action` values.
+- See the [Audit Logs API reference](api/admin.md#get-apiaudit-logs--admin) for the full list of `action` values.
 
 ---
 
