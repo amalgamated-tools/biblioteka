@@ -7,6 +7,8 @@ import (
 	"slices"
 	"time"
 
+	"golang.org/x/sync/errgroup"
+
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
@@ -225,41 +227,74 @@ func (d *DB) GetYearInBooks(ctx context.Context, userID string, year int) (YearI
 			  AND updated_at >= $2 AND updated_at < $3`
 	}
 
-	if err := d.QueryRowContext(ctx, finishedQuery, userID, yearStart, yearEnd).Scan(&result.BooksFinished); err != nil {
-		return YearInBooks{}, fmt.Errorf("query books finished: %w", err)
-	}
-	if err := d.QueryRowContext(ctx, activeDaysQuery, userID, yearStart, yearEnd).Scan(&result.ActiveDays); err != nil {
-		return YearInBooks{}, fmt.Errorf("query active days: %w", err)
-	}
-	if err := d.QueryRowContext(ctx, downloadsQuery, userID, yearStart, yearEnd).Scan(&result.TotalDownloads); err != nil {
-		return YearInBooks{}, fmt.Errorf("query total downloads: %w", err)
-	}
-
-	// Compute longest streak from reading progress timestamps within the year.
+	// All four queries are independent reads; run them concurrently to reduce
+	// overall latency (especially on PostgreSQL and SQLite with WAL mode).
 	tsQuery := `
 		SELECT updated_at FROM reading_progress
 		WHERE user_id = $1
 		  AND updated_at >= $2 AND updated_at < $3`
-	rows, err := d.QueryContext(ctx, tsQuery, userID, yearStart, yearEnd)
-	if err != nil {
-		return YearInBooks{}, fmt.Errorf("query timestamps for streak: %w", err)
-	}
-	var timestamps []time.Time
-	for rows.Next() {
-		var ts Timestamp
-		if err := rows.Scan(&ts); err != nil {
-			_ = rows.Close()
-			return YearInBooks{}, fmt.Errorf("scan timestamp: %w", err)
+
+	var (
+		booksFinished  int
+		activeDays     int
+		totalDownloads int
+		timestamps     []time.Time
+	)
+
+	g, gctx := errgroup.WithContext(ctx)
+
+	g.Go(func() error {
+		if err := d.QueryRowContext(gctx, finishedQuery, userID, yearStart, yearEnd).Scan(&booksFinished); err != nil {
+			return fmt.Errorf("query books finished: %w", err)
 		}
-		timestamps = append(timestamps, ts.Time)
-	}
-	if err := rows.Close(); err != nil {
-		return YearInBooks{}, fmt.Errorf("close rows: %w", err)
-	}
-	if err := rows.Err(); err != nil {
-		return YearInBooks{}, fmt.Errorf("rows error: %w", err)
+		return nil
+	})
+
+	g.Go(func() error {
+		if err := d.QueryRowContext(gctx, activeDaysQuery, userID, yearStart, yearEnd).Scan(&activeDays); err != nil {
+			return fmt.Errorf("query active days: %w", err)
+		}
+		return nil
+	})
+
+	g.Go(func() error {
+		if err := d.QueryRowContext(gctx, downloadsQuery, userID, yearStart, yearEnd).Scan(&totalDownloads); err != nil {
+			return fmt.Errorf("query total downloads: %w", err)
+		}
+		return nil
+	})
+
+	g.Go(func() error {
+		rows, err := d.QueryContext(gctx, tsQuery, userID, yearStart, yearEnd)
+		if err != nil {
+			return fmt.Errorf("query timestamps for streak: %w", err)
+		}
+		var tsItems []time.Time
+		for rows.Next() {
+			var ts Timestamp
+			if err := rows.Scan(&ts); err != nil {
+				_ = rows.Close()
+				return fmt.Errorf("scan timestamp: %w", err)
+			}
+			tsItems = append(tsItems, ts.Time)
+		}
+		if err := rows.Close(); err != nil {
+			return fmt.Errorf("close rows: %w", err)
+		}
+		if err := rows.Err(); err != nil {
+			return fmt.Errorf("rows error: %w", err)
+		}
+		timestamps = tsItems
+		return nil
+	})
+
+	if err := g.Wait(); err != nil {
+		return YearInBooks{}, err
 	}
 
+	result.BooksFinished = booksFinished
+	result.ActiveDays = activeDays
+	result.TotalDownloads = totalDownloads
 	result.LongestStreak = ComputeLongestStreak(timestamps)
 	return result, nil
 }
