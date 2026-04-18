@@ -411,7 +411,7 @@ export interface ReadingGroupMember {
   group_id: string;
   user_id: string;
   user_name: string;
-  role: string;
+  role: "owner" | "member";
   joined_at: string;
 }
 

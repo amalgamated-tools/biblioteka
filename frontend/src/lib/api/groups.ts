@@ -21,10 +21,14 @@ export async function getGroup(id: string): Promise<ReadingGroup> {
   return request<ReadingGroup>("GET", `/api/groups/${id}`);
 }
 
+/**
+ * Replaces the group's name and description.
+ * Pass the current description explicitly if you do not want to clear it.
+ */
 export async function updateGroup(
   id: string,
   name: string,
-  description?: string | null,
+  description: string | null,
 ): Promise<ReadingGroup> {
   return request<ReadingGroup>("PUT", `/api/groups/${id}`, {
     name,
@@ -53,9 +57,12 @@ export async function addGroupMember(
 
 export async function removeGroupMember(
   groupId: string,
-  memberId: string,
+  memberUserId: string,
 ): Promise<void> {
-  await request<void>("DELETE", `/api/groups/${groupId}/members/${memberId}`);
+  await request<void>(
+    "DELETE",
+    `/api/groups/${groupId}/members/${memberUserId}`,
+  );
 }
 
 export async function listGroupLists(groupId: string): Promise<ReadingList[]> {
