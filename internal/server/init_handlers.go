@@ -144,7 +144,7 @@ func (s *Server) initHandlers(
 		APIKeyHandler: goauthhandler.APIKeyHandler{
 			APIKeys: apiKeyAdapter,
 			Prefix:  auth.APIKeyPrefix,
-			URLParamFunc: func(r *http.Request, key string) string {
+			URLParamFunc: func(r *http.Request, _ string) string {
 				rest := strings.TrimPrefix(r.URL.Path, "/api/api-keys/")
 				rest = strings.TrimSuffix(rest, "/")
 				if strings.Contains(rest, "/") {
