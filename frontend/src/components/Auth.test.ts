@@ -2,6 +2,7 @@ import { describe, expect, it, vi, afterEach } from "vitest";
 import { cleanup, render, screen, within } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { tick } from "svelte";
+import { authStore } from "../stores/auth.svelte";
 
 vi.mock("../stores/auth.svelte", () => ({
   authStore: {
@@ -264,6 +265,37 @@ describe("Auth", () => {
     );
     expect(loginPassword).toHaveAttribute("aria-invalid", "true");
     expect(loginPassword).toHaveAttribute(
+      "aria-describedby",
+      "login-auth-error",
+    );
+  });
+
+  it("does not mark login fields invalid for generic server errors", async () => {
+    vi.mocked(authStore.signIn).mockResolvedValueOnce({
+      error: new Error("Authentication failed"),
+    });
+
+    const user = userEvent.setup();
+    await renderAuth();
+
+    const loginPanel = screen.getByRole("tabpanel", { name: "Login" });
+    const loginEmail = within(loginPanel).getByLabelText("Email");
+    const loginPassword = within(loginPanel).getByLabelText("Password");
+
+    await user.type(loginEmail, "reader@example.com");
+    await user.type(loginPassword, "securepass");
+    await user.click(screen.getByRole("button", { name: "Sign In" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Authentication failed");
+
+    expect(loginEmail).not.toHaveAttribute("aria-invalid", "true");
+    expect(loginEmail).not.toHaveAttribute(
+      "aria-describedby",
+      "login-auth-error",
+    );
+    expect(loginPassword).not.toHaveAttribute("aria-invalid", "true");
+    expect(loginPassword).not.toHaveAttribute(
       "aria-describedby",
       "login-auth-error",
     );
