@@ -382,11 +382,7 @@
         <ChevronLeft class="w-4 h-4" aria-hidden="true" />
         Previous
       </button>
-      <span
-        aria-live="polite"
-        aria-atomic="true"
-        class="text-sm text-ink-500 dark:text-ink-300"
-      >
+      <span class="text-sm text-ink-500 dark:text-ink-300">
         Page {currentPage} of {totalPages}
       </span>
       <button
