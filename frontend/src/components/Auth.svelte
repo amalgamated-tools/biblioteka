@@ -25,8 +25,61 @@
   let passkeyEnabled = $state(false);
   let initError: string | null = $state(null);
   let passkeyLoading = $state(false);
+  let loginEmailInvalid = $state(false);
+  let loginPasswordInvalid = $state(false);
   let loginErrorVisible = $derived(!!error && isLogin);
   let signupErrorVisible = $derived(!!error && !isLogin);
+
+  function getLoginFieldInvalidState(message: string): {
+    email: boolean;
+    password: boolean;
+  } {
+    const loweredError = message.toLowerCase();
+
+    // Deliberately ambiguous messages (e.g. anti-enumeration) — don't mark any field.
+    const ambiguous = [
+      /\bemail\s+or\s+password\b/,
+      /\bemail\s+and\s+password\b/,
+    ].some((pattern) => pattern.test(loweredError));
+    if (ambiguous) {
+      return { email: false, password: false };
+    }
+
+    const mentionsEmail = [
+      /\binvalid email\b/,
+      /\bemail is invalid\b/,
+      /\bemail is not valid\b/,
+      /\bunknown account\b/,
+      /\baccount not found\b/,
+      /\buser not found\b/,
+    ].some((pattern) => pattern.test(loweredError));
+    const mentionsPassword = [
+      /\bpassword must\b/,
+      /\binvalid password\b/,
+      /\bincorrect password\b/,
+      /\bwrong password\b/,
+    ].some((pattern) => pattern.test(loweredError));
+    const mentionsCredentials = [
+      /\binvalid credentials\b/,
+      /\bincorrect credentials\b/,
+      /\bwrong credentials\b/,
+    ].some((pattern) => pattern.test(loweredError));
+
+    if (mentionsEmail && mentionsPassword) {
+      return { email: true, password: true };
+    }
+    if (mentionsEmail) {
+      return { email: true, password: false };
+    }
+    if (mentionsPassword) {
+      return { email: false, password: true };
+    }
+    if (mentionsCredentials) {
+      return { email: true, password: true };
+    }
+
+    return { email: false, password: false };
+  }
 
   function handleTabKeydown(event: KeyboardEvent) {
     if (loading) return;
@@ -120,11 +173,24 @@
     e.preventDefault();
     error = null;
     loading = true;
+    loginEmailInvalid = false;
+    loginPasswordInvalid = false;
 
-    const requiredFields = isLogin
-      ? [email, password]
-      : [name, email, password];
-    if (requiredFields.some((f) => required()(f) !== null)) {
+    if (isLogin) {
+      loginEmailInvalid = required()(email) !== null;
+      loginPasswordInvalid = required()(password) !== null;
+      if (loginEmailInvalid || loginPasswordInvalid) {
+        if (loginEmailInvalid && loginPasswordInvalid) {
+          error = "Please fill in all fields";
+        } else if (loginEmailInvalid) {
+          error = "Please fill in the email field";
+        } else {
+          error = "Please fill in the password field";
+        }
+        loading = false;
+        return;
+      }
+    } else if ([name, email, password].some((f) => required()(f) !== null)) {
       error = "Please fill in all fields";
       loading = false;
       return;
@@ -135,6 +201,9 @@
     ]);
     if (pwdError) {
       error = pwdError;
+      if (isLogin) {
+        loginPasswordInvalid = true;
+      }
       loading = false;
       return;
     }
@@ -145,6 +214,11 @@
 
     if (result.error) {
       error = result.error.message;
+      if (isLogin) {
+        const invalidState = getLoginFieldInvalidState(result.error.message);
+        loginEmailInvalid = invalidState.email;
+        loginPasswordInvalid = invalidState.password;
+      }
     }
 
     loading = false;
@@ -303,8 +377,8 @@
               placeholder="you@example.com"
               disabled={loading}
               aria-required={true}
-              aria-invalid={loginErrorVisible}
-              aria-describedby={loginErrorVisible
+              aria-invalid={loginEmailInvalid}
+              aria-describedby={loginEmailInvalid
                 ? "login-auth-error"
                 : undefined}
             />
@@ -326,8 +400,8 @@
               placeholder="••••••••"
               disabled={loading}
               aria-required={true}
-              aria-invalid={loginErrorVisible}
-              aria-describedby={loginErrorVisible
+              aria-invalid={loginPasswordInvalid}
+              aria-describedby={loginPasswordInvalid
                 ? "login-auth-error"
                 : undefined}
             />
