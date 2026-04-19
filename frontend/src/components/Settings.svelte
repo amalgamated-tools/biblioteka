@@ -13,6 +13,7 @@
     FolderSearch,
     DatabaseZap,
     Search,
+    BrainCircuit,
   } from "lucide-svelte";
   import AccountTab from "./settings/AccountTab.svelte";
   import OidcTab from "./settings/OidcTab.svelte";
@@ -24,6 +25,7 @@
   import WatchFolderTab from "./settings/WatchFolderTab.svelte";
   import CalibreImportTab from "./settings/CalibreImportTab.svelte";
   import SearchIndexTab from "./settings/SearchIndexTab.svelte";
+  import LLMTab from "./settings/LLMTab.svelte";
 
   type SettingsTab =
     | "account"
@@ -35,7 +37,8 @@
     | "kobo"
     | "watch-folder"
     | "calibre-import"
-    | "search-index";
+    | "search-index"
+    | "llm";
 
   type TabDef = { key: SettingsTab; label: string; icon: typeof Mail };
 
@@ -52,6 +55,7 @@
     { key: "watch-folder", label: "Watch Folder", icon: FolderSearch },
     { key: "calibre-import", label: "Calibre Import", icon: DatabaseZap },
     { key: "search-index", label: "Search Index", icon: Search },
+    { key: "llm", label: "LLM", icon: BrainCircuit },
     { key: "users", label: "Users", icon: Users },
   ];
 
@@ -196,6 +200,10 @@
 
       {#if activeTab === "search-index" && isAdmin}
         <SearchIndexTab />
+      {/if}
+
+      {#if activeTab === "llm" && isAdmin}
+        <LLMTab />
       {/if}
 
       {#if activeTab === "users" && isAdmin}
