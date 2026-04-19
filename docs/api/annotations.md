@@ -23,12 +23,12 @@ Lists all annotations visible to the authenticated user for a given book: the us
 ```json
 [
   {
-    "id": "01abc123...",
-    "user_id": "01def456...",
-    "book_id": "01ghi789...",
+    "id": "6f8d2c4a1b3e5d7f9a0c2e4b6d8f1a3c",
+    "user_id": "1a2b3c4d5e6f7081920a1b2c3d4e5f60",
+    "book_id": "abcdef0123456789fedcba9876543210",
     "text": "This passage reframes the entire first act.",
     "cfi": "/4/2/4",
-    "group_id": "01grp123...",
+    "group_id": "0f1e2d3c4b5a69788796a5b4c3d2e1f0",
     "user_name": "alice",
     "created_at": "2026-04-18T12:00:00Z",
     "updated_at": "2026-04-18T12:00:00Z"
@@ -108,7 +108,7 @@ Updates an annotation you own. This is a **full replacement**: every writable fi
 {
   "text": "Updated note text.",
   "cfi": "/4/2/6",
-  "group_id": "01grp123..."
+  "group_id": "0f1e2d3c4b5a69788796a5b4c3d2e1f0"
 }
 ```
 
@@ -125,7 +125,7 @@ Updates an annotation you own. This is a **full replacement**: every writable fi
 | Status | Meaning |
 |--------|---------|
 | `200 OK` | Updated successfully |
-| `400 Bad Request` | `text` is blank or the request body is invalid JSON |
+| `400 Bad Request` | Missing or invalid annotation ID in the path, `text` is blank, or the request body is invalid JSON |
 | `401 Unauthorized` | Missing or invalid authentication |
 | `403 Forbidden` | `group_id` refers to a group you are not a member of |
 | `404 Not Found` | Annotation not found or not owned by you |
