@@ -103,7 +103,7 @@ type Server struct {
 }
 
 // NewServer creates a new server instance
-func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
+func NewServer(ctx context.Context, opts ...ServerOption) (_ *Server, err error) {
 	s := &Server{
 		mux: http.NewServeMux(),
 	}
@@ -118,14 +118,21 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	}
 
 	if s.DB == nil {
-		database, err := db.SetupDatabase(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to open database: %w", err)
+		database, dbErr := db.SetupDatabase(ctx)
+		if dbErr != nil {
+			return nil, fmt.Errorf("failed to open database: %w", dbErr)
 		}
 		s.DB = database
 		s.shutdownFuncs = append(s.shutdownFuncs, func(ctx context.Context) error {
 			return s.DB.Close()
 		})
+		// Close the DB we opened if NewServer returns an error; the caller
+		// receives nil and cannot invoke s.Shutdown() to trigger shutdownFuncs.
+		defer func() {
+			if err != nil {
+				_ = s.DB.Close()
+			}
+		}()
 	}
 
 	if s.JWT == nil {
