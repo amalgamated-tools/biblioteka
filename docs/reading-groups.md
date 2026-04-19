@@ -16,7 +16,7 @@ Reading groups let you collaborate with other Biblioteka users around shared rea
 ## Creating a group
 
 1. **Via the web UI** — open **Reading Groups** from the main navigation and click **New Group**.
-2. **Via the API** — send a `POST /api/groups` request (see [API reference](api-reference.md#reading-groups)):
+2. **Via the API** — send a `POST /api/groups` request (see [API reference](api/reading-groups.md)):
 
 ```http
 POST /api/groups
@@ -29,7 +29,7 @@ Content-Type: application/json
 }
 ```
 
-The authenticated user becomes the group owner and is automatically added as a member. Group names are case-insensitively unique per owner.
+The authenticated user becomes the group owner and is automatically added as a member. Group names must be unique per owner (whitespace is normalized before comparison).
 
 ---
 
@@ -144,7 +144,7 @@ Authorization: Bearer <jwt>
 
 All group members appear in the response. Members with no recorded Kobo reading progress have `percentage: 0` and `updated_at: null`.
 
-> **Kobo / KOReader requirement:** Progress is only recorded for books synced via a Kobo device or KOReader. See the [Kobo Sync guide](kobo.md) and [KOReader Sync guide](koreader.md) for setup instructions.
+> **Kobo requirement:** Progress is only recorded for books synced via a Kobo device. See the [Kobo Sync guide](kobo.md) for setup instructions.
 
 ---
 
@@ -184,7 +184,7 @@ Returns `204 No Content`.
 
 | Method | Path | Who can call | Description |
 |--------|------|-------------|-------------|
-| `GET` | `/api/groups` | Any member | List all groups the user belongs to |
+| `GET` | `/api/groups` | Any authenticated user | List all groups the user belongs to |
 | `POST` | `/api/groups` | Any authenticated user | Create a new group |
 | `GET` | `/api/groups/{id}` | Members | Get group details |
 | `PUT` | `/api/groups/{id}` | Owner | Update name / description |
@@ -194,10 +194,10 @@ Returns `204 No Content`.
 | `DELETE` | `/api/groups/{id}/members/{memberID}` | Owner or self | Remove a member / leave |
 | `GET` | `/api/groups/{id}/lists` | Members | List shared reading lists |
 | `POST` | `/api/groups/{id}/lists` | Members (list owner) | Share a reading list |
-| `DELETE` | `/api/groups/{id}/lists/{listID}` | Members (list owner) | Unshare a reading list |
-| `GET` | `/api/groups/{id}/progress?book_id=` | Members | Compare per-member reading progress |
+| `DELETE` | `/api/groups/{id}/lists/{listID}` | List owner | Unshare a reading list |
+| `GET` | `/api/groups/{id}/progress` | Members | Compare per-member reading progress (requires `?book_id=`) |
 
-For request/response schemas and full error code tables, see the [API Reference — Reading Groups](api-reference.md#reading-groups).
+For request/response schemas and full error code tables, see the [API Reference — Reading Groups](api/reading-groups.md).
 
 ---
 
