@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, afterEach, beforeEach } from "vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/svelte";
 import { userEvent } from "@testing-library/user-event";
-import type { RemoteMetadata } from "../../types";
+import type { BookSummary, RemoteMetadata } from "../../types";
 import type { FormFields } from "./BookEditForm.svelte";
 
 vi.mock("lucide-svelte", () => ({
@@ -15,6 +15,7 @@ vi.mock("lucide-svelte", () => ({
 const mockFetchMetadata = vi.fn();
 const mockGetMetadata = vi.fn();
 const mockSubscribeToMetadataEvents = vi.fn();
+const mockApplyMetadata = vi.fn();
 
 vi.mock("../../lib/api", () => ({
   fetchMetadata: (...args: unknown[]) => mockFetchMetadata(...args),
@@ -22,6 +23,7 @@ vi.mock("../../lib/api", () => ({
   rejectMetadata: vi.fn(),
   subscribeToMetadataEvents: (...args: unknown[]) =>
     mockSubscribeToMetadataEvents(...args),
+  applyMetadata: (...args: unknown[]) => mockApplyMetadata(...args),
 }));
 
 vi.mock("../../lib/api/core", () => ({
@@ -433,5 +435,154 @@ describe("MetadataFetchPanel", () => {
       ),
     ).not.toBeInTheDocument();
     expect(screen.queryByText(fakeMetadata.title!)).not.toBeInTheDocument();
+  });
+
+  it("Apply All calls applyMetadata server endpoint and hides comparison panel on success", async () => {
+    mockGetMetadata.mockResolvedValue(fakeMetadata);
+    mockApplyMetadata.mockResolvedValue({
+      id: "b1",
+      title: fakeMetadata.title,
+      description: fakeMetadata.description,
+      publisher: fakeMetadata.publisher,
+      language: fakeMetadata.language,
+      publication_date: fakeMetadata.publication_date,
+      isbn13: fakeMetadata.isbn13,
+      isbn10: null,
+      asin: null,
+      goodreads_id: fakeMetadata.goodreads_id,
+      hardcover_id: null,
+      google_books_id: null,
+      cover_image_url: null,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    });
+
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderPanel();
+
+    // Wait for pending metadata to load and show the comparison panel
+    await waitFor(() => {
+      expect(screen.getByText("Apply All")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText("Apply All"));
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(mockApplyMetadata).toHaveBeenCalledWith("b1");
+
+    // Comparison panel should disappear once pendingMetadata is cleared
+    await waitFor(() => {
+      expect(screen.queryByText("Apply All")).not.toBeInTheDocument();
+    });
+  });
+
+  it("shows error message when applyMetadata fails", async () => {
+    mockGetMetadata.mockResolvedValue(fakeMetadata);
+    mockApplyMetadata.mockRejectedValue(new Error("Apply failed"));
+
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderPanel();
+
+    await waitFor(() => {
+      expect(screen.getByText("Apply All")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText("Apply All"));
+    await vi.advanceTimersByTimeAsync(0);
+
+    await waitFor(() => {
+      expect(screen.getByText("Apply failed")).toBeInTheDocument();
+    });
+
+    // Comparison panel remains visible after a failed apply
+    expect(screen.getByText("Apply All")).toBeInTheDocument();
+  });
+
+  it("ignores stale apply success results after bookId rerender", async () => {
+    mockGetMetadata.mockResolvedValue(fakeMetadata);
+
+    let resolveApply!: (value: BookSummary) => void;
+    const applyPromise = new Promise<BookSummary>((resolve) => {
+      resolveApply = resolve;
+    });
+    mockApplyMetadata.mockReturnValue(applyPromise);
+
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const view = renderPanel();
+
+    await waitFor(() => {
+      expect(screen.getByText("Apply All")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText("Apply All"));
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(mockApplyMetadata).toHaveBeenCalledWith("b1");
+
+    await view.rerender({ bookId: "b2" });
+
+    await waitFor(() => {
+      expect(screen.getByText("Apply All")).toBeInTheDocument();
+    });
+
+    resolveApply({
+      id: "b1",
+      title: "New Title",
+      description: fakeMetadata.description,
+      publisher: fakeMetadata.publisher,
+      language: fakeMetadata.language,
+      publication_date: fakeMetadata.publication_date,
+      isbn13: fakeMetadata.isbn13,
+      isbn10: null,
+      asin: null,
+      goodreads_id: fakeMetadata.goodreads_id,
+      hardcover_id: null,
+      google_books_id: null,
+      cover_image_url: null,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    });
+    await vi.advanceTimersByTimeAsync(0);
+
+    await waitFor(() => {
+      expect(screen.getByText("Apply All")).toBeInTheDocument();
+    });
+    expect(screen.queryByText("Apply failed")).not.toBeInTheDocument();
+  });
+
+  it("ignores stale apply errors after bookId rerender", async () => {
+    mockGetMetadata.mockResolvedValue(fakeMetadata);
+
+    let rejectApply!: (reason?: unknown) => void;
+    const applyPromise = new Promise<never>((_resolve, reject) => {
+      rejectApply = reject;
+    });
+    mockApplyMetadata.mockReturnValue(applyPromise);
+
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const view = renderPanel();
+
+    await waitFor(() => {
+      expect(screen.getByText("Apply All")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText("Apply All"));
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(mockApplyMetadata).toHaveBeenCalledWith("b1");
+
+    await view.rerender({ bookId: "b2" });
+
+    await waitFor(() => {
+      expect(screen.getByText("Apply All")).toBeInTheDocument();
+    });
+
+    rejectApply(new Error("Apply failed"));
+    await vi.advanceTimersByTimeAsync(0);
+
+    await waitFor(() => {
+      expect(screen.getByText("Apply All")).toBeInTheDocument();
+    });
+    expect(screen.queryByText("Apply failed")).not.toBeInTheDocument();
   });
 });

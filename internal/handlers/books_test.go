@@ -41,6 +41,7 @@ func TestCreateBook_Handler(t *testing.T) {
 	require.Equal(t, "The Gunslinger", dto.Title)
 	require.NotNil(t, dto.Authors)
 	require.NotNil(t, dto.Series)
+	require.NotNil(t, dto.Tags)
 	require.NotNil(t, dto.Files)
 }
 
@@ -276,6 +277,39 @@ func TestGetBook_Handler(t *testing.T) {
 	h.HandleBookRoutes(w, r)
 
 	require.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestGetBook_ResponseIncludesRelations(t *testing.T) {
+	h, userID := setupBookHandler(t)
+
+	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Dune"})
+	require.NoError(t, err)
+	author, err := h.DB.CreateAuthor(t.Context(), "Frank Herbert", nil, nil, nil, nil)
+	require.NoError(t, err)
+	require.NoError(t, h.DB.SetBookAuthors(t.Context(), b.ID, []string{author.ID}))
+	tag, err := h.DB.CreateTag(t.Context(), "science-fiction")
+	require.NoError(t, err)
+	require.NoError(t, h.DB.SetBookTags(t.Context(), b.ID, []string{tag.ID}))
+
+	r := httptest.NewRequest(http.MethodGet, "/api/books/"+b.ID, nil)
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleBookRoutes(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var dto bookDTO
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto))
+	require.Equal(t, "Dune", dto.Title)
+	require.NotNil(t, dto.Authors)
+	require.NotNil(t, dto.Series)
+	require.NotNil(t, dto.Tags)
+	require.NotNil(t, dto.Files)
+	require.Len(t, dto.Authors, 1)
+	require.Equal(t, "Frank Herbert", dto.Authors[0].Name)
+	require.Len(t, dto.Tags, 1)
+	require.Equal(t, "science-fiction", dto.Tags[0].Name)
 }
 
 func TestGetBook_NotFound(t *testing.T) {
