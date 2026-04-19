@@ -297,11 +297,18 @@
               role="option"
               tabindex="-1"
               aria-selected={activeIndex === i}
+              aria-disabled={disabled || saving}
               data-tags-dropdown
               onmousedown={(e) => {
                 e.preventDefault();
-                if (!disabled && !saving) {
-                  void addTag(tag);
+              }}
+              onclick={() => {
+                if (!disabled && !saving) void addTag(tag);
+              }}
+              onkeydown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  if (!disabled && !saving) void addTag(tag);
                 }
               }}
               class="w-full text-left px-3 py-2 text-sm text-ink-700 dark:text-ink-200 hover:bg-accent-50 dark:hover:bg-accent-800/20 transition-colors cursor-pointer {disabled ||
@@ -320,11 +327,20 @@
               role="option"
               tabindex="-1"
               aria-selected={activeIndex === filteredTags.length}
+              aria-disabled={disabled || saving || creatingTag}
               data-tags-dropdown
               onmousedown={(e) => {
                 e.preventDefault();
-                if (!disabled && !saving && !creatingTag) {
+              }}
+              onclick={() => {
+                if (!disabled && !saving && !creatingTag)
                   void createAndAddTag();
+              }}
+              onkeydown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  if (!disabled && !saving && !creatingTag)
+                    void createAndAddTag();
                 }
               }}
               class="w-full text-left px-3 py-2 text-sm text-accent-600 dark:text-accent-400 hover:bg-accent-50 dark:hover:bg-accent-800/20 transition-colors flex items-center gap-1.5 cursor-pointer {disabled ||
