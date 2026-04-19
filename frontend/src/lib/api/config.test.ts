@@ -16,11 +16,15 @@ import {
   testSmtpConfig,
   getWatchFolderConfig,
   setWatchFolderConfig,
+  getLLMConfig,
+  setLLMConfig,
   clearToken,
 } from "../api";
 import type {
   ConfigStatus,
+  LLMConfig,
   OIDCConfig,
+  SetLLMConfigInput,
   SetOIDCConfigInput,
   SMTPConfig,
   SetSMTPConfigInput,
@@ -82,6 +86,20 @@ const fakeWatchFolderConfig: WatchFolderConfig = {
 const fakeSetWatchFolderInput: SetWatchFolderConfigInput = {
   path: "/books",
   library_id: "lib1",
+};
+
+const fakeLLMConfig: LLMConfig = {
+  provider: "ollama",
+  endpoint: "https://llm.example.com",
+  model: "llama3",
+  enabled: true,
+};
+
+const fakeSetLLMInput: SetLLMConfigInput = {
+  provider: "ollama",
+  endpoint: "https://llm.example.com",
+  model: "llama3",
+  enabled: true,
 };
 
 beforeEach(() => {
@@ -199,6 +217,37 @@ describe("Config API", () => {
       expect(options.method).toBe("PUT");
       expect(JSON.parse(options.body)).toEqual(fakeSetWatchFolderInput);
       expect(result).toEqual({ message: "ok" });
+    });
+  });
+
+  describe("getLLMConfig", () => {
+    it("sends GET /api/config/llm and returns the config", async () => {
+      mockFetchResponse(fakeLLMConfig);
+
+      const result = await getLLMConfig();
+
+      const [url, options] = fetchMock.mock.calls[0];
+      expect(url).toBe("/api/config/llm");
+      expect(options.method).toBe("GET");
+      expect(result).toEqual(fakeLLMConfig);
+    });
+  });
+
+  describe("setLLMConfig", () => {
+    it("sends PUT /api/config/llm with the config body and returns the updated config", async () => {
+      const responseWithRestart: LLMConfig = {
+        ...fakeLLMConfig,
+        restart_required: true,
+      };
+      mockFetchResponse(responseWithRestart);
+
+      const result = await setLLMConfig(fakeSetLLMInput);
+
+      const [url, options] = fetchMock.mock.calls[0];
+      expect(url).toBe("/api/config/llm");
+      expect(options.method).toBe("PUT");
+      expect(JSON.parse(options.body)).toEqual(fakeSetLLMInput);
+      expect(result).toEqual(responseWithRestart);
     });
   });
 });
