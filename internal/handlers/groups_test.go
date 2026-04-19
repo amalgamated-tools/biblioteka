@@ -164,6 +164,36 @@ func TestDeleteGroup_Handler(t *testing.T) {
 	require.Equal(t, http.StatusNoContent, w.Code)
 }
 
+func TestDeleteGroup_AuditMetadata(t *testing.T) {
+	h, userID := setupGroupHandler(t)
+
+	g := createGroup(t, h, userID, "Book Club")
+
+	r := httptest.NewRequest(http.MethodDelete, "/api/groups/"+g.ID, nil)
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+	h.HandleGroupRoutes(w, r)
+
+	require.Equal(t, http.StatusNoContent, w.Code)
+
+	logs, _, err := h.DB.ListAuditLogs(t.Context(), 10, 0)
+	require.NoError(t, err)
+
+	var deleteLog *db.AuditLog
+	for i := range logs {
+		if logs[i].Action == db.AuditActionGroupDeleted {
+			deleteLog = &logs[i]
+			break
+		}
+	}
+	require.NotNil(t, deleteLog, "expected a group.deleted audit log entry")
+	require.NotNil(t, deleteLog.Metadata, "audit log metadata should not be nil")
+
+	var meta map[string]any
+	require.NoError(t, json.Unmarshal([]byte(*deleteLog.Metadata), &meta))
+	require.Equal(t, "Book Club", meta["name"])
+}
+
 func TestDeleteGroup_NonOwner404(t *testing.T) {
 	h, userID := setupGroupHandler(t)
 
