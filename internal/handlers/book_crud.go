@@ -146,10 +146,10 @@ func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// getBook returns a single book with its authors, series, and files.
+// getBook returns a single book with its authors, series, tags, and files.
 //
 //	@Summary		Get a book
-//	@Description	Returns a single book with authors, series, and files
+//	@Description	Returns a single book with authors, series, tags, and files
 //	@Tags			Books
 //	@Produce		json
 //	@Security		BearerAuth
