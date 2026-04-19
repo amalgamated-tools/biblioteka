@@ -150,9 +150,11 @@ describe("Tags management page", () => {
       });
     });
 
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "Renamed tag to literary fiction.",
-    );
+    await waitFor(() => {
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "Renamed tag to literary fiction.",
+      );
+    });
   });
 
   it("associates rename errors with the input", async () => {
@@ -165,7 +167,7 @@ describe("Tags management page", () => {
       screen.getByRole("button", { name: "Rename tag fiction" }),
     );
 
-    const error = container.querySelector("#tag-rename-error-t1");
+    const error = container.querySelector("#tag-rename-error");
     expect(error).toBeInTheDocument();
     expect(error).toHaveAttribute("role", "alert");
     expect(error).toHaveTextContent("");
@@ -179,9 +181,11 @@ describe("Tags management page", () => {
       expect(mockTagStore.edit).toHaveBeenCalledWith("t1", { name: "fantasy" });
     });
 
-    expect(input).toHaveAttribute("aria-invalid", "true");
-    expect(input).toHaveAttribute("aria-describedby", "tag-rename-error-t1");
-    expect(error).toHaveTextContent("Tag already exists");
+    await waitFor(() => {
+      expect(input).toHaveAttribute("aria-invalid", "true");
+      expect(input).toHaveAttribute("aria-describedby", "tag-rename-error");
+      expect(error).toHaveTextContent("Tag already exists");
+    });
   });
 
   it("shows delete confirmation when Delete is clicked", async () => {

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from "svelte";
   import {
     Tag as TagIcon,
     Plus,
@@ -32,10 +33,6 @@
 
   let pendingDeleteId: string | null = $state(null);
   let deleteError: string | null = $state(null);
-
-  function renameErrorID(tagID: string): string {
-    return `tag-rename-error-${tagID}`;
-  }
 
   async function handleCreate() {
     const name = newTagName.trim();
@@ -78,11 +75,8 @@
       await tagStore.edit(editingId, { name });
       editingId = null;
       editingName = "";
-      // Defer one macrotask so assistive tech announces the updated status
-      // message after the DOM updates from exiting edit mode.
-      setTimeout(() => {
-        renameSuccessMessage = `Renamed tag to ${name}.`;
-      }, 0);
+      await tick();
+      renameSuccessMessage = `Renamed tag to ${name}.`;
     } catch (e) {
       renameError = e instanceof Error ? e.message : "Failed to rename tag";
     } finally {
@@ -121,6 +115,9 @@
 
 <div>
   <span role="status" class="sr-only">{renameSuccessMessage}</span>
+  <span id="tag-rename-error" role="alert" class="sr-only"
+    >{renameError ?? ""}</span
+  >
   <div class="flex items-center justify-between mb-8">
     <div class="flex items-center gap-3">
       <div
@@ -291,11 +288,7 @@
                       void handleRename();
                     }}
                   >
-                    <span
-                      id={renameErrorID(tag.id)}
-                      class="text-xs text-danger-600 dark:text-danger-400"
-                      role="alert"
-                    >
+                    <span class="text-xs text-danger-600 dark:text-danger-400">
                       {renameError ?? ""}
                     </span>
                     <TextInput
@@ -303,7 +296,7 @@
                       disabled={renaming}
                       aria-label="Tag name"
                       aria-invalid={!!renameError}
-                      aria-describedby={renameErrorID(tag.id)}
+                      aria-describedby="tag-rename-error"
                       class="py-1.5 text-sm"
                     />
                     <button
