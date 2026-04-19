@@ -142,7 +142,7 @@ func WebImport(ctx context.Context, biblDB *db.DB, calibreDB *DB, opts WebImport
 
 	books, err := calibreDB.LoadBooks(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrLoadCalibreBooks, err)
+		return nil, fmt.Errorf("%w: %v", ErrLoadCalibreBooks, err)
 	}
 
 	result := &ImportResult{Total: len(books)}
