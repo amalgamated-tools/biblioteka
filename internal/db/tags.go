@@ -130,6 +130,39 @@ func (d *DB) GetBookTags(ctx context.Context, bookID string) ([]Tag, error) {
 	return collectRows(rows, scanTag)
 }
 
+// GetTagsForBooks returns tags grouped by book ID for the given book IDs.
+func (d *DB) GetTagsForBooks(ctx context.Context, bookIDs []string) (map[string][]Tag, error) {
+	if len(bookIDs) == 0 {
+		return nil, nil
+	}
+	slog.DebugContext(ctx, "db: batch fetching tags for books", slog.Int(otelkeys.BookCount, len(bookIDs)))
+
+	inClause, args := buildInClause(bookIDs, 1)
+
+	rows, err := d.QueryContext(ctx,
+		`SELECT bt.book_id, t.id, t.name, t.created_at, t.updated_at
+		FROM tags t INNER JOIN book_tags bt ON bt.tag_id = t.id
+		WHERE bt.book_id IN (`+inClause+`)
+		ORDER BY LOWER(t.name) ASC`,
+		args...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make(map[string][]Tag, len(bookIDs))
+	for rows.Next() {
+		var bookID string
+		t, err := scanTag(prefixedScanner{row: rows, prefix: []any{&bookID}})
+		if err != nil {
+			return nil, err
+		}
+		result[bookID] = append(result[bookID], *t)
+	}
+	return result, rows.Err()
+}
+
 // SetBookTags replaces all tag associations for a book atomically.
 // Duplicate tag IDs are silently deduplicated.
 func (d *DB) SetBookTags(ctx context.Context, bookID string, tagIDs []string) error {

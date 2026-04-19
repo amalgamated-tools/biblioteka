@@ -29,6 +29,7 @@ const fakeBook: Book = {
   cover_image_url: null,
   authors: [],
   series: [],
+  tags: [],
   files: [
     {
       id: "f1",

@@ -4,6 +4,7 @@ package authstore
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"time"
 
@@ -49,16 +50,25 @@ func (a *UserAdapter) CreateOIDCUser(ctx context.Context, name, email, oidcSubje
 
 func (a *UserAdapter) FindByEmail(ctx context.Context, email string) (*auth.User, error) {
 	u, err := a.DB.GetUserByEmail(ctx, email)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, auth.ErrNotFound
+	}
 	return dbUserToAuth(u), err
 }
 
 func (a *UserAdapter) FindByID(ctx context.Context, id string) (*auth.User, error) {
 	u, err := a.DB.GetUserByID(ctx, id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, auth.ErrNotFound
+	}
 	return dbUserToAuth(u), err
 }
 
 func (a *UserAdapter) FindByOIDCSubject(ctx context.Context, subject string) (*auth.User, error) {
 	u, err := a.DB.GetUserByOIDCSubject(ctx, subject)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, auth.ErrNotFound
+	}
 	return dbUserToAuth(u), err
 }
 
@@ -130,7 +140,11 @@ func (a *APIKeyAdapter) FindAPIKeyByIDAndUser(ctx context.Context, id, userID st
 }
 
 func (a *APIKeyAdapter) ValidateAPIKey(ctx context.Context, keyHash string) (string, string, error) {
-	return a.DB.ValidateAPIKey(ctx, keyHash)
+	userID, keyID, err := a.DB.ValidateAPIKey(ctx, keyHash)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", "", auth.ErrNotFound
+	}
+	return userID, keyID, err
 }
 
 func (a *APIKeyAdapter) TouchAPIKeyLastUsed(ctx context.Context, id string) error {

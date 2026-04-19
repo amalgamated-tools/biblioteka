@@ -111,6 +111,27 @@ describe("Sidebar navigation accessibility", () => {
     expect(dashboard).not.toHaveAttribute("aria-current");
   });
 
+  it("renders Tags link with correct href", () => {
+    render(Sidebar, {
+      props: { currentView: "dashboard", open: true, onClose: () => {} },
+    });
+
+    const tags = screen.getByRole("link", { name: "Tags" });
+    expect(tags).toHaveAttribute("href", "#tags");
+  });
+
+  it("sets aria-current='page' on the Tags link when active", () => {
+    render(Sidebar, {
+      props: { currentView: "tags", open: true, onClose: () => {} },
+    });
+
+    const tags = screen.getByRole("link", { name: "Tags" });
+    expect(tags).toHaveAttribute("aria-current", "page");
+
+    const dashboard = screen.getByRole("link", { name: "Dashboard" });
+    expect(dashboard).not.toHaveAttribute("aria-current");
+  });
+
   it("sets aria-current='page' on the active library link", () => {
     render(Sidebar, {
       props: {
@@ -146,7 +167,7 @@ describe("Sidebar navigation accessibility", () => {
     expect(nonFictionSettings).toHaveAttribute("href", "#libraries/edit/2");
   });
 
-  it("library settings links are not fully transparent by default (WCAG 2.4.7)", () => {
+  it("library settings links use a contrast-safe default color (WCAG 1.4.11)", () => {
     render(Sidebar, {
       props: { currentView: "dashboard", open: true, onClose: () => {} },
     });
@@ -154,9 +175,15 @@ describe("Sidebar navigation accessibility", () => {
     const fictionSettings = screen.getByRole("link", {
       name: "Library settings for Fiction",
     });
-    // The element must not carry opacity-0; it should have a base opacity
-    expect(fictionSettings.className).not.toContain("opacity-0");
-    expect(fictionSettings.className).toContain("opacity-30");
+    expect(fictionSettings).toHaveClass("text-ink-500");
+    expect(fictionSettings).not.toHaveClass("text-ink-600");
+    expect(fictionSettings.className).toContain("group-hover:text-accent-400");
+    expect(fictionSettings.className).toContain(
+      "group-focus-within:text-accent-400",
+    );
+    expect(fictionSettings).not.toHaveClass("opacity-0");
+    expect(fictionSettings).not.toHaveClass("opacity-30");
+    expect(fictionSettings).not.toHaveClass("opacity-100");
   });
 
   it("renders navigation group labels as headings", () => {

@@ -146,6 +146,7 @@ export interface BookSummary {
 export interface Book extends BookSummary {
   authors: Author[];
   series: BookSeriesEntry[];
+  tags: Tag[];
   files: BookFile[];
 }
 
@@ -327,6 +328,21 @@ export interface KosyncCredential {
 export interface KosyncCredentialInput {
   username: string;
   password: string;
+}
+
+// AI Enrichment
+
+export interface AIEnrichment {
+  id: string;
+  book_id: string | null;
+  status: "pending" | "applied" | "rejected";
+  provider: string;
+  model: string;
+  suggested_tags: string[];
+  reading_level: string | null;
+  generated_description: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 // Remote Metadata
