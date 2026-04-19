@@ -54,6 +54,8 @@ func scanReadingGroupMember(row interface{ Scan(...any) error }) (*ReadingGroupM
 }
 
 // CreateGroup creates a new reading group and inserts the owner as a member with role="owner".
+// It cannot use namedEntityCreate because it needs a transaction to atomically insert both the
+// group row and the owner's membership row in a single operation.
 func (d *DB) CreateGroup(ctx context.Context, ownerID, name string, description *string) (*ReadingGroup, error) {
 	name = NormalizeGroupName(name)
 	if name == "" {
@@ -137,32 +139,19 @@ func (d *DB) ListGroups(ctx context.Context, userID string) ([]ReadingGroup, err
 
 // UpdateGroup updates the name and description. Only the owner can update.
 func (d *DB) UpdateGroup(ctx context.Context, id, ownerID, name string, description *string) (*ReadingGroup, error) {
-	name = NormalizeGroupName(name)
-	if name == "" {
-		slog.WarnContext(ctx, "db: rejecting group update with blank name",
-			slog.String(otelkeys.GroupID, id),
-		)
-		return nil, ErrInvalidGroupName
-	}
-	slog.DebugContext(ctx, "db: updating reading group",
-		slog.String(otelkeys.GroupID, id),
-		slog.String(otelkeys.GroupName, name),
+	return namedEntityUpdate(ctx, "reading group", id, name,
+		NormalizeGroupName, ErrInvalidGroupName, ErrGroupNameExists,
+		func(ctx context.Context, id, n string) (*ReadingGroup, error) {
+			return scanReadingGroup(d.QueryRowContext(ctx,
+				`UPDATE reading_groups SET name = $1, description = $2, updated_at = `+d.now()+`
+				 WHERE id = $3 AND owner_id = $4
+				 RETURNING id, owner_id, name, description,
+				   (SELECT COUNT(*) FROM reading_group_members WHERE group_id = reading_groups.id),
+				   created_at, updated_at`,
+				n, description, id, ownerID,
+			))
+		},
 	)
-	g, err := scanReadingGroup(d.QueryRowContext(ctx,
-		`UPDATE reading_groups SET name = $1, description = $2, updated_at = `+d.now()+`
-		 WHERE id = $3 AND owner_id = $4
-		 RETURNING id, owner_id, name, description,
-		   (SELECT COUNT(*) FROM reading_group_members WHERE group_id = reading_groups.id),
-		   created_at, updated_at`,
-		name, description, id, ownerID,
-	))
-	if err != nil {
-		if isUniqueViolation(err) {
-			return nil, ErrGroupNameExists
-		}
-		return nil, err
-	}
-	return g, nil
 }
 
 // DeleteGroup deletes a reading group. Only the owner can delete.
