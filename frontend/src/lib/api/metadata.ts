@@ -1,5 +1,6 @@
 import type {
   AIEnrichment,
+  BookSummary,
   MetadataFetchResponse,
   RemoteMetadata,
 } from "../../types";
@@ -20,6 +21,10 @@ export async function getMetadata(bookId: string): Promise<RemoteMetadata> {
 
 export async function rejectMetadata(bookId: string): Promise<void> {
   await request<void>("POST", `/api/books/${bookId}/metadata/reject`);
+}
+
+export async function applyMetadata(bookId: string): Promise<BookSummary> {
+  return request<BookSummary>("POST", `/api/books/${bookId}/metadata/apply`);
 }
 
 /**

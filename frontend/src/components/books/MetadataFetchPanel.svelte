@@ -48,6 +48,7 @@
   }: Props = $props();
 
   let fetchingMetadata = $state(false);
+  let applying = $state(false);
   let metadataError: string | null = $state(null);
   let progressMessage: string | null = $state(null);
   let eventSource: EventSource | null = null;
@@ -87,6 +88,7 @@
     return () => {
       closeSSE();
       fetchingMetadata = false;
+      applying = false;
       metadataError = null;
       progressMessage = null;
     };
@@ -237,13 +239,28 @@
     fields[FIELD_MAP[field]] = value;
   }
 
-  function applyAll() {
-    const meta = pendingMetadata;
-    if (!meta) return;
-    (Object.keys(FIELD_MAP) as EditableMetadataKey[]).forEach((metaKey) => {
-      const value = meta[metaKey];
-      if (value != null) fields[FIELD_MAP[metaKey]] = value;
-    });
+  async function applyAll() {
+    if (!pendingMetadata) return;
+    const targetBookId = bookId;
+    applying = true;
+    metadataError = null;
+    try {
+      const updated = await api.applyMetadata(targetBookId);
+      if (bookId !== targetBookId) return;
+      const src: Pick<typeof updated, EditableMetadataKey> = updated;
+      for (const key of Object.keys(FIELD_MAP) as EditableMetadataKey[]) {
+        fields[FIELD_MAP[key]] = src[key] ?? "";
+      }
+      pendingMetadata = null;
+    } catch (e) {
+      if (bookId !== targetBookId) return;
+      metadataError =
+        e instanceof Error ? e.message : "Failed to apply metadata";
+    } finally {
+      if (bookId === targetBookId) {
+        applying = false;
+      }
+    }
   }
 </script>
 
@@ -289,6 +306,7 @@
       onApplyField={applyField}
       onApplyAll={applyAll}
       onDismiss={dismissMetadata}
+      {applying}
     />
   {/if}
 </div>
