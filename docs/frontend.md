@@ -400,6 +400,7 @@ Views that need their own internal navigation use `routerStore.subPath`. The con
 | `settings` | `preferences` | Appearance preferences tab |
 | `settings` | `api-keys` | API keys management tab (all users) |
 | `settings` | `kobo` | Kobo sync token management tab (all users) |
+| `settings` | `llm` | LLM provider configuration tab (admin) |
 
 **Example — navigating to a library's book list:**
 
@@ -1490,6 +1491,7 @@ Detail page for a single reading list. Receives the `listId` prop from `ReadingL
 | `OidcTab.svelte` | `settings/oidc` | Admins only | Configure OIDC / SSO provider |
 | `SmtpTab.svelte` | `settings/smtp` | Admins only | Configure SMTP mail server |
 | `UsersTab.svelte` | `settings/users` | Admins only | List users; toggle admin role |
+| `LLMTab.svelte` | `settings/llm` | Admins only | Configure LLM provider for AI metadata enrichment |
 
 `Settings.svelte` passes data down as props and receives updates via callback props (`onOidcSaved`, `onUsersLoaded`), keeping each tab stateless with respect to shared data.
 
@@ -1514,6 +1516,27 @@ Detail page for a single reading list. Receives the `listId` prop from `ReadingL
 - **Test Email button** — Visible only when the server is configured. Sends a test message to the authenticated user's email address. Subject to rate-limiting (one send per minute).
 - **Environment-variable override banner** — When `SMTP_HOST` is set as a server environment variable, a blue informational banner replaces the form: *"SMTP is configured via environment variables and cannot be changed here."* The tab becomes read-only. To use the UI instead, unset `SMTP_HOST` from the environment and restart the server.
 - **Password preservation** — On save, leaving the password field blank preserves the existing stored credential; fill it only to change it.
+
+### LLMTab (`settings/llm`)
+
+`LLMTab.svelte` lets admins configure the LLM provider used for AI-powered metadata enrichment. It is only shown to admin users.
+
+**Form fields:**
+
+| Field | Required | Notes |
+|-------|----------|-------|
+| Enabled | — | Toggle to enable or disable LLM enrichment |
+| Provider | When enabled | Dropdown; currently only `"ollama"` is supported |
+| Endpoint URL | When enabled | Base URL of the LLM server (e.g. `http://localhost:11434`) |
+| Model | When enabled | Name of the model to use (e.g. `llama3`) |
+
+**Key behaviours:**
+
+- **Status badge** — Shows *Configured* (green) or *Not configured* (grey) based on whether LLM is enabled and both endpoint and model are set.
+- **Restart-required banner** — After a successful save, a warning banner is shown: *"A server restart is required for this change to take effect."* LLM configuration is read at startup; the running server is not updated until it is restarted.
+- **Client-side validation** — When the toggle is enabled, endpoint and model fields are required before the form is submitted. Toggling LLM off clears the validation requirement.
+- **Idempotent load** — On mount, the tab fetches the current config via `GET /api/config/llm` and populates the form. If the fetch fails, the form starts empty.
+- **API endpoints** — `GET /api/config/llm` (load) and `PUT /api/config/llm` (save); see [LLM config endpoints](api/config.md#get-apiconfigllm) in the API reference.
 
 ### One-time prop initialisation (`svelte-ignore state_referenced_locally`)
 
