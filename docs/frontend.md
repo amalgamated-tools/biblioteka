@@ -1673,12 +1673,12 @@ Key details:
 
 Interactive elements must have enough contrast in their resting state and a visible focus indicator for keyboard users. The library-settings gear icon link in the sidebar is a subtle secondary action that should not visually dominate the sidebar, but it still needs to remain discoverable.
 
-The link now uses `text-ink-600` in the resting state and switches to `text-accent-400` on hover or when the parent row is focus-within. This preserves subtle styling while keeping the icon legible by default:
+The link now uses `text-ink-500` in the resting state (3.08:1 contrast against `bg-ink-950`, meeting WCAG 1.4.11's 3:1 minimum) and switches to `text-accent-400` on hover or when the parent row is focus-within. This preserves subtle styling while keeping the icon legible by default:
 
 ```svelte
 <a
   href={`#libraries/edit/${lib.id}`}
-  class="text-ink-600 group-hover:text-accent-400 group-focus-within:text-accent-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 rounded transition-all p-0.5 flex-shrink-0"
+  class="text-ink-500 group-hover:text-accent-400 group-focus-within:text-accent-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 rounded transition-all p-0.5 flex-shrink-0"
   aria-label={`Library settings for ${lib.name}`}
   onclick={onClose}
 >
