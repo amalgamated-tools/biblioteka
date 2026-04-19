@@ -29,7 +29,7 @@ type RecommendationHandler struct {
 //	@Tags			Recommendations
 //	@Produce		json
 //	@Security		BearerAuth
-//	@Param			limit	query		int		false	"Max items to return (default 10, max 50)"
+//	@Param			limit	query		int	false	"Max items to return (default 10, max 50)"
 //	@Success		200		{array}		bookSummaryDTO
 //	@Failure		401		{object}	errorResponse
 //	@Failure		405		{object}	errorResponse

@@ -119,13 +119,14 @@ type bookDTO struct {
 	CoverImageURL   *string              `json:"cover_image_url"`
 	Authors         []authorDTO          `json:"authors"`
 	Series          []bookSeriesEntryDTO `json:"series"`
+	Tags            []tagDTO             `json:"tags"`
 	Files           []bookFileDTO        `json:"files"`
 	CreatedAt       db.Timestamp         `json:"created_at"`
 	UpdatedAt       db.Timestamp         `json:"updated_at"`
 }
 
 // loadBookDTO builds a bookDTO for b by loading all related entities via
-// [db.DB.LoadBookRelations] (authors, series, and files in one call).
+// [db.DB.LoadBookRelations] (authors, series, tags, and files in one call).
 func (h *BookHandler) loadBookDTO(ctx context.Context, b *db.Book) (bookDTO, error) {
 	rels, err := h.DB.LoadBookRelations(ctx, b.ID)
 	if err != nil {
@@ -148,6 +149,7 @@ func (h *BookHandler) loadBookDTO(ctx context.Context, b *db.Book) (bookDTO, err
 		CoverImageURL:   b.CoverImageURL,
 		Authors:         mapSlice(rels.Authors, toAuthorDTO),
 		Series:          mapSlice(rels.Series, toBookSeriesEntryDTO),
+		Tags:            mapSlice(rels.Tags, toTagDTO),
 		Files:           mapSlice(rels.Files, toBookFileDTO),
 		CreatedAt:       b.CreatedAt,
 		UpdatedAt:       b.UpdatedAt,

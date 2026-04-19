@@ -37,6 +37,9 @@ type ConfigHandler struct {
 	// OIDCHTTPClient overrides the HTTP client used for OIDC provider discovery.
 	// If nil, an SSRF-safe client that blocks connections to private IPs is used.
 	OIDCHTTPClient *http.Client
+	// LLMEndpointURLValidator validates an LLM endpoint URL before it is stored.
+	// If nil, the default SSRF-aware validator (validateLLMEndpointURL) is used.
+	LLMEndpointURLValidator func(ctx context.Context, rawURL string) error
 	// SendMailFunc overrides the default smtp.Send implementation (used in tests).
 	SendMailFunc smtp.SendFunc
 	// Secrets encrypts and decrypts sensitive settings (SMTP password, OIDC
