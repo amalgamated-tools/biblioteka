@@ -2,7 +2,7 @@
   import type { Snippet } from "svelte";
 
   interface Props {
-    variant: "error" | "success";
+    variant: "error" | "success" | "warning";
     children: Snippet;
     id?: string;
     role?: string;
@@ -20,7 +20,12 @@
   }: Props = $props();
 
   const resolvedRole = $derived(
-    role ?? (variant === "error" ? "alert" : "status"),
+    role ??
+      (variant === "error"
+        ? "alert"
+        : variant === "warning"
+          ? "status"
+          : "status"),
   );
   const liveRegion = $derived(
     resolvedRole === "alert" ? "assertive" : "polite",
@@ -31,6 +36,8 @@
       "bg-danger-50 dark:bg-danger-700/10 border border-danger-600/20 dark:border-danger-700/30 text-danger-700 dark:text-red-400",
     success:
       "bg-success-50 dark:bg-green-900/20 border border-success-600/20 dark:border-green-700/30 text-success-700 dark:text-green-400",
+    warning:
+      "bg-accent-50 dark:bg-accent-700/10 border border-accent-600/20 dark:border-accent-700/30 text-accent-700 dark:text-accent-400",
   };
 </script>
 
@@ -48,6 +55,12 @@
       class="inline-flex items-center justify-center w-4 h-4 mt-0.5 shrink-0 font-bold"
       aria-hidden="true"
       data-testid="alert-banner-error-icon">✕</span
+    >
+  {:else if variant === "warning"}
+    <span
+      class="inline-flex items-center justify-center w-4 h-4 mt-0.5 shrink-0 font-bold"
+      aria-hidden="true"
+      data-testid="alert-banner-warning-icon">⚠</span
     >
   {:else}
     <span

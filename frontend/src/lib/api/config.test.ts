@@ -90,14 +90,14 @@ const fakeSetWatchFolderInput: SetWatchFolderConfigInput = {
 
 const fakeLLMConfig: LLMConfig = {
   provider: "ollama",
-  endpoint: "http://localhost:11434",
+  endpoint: "https://llm.example.com",
   model: "llama3",
   enabled: true,
 };
 
 const fakeSetLLMInput: SetLLMConfigInput = {
   provider: "ollama",
-  endpoint: "http://localhost:11434",
+  endpoint: "https://llm.example.com",
   model: "llama3",
   enabled: true,
 };

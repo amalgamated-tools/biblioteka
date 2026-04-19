@@ -13,12 +13,23 @@
     enabled: false,
   });
 
+  let savedConfig = $state({
+    provider: "ollama",
+    endpoint: "",
+    model: "",
+    enabled: false,
+  });
+
   let loading = $state(false);
   let error: string | null = $state(null);
   let successMessage: string | null = $state(null);
   let restartRequired = $state(false);
 
-  let configured = $derived(form.enabled && form.endpoint.trim() !== "");
+  let configured = $derived(
+    savedConfig.enabled &&
+      savedConfig.endpoint.trim() !== "" &&
+      savedConfig.model.trim() !== "",
+  );
 
   let submitLabel = $derived(loading ? "Saving..." : "Save Configuration");
 
@@ -30,6 +41,12 @@
         form.endpoint = config.endpoint;
         form.model = config.model;
         form.enabled = config.enabled;
+        savedConfig = {
+          provider: config.provider || "ollama",
+          endpoint: config.endpoint,
+          model: config.model,
+          enabled: config.enabled,
+        };
       } catch {
         // ignore - user can re-enter
       }
@@ -62,6 +79,12 @@
         model: form.model.trim(),
         enabled: form.enabled,
       });
+      savedConfig = {
+        provider: form.provider.trim() || "ollama",
+        endpoint: form.endpoint.trim(),
+        model: form.model.trim(),
+        enabled: form.enabled,
+      };
       restartRequired = result.restart_required ?? false;
       successMessage = "LLM configuration saved successfully.";
     } catch (err) {
@@ -159,7 +182,7 @@
           type="url"
           bind:value={form.endpoint}
           class="w-full py-2.5"
-          placeholder="http://localhost:11434"
+          placeholder="http://ollama.internal:11434"
           disabled={loading}
           aria-describedby="llm-endpoint-hint"
         />
@@ -167,7 +190,8 @@
           id="llm-endpoint-hint"
           class="text-xs text-ink-500 dark:text-ink-300 mt-1"
         >
-          The base URL of the LLM API server
+          The base URL of the LLM API server, reachable from the Biblioteka
+          server (loopback addresses are not allowed)
         </p>
       </div>
 
@@ -199,12 +223,12 @@
         <AlertBanner variant="error">{error}</AlertBanner>
       {/if}
 
-      {#if successMessage}
+      {#if successMessage && !restartRequired}
         <AlertBanner variant="success">{successMessage}</AlertBanner>
       {/if}
 
       {#if restartRequired}
-        <AlertBanner variant="success">
+        <AlertBanner variant="warning">
           A server restart is required for the new LLM configuration to take
           effect.
         </AlertBanner>
