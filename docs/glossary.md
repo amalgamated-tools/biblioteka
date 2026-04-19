@@ -122,12 +122,12 @@ Passkeys require server-side configuration in non-`localhost` environments: `WEB
 
 A collaborative space where users read together. Each reading group has one **owner** (the user who created it) and any number of **members**. Members can:
 
-- Share their personal [reading lists](#reading-list) with the group so everyone can see what is on the shelf
-- Compare per-member reading progress for any book via `GET /api/groups/{id}/progress` (progress values come from each member's Kobo reading data)
+- Share their personal [reading lists](#reading-list) with the group so other members can see the shared list metadata and `book_count`
+- Compare per-member reading progress for any book via `GET /api/groups/{id}/progress?book_id={book_id}` (progress values come from each member's Kobo reading data)
 
 A user can only see groups they belong to — non-members receive `404 Not Found` to avoid leaking group existence. Group names are unique per owner after normalization. The owner cannot remove themselves from a group; to disband, they must delete the group with `DELETE /api/groups/{id}`.
 
-Reading groups are managed via the REST API at `/api/groups` and sub-resources `/api/groups/{id}/members`, `/api/groups/{id}/lists`, and `/api/groups/{id}/progress`. See [API Reference — Reading Groups](api-reference.md#reading-groups).
+Reading groups are managed via the REST API at `/api/groups` and sub-resources `/api/groups/{id}/members`, `/api/groups/{id}/lists`, and `/api/groups/{id}/progress?book_id={book_id}`. See [API Reference — Reading Groups](api/reading-groups.md).
 
 ## Reading List
 
