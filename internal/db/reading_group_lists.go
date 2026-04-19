@@ -17,12 +17,8 @@ func (d *DB) ShareListWithGroup(ctx context.Context, groupID, listID, userID str
 		slog.String(otelkeys.ReadingListID, listID),
 		slog.String(otelkeys.UserID, userID),
 	)
-	var ownerID string
-	if err := d.QueryRowContext(ctx, `SELECT user_id FROM reading_lists WHERE id = $1`, listID).Scan(&ownerID); err != nil {
+	if err := d.verifyReadingListOwnership(ctx, listID, userID); err != nil {
 		return false, err
-	}
-	if ownerID != userID {
-		return false, sql.ErrNoRows
 	}
 	isMember, err := d.IsMember(ctx, groupID, userID)
 	if err != nil {
@@ -54,12 +50,8 @@ func (d *DB) UnshareListFromGroup(ctx context.Context, groupID, listID, userID s
 		slog.String(otelkeys.ReadingListID, listID),
 		slog.String(otelkeys.UserID, userID),
 	)
-	var ownerID string
-	if err := d.QueryRowContext(ctx, `SELECT user_id FROM reading_lists WHERE id = $1`, listID).Scan(&ownerID); err != nil {
+	if err := d.verifyReadingListOwnership(ctx, listID, userID); err != nil {
 		return err
-	}
-	if ownerID != userID {
-		return sql.ErrNoRows
 	}
 	return d.execAffected(ctx,
 		`DELETE FROM reading_group_lists WHERE group_id = $1 AND list_id = $2`,
