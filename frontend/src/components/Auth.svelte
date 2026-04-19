@@ -164,9 +164,6 @@
           oidcEnabled = enabled;
         })
         .catch(() => {
-          if (import.meta.env.DEV) {
-            console.error("Failed to check OIDC status");
-          }
           initError ??= "Unable to reach the server to load auth settings";
         });
       getSignupEnabled()
@@ -177,9 +174,6 @@
           }
         })
         .catch(() => {
-          if (import.meta.env.DEV) {
-            console.error("Failed to check signup enabled status");
-          }
           initError ??= "Unable to reach the server to load auth settings";
         });
       getPasskeyEnabled()
