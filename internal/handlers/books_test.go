@@ -569,3 +569,76 @@ func TestUpdateBook_NotFound(t *testing.T) {
 
 	require.Equal(t, http.StatusNotFound, w.Code)
 }
+
+// ---- Embedded tags in bookDTO (PR #2325) ----
+
+func TestGetBook_EmbedsEmptyTagsArray(t *testing.T) {
+	h, userID := setupBookHandler(t)
+
+	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Tagless Book"})
+	require.NoError(t, err, "create book")
+
+	r := httptest.NewRequest(http.MethodGet, "/api/books/"+b.ID, nil)
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleBookRoutes(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	var dto bookDTO
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto), "unmarshal response")
+	require.NotNil(t, dto.Tags, "tags field must be present (not null)")
+	require.Len(t, dto.Tags, 0)
+}
+
+func TestGetBook_EmbedsTags(t *testing.T) {
+	h, userID := setupBookHandler(t)
+	ctx := t.Context()
+
+	b, err := h.DB.CreateBook(ctx, db.BookInput{Title: "Tagged Book"})
+	require.NoError(t, err, "create book")
+
+	tag1, err := h.DB.CreateTag(ctx, "fiction")
+	require.NoError(t, err, "create tag")
+	tag2, err := h.DB.CreateTag(ctx, "sci-fi")
+	require.NoError(t, err, "create tag")
+	require.NoError(t, h.DB.SetBookTags(ctx, b.ID, []string{tag1.ID, tag2.ID}), "set book tags")
+
+	r := httptest.NewRequest(http.MethodGet, "/api/books/"+b.ID, nil)
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleBookRoutes(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	var dto bookDTO
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto), "unmarshal response")
+	require.Len(t, dto.Tags, 2)
+	tagNames := []string{dto.Tags[0].Name, dto.Tags[1].Name}
+	require.ElementsMatch(t, []string{"fiction", "sci-fi"}, tagNames)
+}
+
+func TestUpdateBook_EmbedsTags(t *testing.T) {
+	h, userID := setupBookHandler(t)
+	ctx := t.Context()
+
+	b, err := h.DB.CreateBook(ctx, db.BookInput{Title: "Book With Tags"})
+	require.NoError(t, err, "create book")
+
+	tag, err := h.DB.CreateTag(ctx, "mystery")
+	require.NoError(t, err, "create tag")
+	require.NoError(t, h.DB.SetBookTags(ctx, b.ID, []string{tag.ID}), "set book tags")
+
+	body := mustMarshal(t, bookRequest{Title: "Book With Tags Updated"})
+	r := httptest.NewRequest(http.MethodPut, "/api/books/"+b.ID, bytes.NewReader(body))
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleBookRoutes(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	var dto bookDTO
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto), "unmarshal response")
+	require.Len(t, dto.Tags, 1)
+	require.Equal(t, "mystery", dto.Tags[0].Name)
+}
