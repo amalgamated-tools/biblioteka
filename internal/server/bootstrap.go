@@ -18,7 +18,7 @@ import (
 // is unset or when at least one user already exists.
 func (s *Server) seedInitialAdmin(ctx context.Context) error {
 	email := strings.TrimSpace(os.Getenv("INITIAL_ADMIN_EMAIL"))
-	password := os.Getenv("INITIAL_ADMIN_PASSWORD")
+	password := strings.TrimSpace(os.Getenv("INITIAL_ADMIN_PASSWORD"))
 	if email == "" || password == "" {
 		return nil
 	}
@@ -39,6 +39,8 @@ func (s *Server) seedInitialAdmin(ctx context.Context) error {
 		return err
 	}
 
+	// CreateUser automatically promotes the first user to admin (isAdmin = true
+	// when the users table is empty), so no separate SetAdmin call is needed.
 	user, err := s.DB.CreateUser(ctx, "Admin", email, string(hash))
 	if err != nil {
 		return err
