@@ -125,7 +125,7 @@ Updates an annotation you own. This is a **full replacement**: every writable fi
 | Status | Meaning |
 |--------|---------|
 | `200 OK` | Updated successfully |
-| `400 Bad Request` | Missing or invalid annotation ID in the path, `text` is blank, or the request body is invalid JSON |
+| `400 Bad Request` | Missing or invalid annotation ID in the path, blank `text`, or invalid request body |
 | `401 Unauthorized` | Missing or invalid authentication |
 | `403 Forbidden` | `group_id` refers to a group you are not a member of |
 | `404 Not Found` | Annotation not found or not owned by you |
