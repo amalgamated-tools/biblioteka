@@ -128,7 +128,7 @@ func (h *BookHandler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 	filename := filepath.Base(header.Filename)
 	fileType, ok := detectUploadFileType(filename)
 	if !ok {
-		writeError(r.Context(), w, http.StatusBadRequest, "unsupported file type: must be one of epub, mobi, azw3, pdf")
+		writeError(r.Context(), w, http.StatusBadRequest, "unsupported file type: must be one of "+strings.Join(jobs.SupportedFileTypes(), ", "))
 		return
 	}
 

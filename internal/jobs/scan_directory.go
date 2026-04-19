@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
@@ -21,6 +22,20 @@ var SupportedExtensions = map[string]string{
 	".mobi": "mobi",
 	".pdf":  "pdf",
 	".azw3": "azw3",
+}
+
+// SupportedFileTypes returns a sorted slice of file-type labels from SupportedExtensions.
+func SupportedFileTypes() []string {
+	seen := make(map[string]struct{}, len(SupportedExtensions))
+	for _, ft := range SupportedExtensions {
+		seen[ft] = struct{}{}
+	}
+	types := make([]string, 0, len(seen))
+	for ft := range seen {
+		types = append(types, ft)
+	}
+	sort.Strings(types)
+	return types
 }
 
 // Enqueuer is the subset of worker.Worker needed to enqueue jobs.
