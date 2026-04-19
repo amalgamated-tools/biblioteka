@@ -439,7 +439,7 @@ Apply the pending metadata candidate to the book. All non-null, non-empty fields
 
 After a successful apply, the candidate's `status` changes to `"applied"` and the pending record no longer appears in [`GET /api/books/{id}/metadata`](#get-apibooksidmetadata).
 
-> **Note:** The **"Apply All"** button in the UI calls this endpoint, atomically persisting all non-null, non-empty metadata fields and keeping the form in sync with the returned `BookSummary`. Per-field apply (individual field selection in the comparison panel) still stages changes in the form and requires a manual save via `PUT /api/books/{id}`.
+> **Note:** The **"Apply All"** button in the UI calls this endpoint, persisting all non-null, non-empty metadata fields in a single request and keeping the form in sync with the returned book summary object. Per-field apply (individual field selection in the comparison panel) still stages changes in the form and requires a manual save via `PUT /api/books/{id}`.
 
 **Path parameter:** `{id}` — book ID.
 
