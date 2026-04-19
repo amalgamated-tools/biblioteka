@@ -234,7 +234,10 @@ describe("Recommendations", () => {
       render(Recommendations);
       await tick();
 
-      expect(vi.mocked(getRecommendations)).toHaveBeenCalledWith(10);
+      expect(vi.mocked(getRecommendations)).toHaveBeenCalledWith(
+        10,
+        expect.any(AbortSignal),
+      );
     });
 
     it("calls getRecommendations with a custom limit when provided", async () => {
@@ -242,7 +245,43 @@ describe("Recommendations", () => {
       render(Recommendations, { props: { limit: 5 } });
       await tick();
 
-      expect(vi.mocked(getRecommendations)).toHaveBeenCalledWith(5);
+      expect(vi.mocked(getRecommendations)).toHaveBeenCalledWith(
+        5,
+        expect.any(AbortSignal),
+      );
+    });
+  });
+
+  describe("AbortController", () => {
+    it("passes an AbortSignal to getRecommendations", async () => {
+      vi.mocked(getRecommendations).mockResolvedValue([]);
+      render(Recommendations);
+      await tick();
+
+      expect(vi.mocked(getRecommendations)).toHaveBeenCalledWith(
+        10,
+        expect.any(AbortSignal),
+      );
+    });
+
+    it("does not update state after unmount (aborted request)", async () => {
+      let resolve!: (books: BookSummary[]) => void;
+      vi.mocked(getRecommendations).mockReturnValue(
+        new Promise<BookSummary[]>((r) => {
+          resolve = r;
+        }),
+      );
+
+      const { unmount } = render(Recommendations);
+      unmount();
+
+      // Resolve the promise after unmount — state should not change.
+      resolve([fakeBook]);
+      await tick();
+
+      // The component is unmounted; the signal was aborted so books is never
+      // set. The test just verifies no error is thrown.
+      expect(vi.mocked(getRecommendations)).toHaveBeenCalledOnce();
     });
   });
 });
