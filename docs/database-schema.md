@@ -402,7 +402,7 @@ Long-lived credentials for programmatic API access. Each key belongs to one user
 
 **Indexes:**
 - `UNIQUE(key_hash)` — fast constant-time lookup on each request
-- `idx_api_keys_user_id` — list all keys for a user
+- `idx_api_keys_user_created_at` on `(user_id, created_at DESC, id DESC)` — list all keys for a user, sorted by newest first, without a temp sort pass
 
 **Notes:**
 - The full API key (`bib_` + 40 hex chars) is shown **once** at creation and is not recoverable afterward. The `key_hash` persists for lookup, and the non-secret `key_prefix` persists for UI identification.
@@ -427,7 +427,7 @@ Stores registered WebAuthn passkey credentials for a user. Each credential corre
 
 **Indexes:**
 - `UNIQUE(credential_id)` (`idx_passkey_credentials_credential_id`) — fast lookup during authentication assertions
-- `idx_passkey_credentials_user_id` — list all keys for a user
+- `idx_passkey_credentials_user_created_at` on `(user_id, created_at DESC, id DESC)` — list all credentials for a user, sorted by newest first, without a temp sort pass
 
 **Notes:**
 - `credential_data` is an opaque blob read and written exclusively by the `go-webauthn/webauthn` library; do not parse it directly.
@@ -525,7 +525,7 @@ Named sync tokens that authenticate a Kobo e-reader device. Each token grants ac
 | `created_at` | DATETIME| NOT NULL | `now()`  | When the token was created                               |
 
 **Indexes:**
-- `idx_kobo_tokens_user_id` — list all tokens for a user
+- `idx_kobo_tokens_user_created_at` on `(user_id, created_at DESC, id DESC)` — list all tokens for a user, sorted by newest first, without a temp sort pass
 - `idx_kobo_tokens_token_hash` (unique) — fast lookup during device authentication
 
 **Notes:**
