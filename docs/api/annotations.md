@@ -41,6 +41,7 @@ Lists all annotations visible to the authenticated user for a given book: the us
 | Status | Meaning |
 |--------|---------|
 | `200 OK` | Success (empty array if no annotations are visible) |
+| `400 Bad Request` | Invalid or missing book ID |
 | `401 Unauthorized` | Missing or invalid authentication |
 | `500 Internal Server Error` | Database error |
 
@@ -73,7 +74,7 @@ Creates a new annotation on a book.
 | Status | Meaning |
 |--------|---------|
 | `201 Created` | Annotation created successfully |
-| `400 Bad Request` | `text` is blank or the request body is invalid JSON |
+| `400 Bad Request` | Invalid or missing book ID, blank `text`, or invalid request body |
 | `401 Unauthorized` | Missing or invalid authentication |
 | `403 Forbidden` | `group_id` refers to a group you are not a member of |
 | `500 Internal Server Error` | Database error |
