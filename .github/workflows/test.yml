@@ -272,6 +272,11 @@ jobs:
             echo "::error::Go Lint failed check: errorfcheck"
           fi
 
+          if [ "${{ steps.slogcheck.outcome }}" = "failure" ] || \
+             [ "${{ steps.errorfcheck.outcome }}" = "failure" ]; then
+            exit 1
+          fi
+
   go-test:
     needs: [check-docs-only]
     if: needs.check-docs-only.outputs.skip-tests != 'true' || github.event_name == 'push'
