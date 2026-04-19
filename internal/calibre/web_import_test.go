@@ -1,6 +1,7 @@
 package calibre
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -249,4 +250,34 @@ func TestWebImport_NoIdentifiers(t *testing.T) {
 	result2, err := WebImport(t.Context(), biblDB, cdb, WebImportOptions{})
 	require.NoError(t, err)
 	require.Equal(t, 1, result2.Imported, "book without identifiers cannot be deduped; import again")
+}
+
+// TestWebImport_LoadBooksError_WrapsOnlySentinel verifies that when LoadBooks
+// fails, the returned error wraps ErrLoadCalibreBooks (so callers can classify
+// the failure via errors.Is) while the inner database error is not wrapped
+// (preventing double-wrapping that would expose internal driver errors as
+// additional sentinels in the chain).
+func TestWebImport_LoadBooksError_WrapsOnlySentinel(t *testing.T) {
+	biblDB := newTestBibliotekaDB(t)
+	cdb := newTestCalibreDB(t)
+
+	// Close the underlying SQL database to force LoadBooks to return an error.
+	require.NoError(t, cdb.db.Close())
+
+	// Capture the error that LoadBooks itself returns so we can later assert it
+	// is not reachable in the WebImport error chain.
+	_, loadErr := cdb.LoadBooks(t.Context())
+	require.Error(t, loadErr)
+
+	_, err := WebImport(t.Context(), biblDB, cdb, WebImportOptions{})
+	require.Error(t, err)
+
+	// ErrLoadCalibreBooks must be discoverable via errors.Is.
+	require.True(t, errors.Is(err, ErrLoadCalibreBooks),
+		"errors.Is must find ErrLoadCalibreBooks in the error chain")
+
+	// The inner error from LoadBooks must NOT be discoverable — the format
+	// string uses %v (not %w) so that only the sentinel is wrapped.
+	require.False(t, errors.Is(err, loadErr),
+		"inner LoadBooks error must not appear in the error chain")
 }
