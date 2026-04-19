@@ -10,6 +10,8 @@ Biblioteka supports two authentication methods: local password-based accounts an
 
 Send a `POST /api/auth/signup` request. The first account created is automatically an admin.
 
+For automated or headless deployments, you can pre-seed the first admin account using the `INITIAL_ADMIN_EMAIL`, `INITIAL_ADMIN_PASSWORD`, and optional `INITIAL_ADMIN_NAME` environment variables instead of signing up interactively. See [Bootstrap Admin User](deployment.md#bootstrap-admin-user) in the deployment guide for details.
+
 ```bash
 curl -X POST http://localhost:8080/api/auth/signup \
   -H "Content-Type: application/json" \
