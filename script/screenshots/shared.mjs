@@ -133,6 +133,7 @@ async function openBookDetailPage(page, bookId) {
         waitUntil: 'networkidle',
         timeout: NAVIGATION_TIMEOUT_MS,
     });
+    await page.waitForURL(`**/#books/${bookId}`, { timeout: NAVIGATION_TIMEOUT_MS });
     // Wait for the book title h1 (aria-busy is set while loading, removed once the book is fetched)
     await page.waitForFunction(() => {
         const h1 = document.querySelector('main h1');
@@ -218,6 +219,7 @@ async function openReadingListDetailPage(page, listId) {
         waitUntil: 'networkidle',
         timeout: NAVIGATION_TIMEOUT_MS,
     });
+    await page.waitForURL(`**/#reading-lists/${listId}`, { timeout: NAVIGATION_TIMEOUT_MS });
     // Wait for the list name h1 to appear (only rendered once the store has loaded)
     await page.waitForFunction(() => {
         const h1 = document.querySelector('main h1');
@@ -238,6 +240,7 @@ async function openGroupDetailPage(page, groupId) {
         waitUntil: 'networkidle',
         timeout: NAVIGATION_TIMEOUT_MS,
     });
+    await page.waitForURL(`**/#groups/${groupId}`, { timeout: NAVIGATION_TIMEOUT_MS });
     // Wait for the group name h1 to appear (only rendered once the store has loaded)
     await page.waitForFunction(() => {
         const h1 = document.querySelector('main h1');
@@ -379,11 +382,14 @@ async function seedBooksAndMore(page) {
         if (booksResult.total > 0) {
             const lists = await window.__apiGet('/api/reading-lists');
             const groups = await window.__apiGet('/api/groups');
-            return {
-                bookIds: booksResult.books.slice(0, 5).map((b) => b.id),
-                listIds: lists.slice(0, 2).map((l) => l.id),
-                groupIds: groups.slice(0, 1).map((g) => g.id),
-            };
+            if (lists.length > 0 && groups.length > 0) {
+                return {
+                    bookIds: booksResult.books.slice(0, 5).map((b) => b.id),
+                    listIds: lists.slice(0, 2).map((l) => l.id),
+                    groupIds: groups.slice(0, 1).map((g) => g.id),
+                };
+            }
+            // Fall through to seed missing lists/groups
         }
 
         const bookInputs = [
