@@ -35,8 +35,17 @@ func isColumnUniqueViolation(err error, tableCol, idxName string) bool {
 	if err == nil || !isUniqueViolation(err) {
 		return false
 	}
+	if tableCol == "" && idxName == "" {
+		return false
+	}
 	msg := err.Error()
-	return strings.Contains(msg, tableCol) || strings.Contains(msg, idxName)
+	if tableCol != "" && strings.Contains(msg, tableCol) {
+		return true
+	}
+	if idxName != "" && strings.Contains(msg, idxName) {
+		return true
+	}
+	return false
 }
 
 // dollarN returns a PostgreSQL-style positional placeholder ($1, $2, ...).

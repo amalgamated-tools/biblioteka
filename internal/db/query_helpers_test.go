@@ -29,11 +29,17 @@ func TestIsColumnUniqueViolation(t *testing.T) {
 	sqliteErr := errors.New("UNIQUE constraint failed: books.title")
 	require.True(t, isColumnUniqueViolation(sqliteErr, "books.title", "idx_books_title"))
 	require.False(t, isColumnUniqueViolation(sqliteErr, "books.isbn", "idx_books_isbn"))
+	require.False(t, isColumnUniqueViolation(sqliteErr, "", ""))
+	require.False(t, isColumnUniqueViolation(sqliteErr, "", "idx_books_isbn"))
+	require.False(t, isColumnUniqueViolation(sqliteErr, "books.isbn", ""))
 
 	// PostgreSQL: matches index name in message
 	pgErr := errors.New("duplicate key value violates unique constraint \"idx_books_title\"")
 	require.True(t, isColumnUniqueViolation(pgErr, "books.title", "idx_books_title"))
 	require.False(t, isColumnUniqueViolation(pgErr, "books.isbn", "idx_books_isbn"))
+	require.False(t, isColumnUniqueViolation(pgErr, "", ""))
+	require.False(t, isColumnUniqueViolation(pgErr, "", "idx_books_isbn"))
+	require.False(t, isColumnUniqueViolation(pgErr, "books.isbn", ""))
 }
 
 func TestBuildInClause_StartAtOne(t *testing.T) {
