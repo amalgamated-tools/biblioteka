@@ -6,7 +6,7 @@ CREATE TABLE passkey_challenges_new (
 	user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
 	session_data TEXT NOT NULL,
 	expires_at DATETIME NOT NULL,
-	created_at DATETIME NOT NULL DEFAULT (datetime('now'))
+	created_at DATETIME NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
 );
 
 INSERT INTO passkey_challenges_new (id, user_id, session_data, expires_at, created_at)
@@ -23,7 +23,7 @@ CREATE TABLE passkey_challenges_old (
 	user_id TEXT,
 	session_data TEXT NOT NULL,
 	expires_at DATETIME NOT NULL,
-	created_at DATETIME NOT NULL DEFAULT (datetime('now'))
+	created_at DATETIME NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
 );
 
 INSERT INTO passkey_challenges_old (id, user_id, session_data, expires_at, created_at)
