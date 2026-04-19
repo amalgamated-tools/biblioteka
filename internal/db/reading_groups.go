@@ -212,19 +212,12 @@ func (d *DB) AddGroupMember(ctx context.Context, groupID, ownerID, memberUserID 
 		slog.String(otelkeys.GroupID, groupID),
 		slog.String(otelkeys.UserID, memberUserID),
 	)
-	var existingOwnerID string
-	err := d.QueryRowContext(ctx, `SELECT owner_id FROM reading_groups WHERE id = $1`, groupID).Scan(&existingOwnerID)
-	if err != nil {
-		return false, err
-	}
-	if existingOwnerID != ownerID {
-		return false, sql.ErrNoRows
-	}
-
 	res, err := d.ExecContext(ctx,
-		`INSERT INTO reading_group_members (group_id, user_id, role) VALUES ($1, $2, 'member')
+		`INSERT INTO reading_group_members (group_id, user_id, role)
+		 SELECT $1, $2, 'member'
+		 WHERE EXISTS (SELECT 1 FROM reading_groups WHERE id = $1 AND owner_id = $3)
 		 ON CONFLICT (group_id, user_id) DO NOTHING`,
-		groupID, memberUserID,
+		groupID, memberUserID, ownerID,
 	)
 	if err != nil {
 		if isForeignKeyViolation(err) {
@@ -236,7 +229,23 @@ func (d *DB) AddGroupMember(ctx context.Context, groupID, ownerID, memberUserID 
 	if err != nil {
 		return false, err
 	}
-	return n > 0, nil
+	if n > 0 {
+		return true, nil
+	}
+	// Zero rows: either the owner check failed (group not found or caller is not
+	// the owner) or the member is already present (ON CONFLICT DO NOTHING).
+	// Distinguish by re-checking ownership.
+	var isOwner bool
+	if err := d.QueryRowContext(ctx,
+		`SELECT EXISTS(SELECT 1 FROM reading_groups WHERE id = $1 AND owner_id = $2)`,
+		groupID, ownerID,
+	).Scan(&isOwner); err != nil {
+		return false, err
+	}
+	if !isOwner {
+		return false, sql.ErrNoRows
+	}
+	return false, nil
 }
 
 // RemoveGroupMember removes a member from a group. Owner can remove anyone; members can remove themselves.
