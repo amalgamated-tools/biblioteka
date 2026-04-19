@@ -61,6 +61,7 @@ nav:
       - KOReader Sync: koreader.md
       - Metadata: metadata.md
       - Migrate from Calibre: calibre.md
+      - Tags: tags.md
   - Developer Reference:
       - API Overview: api.md
       - API Reference:
