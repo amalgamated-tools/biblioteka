@@ -387,9 +387,9 @@ func (h *GroupHandler) handleGroupMember(w http.ResponseWriter, r *http.Request,
 //	@Description	Remove a member from a reading group. The owner can remove any member; members can remove themselves.
 //	@Tags			Groups
 //	@Security		BearerAuth
-//	@Failure		401		{object}	errorResponse
-//	@Param			id			path	string	true	"Group ID"
-//	@Param			memberID	path	string	true	"Member user ID"
+//	@Failure		401			{object}	errorResponse
+//	@Param			id			path		string	true	"Group ID"
+//	@Param			memberID	path		string	true	"Member user ID"
 //	@Success		204			"No Content"
 //	@Failure		400			{object}	errorResponse
 //	@Failure		404			{object}	errorResponse

@@ -1,5 +1,70 @@
 basePath: /api
 definitions:
+  github_com_amalgamated-tools_biblioteka_internal_calibre.ImportResult:
+    properties:
+      errors:
+        description: Errors is the number of books that could not be imported due
+          to errors.
+        type: integer
+      imported:
+        description: Imported is the number of books successfully written to the database.
+        type: integer
+      skipped:
+        description: |-
+          Skipped is the number of books not written because they were already
+          present (detected by file path).
+        type: integer
+      total:
+        description: Total is the total number of Calibre books examined.
+        type: integer
+    type: object
+  github_com_amalgamated-tools_biblioteka_internal_calibre.Preview:
+    properties:
+      books:
+        description: |-
+          Books contains up to previewLimit books for display. The caller should
+          use Total to inform the user about books beyond the preview window.
+        items:
+          $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_calibre.PreviewBook'
+        type: array
+      total:
+        description: Total is the total number of books found in the Calibre database.
+        type: integer
+    type: object
+  github_com_amalgamated-tools_biblioteka_internal_calibre.PreviewBook:
+    properties:
+      authors:
+        items:
+          type: string
+        type: array
+      calibre_id:
+        type: integer
+      formats:
+        items:
+          type: string
+        type: array
+      isbn10:
+        type: string
+      isbn13:
+        type: string
+      publication_date:
+        type: string
+      publisher:
+        type: string
+      series:
+        items:
+          $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_calibre.PreviewSeriesEntry'
+        type: array
+      title:
+        type: string
+    type: object
+  github_com_amalgamated-tools_biblioteka_internal_calibre.PreviewSeriesEntry:
+    properties:
+      name:
+        type: string
+      position:
+        type: number
+    type: object
   github_com_amalgamated-tools_biblioteka_internal_db.BookSeriesInput:
     properties:
       position:
@@ -10,6 +75,42 @@ definitions:
   github_com_amalgamated-tools_biblioteka_internal_db.Timestamp:
     properties:
       time.Time:
+        type: string
+    type: object
+  github_com_amalgamated-tools_biblioteka_internal_db.YearInBooks:
+    properties:
+      active_days:
+        type: integer
+      books_finished:
+        type: integer
+      longest_streak:
+        type: integer
+      total_downloads:
+        type: integer
+      year:
+        type: integer
+    type: object
+  internal_handlers.LLMConfig:
+    properties:
+      enabled:
+        type: boolean
+      endpoint:
+        type: string
+      model:
+        type: string
+      provider:
+        type: string
+      restart_required:
+        type: boolean
+    type: object
+  internal_handlers.addBookToReadingListRequest:
+    properties:
+      book_id:
+        type: string
+    type: object
+  internal_handlers.addGroupMemberRequest:
+    properties:
+      user_id:
         type: string
     type: object
   internal_handlers.adminUserDTO:
@@ -27,33 +128,30 @@ definitions:
       oidc_linked:
         type: boolean
     type: object
-  internal_handlers.apiKeyCreateResponse:
+  internal_handlers.aiEnrichmentDTO:
     properties:
+      book_id:
+        type: string
       created_at:
         $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
+      generated_description:
+        type: string
       id:
         type: string
-      key:
+      model:
         type: string
-      key_prefix:
+      provider:
         type: string
-      last_used_at:
+      reading_level:
+        type: string
+      status:
+        type: string
+      suggested_tags:
+        items:
+          type: string
+        type: array
+      updated_at:
         $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
-      name:
-        type: string
-    type: object
-  internal_handlers.apiKeyDTO:
-    properties:
-      created_at:
-        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
-      id:
-        type: string
-      key_prefix:
-        type: string
-      last_used_at:
-        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
-      name:
-        type: string
     type: object
   internal_handlers.auditLogDTO:
     properties:
@@ -84,13 +182,6 @@ definitions:
         type: integer
       total:
         type: integer
-    type: object
-  internal_handlers.authResponse:
-    properties:
-      token:
-        type: string
-      user:
-        $ref: '#/definitions/internal_handlers.userDTO'
     type: object
   internal_handlers.authorDTO:
     properties:
@@ -231,8 +322,6 @@ definitions:
         type: string
       title:
         type: string
-    required:
-    - title
     type: object
   internal_handlers.bookSeriesEntryDTO:
     properties:
@@ -274,13 +363,6 @@ definitions:
       updated_at:
         $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
     type: object
-  internal_handlers.changePasswordRequest:
-    properties:
-      currentPassword:
-        type: string
-      newPassword:
-        type: string
-    type: object
   internal_handlers.configStatusResponse:
     properties:
       is_admin:
@@ -320,6 +402,61 @@ definitions:
   internal_handlers.errorResponse:
     properties:
       error:
+        type: string
+    type: object
+  internal_handlers.fetchMetadataResponse:
+    properties:
+      status:
+        type: string
+      task_id:
+        type: string
+    type: object
+  internal_handlers.groupDTO:
+    properties:
+      created_at:
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
+      description:
+        type: string
+      id:
+        type: string
+      member_count:
+        type: integer
+      name:
+        type: string
+      owner_id:
+        type: string
+      updated_at:
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
+    type: object
+  internal_handlers.groupMemberDTO:
+    properties:
+      group_id:
+        type: string
+      joined_at:
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
+      role:
+        type: string
+      user_id:
+        type: string
+      user_name:
+        type: string
+    type: object
+  internal_handlers.groupMemberProgressDTO:
+    properties:
+      percentage:
+        type: number
+      updated_at:
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
+      user_id:
+        type: string
+      user_name:
+        type: string
+    type: object
+  internal_handlers.groupRequest:
+    properties:
+      description:
+        type: string
+      name:
         type: string
     type: object
   internal_handlers.koboTokenCreateResponse:
@@ -378,12 +515,46 @@ definitions:
           type: string
         type: array
     type: object
-  internal_handlers.loginRequest:
+  internal_handlers.metadataDTO:
     properties:
-      email:
+      asin:
         type: string
-      password:
+      author_name:
         type: string
+      book_id:
+        type: string
+      cover_image_url:
+        type: string
+      created_at:
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
+      description:
+        type: string
+      goodreads_id:
+        type: string
+      google_books_id:
+        type: string
+      hardcover_id:
+        type: string
+      id:
+        type: string
+      isbn10:
+        type: string
+      isbn13:
+        type: string
+      language:
+        type: string
+      publication_date:
+        type: string
+      publisher:
+        type: string
+      source:
+        type: string
+      status:
+        type: string
+      title:
+        type: string
+      updated_at:
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
     type: object
   internal_handlers.oidcConfigResponse:
     properties:
@@ -394,6 +565,28 @@ definitions:
       issuer_url:
         type: string
       redirect_uri:
+        type: string
+    type: object
+  internal_handlers.readingListDTO:
+    properties:
+      book_count:
+        type: integer
+      created_at:
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      updated_at:
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
+    type: object
+  internal_handlers.readingListRequest:
+    properties:
+      description:
+        type: string
+      name:
         type: string
     type: object
   internal_handlers.readingProgressItemDTO:
@@ -469,6 +662,13 @@ definitions:
           $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.BookSeriesInput'
         type: array
     type: object
+  internal_handlers.setBookTagsRequest:
+    properties:
+      tag_ids:
+        items:
+          type: string
+        type: array
+    type: object
   internal_handlers.setOIDCConfigRequest:
     properties:
       client_id:
@@ -480,13 +680,9 @@ definitions:
       redirect_uri:
         type: string
     type: object
-  internal_handlers.signupRequest:
+  internal_handlers.shareListRequest:
     properties:
-      email:
-        type: string
-      name:
-        type: string
-      password:
+      list_id:
         type: string
     type: object
   internal_handlers.smtpConfigResponse:
@@ -506,10 +702,16 @@ definitions:
       username:
         type: string
     type: object
-  internal_handlers.updateProfileRequest:
+  internal_handlers.tagDTO:
     properties:
+      created_at:
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
+      id:
+        type: string
       name:
         type: string
+      updated_at:
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
     type: object
   internal_handlers.uploadAcceptedResponse:
     properties:
@@ -521,19 +723,6 @@ definitions:
         type: string
       message:
         type: string
-    type: object
-  internal_handlers.userDTO:
-    properties:
-      email:
-        type: string
-      id:
-        type: string
-      is_admin:
-        type: boolean
-      name:
-        type: string
-      oidc_linked:
-        type: boolean
     type: object
   internal_handlers.watchFolderConfigResponse:
     properties:
@@ -563,6 +752,41 @@ info:
   title: Biblioteka API
   version: "1.0"
 paths:
+  /admin/search/reindex:
+    post:
+      description: Triggers a full rebuild of the FTS5 search index (admin only, SQLite
+        only)
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "405":
+          description: Method Not Allowed
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Rebuild search index
+      tags:
+      - Admin
   /admin/users:
     get:
       description: Returns a list of all users (admin only)
@@ -644,124 +868,6 @@ paths:
       summary: Set user admin status
       tags:
       - Admin
-  /api-keys:
-    get:
-      consumes:
-      - application/json
-      description: |-
-        List all API keys for the authenticated user with GET /api/api-keys.
-        Create a new API key for the authenticated user with POST /api/api-keys.
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List API keys
-          schema:
-            items:
-              $ref: '#/definitions/internal_handlers.apiKeyDTO'
-            type: array
-        "201":
-          description: API key created
-          schema:
-            $ref: '#/definitions/internal_handlers.apiKeyCreateResponse'
-        "400":
-          description: Bad request
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "405":
-          description: Method not allowed
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-      security:
-      - BearerAuth: []
-      summary: List and create API keys
-      tags:
-      - api-keys
-    post:
-      consumes:
-      - application/json
-      description: |-
-        List all API keys for the authenticated user with GET /api/api-keys.
-        Create a new API key for the authenticated user with POST /api/api-keys.
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List API keys
-          schema:
-            items:
-              $ref: '#/definitions/internal_handlers.apiKeyDTO'
-            type: array
-        "201":
-          description: API key created
-          schema:
-            $ref: '#/definitions/internal_handlers.apiKeyCreateResponse'
-        "400":
-          description: Bad request
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "405":
-          description: Method not allowed
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-      security:
-      - BearerAuth: []
-      summary: List and create API keys
-      tags:
-      - api-keys
-  /api-keys/{id}:
-    delete:
-      description: Delete a specific API key owned by the authenticated user.
-      parameters:
-      - description: API key ID
-        in: path
-        name: id
-        required: true
-        type: string
-      responses:
-        "204":
-          description: API key deleted
-        "400":
-          description: Invalid API key ID
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "404":
-          description: API key not found
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "405":
-          description: Method not allowed
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-      security:
-      - BearerAuth: []
-      summary: Delete an API key
-      tags:
-      - api-keys
   /audit-logs:
     get:
       description: Returns a paginated list of all audit log entries (admin only)
@@ -800,40 +906,6 @@ paths:
       summary: List audit log entries
       tags:
       - Admin
-  /auth/login:
-    post:
-      consumes:
-      - application/json
-      description: Authenticate with email and password
-      parameters:
-      - description: Login request
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/internal_handlers.loginRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/internal_handlers.authResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-      summary: Log in
-      tags:
-      - Auth
   /auth/logout:
     post:
       description: Clears the authentication cookie
@@ -854,105 +926,6 @@ paths:
       summary: Log out
       tags:
       - Auth
-  /auth/me:
-    get:
-      description: GET returns the authenticated user's profile; PUT updates the display
-        name
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/internal_handlers.userDTO'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-      security:
-      - BearerAuth: []
-      summary: Get or update current user
-      tags:
-      - Auth
-    put:
-      consumes:
-      - application/json
-      description: Updates the authenticated user's display name
-      parameters:
-      - description: Update profile request
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/internal_handlers.updateProfileRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/internal_handlers.userDTO'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-      security:
-      - BearerAuth: []
-      summary: Update current user's profile
-      tags:
-      - Auth
-  /auth/oidc/callback:
-    get:
-      description: Handles the OIDC provider's redirect after authentication
-      parameters:
-      - description: OIDC state parameter
-        in: query
-        name: state
-        required: true
-        type: string
-      - description: Authorization code
-        in: query
-        name: code
-        required: true
-        type: string
-      responses:
-        "302":
-          description: Redirect to frontend with token
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-      summary: OIDC callback
-      tags:
-      - OIDC
   /auth/oidc/enabled:
     get:
       description: Returns whether OIDC authentication is configured on this server
@@ -966,157 +939,6 @@ paths:
       summary: Check if OIDC is enabled
       tags:
       - System
-  /auth/oidc/link:
-    get:
-      description: Redirects to OIDC provider to link account (requires nonce)
-      parameters:
-      - description: Link nonce from CreateLinkNonce
-        in: query
-        name: nonce
-        required: true
-        type: string
-      responses:
-        "302":
-          description: Redirect to OIDC provider
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "409":
-          description: Conflict
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-      summary: Link OIDC account
-      tags:
-      - OIDC
-  /auth/oidc/link-nonce:
-    post:
-      description: Generate a short-lived nonce for linking an OIDC account
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            properties:
-              nonce:
-                type: string
-            type: object
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-      security:
-      - BearerAuth: []
-      summary: Create OIDC link nonce
-      tags:
-      - OIDC
-  /auth/oidc/login:
-    get:
-      description: Redirects to the OIDC provider's authorization endpoint
-      responses:
-        "302":
-          description: Redirect to OIDC provider
-        "404":
-          description: OIDC not configured
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-      summary: OIDC login
-      tags:
-      - OIDC
-  /auth/password:
-    put:
-      consumes:
-      - application/json
-      description: Change the authenticated user's password
-      parameters:
-      - description: Change password request
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/internal_handlers.changePasswordRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            properties:
-              message:
-                type: string
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-      security:
-      - BearerAuth: []
-      summary: Change password
-      tags:
-      - Auth
-  /auth/signup:
-    post:
-      consumes:
-      - application/json
-      description: Create a new user account with name, email, and password
-      parameters:
-      - description: Signup request
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/internal_handlers.signupRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/internal_handlers.authResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "409":
-          description: Conflict
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-      summary: Sign up a new user
-      tags:
-      - Auth
   /auth/signup/enabled:
     get:
       description: Returns whether new user signup is permitted on this server
@@ -1522,7 +1344,8 @@ paths:
       description: Returns paginated books (summary without relations). When query
         is provided, performs a title/description search.
       parameters:
-      - description: Search query (SQLite FTS5 full-text match across title and description; PostgreSQL title/description substring match)
+      - description: 'Search query (SQLite: FTS5 full-text match across title and
+          description; PostgreSQL: title/description substring match)'
         in: query
         name: query
         type: string
@@ -1854,6 +1677,355 @@ paths:
       summary: Add a book file
       tags:
       - Books
+  /books/{id}/metadata:
+    get:
+      description: Returns the most recent pending Goodreads/Hardcover metadata for
+        a book
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.metadataDTO'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get pending book metadata
+      tags:
+      - Book Metadata
+  /books/{id}/metadata/ai:
+    get:
+      description: Returns the most recent pending AI enrichment for a book
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.aiEnrichmentDTO'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get pending AI enrichment
+      tags:
+      - Book Metadata
+  /books/{id}/metadata/ai-apply:
+    post:
+      description: 'Atomically applies a pending AI enrichment to the book: union-merges
+        suggested tags and optionally sets the description (only if the book has none)'
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.aiEnrichmentDTO'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Apply AI enrichment
+      tags:
+      - Book Metadata
+  /books/{id}/metadata/ai-fetch:
+    post:
+      description: Enqueue a background job to generate AI enrichment (tags, description,
+        reading level) for a book. Returns 202 if already running or already fetched.
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/internal_handlers.fetchMetadataResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Fetch AI enrichment
+      tags:
+      - Book Metadata
+  /books/{id}/metadata/ai-reject:
+    post:
+      description: Marks the pending AI enrichment for a book as rejected
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Reject AI enrichment
+      tags:
+      - Book Metadata
+  /books/{id}/metadata/apply:
+    post:
+      description: Applies the pending Goodreads/Hardcover metadata to the book and
+        marks it as applied. Primarily for programmatic/CLI consumers; the frontend
+        uses a field-by-field workflow.
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.bookSummaryDTO'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Apply pending metadata to a book
+      tags:
+      - Book Metadata
+  /books/{id}/metadata/events:
+    get:
+      description: Opens a Server-Sent Events (SSE) stream for metadata fetch progress.
+        Events are JSON objects with an "event" field (e.g. "complete", "error", "not_found").
+        The connection closes automatically on a terminal event or after 2 minutes.
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - text/event-stream
+      responses:
+        "200":
+          description: SSE event stream
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Stream metadata fetch events
+      tags:
+      - Book Metadata
+  /books/{id}/metadata/fetch:
+    post:
+      description: Enqueue a background job to fetch book metadata from Goodreads/Hardcover.
+        Returns 202 if already running or already fetched.
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/internal_handlers.fetchMetadataResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Fetch book metadata
+      tags:
+      - Book Metadata
+  /books/{id}/metadata/reject:
+    post:
+      description: Marks the pending Goodreads/Hardcover metadata for a book as rejected
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Reject pending metadata
+      tags:
+      - Book Metadata
+  /books/{id}/reading-lists:
+    get:
+      description: Returns all reading lists owned by the authenticated user that
+        contain the specified book
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.readingListDTO'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: List reading lists containing a book
+      tags:
+      - Books
   /books/{id}/series:
     get:
       description: Get the list of series for a book
@@ -1931,6 +2103,83 @@ paths:
       summary: Set book series
       tags:
       - Books
+  /books/{id}/tags:
+    get:
+      description: Get the list of tags for a book
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.tagDTO'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: List book tags
+      tags:
+      - Books
+    put:
+      consumes:
+      - application/json
+      description: Replace the list of tags for a book
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Tag IDs
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.setBookTagsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.tagDTO'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Set book tags
+      tags:
+      - Books
   /books/upload:
     post:
       consumes:
@@ -2004,6 +2253,180 @@ paths:
       summary: Upload a book file
       tags:
       - Books
+  /calibre-import/confirm:
+    post:
+      consumes:
+      - multipart/form-data
+      - application/json
+      description: Import book metadata from a Calibre metadata.db into Biblioteka.
+        Accepts either a multipart/form-data upload (with optional library_id field)
+        or a JSON body with a server-side path and optional library_id. Does not create
+        file records. Admin only.
+      parameters:
+      - description: Calibre metadata.db file (multipart upload)
+        in: formData
+        name: metadata_db
+        type: file
+      - description: Library ID to associate with imported books (multipart upload)
+        in: formData
+        name: library_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_calibre.ImportResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "413":
+          description: Request Entity Too Large
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "415":
+          description: Unsupported Media Type
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Execute Calibre import
+      tags:
+      - Calibre Import
+  /calibre-import/preview:
+    post:
+      consumes:
+      - multipart/form-data
+      - application/json
+      description: Parse a Calibre metadata.db (uploaded as multipart/form-data or
+        provided as a server-side path via JSON) and return a preview of the books
+        that would be imported, without writing to the database. Admin only.
+      parameters:
+      - description: Calibre metadata.db file (multipart upload)
+        in: formData
+        name: metadata_db
+        type: file
+      - description: Library ID to associate with imported books (multipart upload)
+        in: formData
+        name: library_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_calibre.Preview'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "413":
+          description: Request Entity Too Large
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "415":
+          description: Unsupported Media Type
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Preview Calibre import
+      tags:
+      - Calibre Import
+  /config/llm:
+    get:
+      consumes:
+      - application/json
+      description: GET returns current LLM config (admin only). PUT updates LLM config
+        (admin only). Changes require a server restart.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.LLMConfig'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get or update LLM configuration
+      tags:
+      - Config
+    put:
+      consumes:
+      - application/json
+      description: GET returns current LLM config (admin only). PUT updates LLM config
+        (admin only). Changes require a server restart.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.LLMConfig'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get or update LLM configuration
+      tags:
+      - Config
   /config/oidc:
     get:
       description: Returns current OIDC configuration (admin only)
@@ -2261,6 +2684,470 @@ paths:
       summary: Get or update watch folder configuration
       tags:
       - Config
+  /groups:
+    get:
+      description: Returns all reading groups the authenticated user belongs to
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.groupDTO'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: List groups
+      tags:
+      - Groups
+    post:
+      consumes:
+      - application/json
+      description: Create a new reading group owned by the authenticated user
+      parameters:
+      - description: Group data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.groupRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_handlers.groupDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a group
+      tags:
+      - Groups
+  /groups/{id}:
+    delete:
+      description: Delete a reading group (owner only)
+      parameters:
+      - description: Group ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a group
+      tags:
+      - Groups
+    get:
+      description: Returns a single reading group by ID (requester must be a member)
+      parameters:
+      - description: Group ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.groupDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a group
+      tags:
+      - Groups
+    put:
+      consumes:
+      - application/json
+      description: Update the name and description of a reading group (owner only)
+      parameters:
+      - description: Group ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Group data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.groupRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.groupDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a group
+      tags:
+      - Groups
+  /groups/{id}/lists:
+    get:
+      description: Returns all reading lists shared with a reading group (requester
+        must be a member)
+      parameters:
+      - description: Group ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.readingListDTO'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: List group reading lists
+      tags:
+      - Groups
+    post:
+      consumes:
+      - application/json
+      description: Share a reading list with a reading group. The user must own the
+        list and be a group member.
+      parameters:
+      - description: Group ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: List to share
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.shareListRequest'
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Share a reading list with a group
+      tags:
+      - Groups
+  /groups/{id}/lists/{listID}:
+    delete:
+      description: Remove a reading list from a reading group. The user must own the
+        list.
+      parameters:
+      - description: Group ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Reading list ID
+        in: path
+        name: listID
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Unshare a reading list from a group
+      tags:
+      - Groups
+  /groups/{id}/members:
+    get:
+      description: Returns all members of a reading group (requester must be a member)
+      parameters:
+      - description: Group ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.groupMemberDTO'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: List group members
+      tags:
+      - Groups
+    post:
+      consumes:
+      - application/json
+      description: Add a user to a reading group (owner only; idempotent)
+      parameters:
+      - description: Group ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Member to add
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.addGroupMemberRequest'
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Add a group member
+      tags:
+      - Groups
+  /groups/{id}/members/{memberID}:
+    delete:
+      description: Remove a member from a reading group. The owner can remove any
+        member; members can remove themselves.
+      parameters:
+      - description: Group ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Member user ID
+        in: path
+        name: memberID
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Remove a group member
+      tags:
+      - Groups
+  /groups/{id}/progress:
+    get:
+      description: Returns reading progress for all group members on a specific book
+        (requester must be a member)
+      parameters:
+      - description: Group ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Book ID
+        in: query
+        name: book_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.groupMemberProgressDTO'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get group reading progress
+      tags:
+      - Groups
   /health:
     get:
       description: Returns server health status
@@ -2903,6 +3790,312 @@ paths:
       summary: Manage OPDS credentials
       tags:
       - opds-credentials
+  /reading-lists:
+    get:
+      description: Returns all reading lists owned by the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.readingListDTO'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: List reading lists
+      tags:
+      - Reading Lists
+    post:
+      consumes:
+      - application/json
+      description: Create a new reading list for the authenticated user
+      parameters:
+      - description: Reading list data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.readingListRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_handlers.readingListDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a reading list
+      tags:
+      - Reading Lists
+  /reading-lists/{id}:
+    delete:
+      description: Delete a reading list owned by the authenticated user
+      parameters:
+      - description: Reading list ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a reading list
+      tags:
+      - Reading Lists
+    get:
+      description: Returns a single reading list by ID for the authenticated user
+      parameters:
+      - description: Reading list ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.readingListDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a reading list
+      tags:
+      - Reading Lists
+    put:
+      consumes:
+      - application/json
+      description: Update the name and description of a reading list owned by the
+        authenticated user
+      parameters:
+      - description: Reading list ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Reading list data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.readingListRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.readingListDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a reading list
+      tags:
+      - Reading Lists
+  /reading-lists/{id}/books:
+    get:
+      description: Returns a paginated list of books in a reading list owned by the
+        authenticated user
+      parameters:
+      - description: Reading list ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Max items per page (default 50, max 200)
+        in: query
+        name: limit
+        type: integer
+      - description: Number of items to skip (default 0)
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.bookListDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: List books in a reading list
+      tags:
+      - Reading Lists
+    post:
+      consumes:
+      - application/json
+      description: Add a book to a reading list owned by the authenticated user (idempotent)
+      parameters:
+      - description: Reading list ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Book to add
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.addBookToReadingListRequest'
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Add a book to a reading list
+      tags:
+      - Reading Lists
+  /reading-lists/{id}/books/{bookID}:
+    delete:
+      description: Remove a book from a reading list owned by the authenticated user
+      parameters:
+      - description: Reading list ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Book ID
+        in: path
+        name: bookID
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Remove a book from a reading list
+      tags:
+      - Reading Lists
   /reading-progress/stats:
     get:
       description: Returns the authenticated user's reading streak, total books tracked,
@@ -2931,6 +4124,41 @@ paths:
       summary: Get reading progress statistics
       tags:
       - reading-progress
+  /recommendations:
+    get:
+      description: Returns a scored list of recommended books for the authenticated
+        user based on reading history.
+      parameters:
+      - description: Max items to return (default 10, max 50)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.bookSummaryDTO'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "405":
+          description: Method Not Allowed
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get book recommendations
+      tags:
+      - Recommendations
   /series:
     get:
       description: Returns all series
@@ -3158,6 +4386,253 @@ paths:
       summary: List books in a series
       tags:
       - Series
+  /stats/year-in-books:
+    get:
+      description: 'Returns annual reading statistics: books finished, active reading
+        days, longest streak, and total downloads.'
+      parameters:
+      - description: 'Calendar year (default: current year)'
+        in: query
+        name: year
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.YearInBooks'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "405":
+          description: Method not allowed
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Year in Books statistics
+      tags:
+      - stats
+  /tags:
+    get:
+      consumes:
+      - application/json
+      description: GET returns all tags. POST creates a new tag.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.tagDTO'
+            type: array
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_handlers.tagDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: List or create tags
+      tags:
+      - Tags
+    post:
+      consumes:
+      - application/json
+      description: GET returns all tags. POST creates a new tag.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.tagDTO'
+            type: array
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_handlers.tagDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: List or create tags
+      tags:
+      - Tags
+  /tags/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: GET returns a tag by ID. PUT updates a tag. DELETE removes a tag.
+      parameters:
+      - description: Tag ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.tagDTO'
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get, update, or delete a tag
+      tags:
+      - Tags
+    get:
+      consumes:
+      - application/json
+      description: GET returns a tag by ID. PUT updates a tag. DELETE removes a tag.
+      parameters:
+      - description: Tag ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.tagDTO'
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get, update, or delete a tag
+      tags:
+      - Tags
+    put:
+      consumes:
+      - application/json
+      description: GET returns a tag by ID. PUT updates a tag. DELETE removes a tag.
+      parameters:
+      - description: Tag ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.tagDTO'
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get, update, or delete a tag
+      tags:
+      - Tags
   /version:
     get:
       description: Returns the server version
