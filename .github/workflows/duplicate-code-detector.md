@@ -14,7 +14,7 @@ imports:
 safe-outputs:
   create-issue:
     expires: 2d
-    title-prefix: "[duplicate-code] "
+    title-prefix: "refactor(duplicate-code): "
     labels: [code-quality, automated-analysis, cookie]
     assignees: copilot
     group: true

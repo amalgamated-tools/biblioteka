@@ -21,7 +21,7 @@ tools:
 safe-outputs:
   report-failure-as-issue: false
   create-issue:
-    title-prefix: "[Contribution Check Report]"
+    title-prefix: "ci(contribution-check): "
     labels:
       - contribution-report
     close-older-issues: true

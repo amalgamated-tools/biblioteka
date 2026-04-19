@@ -47,7 +47,7 @@ steps:
 safe-outputs:
   create-issue:
     expires: 2d
-    title-prefix: "[Parent] "
+    title-prefix: "chore(issues): "
     max: 5
     group: true
   link-sub-issue:

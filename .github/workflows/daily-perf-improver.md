@@ -51,12 +51,12 @@ safe-outputs:
     title-prefix: "perf: "
     max: 4
   create-issue:
-    title-prefix: "[Perf Improver] "
+    title-prefix: "perf: "
     labels: [automation, performance]
     max: 4
   update-issue:
     target: "*"
-    title-prefix: "[Perf Improver] "
+    title-prefix: "perf: "
     max: 1
   noop:
     report-as-issue: false

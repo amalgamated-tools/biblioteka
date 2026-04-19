@@ -15,7 +15,7 @@ tools:
 
 safe-outputs:
   create-issue:
-    title-prefix: '[dependabot-bundler] '
+    title-prefix: 'chore(deps): '
     max: 10
   update-issue:
     max: 10

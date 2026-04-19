@@ -72,7 +72,7 @@ safe-outputs:
     max: 4
     protected-files: fallback-to-issue
   create-issue:
-    title-prefix: "[Repo Assist] "
+    title-prefix: "chore: "
     labels: [automation, repo-assist]
     max: 4
   update-issue:

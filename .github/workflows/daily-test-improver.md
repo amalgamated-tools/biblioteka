@@ -47,12 +47,12 @@ safe-outputs:
     title-prefix: "test: "
     max: 4
   create-issue:
-    title-prefix: "[Test Improver] "
+    title-prefix: "test: "
     labels: [automation, testing]
     max: 4
   update-issue:
     target: "*"
-    title-prefix: "[Test Improver] "
+    title-prefix: "test: "
     max: 1
   noop:
     report-as-issue: false

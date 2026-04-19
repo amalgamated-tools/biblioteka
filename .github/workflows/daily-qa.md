@@ -31,6 +31,7 @@ safe-outputs:
     max: 5
   create-pull-request:
     draft: true
+    title-prefix: "fix(qa): "
     labels: [automation, qa]
     protected-files: fallback-to-issue
   noop:
