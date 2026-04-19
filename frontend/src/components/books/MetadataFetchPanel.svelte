@@ -246,10 +246,7 @@
     try {
       const updated = await api.applyMetadata(targetBookId);
       if (bookId !== targetBookId) return;
-      const src = updated as unknown as Record<
-        EditableMetadataKey,
-        string | null
-      >;
+      const src: Pick<typeof updated, EditableMetadataKey> = updated;
       for (const key of Object.keys(FIELD_MAP) as EditableMetadataKey[]) {
         fields[FIELD_MAP[key]] = src[key] ?? "";
       }
