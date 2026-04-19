@@ -155,6 +155,28 @@ func TestUpdateLibrary_DuplicateName(t *testing.T) {
 	require.ErrorIs(t, err, ErrLibraryNameExists)
 }
 
+// TestUpdateLibrary_SameNameBypassesNormalization verifies that sending back the
+// currently stored name (even if it contains legacy non-normalized whitespace)
+// does not trigger ErrLibraryNameExists when updating other fields.
+func TestUpdateLibrary_SameNameBypassesNormalization(t *testing.T) {
+	d := newTestDB(t)
+
+	// Simulate a pre-normalization row by injecting a name with extra whitespace directly.
+	var id string
+	err := d.QueryRowContext(t.Context(),
+		`INSERT INTO libraries (name, paths, organization_type, monitored) VALUES ($1, $2, $3, $4) RETURNING id`,
+		"My  Library", `["/mnt/books"]`, LibraryOrganizationNone, false,
+	).Scan(&id)
+	require.NoError(t, err)
+
+	// Sending back the exact same non-normalized name must not return ErrLibraryNameExists.
+	updated, err := d.UpdateLibrary(t.Context(), id, "My  Library", `["/mnt/books2"]`, LibraryOrganizationNone, true)
+	require.NoError(t, err)
+	require.Equal(t, "My  Library", updated.Name, "stored name should be preserved as-is")
+	require.Equal(t, `["/mnt/books2"]`, updated.Paths)
+	require.True(t, updated.Monitored)
+}
+
 func TestDeleteLibrary(t *testing.T) {
 	d := newTestDB(t)
 

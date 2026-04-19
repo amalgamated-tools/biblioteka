@@ -107,10 +107,25 @@ func (d *DB) ListLibraries(ctx context.Context) ([]Library, error) {
 
 // UpdateLibrary updates a library's fields and returns the updated library.
 // The name is normalized before storage.
+// For backward compatibility with pre-normalization data, if the supplied name
+// exactly matches the currently stored name the stored name is preserved as-is,
+// so unrelated field updates are not blocked by legacy whitespace-only collisions.
 // Returns sql.ErrNoRows if the library doesn't exist.
 // Returns ErrInvalidLibraryName if the name is blank after normalization.
 // Returns ErrLibraryNameExists if the new name conflicts with another library.
 func (d *DB) UpdateLibrary(ctx context.Context, id, name, paths, organizationType string, monitored bool) (*Library, error) {
+	current, err := d.GetLibrary(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	if name == current.Name {
+		return scanLibrary(d.QueryRowContext(ctx,
+			`UPDATE libraries SET paths = $1, organization_type = $2, monitored = $3, updated_at = `+d.now()+` WHERE id = $4 RETURNING `+libraryColumns,
+			paths, organizationType, monitored, id,
+		))
+	}
+
 	return namedEntityUpdate(ctx, "library", id, name, NormalizeLibraryName, ErrInvalidLibraryName, ErrLibraryNameExists,
 		func(ctx context.Context, entityID, n string) (*Library, error) {
 			return scanLibrary(d.QueryRowContext(ctx,
