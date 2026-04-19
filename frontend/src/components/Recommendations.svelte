@@ -18,7 +18,7 @@
         const data = await getRecommendations(limit, controller.signal);
         books = data;
       } catch (err) {
-        if ((err as { name?: string }).name === "AbortError") return;
+        if (err instanceof DOMException && err.name === "AbortError") return;
         error =
           err instanceof Error ? err.message : "Failed to load recommendations";
       } finally {
