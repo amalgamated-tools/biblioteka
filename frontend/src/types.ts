@@ -317,7 +317,7 @@ export interface KosyncCredentialInput {
 export interface AIEnrichment {
   id: string;
   book_id: string | null;
-  status: string;
+  status: "pending" | "applied" | "rejected";
   provider: string;
   model: string;
   suggested_tags: string[];
