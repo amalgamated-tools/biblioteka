@@ -212,3 +212,33 @@ func TestUpdateLibrary_EmptyOrganizationTypePreservesExistingValue(t *testing.T)
 	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &updated), "unmarshal updated")
 	require.Equal(t, db.LibraryOrganizationNone, updated.OrganizationType)
 }
+
+func TestUpdateLibrary_WhitespaceOnlyName(t *testing.T) {
+	h, adminID, _ := setupLibraryHandler(t)
+
+	dir := t.TempDir()
+	body := mustMarshal(t, libraryRequest{Name: "Books", Paths: []string{dir}})
+	r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+	h.HandleLibraries(w, r)
+	require.Equal(t, http.StatusCreated, w.Code, "setup: create library")
+	var created libraryDTO
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &created), "unmarshal")
+
+	updateBody := mustMarshal(t, libraryRequest{
+		Name:  "   ",
+		Paths: []string{dir},
+	})
+	r2 := httptest.NewRequest(http.MethodPut, "/api/libraries/"+created.ID, bytes.NewReader(updateBody))
+	r2 = withUserID(r2, adminID)
+	w2 := httptest.NewRecorder()
+
+	h.HandleLibrary(w2, r2)
+
+	require.Equal(t, http.StatusBadRequest, w2.Code)
+
+	var resp map[string]string
+	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &resp), "unmarshal")
+	require.NotEmpty(t, resp["error"])
+}

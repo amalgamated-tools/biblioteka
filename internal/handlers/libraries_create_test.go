@@ -295,3 +295,25 @@ func TestCreateLibrary_EmptyOrganizationTypeDefaultsToBookPerFolder(t *testing.T
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto), "unmarshal")
 	require.Equal(t, db.LibraryOrganizationBookPerFolder, dto.OrganizationType)
 }
+
+func TestCreateLibrary_WhitespaceOnlyName(t *testing.T) {
+	h, adminID, _ := setupLibraryHandler(t)
+
+	dir := t.TempDir()
+	body := mustMarshal(t, libraryRequest{
+		Name:  "   ",
+		Paths: []string{dir},
+	})
+
+	r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleLibraries(w, r)
+
+	require.Equal(t, http.StatusBadRequest, w.Code)
+
+	var resp map[string]string
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
+	require.NotEmpty(t, resp["error"])
+}
