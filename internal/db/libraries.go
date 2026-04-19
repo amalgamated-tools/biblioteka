@@ -14,7 +14,7 @@ import (
 var ErrLibraryNameExists = errors.New("library name already exists")
 
 // ErrInvalidLibraryName is returned when a library name is blank after normalization.
-var ErrInvalidLibraryName = errors.New("library name cannot be blank")
+var ErrInvalidLibraryName = errors.New("invalid library name")
 
 // NormalizeLibraryName normalizes a library name by trimming whitespace and
 // collapsing internal runs to a single space while preserving capitalization.
