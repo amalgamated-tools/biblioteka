@@ -292,41 +292,68 @@
           class="absolute z-10 mt-1 w-full max-h-48 overflow-y-auto bg-white dark:bg-ink-800 border border-ink-200 dark:border-ink-700 rounded-xl shadow-lg py-1"
         >
           {#each filteredTags as tag, i (tag.id)}
-            <button
-              type="button"
+            <div
               id="book-tags-option-{tag.id}"
               role="option"
+              tabindex="-1"
               aria-selected={activeIndex === i}
+              aria-disabled={disabled || saving}
               data-tags-dropdown
-              onmousedown={(e) => e.preventDefault()}
-              onclick={() => void addTag(tag)}
-              disabled={disabled || saving}
-              class="w-full text-left px-3 py-2 text-sm text-ink-700 dark:text-ink-200 hover:bg-accent-50 dark:hover:bg-accent-800/20 transition-colors disabled:opacity-50 {activeIndex ===
-              i
+              onmousedown={(e) => {
+                e.preventDefault();
+              }}
+              onclick={() => {
+                if (!disabled && !saving) void addTag(tag);
+              }}
+              onkeydown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  if (!disabled && !saving) void addTag(tag);
+                }
+              }}
+              class="w-full text-left px-3 py-2 text-sm text-ink-700 dark:text-ink-200 hover:bg-accent-50 dark:hover:bg-accent-800/20 transition-colors cursor-pointer {disabled ||
+              saving
+                ? 'opacity-50 cursor-not-allowed'
+                : ''} {activeIndex === i
                 ? 'bg-accent-50 dark:bg-accent-800/20'
                 : ''}"
             >
               {tag.name}
-            </button>
+            </div>
           {/each}
           {#if showCreateOption}
-            <button
-              type="button"
+            <div
               id="book-tags-option-create"
               role="option"
+              tabindex="-1"
               aria-selected={activeIndex === filteredTags.length}
+              aria-disabled={disabled || saving || creatingTag}
               data-tags-dropdown
-              onmousedown={(e) => e.preventDefault()}
-              onclick={() => void createAndAddTag()}
-              disabled={disabled || saving || creatingTag}
-              class="w-full text-left px-3 py-2 text-sm text-accent-600 dark:text-accent-400 hover:bg-accent-50 dark:hover:bg-accent-800/20 transition-colors disabled:opacity-50 flex items-center gap-1.5 {activeIndex ===
-              filteredTags.length
+              onmousedown={(e) => {
+                e.preventDefault();
+              }}
+              onclick={() => {
+                if (!disabled && !saving && !creatingTag)
+                  void createAndAddTag();
+              }}
+              onkeydown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  if (!disabled && !saving && !creatingTag)
+                    void createAndAddTag();
+                }
+              }}
+              class="w-full text-left px-3 py-2 text-sm text-accent-600 dark:text-accent-400 hover:bg-accent-50 dark:hover:bg-accent-800/20 transition-colors flex items-center gap-1.5 cursor-pointer {disabled ||
+              saving ||
+              creatingTag
+                ? 'opacity-50 cursor-not-allowed'
+                : ''} {activeIndex === filteredTags.length
                 ? 'bg-accent-50 dark:bg-accent-800/20'
                 : ''}"
             >
               <Plus class="w-3.5 h-3.5" aria-hidden="true" />
               Create "{searchText.trim()}"
-            </button>
+            </div>
           {/if}
         </div>
       {/if}
