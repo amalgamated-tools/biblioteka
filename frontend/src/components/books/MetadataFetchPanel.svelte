@@ -257,7 +257,9 @@
       metadataError =
         e instanceof Error ? e.message : "Failed to apply metadata";
     } finally {
-      applying = false;
+      if (bookId === targetBookId) {
+        applying = false;
+      }
     }
   }
 </script>
