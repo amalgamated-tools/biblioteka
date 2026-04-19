@@ -380,31 +380,42 @@ async function seedLibrary(page, demoBooksPath) {
 
 /**
  * Seeds books, authors, tags, reading lists, and a reading group via the API.
- * Idempotent: if books already exist, reuses their IDs and only creates any
- * missing reading lists or groups.
+ * Idempotent: fetches all existing state upfront and creates only what is absent,
+ * so interrupted runs can be safely retried without hitting unique-constraint errors.
  * Returns navigation IDs for books, reading lists, and groups.
  * Must be called while a user is logged in.
  */
 async function seedBooksAndMore(page) {
     await injectApiHelpers(page);
     return page.evaluate(async () => {
-        const booksResult = await window.__apiGet('/api/books');
+        // Fetch all current state in parallel to determine what still needs seeding.
+        const [booksResult, existingAuthors, existingTags, existingLists, existingGroups] =
+            await Promise.all([
+                window.__apiGet('/api/books'),
+                window.__apiGet('/api/authors'),
+                window.__apiGet('/api/tags'),
+                window.__apiGet('/api/reading-lists'),
+                window.__apiGet('/api/groups'),
+            ]);
         const existingBookIds =
             booksResult.total > 0 ? booksResult.books.slice(0, 5).map((b) => b.id) : [];
 
-        if (existingBookIds.length > 0) {
-            const lists = await window.__apiGet('/api/reading-lists');
-            const groups = await window.__apiGet('/api/groups');
-            if (lists.length > 0 && groups.length > 0) {
-                return {
-                    bookIds: existingBookIds,
-                    listIds: lists.slice(0, 2).map((l) => l.id),
-                    groupIds: groups.slice(0, 1).map((g) => g.id),
-                };
-            }
-            // Books exist but lists/groups are missing — create only what's needed.
+        // Fully seeded: return early.
+        if (
+            existingBookIds.length > 0 &&
+            existingAuthors.length > 0 &&
+            existingTags.length > 0 &&
+            existingLists.length > 0 &&
+            existingGroups.length > 0
+        ) {
+            return {
+                bookIds: existingBookIds,
+                listIds: existingLists.slice(0, 2).map((l) => l.id),
+                groupIds: existingGroups.slice(0, 1).map((g) => g.id),
+            };
         }
 
+        // Create books only if none exist yet.
         let bookIds = existingBookIds;
         if (bookIds.length === 0) {
             const bookInputs = [
@@ -446,50 +457,70 @@ async function seedBooksAndMore(page) {
             ];
             const books = await Promise.all(bookInputs.map((b) => window.__apiPost('/api/books', b)));
             bookIds = books.map((b) => b.id);
+        }
 
+        // Create authors only if none exist yet.
+        if (existingAuthors.length === 0) {
             const authorInputs = [
                 { name: 'Frank Herbert' },
                 { name: 'Patrick Rothfuss' },
                 { name: 'William Gibson' },
             ];
-            const authors = await Promise.all(authorInputs.map((a) => window.__apiPost('/api/authors', a)));
+            const authors = await Promise.all(
+                authorInputs.map((a) => window.__apiPost('/api/authors', a)),
+            );
             const authorIds = authors.map((a) => a.id);
-
             await window.__apiPut(`/api/books/${bookIds[0]}/authors`, { author_ids: [authorIds[0]] });
             await window.__apiPut(`/api/books/${bookIds[1]}/authors`, { author_ids: [authorIds[1]] });
             await window.__apiPut(`/api/books/${bookIds[2]}/authors`, { author_ids: [authorIds[2]] });
+        }
 
+        // Create tags only if none exist yet.
+        if (existingTags.length === 0) {
             const tagInputs = [{ name: 'sci-fi' }, { name: 'fantasy' }, { name: 'classic' }];
-            const tags = await Promise.all(tagInputs.map((t) => window.__apiPost('/api/tags', t)));
+            const tags = await Promise.all(
+                tagInputs.map((t) => window.__apiPost('/api/tags', t)),
+            );
             const tagIds = tags.map((t) => t.id);
-
             await window.__apiPut(`/api/books/${bookIds[0]}/tags`, { tag_ids: [tagIds[0], tagIds[2]] });
             await window.__apiPut(`/api/books/${bookIds[1]}/tags`, { tag_ids: [tagIds[1]] });
             await window.__apiPut(`/api/books/${bookIds[2]}/tags`, { tag_ids: [tagIds[0]] });
             await window.__apiPut(`/api/books/${bookIds[4]}/tags`, { tag_ids: [tagIds[0], tagIds[2]] });
         }
 
-        const list1 = await window.__apiPost('/api/reading-lists', {
-            name: 'To Read',
-            description: 'Books I want to read next',
-        });
-        const list2 = await window.__apiPost('/api/reading-lists', {
-            name: 'Favorites',
-            description: 'All-time favorites',
-        });
-        const listIds = [list1.id, list2.id];
+        // Create reading lists only if absent (lookup by name to avoid 409 on re-runs).
+        const listIdsByName = new Map(existingLists.map((l) => [l.name, l.id]));
+        if (!listIdsByName.has('To Read')) {
+            const list1 = await window.__apiPost('/api/reading-lists', {
+                name: 'To Read',
+                description: 'Books I want to read next',
+            });
+            listIdsByName.set('To Read', list1.id);
+            await window.__apiPost(`/api/reading-lists/${list1.id}/books`, { book_id: bookIds[1] });
+            await window.__apiPost(`/api/reading-lists/${list1.id}/books`, { book_id: bookIds[2] });
+        }
+        if (!listIdsByName.has('Favorites')) {
+            const list2 = await window.__apiPost('/api/reading-lists', {
+                name: 'Favorites',
+                description: 'All-time favorites',
+            });
+            listIdsByName.set('Favorites', list2.id);
+            await window.__apiPost(`/api/reading-lists/${list2.id}/books`, { book_id: bookIds[0] });
+        }
+        const listIds = ['To Read', 'Favorites'].map((name) => listIdsByName.get(name));
 
-        await window.__apiPost(`/api/reading-lists/${listIds[0]}/books`, { book_id: bookIds[1] });
-        await window.__apiPost(`/api/reading-lists/${listIds[0]}/books`, { book_id: bookIds[2] });
-        await window.__apiPost(`/api/reading-lists/${listIds[1]}/books`, { book_id: bookIds[0] });
+        // Create group only if absent.
+        const existingGroup = existingGroups.find((g) => g.name === 'Sci-Fi Book Club');
+        const groupId = existingGroup
+            ? existingGroup.id
+            : (
+                  await window.__apiPost('/api/groups', {
+                      name: 'Sci-Fi Book Club',
+                      description: 'A group for science fiction enthusiasts',
+                  })
+              ).id;
 
-        const group1 = await window.__apiPost('/api/groups', {
-            name: 'Sci-Fi Book Club',
-            description: 'A group for science fiction enthusiasts',
-        });
-        const groupIds = [group1.id];
-
-        return { bookIds, listIds, groupIds };
+        return { bookIds, listIds, groupIds: [groupId] };
     });
 }
 
