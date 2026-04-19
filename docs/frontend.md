@@ -29,7 +29,7 @@ frontend/
       MyLibrary.svelte    Placeholder for a planned per-user personal library feature; currently shows an empty state
       Recommendations.svelte  "You Might Also Like" panel rendered at the bottom of the Dashboard; fetches up to 10 book recommendations via `getRecommendations(limit)` using a `$effect`; shows skeleton cards while loading; renders an inline error message when the fetch fails (and logs the error to the console) and renders an empty-state message with a link to `#settings/kobo` when the result set is empty; book cards link to `#books/{id}` via `routerStore.navigate`
       Settings.svelte     Settings shell; owns shared admin state; renders one tab at a time
-      Sidebar.svelte      Navigation sidebar; fetches and displays the running server version; uses `<a href>` anchor links for all navigation items; the brand name is rendered as `<p>` (not `<h1>`) to avoid duplicate top-level headings (WCAG 1.3.1); icon-only action links (Create library, Library settings) carry `aria-label`, and the Create-library icon explicitly carries `aria-hidden="true"` (WCAG 4.1.2); the Library-settings link aria-label includes the library name (e.g. "Library settings for Fiction") so each link has a unique, descriptive name (WCAG 2.4.6); the Library-settings link uses a contrast-safe resting color (`text-ink-600`) and switches to `text-accent-400` on hover/focus-within to preserve affordance while meeting WCAG 1.4.11; nav link clusters are wrapped in `role="group"` containers labelled by `<h2>` group headings (WCAG 1.3.1)
+      Sidebar.svelte      Navigation sidebar; fetches and displays the running server version; uses `<a href>` anchor links for all navigation items; the brand name is rendered as `<p>` (not `<h1>`) to avoid duplicate top-level headings (WCAG 1.3.1); icon-only action links (Create library, Library settings) carry `aria-label`, and the Create-library icon explicitly carries `aria-hidden="true"` (WCAG 4.1.2); the Library-settings link aria-label includes the library name (e.g. "Library settings for Fiction") so each link has a unique, descriptive name (WCAG 2.4.6); the Library-settings link uses a contrast-safe resting color (`text-ink-500`) and switches to `text-accent-400` on hover/focus-within to preserve affordance while meeting WCAG 1.4.11; nav link clusters are wrapped in `role="group"` containers labelled by `<h2>` group headings (WCAG 1.3.1)
       books/              Sub-components for book detail and editing
         BookDetail.svelte    Book detail view; displays cover image, metadata, author/series associations, file attachments, and download links
         BookEdit.svelte      Book edit page; fetches book data, manages form state, and coordinates the `BookEditForm` and `MetadataFetchPanel` sub-components
@@ -1690,7 +1690,7 @@ Key details:
 
 | Class / attribute | Purpose |
 |-------------------|---------|
-| `text-ink-600` | Resting state with sufficient contrast against sidebar background (WCAG 1.4.11) |
+| `text-ink-500` | Resting state with sufficient contrast against sidebar background (3.08:1, WCAG 1.4.11) |
 | `group-hover:text-accent-400` / `group-focus-within:text-accent-400` | Increases prominence on hover and keyboard focus-within |
 | `focus-visible:ring-2 focus-visible:ring-accent-400` | Provides an explicit focus ring for keyboard navigation |
 | `rounded` | Ensures the focus ring follows the element's shape |
