@@ -1,47 +1,45 @@
 # Shared Alerts
-**Updated:** 2026-04-18T23:44Z by agent-performance-analyzer
+**Updated:** 2026-04-19T23:44Z by agent-performance-analyzer
 
 ## Active Alerts
 
-### CRITICAL: veverkananobot Duplicate Issue Creation (NEW Apr 18)
-- 3+ confirmed duplicate issue pairs open simultaneously
-- #2250 vs #2263 (Auth.svelte console.error — same fix)
-- #2249 vs #2262 (Recommendations.svelte console.error — same fix)
-- #2242 vs #2259 (book_annotations dead code — same fix)
-- PR #2199 merged today yet #2249/#2262 still requesting same fix
-- Root cause: daily-nitpick-reviewer + daily-grumpy-reviewer running without cross-check
-- Fix: Add dedup search before creating issues; check for recently merged PRs addressing same file
+### HIGH: daily-doc-updater Duplicate PRs (Persisting)
+- #2363 (merged) + #2355 (closed) + #2334 (closed) — all same docs(books) change
+- Pattern: doc-updater creates new PR before previous is merged
+- Fix: Add `skip-if-match: is:pr is:open in:title "docs(books)"` guard
 
-### CRITICAL: Engine Failure Cluster (4 persistent + 1 new = 5 active)
-- **issue-triage** (#2264): NEW Apr 18. Agentic Triage failed.
-- **ci-doctor** (#2239): Persistent since Apr 15.
-- **update-docs** (#2235): Persistent since Apr 16.
-- **contribution-guidelines-checker** (#2233): Persistent since Apr 16.
-- #2214, #1733: Detection/No-Op tracking issues (stale, Apr 12-15 origin)
+### HIGH: [aw] Failure Cluster (3 active, ↓ from 5 yesterday)
+- **daily-workflow-updater** (#2346): NEW Apr 19 — fix PR #2376 open
+- **Detection Runs** (#2328): Persistent/stale
+- **No-Op Runs** (#1733): Very stale — candidate for closure
+- Resolved since Apr 18: sergo, dependabot-bundler failures ✅
 
-### HIGH: Issue Accumulation Accelerating
-- Open issues: 18 → 29 → 40 → 50 in 3 days (+10/day)
-- 6 ephemeral status issues open: #2279, #2276, #2274, #2273 (new today), plus prior
-- Fix: Status reports → discussions; auto-close yesterday's status before creating new
+### MEDIUM: Draft PRs Awaiting Review (3)
+- #2386: docs(database) update index names — DRAFT
+- #2384: refactor(db) deduplicate reading list ownership — DRAFT
+- #2382: docs INITIAL_ADMIN bootstrap — DRAFT (duplicate of #2377?)
 
-### MEDIUM: PRs Blocked
-- #2230: docs(claude) — possible conflict with #2231 (same topic, merged)
-- #2207: Reading Groups API client — may be superseded by #2211 (Reading Groups UI, merged)
+### MEDIUM: repo-status Using Issues (not Discussions)
+- #2379: [repo-status] Daily Status as issue (should be discussion)
+- Improvement: only 1 today vs 6 yesterday ✅
 
-### LOW: Inactive Workflow Count (31 of 54 workflows appear inactive or event-only)
-- Review for retirement or activation
+### LOW: veverkananobot Issues from Apr 18 (6 open)
+- Being addressed by Copilot PRs (#2371, #2372, #2370, #2369, #2373)
+- Pipeline is working; expect resolution within 24h
 
-## Resolved Since Apr 17
-- Engine failure cluster stopped expanding (sergo, dependabot-bundler from Apr 17 not in current open issues) ✅
-- PR velocity very strong: 28 PRs merged today ✅
+## Resolved Since Apr 18
+- Issue accumulation reversed: 50 → 23 open ✅
+- Duplicate issue pairs (same-file dupes): 0 new today ✅  
+- sergo + dependabot-bundler [aw] failures closed ✅
+- PR velocity: 87% merge rate ✅
 
 ## For Campaign Manager
-- Very high PR velocity today (28 merged): strong execution capability
-- #2232 feat(frontend): tag management UI merged — likely completes a campaign milestone
-- #2211 feat(groups): Reading Groups UI merged — major new feature shipped
-- Multiple duplicate fix issues in backlog - may affect campaign task counts
+- Strong execution: 26/30 recent PRs merged (87%)
+- Major features: LLM config UI (#2331 merged), Apply All (#2330 merged)
+- 3 draft PRs blocking: review needed for #2384, #2386, #2382
+- Task miner pipeline producing actionable issues → Copilot PRs
 
 ## For Workflow Health Manager
-- New: issue-triage (#2264) — agentic triage is now failing
-- 3+ confirmed duplicate issue pairs from veverkananobot — likely two review workflows stepping on each other
-- Consider: add noop output to daily-plan/repo-status/team-status to use discussions instead of issues
+- daily-workflow-updater still failing (#2346) — fix PR #2376 in review
+- daily-doc-updater needs skip-if-match guard to prevent duplicate PRs
+- #1733 No-Op Runs very stale — recommend closing as resolved

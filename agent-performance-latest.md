@@ -1,47 +1,47 @@
-# Agent Performance — 2026-04-18
-**Run:** 2026-04-18T23:44Z
+# Agent Performance — 2026-04-19
+**Run:** 2026-04-19T23:44Z
 
 ## Snapshot
 - 54 workflows registered, all Copilot, all compiled; ~23 active daily
-- 50 open issues (↑ from 40 Apr 17, ↑ from 29 Apr 16) — +10/day accumulation trend continues
-- 28/30 PRs merged today (Apr 18) = 93% same-day merge rate (up from 84% historical)
-- Copilot: 21 PRs, amalgamated-bot: 7, veverkap: 2
+- 23 open issues (↓ from 50 Apr 18 — accumulation trend REVERSED)
+- 19 open PRs (13 Copilot, 5 amalgamated-bot, 1 veverkap)
+- Recent 30 PRs: 26 merged = 87% merge rate (up from 84% historical)
 
 ## Top Performers
-- **veverkananobot (daily-nitpick/grumpy-reviewer)**: 23 open issues today; specific conventional commit format; Score: 85/100 (high quality, but duplicate creation pattern detected)
-- **Copilot (on-demand)**: 21/28 merged PRs today; feat+fix+docs mix; Score: 95/100
-- **daily-doc-updater (amalgamated-bot)**: #2237, #2236, #2203, #2190 merged; consistent doc updates; Score: 90/100
-- **duplicate-code-detector (amalgamated-bot)**: #2280 - precise structural analysis; Score: 88/100
-- **discussion-task-miner (amalgamated-bot)**: #2220, #2219, #2218 actionable tasks; Score: 87/100
-- **repo-assist (amalgamated-bot)**: #2225 perf PR merged; Score: 87/100
-- **daily-perf-improver**: Monthly rollup useful; Score: 82/100
+- **Copilot (on-demand)**: 13 open PRs + 16 merged in last 30. High quality. Score: 92/100
+- **duplicate-code-detector**: #2383 precise analysis. Score: 88/100
+- **discussion-task-miner**: #2337–#2341 actionable tasks mined. Score: 85/100
+- **amalgamated-bot (general)**: Docs, perf, test PRs merged cleanly. Score: 83/100
+
+## Agents Needing Improvement
+- **daily-doc-updater**: 3 PRs with identical title docs(books)/#2363/#2334/#2355, 2 closed unmerged. Score: 55/100
+- **veverkananobot**: 6 issues still open from Apr 18; some addressed by Copilot PRs now. Score: 65/100
+- **daily-workflow-updater**: Failed (#2346); fix PR #2376 open. Score: 30/100
+- **repo-status**: Still creating daily status as issues (#2379). Score: 45/100
 
 ## Critical Issues
+### 1. HIGH: daily-doc-updater Duplicate PRs
+- #2363 + #2334 + #2355 all "docs(books): document tags field in book detail object"
+- Two closed unmerged; one merged (#2363 with expanded scope)
+- Root cause: daily-doc-updater running before previous PRs are merged/closed
 
-### 1. CRITICAL: veverkananobot Duplicate Issue Creation
-Three confirmed duplicate pairs in open issues today:
-- Auth.svelte console.error: #2250 AND #2263 (identical fix)
-- Recommendations.svelte console.error: #2249 AND #2262 (identical fix)
-- book_annotations dead code: #2242 AND #2259 (same fix)
-- ISO 8601 timestamps: #2243-#2246 (per-file granular) vs #2260 (rollup)
-- WORSE: PR #2199 "fix(frontend): remove redundant console.error calls" was merged today — yet issues #2249 and #2262 still open requesting the same fix. Agent not checking merged PRs.
-- Root cause: daily-nitpick-reviewer AND daily-grumpy-reviewer both running → double-creating similar issues; no dedup check for already-merged PRs.
+### 2. HIGH: [aw] Failures (3 open)
+- #2346: Daily Workflow Updater failed (new Apr 19) — fix PR #2376 open
+- #2328: Detection Runs (persistent, stale)
+- #1733: No-Op Runs (very stale, Apr 15 origin)
 
-### 2. HIGH: [aw] Failure Issues — Stagnant (6 open)
-- #2264 NEW: [aw] Agentic Triage failed (Apr 18)
-- #2239: [aw] CI Failure Doctor failed (persistent)
-- #2235: [aw] Update Docs failed (persistent)
-- #2233: [aw] Contribution Guidelines Checker failed (persistent)
-- #2214, #1733: Detection Runs / No-Op Runs (stale, never resolved)
+### 3. MEDIUM: Vague PR Title
+- #2329 [Copilot]: "Completing task" — closed unmerged; poor title quality
 
-### 3. HIGH: Issue Accumulation Accelerating
-- Open issues: 18 → 29 → 40 → 50 in 3 days (+10/day)
-- 6 ephemeral status issues still open (daily-plan, repo-status, team-status, perf-improver monthly)
-- Fix: status reports should switch to discussions, not issues
+### 4. MEDIUM: Ephemeral Issues (not Discussions)
+- #2379: [repo-status] Daily Status Report as issue (should be discussion)
+- Improved: only 1 today vs 6 yesterday
 
-## PRs not merged today
-- #2230: docs(claude): correct delete helper location — still open (duplicate of #2231?)
-- #2207: feat(frontend): add Reading Groups API client module — still open
+## Good News vs Yesterday
+- Issue count: 50 → 23 (↓ -54%) — major improvement ✅
+- veverkananobot issues being addressed by Copilot PRs ✅
+- PR merge rate held strong: 87% ✅
+- Duplicate creation issue-pairs resolved (no new dupes today) ✅
 
-## Discussion Created
-"Agent Performance Report — Week of 2026-04-18" in Audits category
+## Discussions Created
+"Agent Performance Report — Week of 2026-04-19" in Audits category
