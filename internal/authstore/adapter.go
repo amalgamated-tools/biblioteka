@@ -50,16 +50,25 @@ func (a *UserAdapter) CreateOIDCUser(ctx context.Context, name, email, oidcSubje
 
 func (a *UserAdapter) FindByEmail(ctx context.Context, email string) (*auth.User, error) {
 	u, err := a.DB.GetUserByEmail(ctx, email)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, auth.ErrNotFound
+	}
 	return dbUserToAuth(u), err
 }
 
 func (a *UserAdapter) FindByID(ctx context.Context, id string) (*auth.User, error) {
 	u, err := a.DB.GetUserByID(ctx, id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, auth.ErrNotFound
+	}
 	return dbUserToAuth(u), err
 }
 
 func (a *UserAdapter) FindByOIDCSubject(ctx context.Context, subject string) (*auth.User, error) {
 	u, err := a.DB.GetUserByOIDCSubject(ctx, subject)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, auth.ErrNotFound
+	}
 	return dbUserToAuth(u), err
 }
 
