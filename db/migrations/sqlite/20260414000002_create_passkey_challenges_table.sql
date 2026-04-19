@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS passkey_challenges (
 	user_id TEXT,
 	session_data TEXT NOT NULL,
 	expires_at DATETIME NOT NULL,
-	created_at DATETIME NOT NULL DEFAULT (datetime('now'))
+	created_at DATETIME NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_passkey_challenges_expires_at ON passkey_challenges (expires_at);

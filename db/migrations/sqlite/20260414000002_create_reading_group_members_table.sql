@@ -3,7 +3,7 @@ CREATE TABLE reading_group_members (
     group_id    TEXT     NOT NULL REFERENCES reading_groups(id) ON DELETE CASCADE,
     user_id     TEXT     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     role        TEXT     NOT NULL DEFAULT 'member' CHECK (role IN ('owner', 'member')),
-    joined_at   DATETIME NOT NULL DEFAULT (datetime('now')),
+    joined_at   DATETIME NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
     PRIMARY KEY (group_id, user_id)
 );
 
