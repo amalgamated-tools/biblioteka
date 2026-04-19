@@ -7,6 +7,7 @@
   import BookEditForm from "./BookEditForm.svelte";
   import type { FormFields } from "./BookEditForm.svelte";
   import MetadataFetchPanel from "./MetadataFetchPanel.svelte";
+  import BookTagsEditor from "./BookTagsEditor.svelte";
 
   interface Props {
     bookId: string;
@@ -118,5 +119,10 @@
       bind:saving
       onSaved={() => routerStore.navigate(`books/${bookId}`)}
     />
+    <div
+      class="mt-6 bg-white dark:bg-ink-900 rounded-2xl shadow-sm border border-ink-100 dark:border-ink-800 p-6"
+    >
+      <BookTagsEditor {bookId} disabled={saving} />
+    </div>
   {/if}
 </div>

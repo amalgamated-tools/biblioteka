@@ -75,6 +75,7 @@ describe("router store", () => {
         "my-library",
         "libraries",
         "settings",
+        "tags",
       ]) {
         setHash(`#${view}`);
         expect(routerStore.isKnownView).toBe(true);
