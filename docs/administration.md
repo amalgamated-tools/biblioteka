@@ -403,7 +403,7 @@ If the library has a `book_per_folder` or `book_per_file` organization type, new
 
 > **Audit trail:** Changes to the watch folder configuration are recorded in the audit log as `watch_folder.config_updated`.
 
-See [API Reference — Watch folder endpoints](api-reference.md#get-apiconfigwatch-folder-admin-jwt-only) for the full endpoint shape and error codes.
+See [API Reference — Watch folder endpoints](api/config.md#get-apiconfigwatch-folder--admin--jwt-only) for the full endpoint shape and error codes.
 
 ---
 
@@ -479,7 +479,7 @@ All six SMTP settings (`host`, `port`, `username`, `password`, `from`, `tls`) ar
 
 **Precedence:** When the `SMTP_HOST` environment variable is set, all SMTP settings are read exclusively from environment variables (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM`, `SMTP_TLS`) and the database values are ignored. The runtime configuration UI will appear read-only. When `SMTP_HOST` is unset (the default), the values stored in the database via the API or Settings UI are used.
 
-See [API reference — SMTP config endpoints](api-reference.md#get-apiconfigsmtp--admin) for full request/response shapes.
+See [API reference — SMTP config endpoints](api/config.md#get-apiconfigsmtp--admin--jwt-only) for full request/response shapes.
 
 ### Emailing book files to readers
 
@@ -487,7 +487,7 @@ When SMTP is configured, any authenticated user can send a book file as an email
 
 If SMTP is not configured, the request is rejected with `400 Bad Request` and the UI disables the send button accordingly.
 
-See [API reference — `POST /api/book-files/{id}/email`](api-reference.md#post-apibook-filesidemail-) for the full endpoint shape and error codes.
+See [API reference — `POST /api/book-files/{id}/email`](api/books.md#post-apibook-filesidemail) for the full endpoint shape and error codes.
 
 ---
 
@@ -533,7 +533,7 @@ A successful update is recorded in the audit log as `llm.config_updated`.
 
 > **Restart required.** LLM configuration is read once at server startup. After saving a new configuration via the API, **restart the server** (or the worker process if running in split mode) for the change to take effect. The `PUT /api/config/llm` response always includes `"restart_required": true` as a reminder.
 
-See [API reference — LLM config endpoints](api-reference.md#get-apiconfigllm--admin--jwt-only) for the full request/response shapes.
+See [API reference — LLM config endpoints](api/config.md#get-apiconfigllm--admin--jwt-only) for the full request/response shapes.
 
 ---
 
