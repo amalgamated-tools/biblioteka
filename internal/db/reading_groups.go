@@ -54,6 +54,9 @@ func scanReadingGroupMember(row interface{ Scan(...any) error }) (*ReadingGroupM
 }
 
 // CreateGroup creates a new reading group and inserts the owner as a member with role="owner".
+// It uses explicit transaction handling rather than namedEntityCreate because this is a
+// multi-step create operation that must atomically insert both the group row and the owner's
+// membership row.
 func (d *DB) CreateGroup(ctx context.Context, ownerID, name string, description *string) (*ReadingGroup, error) {
 	name = NormalizeGroupName(name)
 	if name == "" {
@@ -136,33 +139,22 @@ func (d *DB) ListGroups(ctx context.Context, userID string) ([]ReadingGroup, err
 }
 
 // UpdateGroup updates the name and description. Only the owner can update.
+// sql.ErrNoRows propagates unchanged when the id+ownerID pair matches no row
+// (group not found, or caller is not the owner), which handleUpdateErr maps to 404.
 func (d *DB) UpdateGroup(ctx context.Context, id, ownerID, name string, description *string) (*ReadingGroup, error) {
-	name = NormalizeGroupName(name)
-	if name == "" {
-		slog.WarnContext(ctx, "db: rejecting group update with blank name",
-			slog.String(otelkeys.GroupID, id),
-		)
-		return nil, ErrInvalidGroupName
-	}
-	slog.DebugContext(ctx, "db: updating reading group",
-		slog.String(otelkeys.GroupID, id),
-		slog.String(otelkeys.GroupName, name),
+	return namedEntityUpdate(ctx, "reading group", id, name,
+		NormalizeGroupName, ErrInvalidGroupName, ErrGroupNameExists,
+		func(ctx context.Context, id, n string) (*ReadingGroup, error) {
+			return scanReadingGroup(d.QueryRowContext(ctx,
+				`UPDATE reading_groups SET name = $1, description = $2, updated_at = `+d.now()+`
+				 WHERE id = $3 AND owner_id = $4
+				 RETURNING id, owner_id, name, description,
+				   (SELECT COUNT(*) FROM reading_group_members WHERE group_id = reading_groups.id),
+				   created_at, updated_at`,
+				n, description, id, ownerID,
+			))
+		},
 	)
-	g, err := scanReadingGroup(d.QueryRowContext(ctx,
-		`UPDATE reading_groups SET name = $1, description = $2, updated_at = `+d.now()+`
-		 WHERE id = $3 AND owner_id = $4
-		 RETURNING id, owner_id, name, description,
-		   (SELECT COUNT(*) FROM reading_group_members WHERE group_id = reading_groups.id),
-		   created_at, updated_at`,
-		name, description, id, ownerID,
-	))
-	if err != nil {
-		if isUniqueViolation(err) {
-			return nil, ErrGroupNameExists
-		}
-		return nil, err
-	}
-	return g, nil
 }
 
 // DeleteGroup deletes a reading group. Only the owner can delete.
@@ -212,19 +204,12 @@ func (d *DB) AddGroupMember(ctx context.Context, groupID, ownerID, memberUserID 
 		slog.String(otelkeys.GroupID, groupID),
 		slog.String(otelkeys.UserID, memberUserID),
 	)
-	var existingOwnerID string
-	err := d.QueryRowContext(ctx, `SELECT owner_id FROM reading_groups WHERE id = $1`, groupID).Scan(&existingOwnerID)
-	if err != nil {
-		return false, err
-	}
-	if existingOwnerID != ownerID {
-		return false, sql.ErrNoRows
-	}
-
 	res, err := d.ExecContext(ctx,
-		`INSERT INTO reading_group_members (group_id, user_id, role) VALUES ($1, $2, 'member')
+		`INSERT INTO reading_group_members (group_id, user_id, role)
+		 SELECT $1, $2, 'member'
+		 WHERE EXISTS (SELECT 1 FROM reading_groups WHERE id = $1 AND owner_id = $3)
 		 ON CONFLICT (group_id, user_id) DO NOTHING`,
-		groupID, memberUserID,
+		groupID, memberUserID, ownerID,
 	)
 	if err != nil {
 		if isForeignKeyViolation(err) {
@@ -236,7 +221,23 @@ func (d *DB) AddGroupMember(ctx context.Context, groupID, ownerID, memberUserID 
 	if err != nil {
 		return false, err
 	}
-	return n > 0, nil
+	if n > 0 {
+		return true, nil
+	}
+	// Zero rows: either the owner check failed (group not found or caller is not
+	// the owner) or the member is already present (ON CONFLICT DO NOTHING).
+	// Distinguish by re-checking ownership.
+	var isOwner bool
+	if err := d.QueryRowContext(ctx,
+		`SELECT EXISTS(SELECT 1 FROM reading_groups WHERE id = $1 AND owner_id = $2)`,
+		groupID, ownerID,
+	).Scan(&isOwner); err != nil {
+		return false, err
+	}
+	if !isOwner {
+		return false, sql.ErrNoRows
+	}
+	return false, nil
 }
 
 // RemoveGroupMember removes a member from a group. Owner can remove anyone; members can remove themselves.

@@ -199,6 +199,35 @@ describe("BookTagsEditor", () => {
     });
   });
 
+  it("renders dropdown options as listbox options instead of buttons", async () => {
+    mockGetBookTags.mockResolvedValue([]);
+    mockListTags.mockResolvedValue([fakeTag1]);
+
+    const user = userEvent.setup();
+    render(BookTagsEditor, { bookId: "b1" });
+
+    const input = await screen.findByRole("combobox", {
+      name: "Search or add tags",
+    });
+    await user.click(input);
+    await waitFor(() => screen.getByRole("listbox"));
+
+    expect(screen.getByRole("option", { name: "fiction" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "fiction" }),
+    ).not.toBeInTheDocument();
+
+    await user.type(input, "newgenre");
+    await waitFor(() => {
+      expect(
+        screen.getByRole("option", { name: 'Create "newgenre"' }),
+      ).toBeInTheDocument();
+    });
+    expect(
+      screen.queryByRole("button", { name: 'Create "newgenre"' }),
+    ).not.toBeInTheDocument();
+  });
+
   it("shows create option when search text has no exact match", async () => {
     mockGetBookTags.mockResolvedValue([]);
     mockListTags.mockResolvedValue([fakeTag1]);
