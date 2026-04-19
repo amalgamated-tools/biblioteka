@@ -78,7 +78,7 @@ When AI metadata enrichment is enabled (requires an Ollama instance configured b
 | `GET` | `/api/books/{id}/tags` | List tags assigned to a book |
 | `PUT` | `/api/books/{id}/tags` | Replace all tags on a book |
 
-All endpoints require authentication (`Authorization: Bearer <jwt>`). See the [API Reference](api-reference.md#tags) for full request and response schemas.
+All endpoints require authentication (JWT, API key, or session cookie). See the [API Reference](api/tags.md) for full request and response schemas.
 
 ### Quick example: create a tag
 
