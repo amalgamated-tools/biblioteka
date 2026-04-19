@@ -103,7 +103,7 @@ type Server struct {
 }
 
 // NewServer creates a new server instance
-func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
+func NewServer(ctx context.Context, opts ...ServerOption) (_ *Server, err error) {
 	s := &Server{
 		mux: http.NewServeMux(),
 	}
@@ -118,31 +118,38 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	}
 
 	if s.DB == nil {
-		database, err := db.SetupDatabase(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to open database: %w", err)
+		database, dbErr := db.SetupDatabase(ctx)
+		if dbErr != nil {
+			return nil, fmt.Errorf("failed to open database: %w", dbErr)
 		}
 		s.DB = database
 		s.shutdownFuncs = append(s.shutdownFuncs, func(ctx context.Context) error {
 			return s.DB.Close()
 		})
+		// Close the DB we opened if NewServer returns an error; the caller
+		// receives nil and cannot invoke s.Shutdown() to trigger shutdownFuncs.
+		defer func() {
+			if err != nil {
+				_ = s.DB.Close()
+			}
+		}()
 	}
 
 	if s.JWT == nil {
 		jwtSecret := os.Getenv("JWT_SECRET")
+		if jwtSecret == "" {
+			slog.WarnContext(ctx, "JWT_SECRET not set, using random secret; all existing JWT tokens and any at-rest encrypted settings (SMTP password, OIDC client secret) will become invalid after a server restart")
+		} else if len(jwtSecret) < auth.MinSecretLength {
+			return nil, fmt.Errorf(
+				"JWT_SECRET must be at least %d bytes; got %d — either unset it (a random secret will be generated) or provide a longer value",
+				auth.MinSecretLength, len(jwtSecret),
+			)
+		}
 		jwtManager, err := auth.NewJWTManager(jwtSecret, 24*time.Hour, "biblioteka")
 		if err != nil {
 			return nil, fmt.Errorf("failed to initialize JWT manager: %w", err)
 		}
 		s.JWT = jwtManager
-
-		if jwtSecret == "" {
-			slog.WarnContext(ctx, "JWT_SECRET not set, using random secret; all existing JWT tokens and any at-rest encrypted settings (SMTP password, OIDC client secret) will become invalid after a server restart")
-		} else if len(jwtSecret) < auth.MinSecretLength {
-			slog.WarnContext(ctx, "JWT_SECRET is shorter than the recommended minimum of 32 characters; a short secret weakens HMAC-SHA256 signing",
-				slog.Int(otelkeys.JWTSecretLength, len(jwtSecret)),
-			)
-		}
 	}
 
 	secretEncrypter, err := s.JWT.NewSecretEncrypter()

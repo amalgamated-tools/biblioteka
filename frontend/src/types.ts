@@ -246,6 +246,25 @@ export interface SetWatchFolderConfigInput {
   library_id: string;
 }
 
+// LLM Config
+
+export type LLMProvider = "" | "ollama";
+
+export interface LLMConfig {
+  provider: LLMProvider;
+  endpoint: string;
+  model: string;
+  enabled: boolean;
+  restart_required?: boolean;
+}
+
+export interface SetLLMConfigInput {
+  provider: LLMProvider;
+  endpoint: string;
+  model: string;
+  enabled: boolean;
+}
+
 // Admin - User Management
 
 export interface AdminUser {

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
-import { cleanup, render, screen } from "@testing-library/svelte";
+import { cleanup, render, screen, waitFor } from "@testing-library/svelte";
 
 vi.mock("../../stores/auth.svelte", () => ({
   authStore: {
@@ -17,6 +17,7 @@ vi.mock("lucide-svelte", () => ({
 }));
 
 import UsersTab from "./UsersTab.svelte";
+import { listUsers } from "../../lib/api";
 
 describe("UsersTab accessibility", () => {
   afterEach(() => {
@@ -107,5 +108,20 @@ describe("UsersTab accessibility", () => {
     expect(
       screen.getByRole("button", { name: "Remove admin role from Staff User" }),
     ).toHaveTextContent("Admin");
+  });
+
+  it("calls listUsers exactly once when cachedUsers is empty", async () => {
+    vi.mocked(listUsers).mockClear();
+
+    render(UsersTab, {
+      props: {
+        cachedUsers: [],
+        onUsersLoaded: vi.fn(),
+      },
+    });
+
+    await waitFor(() => {
+      expect(vi.mocked(listUsers)).toHaveBeenCalledOnce();
+    });
   });
 });

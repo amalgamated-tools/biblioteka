@@ -28,6 +28,7 @@ vi.mock("./settings/KoboTab.svelte", () => ({ default: () => {} }));
 vi.mock("./settings/WatchFolderTab.svelte", () => ({ default: () => {} }));
 vi.mock("./settings/CalibreImportTab.svelte", () => ({ default: () => {} }));
 vi.mock("./settings/SearchIndexTab.svelte", () => ({ default: () => {} }));
+vi.mock("./settings/LLMTab.svelte", () => ({ default: () => {} }));
 
 vi.mock("lucide-svelte", () => ({
   Mail: () => {},
@@ -40,6 +41,7 @@ vi.mock("lucide-svelte", () => ({
   FolderSearch: () => {},
   DatabaseZap: () => {},
   Search: () => {},
+  BrainCircuit: () => {},
 }));
 
 import Settings from "./Settings.svelte";
