@@ -12,7 +12,7 @@ import (
 
 var (
 	ErrAuthorNameExists  = errors.New("author name already exists")
-	ErrInvalidAuthorName = errors.New("author name cannot be blank")
+	ErrInvalidAuthorName = errors.New("invalid author name")
 )
 
 var collapseSpaces = regexp.MustCompile(`\s+`)
