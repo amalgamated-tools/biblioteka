@@ -353,6 +353,43 @@ async function injectApiHelpers(page) {
             }
             return res.json();
         };
+        window.__apiDelete = async function (urlPath) {
+            const res = await fetch(urlPath, { method: 'DELETE' });
+            if (!res.ok && res.status !== 404) {
+                const text = await res.text();
+                throw new Error(`DELETE ${urlPath} failed (${res.status}): ${text}`);
+            }
+        };
+    });
+}
+
+/**
+ * Deletes all user-owned data (books, reading lists, groups, tags, authors,
+ * libraries) so that empty-state screenshots are accurate on every run.
+ * Must be called while logged in, before any seeding phase.
+ */
+async function clearDemoData(page) {
+    await injectApiHelpers(page);
+    await page.evaluate(async () => {
+        const [booksResult, lists, groups, tags, authors, libs] = await Promise.all([
+            window.__apiGet('/api/books'),
+            window.__apiGet('/api/reading-lists'),
+            window.__apiGet('/api/groups'),
+            window.__apiGet('/api/tags'),
+            window.__apiGet('/api/authors'),
+            window.__apiGet('/api/libraries'),
+        ]);
+        const books = booksResult.books ?? [];
+        await Promise.all([
+            ...books.map((b) => window.__apiDelete(`/api/books/${b.id}`)),
+            ...lists.map((l) => window.__apiDelete(`/api/reading-lists/${l.id}`)),
+            ...groups.map((g) => window.__apiDelete(`/api/groups/${g.id}`)),
+        ]);
+        await Promise.all([
+            ...tags.map((t) => window.__apiDelete(`/api/tags/${t.id}`)),
+            ...authors.map((a) => window.__apiDelete(`/api/authors/${a.id}`)),
+            ...libs.map((l) => window.__apiDelete(`/api/libraries/${l.id}`)),
+        ]);
     });
 }
 
@@ -568,6 +605,9 @@ export async function runVariant({ theme, mobile }) {
         await ensureDemoAccount(page);
         await loginAsDemo(page);
         await setTheme(page, theme);
+
+        console.log(`Clearing demo data (${variantName})...`);
+        await clearDemoData(page);
 
         console.log(`Capturing dashboard-empty (${variantName})...`);
         await page.goto(`${BASE_URL}/#dashboard`, {
