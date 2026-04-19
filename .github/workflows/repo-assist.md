@@ -114,8 +114,8 @@ steps:
 
       open_issues     = len(issues)
       unlabelled      = sum(1 for i in issues if not i.get('labels'))
-      repo_assist_prs = sum(1 for p in prs if p['title'].startswith('[Repo Assist]'))
-      other_prs       = sum(1 for p in prs if not p['title'].startswith('[Repo Assist]'))
+      repo_assist_prs = sum(1 for p in prs if p['title'].startswith('fix(repo assist): ') or p['title'].startswith('[Repo Assist]'))
+      other_prs       = sum(1 for p in prs if not p['title'].startswith('fix(repo assist): ') and not p['title'].startswith('[Repo Assist]'))
 
       task_names = {
           1:  'Issue Labelling',
@@ -293,7 +293,7 @@ Check memory for already-submitted ideas; do not re-propose them. Create a fresh
 
 ### Task 6: Maintain Repo Assist PRs
 
-1. List all open PRs with the `[Repo Assist]` title prefix.
+1. List all open PRs with the `fix(repo assist): ` title prefix (or the legacy `[Repo Assist]` prefix for older PRs).
 2. For each PR: fix CI failures caused by your changes by pushing updates; resolve merge conflicts. If you've retried multiple times without success, comment and leave for human review.
 3. Do not push updates for infrastructure-only failures — comment instead.
 4. Update memory.
