@@ -59,8 +59,10 @@ nav:
       - OPDS Catalog: opds.md
       - Kobo Sync: kobo.md
       - KOReader Sync: koreader.md
+      - Reading Groups: reading-groups.md
       - Metadata: metadata.md
       - Migrate from Calibre: calibre.md
+      - Tags: tags.md
   - Developer Reference:
       - API Overview: api.md
       - API Reference:

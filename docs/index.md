@@ -17,7 +17,9 @@ A self-hosted personal book library manager. Scan local files, extract metadata,
 - **Sidecar files** — writes OPF metadata and cover images alongside book files (Calibre/KOReader/Kobo compatible)
 - **Multiple libraries** — group books into named libraries with configurable paths
 - **Author and series tracking** — browse by author or series with position numbers
+- **Tags** — user-defined labels for categorizing and discovering books across your library
 - **Reading lists** — user-curated named collections of books (shelves) for organizing reading
+- **Reading groups** — collaborative groups that share reading lists and compare per-member reading progress
 - **Reading progress dashboard** — KOSync reading streaks, in-progress books, monthly download histogram
 - **Email a book** — send any book file as an email attachment to a Kindle or other e-reader
 - **User authentication** — JWT-based login with optional OIDC/SSO
