@@ -380,87 +380,94 @@ async function seedLibrary(page, demoBooksPath) {
 
 /**
  * Seeds books, authors, tags, reading lists, and a reading group via the API.
- * Idempotent: skips all creation if books already exist and returns existing IDs.
- * Returns entity IDs for use in navigation.
+ * Idempotent: if books already exist, reuses their IDs and only creates any
+ * missing reading lists or groups.
+ * Returns navigation IDs for books, reading lists, and groups.
  * Must be called while a user is logged in.
  */
 async function seedBooksAndMore(page) {
     await injectApiHelpers(page);
     return page.evaluate(async () => {
         const booksResult = await window.__apiGet('/api/books');
-        if (booksResult.total > 0) {
+        const existingBookIds =
+            booksResult.total > 0 ? booksResult.books.slice(0, 5).map((b) => b.id) : [];
+
+        if (existingBookIds.length > 0) {
             const lists = await window.__apiGet('/api/reading-lists');
             const groups = await window.__apiGet('/api/groups');
             if (lists.length > 0 && groups.length > 0) {
                 return {
-                    bookIds: booksResult.books.slice(0, 5).map((b) => b.id),
+                    bookIds: existingBookIds,
                     listIds: lists.slice(0, 2).map((l) => l.id),
                     groupIds: groups.slice(0, 1).map((g) => g.id),
                 };
             }
-            // Fall through to seed missing lists/groups
+            // Books exist but lists/groups are missing — create only what's needed.
         }
 
-        const bookInputs = [
-            {
-                title: 'Dune',
-                description: 'Epic science fiction set on the desert planet Arrakis.',
-                publication_date: '1965-08-01',
-                publisher: 'Chilton Books',
-                language: 'en',
-            },
-            {
-                title: 'The Name of the Wind',
-                description: "The legendary story of Kvothe from his own point of view.",
-                publication_date: '2007-03-27',
-                publisher: 'DAW Books',
-                language: 'en',
-            },
-            {
-                title: 'Neuromancer',
-                description: 'A seminal cyberpunk novel set in a sprawling future.',
-                publication_date: '1984-07-01',
-                publisher: 'Ace Books',
-                language: 'en',
-            },
-            {
-                title: 'The Left Hand of Darkness',
-                description: "A lone human ambassador's journey on a genderless planet.",
-                publication_date: '1969-03-01',
-                publisher: 'Ace Books',
-                language: 'en',
-            },
-            {
-                title: 'Foundation',
-                description: 'The fall and rise of a Galactic Empire over millennia.',
-                publication_date: '1951-05-01',
-                publisher: 'Gnome Press',
-                language: 'en',
-            },
-        ];
-        const books = await Promise.all(bookInputs.map((b) => window.__apiPost('/api/books', b)));
-        const bookIds = books.map((b) => b.id);
+        let bookIds = existingBookIds;
+        if (bookIds.length === 0) {
+            const bookInputs = [
+                {
+                    title: 'Dune',
+                    description: 'Epic science fiction set on the desert planet Arrakis.',
+                    publication_date: '1965-08-01',
+                    publisher: 'Chilton Books',
+                    language: 'en',
+                },
+                {
+                    title: 'The Name of the Wind',
+                    description: "The legendary story of Kvothe from his own point of view.",
+                    publication_date: '2007-03-27',
+                    publisher: 'DAW Books',
+                    language: 'en',
+                },
+                {
+                    title: 'Neuromancer',
+                    description: 'A seminal cyberpunk novel set in a sprawling future.',
+                    publication_date: '1984-07-01',
+                    publisher: 'Ace Books',
+                    language: 'en',
+                },
+                {
+                    title: 'The Left Hand of Darkness',
+                    description: "A lone human ambassador's journey on a genderless planet.",
+                    publication_date: '1969-03-01',
+                    publisher: 'Ace Books',
+                    language: 'en',
+                },
+                {
+                    title: 'Foundation',
+                    description: 'The fall and rise of a Galactic Empire over millennia.',
+                    publication_date: '1951-05-01',
+                    publisher: 'Gnome Press',
+                    language: 'en',
+                },
+            ];
+            const books = await Promise.all(bookInputs.map((b) => window.__apiPost('/api/books', b)));
+            bookIds = books.map((b) => b.id);
 
-        const authorInputs = [
-            { name: 'Frank Herbert' },
-            { name: 'Patrick Rothfuss' },
-            { name: 'William Gibson' },
-        ];
-        const authors = await Promise.all(authorInputs.map((a) => window.__apiPost('/api/authors', a)));
-        const authorIds = authors.map((a) => a.id);
+            const authorInputs = [
+                { name: 'Frank Herbert' },
+                { name: 'Patrick Rothfuss' },
+                { name: 'William Gibson' },
+            ];
+            const authors = await Promise.all(authorInputs.map((a) => window.__apiPost('/api/authors', a)));
+            const authorIds = authors.map((a) => a.id);
 
-        await window.__apiPut(`/api/books/${bookIds[0]}/authors`, { author_ids: [authorIds[0]] });
-        await window.__apiPut(`/api/books/${bookIds[1]}/authors`, { author_ids: [authorIds[1]] });
-        await window.__apiPut(`/api/books/${bookIds[2]}/authors`, { author_ids: [authorIds[2]] });
+            await window.__apiPut(`/api/books/${bookIds[0]}/authors`, { author_ids: [authorIds[0]] });
+            await window.__apiPut(`/api/books/${bookIds[1]}/authors`, { author_ids: [authorIds[1]] });
+            await window.__apiPut(`/api/books/${bookIds[2]}/authors`, { author_ids: [authorIds[2]] });
 
-        const tagInputs = [{ name: 'sci-fi' }, { name: 'fantasy' }, { name: 'classic' }];
-        const tags = await Promise.all(tagInputs.map((t) => window.__apiPost('/api/tags', t)));
-        const tagIds = tags.map((t) => t.id);
+            const tagInputs = [{ name: 'sci-fi' }, { name: 'fantasy' }, { name: 'classic' }];
+            const tags = await Promise.all(tagInputs.map((t) => window.__apiPost('/api/tags', t)));
+            const tagIds = tags.map((t) => t.id);
 
-        await window.__apiPut(`/api/books/${bookIds[0]}/tags`, { tag_ids: [tagIds[0], tagIds[2]] });
-        await window.__apiPut(`/api/books/${bookIds[1]}/tags`, { tag_ids: [tagIds[1]] });
-        await window.__apiPut(`/api/books/${bookIds[2]}/tags`, { tag_ids: [tagIds[0]] });
-        await window.__apiPut(`/api/books/${bookIds[4]}/tags`, { tag_ids: [tagIds[0], tagIds[2]] });
+            await window.__apiPut(`/api/books/${bookIds[0]}/tags`, { tag_ids: [tagIds[0], tagIds[2]] });
+            await window.__apiPut(`/api/books/${bookIds[1]}/tags`, { tag_ids: [tagIds[1]] });
+            await window.__apiPut(`/api/books/${bookIds[2]}/tags`, { tag_ids: [tagIds[0]] });
+            await window.__apiPut(`/api/books/${bookIds[4]}/tags`, { tag_ids: [tagIds[0], tagIds[2]] });
+        }
 
         const list1 = await window.__apiPost('/api/reading-lists', {
             name: 'To Read',
@@ -482,7 +489,7 @@ async function seedBooksAndMore(page) {
         });
         const groupIds = [group1.id];
 
-        return { bookIds, authorIds, tagIds, listIds, groupIds };
+        return { bookIds, listIds, groupIds };
     });
 }
 
@@ -598,24 +605,24 @@ export async function runVariant({ theme, mobile }) {
         await setTheme(page, theme);
         await page.screenshot({ path: path.join(screenshotsDir, buildFilename('not-found', variantName)) });
 
-        // ── Phase 2a: Seed library only (needed before books-empty) ───────────
+        // ── Phase 2: Seed library only (needed before books-empty) ───────────
 
         console.log(`Seeding library (${variantName})...`);
         const { libraryId } = await seedLibrary(page, demoBooksDir);
 
-        // ── Phase 3a: books-empty (library exists, no scanned books yet) ──────
+        // ── Phase 3: books-empty (library exists, no scanned books yet) ──────
 
         console.log(`Capturing books-empty (${variantName})...`);
         await openBooksPage(page);
         await setTheme(page, theme);
         await page.screenshot({ path: path.join(screenshotsDir, buildFilename('books-empty', variantName)) });
 
-        // ── Phase 2b: Seed books, authors, tags, lists, group ────────────────
+        // ── Phase 4: Seed books, authors, tags, lists, group ────────────────
 
         console.log(`Seeding books and more (${variantName})...`);
         const { bookIds, listIds, groupIds } = await seedBooksAndMore(page);
 
-        // ── Phase 3b: Populated screenshots ───────────────────────────────────
+        // ── Phase 5: Populated screenshots ───────────────────────────────────
 
         console.log(`Capturing dashboard-populated (${variantName})...`);
         await page.goto(`${BASE_URL}/#dashboard`, {
@@ -624,8 +631,14 @@ export async function runVariant({ theme, mobile }) {
         });
         await page.getByRole('heading', { name: 'Dashboard', exact: true }).waitFor({ state: 'visible' });
         await setTheme(page, theme);
-        // Brief pause so async dashboard stats (counts, recommendations) can render
-        await page.waitForTimeout(1500);
+        // Wait for the async "Total Books" stat to finish rendering (not the placeholder)
+        await page.waitForFunction(() => {
+            const text = document.body?.innerText ?? '';
+            const match = text.match(/Total Books\s+([^\n]+)/);
+            if (!match) return false;
+            const value = match[1].trim();
+            return value.length > 0 && value !== '…' && value !== '...';
+        }, { timeout: NAVIGATION_TIMEOUT_MS });
         await page.screenshot({ path: path.join(screenshotsDir, buildFilename('dashboard-populated', variantName)) });
 
         console.log(`Capturing books-list (${variantName})...`);
@@ -693,7 +706,7 @@ export async function runVariant({ theme, mobile }) {
         await setTheme(page, theme);
         await page.screenshot({ path: path.join(screenshotsDir, buildFilename('my-library', variantName)) });
 
-        // ── Phase 4: Admin settings ───────────────────────────────────────────
+        // ── Phase 6: Admin settings ───────────────────────────────────────────
 
         console.log(`Capturing settings (${variantName})...`);
         await openSettingsPage(page);
@@ -742,7 +755,7 @@ export async function runVariant({ theme, mobile }) {
         console.log(`Logging out admin for ${variantName}...`);
         await logoutIfNeeded(page);
 
-        // ── Phase 5: Non-admin settings ───────────────────────────────────────
+        // ── Phase 7: Non-admin settings ───────────────────────────────────────
 
         console.log(`Ensuring non-admin account (${variantName})...`);
         await ensureNonadminAccount(page);
