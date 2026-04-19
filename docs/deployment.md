@@ -189,7 +189,7 @@ See the [Configuration](../README.md#configuration) table in the README for the 
 
 ### Bootstrap Admin User
 
-For automated, headless, or infrastructure-as-code deployments where signing up interactively is not possible, set `INITIAL_ADMIN_EMAIL` and `INITIAL_ADMIN_PASSWORD` to pre-create the first admin account:
+For automated, headless, or infrastructure-as-code deployments where signing up interactively is not possible, set `INITIAL_ADMIN_EMAIL` and `INITIAL_ADMIN_PASSWORD` to pre-create the first admin account. Consider also setting `DISABLE_SIGNUP=true` to prevent public self-registration once the first account exists.
 
 ```bash
 INITIAL_ADMIN_EMAIL=admin@example.com
@@ -199,7 +199,7 @@ INITIAL_ADMIN_NAME=Library Admin   # optional; defaults to "Admin"
 
 **Behavior:**
 
-- Only runs when the `users` table is **empty**. If any user already exists, the variables are silently ignored.
+- Only runs when the `users` table is **empty**. If any user already exists, the variables are ignored and startup logs may include an informational message that initial admin seeding was skipped.
 - The operation is idempotent — if two instances start concurrently and both attempt to seed, the second duplicate insert is treated as a no-op.
 - The password is stored as a bcrypt hash; the plaintext value is never persisted.
 - The created account has admin privileges (same as the first account created via the sign-up form).
