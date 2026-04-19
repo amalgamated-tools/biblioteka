@@ -79,6 +79,7 @@ nav:
           - Kobo & KOSync: api/kobo.md
           - Reading Lists: api/reading-lists.md
           - Reading Groups: api/reading-groups.md
+          - Annotations: api/annotations.md
           - Stats & Recommendations: api/stats.md
       - Database Schema: database-schema.md
       - Frontend: frontend.md
