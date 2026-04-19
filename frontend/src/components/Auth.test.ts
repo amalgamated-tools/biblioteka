@@ -428,6 +428,38 @@ describe("Auth", () => {
     expect(signupPassword).not.toHaveAttribute("aria-invalid", "true");
   });
 
+  it("marks only the email field invalid for a duplicate-email signup error", async () => {
+    vi.mocked(authStore.signUp).mockResolvedValueOnce({
+      error: new Error("email already exists"),
+    });
+
+    const user = userEvent.setup();
+    await renderAuth();
+
+    await user.click(screen.getByRole("tab", { name: "Sign Up" }));
+    await tick();
+
+    const signupPanel = screen.getByRole("tabpanel", { name: "Sign Up" });
+    const signupName = within(signupPanel).getByLabelText(/Name/i);
+    const signupEmail = within(signupPanel).getByLabelText(/Email/i);
+    const signupPassword = within(signupPanel).getByLabelText(/Password/i);
+
+    await user.type(signupName, "Reader");
+    await user.type(signupEmail, "reader@example.com");
+    await user.type(signupPassword, "securepass");
+    await user.click(screen.getByRole("button", { name: "Create Account" }));
+
+    await screen.findByRole("alert");
+
+    expect(signupName).not.toHaveAttribute("aria-invalid", "true");
+    expect(signupEmail).toHaveAttribute("aria-invalid", "true");
+    expect(signupEmail).toHaveAttribute(
+      "aria-describedby",
+      "signup-auth-error",
+    );
+    expect(signupPassword).not.toHaveAttribute("aria-invalid", "true");
+  });
+
   it("marks only the email field invalid for an email-specific signup server error", async () => {
     vi.mocked(authStore.signUp).mockResolvedValueOnce({
       error: new Error("Email is not valid"),

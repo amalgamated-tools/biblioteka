@@ -109,12 +109,18 @@
       /\bemail is not valid\b/,
       /\bplease enter a valid email\b/,
       /\binvalid email address\b/,
+      /\bemail already exists\b/,
+      /\bemail .* already exists\b/,
+      /\bemail already registered\b/,
+      /\bemail .* already registered\b/,
+      /\bemail already taken\b/,
+      /\bemail .* already taken\b/,
+      /\bemail is already in use\b/,
+      /\bemail .* is already in use\b/,
     ].some((pattern) => pattern.test(loweredError));
     const mentionsPassword = [
       /\bpassword must\b/,
       /\binvalid password\b/,
-      /\bincorrect password\b/,
-      /\bwrong password\b/,
       /\bpassword is invalid\b/,
       /\bpassphrase\b/,
     ].some((pattern) => pattern.test(loweredError));
