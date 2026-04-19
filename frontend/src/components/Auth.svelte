@@ -108,7 +108,7 @@
       /\bemail is invalid\b/,
       /\bemail is not valid\b/,
       /\bplease enter a valid email\b/,
-      /\bemail address\b/,
+      /\binvalid email address\b/,
     ].some((pattern) => pattern.test(loweredError));
     const mentionsPassword = [
       /\bpassword must\b/,
@@ -277,7 +277,9 @@
     ]);
     if (emailError) {
       error = emailError;
-      if (!isLogin) {
+      if (isLogin) {
+        loginEmailInvalid = true;
+      } else {
         signupEmailInvalid = true;
       }
       loading = false;
