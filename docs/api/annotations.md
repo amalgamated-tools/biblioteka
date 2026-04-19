@@ -8,7 +8,7 @@
 
 Book annotations are notes you attach to books to record highlights, quotes, and observations. Each annotation stores free-form text, an optional [EPUB CFI](https://idpf.org/epub/linking/cfi/) position, and an optional reading-group association for sharing with group members.
 
-All annotation endpoints require authentication (`Authorization: Bearer <jwt>`).
+All annotation endpoints require authentication (for example, `Authorization: Bearer <token-or-api-key>`; browser session cookie authentication also works where relevant).
 
 > **Visibility asymmetry:** `GET /api/books/{id}/annotations` returns your own annotations *plus* any group-shared annotations for groups you belong to. `GET /api/annotations/{id}` is owner-only — it returns `404 Not Found` for annotations you do not own, even if they appear in the book list. This is intentional: the list shows shared context; individual access is restricted to the annotation owner.
 
@@ -91,6 +91,7 @@ Returns a single annotation. You must own the annotation — annotations belongi
 | Status | Meaning |
 |--------|---------|
 | `200 OK` | Success |
+| `400 Bad Request` | Missing or invalid annotation ID in the path |
 | `401 Unauthorized` | Missing or invalid authentication |
 | `404 Not Found` | Annotation not found or not owned by you |
 | `500 Internal Server Error` | Database error |
@@ -143,6 +144,7 @@ Permanently removes an annotation you own.
 | Status | Meaning |
 |--------|---------|
 | `204 No Content` | Deleted successfully |
+| `400 Bad Request` | Missing or invalid annotation ID in the path |
 | `401 Unauthorized` | Missing or invalid authentication |
 | `404 Not Found` | Annotation not found or not owned by you |
 | `500 Internal Server Error` | Database error |

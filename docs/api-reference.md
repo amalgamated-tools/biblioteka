@@ -22,6 +22,7 @@ All endpoints are under the base path `/api`. JSON is used for all request and r
 | Kobo & KOSync | [api/kobo.md](api/kobo.md) | Kobo sync tokens and KOReader/KOSync protocol |
 | Reading Lists | [api/reading-lists.md](api/reading-lists.md) | User-curated book collections |
 | Reading Groups | [api/reading-groups.md](api/reading-groups.md) | Shared reading groups |
+| Annotations | [api/annotations.md](api/annotations.md) | Book annotation CRUD |
 | Stats & Recommendations | [api/stats.md](api/stats.md) | Reading statistics and book recommendations |
 
 ---
