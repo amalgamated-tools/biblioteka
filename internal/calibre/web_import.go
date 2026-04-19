@@ -63,10 +63,7 @@ func LoadPreview(ctx context.Context, calibreDB *DB) (*Preview, error) {
 		return nil, fmt.Errorf("load calibre books: %w", err)
 	}
 
-	limit := len(books)
-	if limit > previewLimit {
-		limit = previewLimit
-	}
+	limit := min(len(books), previewLimit)
 
 	preview := &Preview{
 		Total: len(books),
