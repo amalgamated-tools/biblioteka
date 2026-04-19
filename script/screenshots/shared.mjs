@@ -2,7 +2,6 @@ import { chromium } from '@playwright/test';
 import { fileURLToPath } from 'url';
 import { mkdir } from 'fs/promises';
 import path from 'path';
-import { exit } from 'process';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const screenshotsDir = path.join(__dirname, '..', '..', 'screenshots');
@@ -101,36 +100,6 @@ async function openSettingsTab(page, tabHash, headingName) {
     await page.getByRole('heading', { name: headingName, exact: true }).waitFor({ state: 'visible' });
 }
 
-async function openReadingActivityPage(page) {
-    await page.goto(`${BASE_URL}/#reading-activity`, {
-        waitUntil: 'networkidle',
-        timeout: NAVIGATION_TIMEOUT_MS,
-    });
-    // Wait for either the Reading Activity heading or fall back to dashboard if page doesn't exist yet
-    await Promise.any([
-        page.getByRole('heading', { name: 'Reading Activity', exact: true }).waitFor({ state: 'visible' }),
-        page.getByRole('heading', { name: 'Dashboard', exact: true }).waitFor({ state: 'visible' }),
-    ]);
-}
-
-async function createTestLibrary(page) {
-    await page.goto(`${BASE_URL}/#libraries/new`, {
-        waitUntil: 'networkidle',
-        timeout: NAVIGATION_TIMEOUT_MS,
-    });
-    await page.waitForSelector('input[placeholder*="name"], input[placeholder*="Name"]');
-    // Fill in the name field
-    const nameInput = page.locator('input[placeholder*="name"], input[placeholder*="Name"]').first();
-    await nameInput.fill('Test');
-    // Fill in the folders field
-    const foldersInput = page.locator('input[placeholder*="folder"], input[placeholder*="Folder"]').first();
-    await foldersInput.fill('../books');
-    // Click the create button
-    await page.getByRole('button', { name: /create|add/i }).first().click();
-    // Wait for the library view to load
-    await page.waitForFunction(() => !document.body.innerText.includes('Loading'));
-}
-
 async function openBooksPage(page) {
     await page.goto(`${BASE_URL}/#books`, {
         waitUntil: 'networkidle',
@@ -148,6 +117,37 @@ async function openBooksPage(page) {
     }
 }
 
+async function openBooksPageWithSearch(page, query) {
+    const encoded = encodeURIComponent(query);
+    await page.goto(`${BASE_URL}/#books?query=${encoded}`, {
+        waitUntil: 'networkidle',
+        timeout: NAVIGATION_TIMEOUT_MS,
+    });
+    await page.getByRole('heading', { name: 'All Books', exact: true }).waitFor({ state: 'visible' });
+    await page.waitForFunction(() => !document.body.innerText.includes('Loading books...'));
+}
+
+async function openBookDetailPage(page, bookId) {
+    await page.goto(`${BASE_URL}/#books/${bookId}`, {
+        waitUntil: 'networkidle',
+        timeout: NAVIGATION_TIMEOUT_MS,
+    });
+    // Wait for the book title h1 to be populated (empty while loading)
+    await page.waitForFunction(() => {
+        const h1 = document.querySelector('h1');
+        return h1 && h1.textContent.trim().length > 0;
+    });
+}
+
+async function openBookEditPage(page, bookId) {
+    await page.goto(`${BASE_URL}/#books/${bookId}/edit`, {
+        waitUntil: 'networkidle',
+        timeout: NAVIGATION_TIMEOUT_MS,
+    });
+    await page.getByRole('heading', { name: 'Edit Book', exact: true }).waitFor({ state: 'visible' });
+    await page.waitForFunction(() => !document.body.innerText.includes('Loading book...'));
+}
+
 async function openMyLibraryPage(page) {
     await page.goto(`${BASE_URL}/#my-library`, {
         waitUntil: 'networkidle',
@@ -161,11 +161,103 @@ async function openLibrariesPage(page) {
         waitUntil: 'networkidle',
         timeout: NAVIGATION_TIMEOUT_MS,
     });
-    // Wait for either the empty-state CTA or the non-empty placeholder to appear
+    // Wait for either the empty-state CTA, or the "no libraries" redirect CTA, or
+    // the populated placeholder shown when libraries exist
     await Promise.any([
         page.getByRole('button', { name: 'Add A Library' }).waitFor({ state: 'visible' }),
         page.getByText('Select a library from the sidebar').waitFor({ state: 'visible' }),
+        page.getByText('Select a library from the sidebar or create a new one.').waitFor({ state: 'visible' }),
     ]);
+}
+
+async function openLibrarySetupPage(page) {
+    await page.goto(`${BASE_URL}/#libraries/setup`, {
+        waitUntil: 'networkidle',
+        timeout: NAVIGATION_TIMEOUT_MS,
+    });
+    await page.getByTestId('first-library-wizard').waitFor({ state: 'visible' });
+}
+
+async function openLibraryNewPage(page) {
+    await page.goto(`${BASE_URL}/#libraries/new`, {
+        waitUntil: 'networkidle',
+        timeout: NAVIGATION_TIMEOUT_MS,
+    });
+    // Wait for the name input in the library creation form
+    await page.locator('input#lib-name').waitFor({ state: 'visible' });
+}
+
+async function openLibraryViewPage(page, libraryId) {
+    await page.goto(`${BASE_URL}/#libraries/${libraryId}`, {
+        waitUntil: 'networkidle',
+        timeout: NAVIGATION_TIMEOUT_MS,
+    });
+    // Wait for the book list to settle (scanning indicator or empty state)
+    await page.waitForFunction(() => !document.body.innerText.includes('Loading books...'));
+}
+
+async function openLibraryEditPage(page, libraryId) {
+    await page.goto(`${BASE_URL}/#libraries/edit/${libraryId}`, {
+        waitUntil: 'networkidle',
+        timeout: NAVIGATION_TIMEOUT_MS,
+    });
+    await page.getByRole('heading', { name: 'Edit Library', exact: true }).waitFor({ state: 'visible' });
+}
+
+async function openReadingListsPage(page) {
+    await page.goto(`${BASE_URL}/#reading-lists`, {
+        waitUntil: 'networkidle',
+        timeout: NAVIGATION_TIMEOUT_MS,
+    });
+    await page.getByRole('heading', { name: 'Reading Lists', exact: true }).waitFor({ state: 'visible' });
+}
+
+async function openReadingListDetailPage(page, listId) {
+    await page.goto(`${BASE_URL}/#reading-lists/${listId}`, {
+        waitUntil: 'networkidle',
+        timeout: NAVIGATION_TIMEOUT_MS,
+    });
+    // Wait for the list name h1 to appear (only rendered once the store has loaded)
+    await page.waitForFunction(() => {
+        const h1 = document.querySelector('h1');
+        return h1 && h1.textContent.trim().length > 0;
+    });
+}
+
+async function openGroupsPage(page) {
+    await page.goto(`${BASE_URL}/#groups`, {
+        waitUntil: 'networkidle',
+        timeout: NAVIGATION_TIMEOUT_MS,
+    });
+    await page.getByRole('heading', { name: 'Reading Groups', exact: true }).waitFor({ state: 'visible' });
+}
+
+async function openGroupDetailPage(page, groupId) {
+    await page.goto(`${BASE_URL}/#groups/${groupId}`, {
+        waitUntil: 'networkidle',
+        timeout: NAVIGATION_TIMEOUT_MS,
+    });
+    // Wait for the group name h1 to appear (only rendered once the store has loaded)
+    await page.waitForFunction(() => {
+        const h1 = document.querySelector('h1');
+        return h1 && h1.textContent.trim().length > 0;
+    });
+}
+
+async function openTagsPage(page) {
+    await page.goto(`${BASE_URL}/#tags`, {
+        waitUntil: 'networkidle',
+        timeout: NAVIGATION_TIMEOUT_MS,
+    });
+    await page.getByRole('heading', { name: 'Tags', exact: true }).waitFor({ state: 'visible' });
+}
+
+async function openNotFoundPage(page) {
+    await page.goto(`${BASE_URL}/#this-route-does-not-exist`, {
+        waitUntil: 'networkidle',
+        timeout: NAVIGATION_TIMEOUT_MS,
+    });
+    await page.getByRole('heading', { name: 'Page Not Found', exact: true }).waitFor({ state: 'visible' });
 }
 
 async function ensureAccount(page, name, email, password) {
@@ -211,6 +303,160 @@ async function loginAsNonadmin(page) {
     await page.getByRole('button', { name: 'Logout', exact: true }).waitFor({ state: 'visible' });
 }
 
+/**
+ * Seeds a library via the API. Returns the library ID.
+ * Must be called while a user is logged in (uses the session cookie forwarded
+ * by the Vite dev proxy from port 5173 to the Go backend on port 8080).
+ */
+async function seedLibrary(page) {
+    return page.evaluate(async () => {
+        async function apiPost(urlPath, body) {
+            const res = await fetch(urlPath, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            });
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(`POST ${urlPath} failed (${res.status}): ${text}`);
+            }
+            return res.json();
+        }
+
+        const library = await apiPost('/api/libraries', {
+            name: 'Demo Library',
+            paths: ['/tmp/demo-books'],
+            organization_type: 'book_per_folder',
+            monitored: false,
+        });
+        return { libraryId: library.id };
+    });
+}
+
+/**
+ * Seeds books, authors, tags, reading lists, and a reading group via the API.
+ * Returns entity IDs for use in navigation.
+ * Must be called while a user is logged in (uses the session cookie forwarded
+ * by the Vite dev proxy from port 5173 to the Go backend on port 8080).
+ */
+async function seedBooksAndMore(page) {
+    return page.evaluate(async () => {
+        async function apiPost(urlPath, body) {
+            const res = await fetch(urlPath, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            });
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(`POST ${urlPath} failed (${res.status}): ${text}`);
+            }
+            return res.json();
+        }
+
+        async function apiPut(urlPath, body) {
+            const res = await fetch(urlPath, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            });
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(`PUT ${urlPath} failed (${res.status}): ${text}`);
+            }
+            return res.json();
+        }
+
+        // Create 5 books
+        const bookInputs = [
+            {
+                title: 'Dune',
+                description: 'Epic science fiction set on the desert planet Arrakis.',
+                publication_date: '1965-08-01',
+                publisher: 'Chilton Books',
+                language: 'en',
+            },
+            {
+                title: 'The Name of the Wind',
+                description: "The legendary story of Kvothe from his own point of view.",
+                publication_date: '2007-03-27',
+                publisher: 'DAW Books',
+                language: 'en',
+            },
+            {
+                title: 'Neuromancer',
+                description: 'A seminal cyberpunk novel set in a sprawling future.',
+                publication_date: '1984-07-01',
+                publisher: 'Ace Books',
+                language: 'en',
+            },
+            {
+                title: 'The Left Hand of Darkness',
+                description: "A lone human ambassador's journey on a genderless planet.",
+                publication_date: '1969-03-01',
+                publisher: 'Ace Books',
+                language: 'en',
+            },
+            {
+                title: 'Foundation',
+                description: 'The fall and rise of a Galactic Empire over millennia.',
+                publication_date: '1951-05-01',
+                publisher: 'Gnome Press',
+                language: 'en',
+            },
+        ];
+        const books = await Promise.all(bookInputs.map((b) => apiPost('/api/books', b)));
+        const bookIds = books.map((b) => b.id);
+
+        // Create 3 authors and assign to books
+        const authorInputs = [
+            { name: 'Frank Herbert' },
+            { name: 'Patrick Rothfuss' },
+            { name: 'William Gibson' },
+        ];
+        const authors = await Promise.all(authorInputs.map((a) => apiPost('/api/authors', a)));
+        const authorIds = authors.map((a) => a.id);
+
+        await apiPut(`/api/books/${bookIds[0]}/authors`, { author_ids: [authorIds[0]] });
+        await apiPut(`/api/books/${bookIds[1]}/authors`, { author_ids: [authorIds[1]] });
+        await apiPut(`/api/books/${bookIds[2]}/authors`, { author_ids: [authorIds[2]] });
+
+        // Create 3 tags and assign to books
+        const tagInputs = [{ name: 'sci-fi' }, { name: 'fantasy' }, { name: 'classic' }];
+        const tags = await Promise.all(tagInputs.map((t) => apiPost('/api/tags', t)));
+        const tagIds = tags.map((t) => t.id);
+
+        await apiPut(`/api/books/${bookIds[0]}/tags`, { tag_ids: [tagIds[0], tagIds[2]] });
+        await apiPut(`/api/books/${bookIds[1]}/tags`, { tag_ids: [tagIds[1]] });
+        await apiPut(`/api/books/${bookIds[2]}/tags`, { tag_ids: [tagIds[0]] });
+        await apiPut(`/api/books/${bookIds[4]}/tags`, { tag_ids: [tagIds[0], tagIds[2]] });
+
+        // Create 2 reading lists and add books
+        const list1 = await apiPost('/api/reading-lists', {
+            name: 'To Read',
+            description: 'Books I want to read next',
+        });
+        const list2 = await apiPost('/api/reading-lists', {
+            name: 'Favorites',
+            description: 'All-time favorites',
+        });
+        const listIds = [list1.id, list2.id];
+
+        await apiPost(`/api/reading-lists/${listIds[0]}/books`, { book_id: bookIds[1] });
+        await apiPost(`/api/reading-lists/${listIds[0]}/books`, { book_id: bookIds[2] });
+        await apiPost(`/api/reading-lists/${listIds[1]}/books`, { book_id: bookIds[0] });
+
+        // Create 1 reading group
+        const group1 = await apiPost('/api/groups', {
+            name: 'Sci-Fi Book Club',
+            description: 'A group for science fiction enthusiasts',
+        });
+        const groupIds = [group1.id];
+
+        return { bookIds, authorIds, tagIds, listIds, groupIds };
+    });
+}
+
 function buildFilename(screen, variantName) {
     return `${screen}-${variantName}.png`;
 }
@@ -234,6 +480,8 @@ export async function runVariant({ theme, mobile }) {
         page.setDefaultTimeout(DEFAULT_TIMEOUT_MS);
         page.setDefaultNavigationTimeout(NAVIGATION_TIMEOUT_MS);
 
+        // ── Phase 0: Unauthenticated ──────────────────────────────────────────
+
         console.log(`Capturing login (${variantName})...`);
         await openAuthPage(page);
         await setTheme(page, theme);
@@ -247,35 +495,170 @@ export async function runVariant({ theme, mobile }) {
         await waitForSignupTab(page);
         await page.screenshot({ path: path.join(screenshotsDir, buildFilename('signup', variantName)) });
 
-        console.log(`Capturing dashboard (${variantName})...`);
+        // ── Phase 1: Post-login empty states (no seeded data) ─────────────────
+
         await ensureDemoAccount(page);
         await loginAsDemo(page);
         await setTheme(page, theme);
+
+        console.log(`Capturing dashboard-empty (${variantName})...`);
+        await page.goto(`${BASE_URL}/#dashboard`, {
+            waitUntil: 'networkidle',
+            timeout: NAVIGATION_TIMEOUT_MS,
+        });
+        await page.getByRole('heading', { name: 'Dashboard', exact: true }).waitFor({ state: 'visible' });
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('dashboard-empty', variantName)) });
+
+        console.log(`Capturing dashboard-empty-skipped (${variantName})...`);
+        // Inject the onboarding-skipped flag for this user so the alternate
+        // empty-state card ("You skipped setup") is shown instead of the wizard CTA.
+        await page.evaluate(async () => {
+            const res = await fetch('/api/auth/me');
+            const user = await res.json();
+            localStorage.setItem(`biblioteka_onboarding_skipped_${user.id}`, '1');
+        });
         await page.reload({ waitUntil: 'networkidle', timeout: NAVIGATION_TIMEOUT_MS });
-        // wait for the logout-button to ensure the dashboard is fully loaded before taking a screenshot
-        // await page.getByRole('button', { name: 'Logout', exact: true }).waitFor({ state: 'visible' });
-        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('dashboard', variantName)) });
+        await page.getByRole('heading', { name: 'Dashboard', exact: true }).waitFor({ state: 'visible' });
+        await setTheme(page, theme);
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('dashboard-empty-skipped', variantName)) });
+        // Clear the flag so subsequent screenshots start from a clean state
+        await page.evaluate(async () => {
+            const res = await fetch('/api/auth/me');
+            const user = await res.json();
+            localStorage.removeItem(`biblioteka_onboarding_skipped_${user.id}`);
+        });
 
-        // console.log(`Capturing reading-activity (${variantName})...`);
-        // await openReadingActivityPage(page);
-        // await setTheme(page, theme);
-        // await page.screenshot({ path: path.join(screenshotsDir, buildFilename('reading-activity', variantName)) });
+        console.log(`Capturing libraries-empty (${variantName})...`);
+        await openLibrariesPage(page);
+        await setTheme(page, theme);
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('libraries-empty', variantName)) });
 
-        console.log(`Capturing books (${variantName})...`);
+        console.log(`Capturing libraries-setup (${variantName})...`);
+        await openLibrarySetupPage(page);
+        await setTheme(page, theme);
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('libraries-setup', variantName)) });
+
+        console.log(`Capturing libraries-new (${variantName})...`);
+        await openLibraryNewPage(page);
+        await setTheme(page, theme);
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('libraries-new', variantName)) });
+
+        console.log(`Capturing reading-lists-empty (${variantName})...`);
+        await openReadingListsPage(page);
+        await setTheme(page, theme);
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('reading-lists-empty', variantName)) });
+
+        console.log(`Capturing groups-empty (${variantName})...`);
+        await openGroupsPage(page);
+        await setTheme(page, theme);
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('groups-empty', variantName)) });
+
+        console.log(`Capturing tags-empty (${variantName})...`);
+        await openTagsPage(page);
+        await setTheme(page, theme);
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('tags-empty', variantName)) });
+
+        console.log(`Capturing not-found (${variantName})...`);
+        await openNotFoundPage(page);
+        await setTheme(page, theme);
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('not-found', variantName)) });
+
+        // ── Phase 2a: Seed library only (needed before books-empty) ───────────
+
+        console.log(`Seeding library (${variantName})...`);
+        const { libraryId } = await seedLibrary(page);
+
+        // ── Phase 3a: books-empty (library exists, no scanned books yet) ──────
+
+        console.log(`Capturing books-empty (${variantName})...`);
         await openBooksPage(page);
         await setTheme(page, theme);
-        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('books', variantName)) });
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('books-empty', variantName)) });
+
+        // ── Phase 2b: Seed books, authors, tags, lists, group ────────────────
+
+        console.log(`Seeding books and more (${variantName})...`);
+        const { bookIds, listIds, groupIds } = await seedBooksAndMore(page);
+
+        // ── Phase 3b: Populated screenshots ───────────────────────────────────
+
+        console.log(`Capturing dashboard-populated (${variantName})...`);
+        await page.goto(`${BASE_URL}/#dashboard`, {
+            waitUntil: 'networkidle',
+            timeout: NAVIGATION_TIMEOUT_MS,
+        });
+        await page.getByRole('heading', { name: 'Dashboard', exact: true }).waitFor({ state: 'visible' });
+        await setTheme(page, theme);
+        // Brief pause so async dashboard stats (counts, recommendations) can render
+        await page.waitForTimeout(1500);
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('dashboard-populated', variantName)) });
+
+        console.log(`Capturing books-list (${variantName})...`);
+        await openBooksPage(page);
+        await setTheme(page, theme);
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('books-list', variantName)) });
+
+        console.log(`Capturing books-search (${variantName})...`);
+        await openBooksPageWithSearch(page, 'dune');
+        await setTheme(page, theme);
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('books-search', variantName)) });
+
+        console.log(`Capturing book-detail (${variantName})...`);
+        await openBookDetailPage(page, bookIds[0]);
+        await setTheme(page, theme);
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('book-detail', variantName)) });
+
+        console.log(`Capturing book-edit (${variantName})...`);
+        await openBookEditPage(page, bookIds[0]);
+        await setTheme(page, theme);
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('book-edit', variantName)) });
+
+        console.log(`Capturing libraries-list (${variantName})...`);
+        await openLibrariesPage(page);
+        await setTheme(page, theme);
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('libraries-list', variantName)) });
+
+        console.log(`Capturing library-view (${variantName})...`);
+        await openLibraryViewPage(page, libraryId);
+        await setTheme(page, theme);
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('library-view', variantName)) });
+
+        console.log(`Capturing library-edit (${variantName})...`);
+        await openLibraryEditPage(page, libraryId);
+        await setTheme(page, theme);
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('library-edit', variantName)) });
+
+        console.log(`Capturing reading-lists-list (${variantName})...`);
+        await openReadingListsPage(page);
+        await setTheme(page, theme);
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('reading-lists-list', variantName)) });
+
+        console.log(`Capturing reading-list-detail (${variantName})...`);
+        await openReadingListDetailPage(page, listIds[0]);
+        await setTheme(page, theme);
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('reading-list-detail', variantName)) });
+
+        console.log(`Capturing groups-list (${variantName})...`);
+        await openGroupsPage(page);
+        await setTheme(page, theme);
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('groups-list', variantName)) });
+
+        console.log(`Capturing group-detail (${variantName})...`);
+        await openGroupDetailPage(page, groupIds[0]);
+        await setTheme(page, theme);
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('group-detail', variantName)) });
+
+        console.log(`Capturing tags-list (${variantName})...`);
+        await openTagsPage(page);
+        await setTheme(page, theme);
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('tags-list', variantName)) });
 
         console.log(`Capturing my-library (${variantName})...`);
         await openMyLibraryPage(page);
         await setTheme(page, theme);
         await page.screenshot({ path: path.join(screenshotsDir, buildFilename('my-library', variantName)) });
 
-        console.log(`Capturing libraries (${variantName})...`);
-        await openLibrariesPage(page);
-        await setTheme(page, theme);
-        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('libraries', variantName)) });
-
+        // ── Phase 4: Admin settings ───────────────────────────────────────────
 
         console.log(`Capturing settings (${variantName})...`);
         await openSettingsPage(page);
@@ -309,6 +692,14 @@ export async function runVariant({ theme, mobile }) {
         await openSettingsTab(page, 'watch-folder', 'Watch Folder');
         await page.screenshot({ path: path.join(screenshotsDir, buildFilename('settings-watch-folder', variantName)) });
 
+        console.log(`Capturing settings Calibre Import (${variantName})...`);
+        await openSettingsTab(page, 'calibre-import', 'Import from Calibre');
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('settings-calibre-import', variantName)) });
+
+        console.log(`Capturing settings Search Index (${variantName})...`);
+        await openSettingsTab(page, 'search-index', 'Search Index');
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('settings-search-index', variantName)) });
+
         console.log(`Capturing settings users (${variantName})...`);
         await openSettingsTab(page, 'users', 'User Management');
         await page.screenshot({ path: path.join(screenshotsDir, buildFilename('settings-users', variantName)) });
@@ -316,7 +707,8 @@ export async function runVariant({ theme, mobile }) {
         console.log(`Logging out admin for ${variantName}...`);
         await logoutIfNeeded(page);
 
-        // Non-admin settings screenshots
+        // ── Phase 5: Non-admin settings ───────────────────────────────────────
+
         console.log(`Ensuring non-admin account (${variantName})...`);
         await ensureNonadminAccount(page);
         await loginAsNonadmin(page);
