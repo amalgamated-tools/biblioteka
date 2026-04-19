@@ -204,17 +204,14 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "GET lists all API keys for the authenticated user.\nPOST creates a new API key. The raw key is returned only in the creation response and is never retrievable again.\nPOST body: {\"name\": \"string\"} (required)",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "Returns all API keys for the authenticated user.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "api-keys"
                 ],
-                "summary": "List and create API keys",
+                "summary": "List API keys",
                 "responses": {
                     "200": {
                         "description": "List of API keys",
@@ -225,26 +222,8 @@ const docTemplate = `{
                             }
                         }
                     },
-                    "201": {
-                        "description": "API key created",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.apiKeyCreateResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad request",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
-                        }
-                    },
                     "401": {
                         "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
-                        }
-                    },
-                    "405": {
-                        "description": "Method not allowed",
                         "schema": {
                             "$ref": "#/definitions/handlers.errorResponse"
                         }
@@ -263,7 +242,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "GET lists all API keys for the authenticated user.\nPOST creates a new API key. The raw key is returned only in the creation response and is never retrievable again.\nPOST body: {\"name\": \"string\"} (required)",
+                "description": "Creates a new API key. The raw key is returned only in this response and is never retrievable again.",
                 "consumes": [
                     "application/json"
                 ],
@@ -273,17 +252,19 @@ const docTemplate = `{
                 "tags": [
                     "api-keys"
                 ],
-                "summary": "List and create API keys",
-                "responses": {
-                    "200": {
-                        "description": "List of API keys",
+                "summary": "Create an API key",
+                "parameters": [
+                    {
+                        "description": "API key name",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/handlers.apiKeyDTO"
-                            }
+                            "$ref": "#/definitions/handlers.apiKeyCreateRequest"
                         }
-                    },
+                    }
+                ],
+                "responses": {
                     "201": {
                         "description": "API key created",
                         "schema": {
@@ -298,12 +279,6 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
-                        }
-                    },
-                    "405": {
-                        "description": "Method not allowed",
                         "schema": {
                             "$ref": "#/definitions/handlers.errorResponse"
                         }
@@ -2397,6 +2372,12 @@ const docTemplate = `{
                             "items": {
                                 "$ref": "#/definitions/handlers.tagDTO"
                             }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.errorResponse"
                         }
                     },
                     "401": {
@@ -6323,6 +6304,14 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "$ref": "#/definitions/db.Timestamp"
+                }
+            }
+        },
+        "handlers.apiKeyCreateRequest": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
                 }
             }
         },

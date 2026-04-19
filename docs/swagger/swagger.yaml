@@ -153,6 +153,11 @@ definitions:
       updated_at:
         $ref: '#/definitions/db.Timestamp'
     type: object
+  handlers.apiKeyCreateRequest:
+    properties:
+      name:
+        type: string
+    type: object
   handlers.apiKeyCreateResponse:
     properties:
       created_at:
@@ -883,12 +888,7 @@ paths:
       - Admin
   /api-keys:
     get:
-      consumes:
-      - application/json
-      description: |-
-        GET lists all API keys for the authenticated user.
-        POST creates a new API key. The raw key is returned only in the creation response and is never retrievable again.
-        POST body: {"name": "string"} (required)
+      description: Returns all API keys for the authenticated user.
       produces:
       - application/json
       responses:
@@ -898,20 +898,8 @@ paths:
             items:
               $ref: '#/definitions/handlers.apiKeyDTO'
             type: array
-        "201":
-          description: API key created
-          schema:
-            $ref: '#/definitions/handlers.apiKeyCreateResponse'
-        "400":
-          description: Bad request
-          schema:
-            $ref: '#/definitions/handlers.errorResponse'
         "401":
           description: Unauthorized
-          schema:
-            $ref: '#/definitions/handlers.errorResponse'
-        "405":
-          description: Method not allowed
           schema:
             $ref: '#/definitions/handlers.errorResponse'
         "500":
@@ -920,25 +908,24 @@ paths:
             $ref: '#/definitions/handlers.errorResponse'
       security:
       - BearerAuth: []
-      summary: List and create API keys
+      summary: List API keys
       tags:
       - api-keys
     post:
       consumes:
       - application/json
-      description: |-
-        GET lists all API keys for the authenticated user.
-        POST creates a new API key. The raw key is returned only in the creation response and is never retrievable again.
-        POST body: {"name": "string"} (required)
+      description: Creates a new API key. The raw key is returned only in this response
+        and is never retrievable again.
+      parameters:
+      - description: API key name
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.apiKeyCreateRequest'
       produces:
       - application/json
       responses:
-        "200":
-          description: List of API keys
-          schema:
-            items:
-              $ref: '#/definitions/handlers.apiKeyDTO'
-            type: array
         "201":
           description: API key created
           schema:
@@ -951,17 +938,13 @@ paths:
           description: Unauthorized
           schema:
             $ref: '#/definitions/handlers.errorResponse'
-        "405":
-          description: Method not allowed
-          schema:
-            $ref: '#/definitions/handlers.errorResponse'
         "500":
           description: Internal server error
           schema:
             $ref: '#/definitions/handlers.errorResponse'
       security:
       - BearerAuth: []
-      summary: List and create API keys
+      summary: Create an API key
       tags:
       - api-keys
   /api-keys/{id}:
@@ -2235,6 +2218,10 @@ paths:
             items:
               $ref: '#/definitions/handlers.tagDTO'
             type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:

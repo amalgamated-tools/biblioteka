@@ -141,25 +141,40 @@ func (h *APIKeyHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// HandleAPIKeys dispatches GET (list) and POST (create) for /api/api-keys.
+// ListAPIKeys returns all API keys for the authenticated user.
 //
-//	@Summary	List and create API keys
-//	@Description
-//	@Description	GET lists all API keys for the authenticated user.
-//	@Description	POST creates a new API key. The raw key is returned only in the creation response and is never retrievable again.
-//	@Description	POST body: {"name": "string"} (required)
+//	@Summary		List API keys
+//	@Description	Returns all API keys for the authenticated user.
+//	@Tags			api-keys
+//	@Security		BearerAuth
+//	@Produce		json
+//	@Success		200	{array}		apiKeyDTO		"List of API keys"
+//	@Failure		401	{object}	errorResponse	"Unauthorized"
+//	@Failure		500	{object}	errorResponse	"Internal server error"
+//	@Router			/api-keys [get]
+func (h *APIKeyHandler) ListAPIKeys(w http.ResponseWriter, r *http.Request) {
+	h.List(w, r)
+}
+
+// CreateAPIKey creates a new API key for the authenticated user.
+//
+//	@Summary		Create an API key
+//	@Description	Creates a new API key. The raw key is returned only in this response and is never retrievable again.
 //	@Tags			api-keys
 //	@Security		BearerAuth
 //	@Accept			json
 //	@Produce		json
-//	@Success		200	{array}		apiKeyDTO				"List of API keys"
-//	@Success		201	{object}	apiKeyCreateResponse	"API key created"
-//	@Failure		400	{object}	errorResponse			"Bad request"
-//	@Failure		401	{object}	errorResponse			"Unauthorized"
-//	@Failure		405	{object}	errorResponse			"Method not allowed"
-//	@Failure		500	{object}	errorResponse			"Internal server error"
-//	@Router			/api-keys [get]
+//	@Param			body	body		apiKeyCreateRequest		true	"API key name"
+//	@Success		201		{object}	apiKeyCreateResponse	"API key created"
+//	@Failure		400		{object}	errorResponse			"Bad request"
+//	@Failure		401		{object}	errorResponse			"Unauthorized"
+//	@Failure		500		{object}	errorResponse			"Internal server error"
 //	@Router			/api-keys [post]
+func (h *APIKeyHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request) {
+	h.Create(w, r)
+}
+
+// HandleAPIKeys dispatches GET (list) and POST (create) for /api/api-keys.
 func (h *APIKeyHandler) HandleAPIKeys(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:

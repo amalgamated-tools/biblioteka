@@ -17,6 +17,7 @@ type setBookTagsRequest struct {
 //	@Failure		401	{object}	errorResponse
 //	@Param			id	path		string	true	"Book ID"
 //	@Success		200	{array}		tagDTO
+//	@Failure		400	{object}	errorResponse
 //	@Failure		500	{object}	errorResponse
 //	@Router			/books/{id}/tags [get]
 func (h *BookHandler) getBookTags(w http.ResponseWriter, r *http.Request, bookID string) {
