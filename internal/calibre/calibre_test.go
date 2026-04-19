@@ -33,28 +33,32 @@ func TestParseCalibreDate_SentinelYear(t *testing.T) {
 }
 
 func TestParseCalibreDate_AllLayouts(t *testing.T) {
-	// Each layout from calibreDateLayouts should produce the same UTC instant.
-	want := time.Date(2024, 3, 15, 10, 30, 0, 0, time.UTC)
-
 	cases := []struct {
 		name  string
 		input string
+		want  time.Time
 	}{
-		{"layout0", "2024-03-15T10:30:00+00:00"},
-		{"layout1", "2024-03-15 10:30:00+00:00"},
-		{"layout2", "2024-03-15T10:30:00+00:00"},
-		{"layout3", "2024-03-15 10:30:00+00:00"},
-		{"RFC3339", "2024-03-15T10:30:00Z"},
-		{"layout5", "2024-03-15T10:30:00"},
-		{"layout6", "2024-03-15 10:30:00"},
+		// layout0: "2006-01-02T15:04:05-07:00" — non-zero offset so it is distinct from the literal +00:00 layouts
+		{"layout0", "2024-03-15T10:30:00-05:00", time.Date(2024, 3, 15, 15, 30, 0, 0, time.UTC)},
+		// layout1: "2006-01-02 15:04:05-07:00"
+		{"layout1", "2024-03-15 10:30:00-05:00", time.Date(2024, 3, 15, 15, 30, 0, 0, time.UTC)},
+		// layout2: "2006-01-02T15:04:05+00:00"
+		{"layout2", "2024-03-15T10:30:00+00:00", time.Date(2024, 3, 15, 10, 30, 0, 0, time.UTC)},
+		// layout3: "2006-01-02 15:04:05+00:00"
+		{"layout3", "2024-03-15 10:30:00+00:00", time.Date(2024, 3, 15, 10, 30, 0, 0, time.UTC)},
+		{"RFC3339", "2024-03-15T10:30:00Z", time.Date(2024, 3, 15, 10, 30, 0, 0, time.UTC)},
+		{"layout5", "2024-03-15T10:30:00", time.Date(2024, 3, 15, 10, 30, 0, 0, time.UTC)},
+		{"layout6", "2024-03-15 10:30:00", time.Date(2024, 3, 15, 10, 30, 0, 0, time.UTC)},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			got := parseCalibreDate(tc.input)
 			require.False(t, got.IsZero(), "layout %q produced zero Time for %q", tc.name, tc.input)
-			require.Equal(t, want.Year(), got.Year())
-			require.Equal(t, want.Month(), got.Month())
-			require.Equal(t, want.Day(), got.Day())
+			require.Equal(t, tc.want.Year(), got.Year())
+			require.Equal(t, tc.want.Month(), got.Month())
+			require.Equal(t, tc.want.Day(), got.Day())
+			require.Equal(t, tc.want.Hour(), got.Hour())
+			require.Equal(t, tc.want.Minute(), got.Minute())
 		})
 	}
 }
