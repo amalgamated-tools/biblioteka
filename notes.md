@@ -1,7 +1,7 @@
 # Test Improver Memory — biblioteka
 
 ## Last Updated
-2026-04-18
+2026-04-19
 
 ## Build/Test/Coverage Commands
 
@@ -62,27 +62,34 @@ Packages with no test files (intentional):
 - 2026-04-15: Tasks 2, 3, 7 (BuildEnrichPrompt tests PR; new monthly issue #1944 closed by maintainer)
 - 2026-04-17: Tasks 3, 7 (PasskeyAdapter tests PR; new monthly issue created)
 - 2026-04-18: Tasks 4, 2, 3, 7 (no open test-assist PRs to maintain; reading_group_lists DB tests PR; new monthly issue)
-- Next run: Tasks 5, 6, 2, 7 (comment on testing issues, test infrastructure, identify opportunities)
+- 2026-04-19: Tasks 5, 2, 3, 7 (no testing-label issues; tags-in-bookDTO regression tests PR; new monthly issue)
+- Next run: Tasks 6, 4, 2, 7
 
 ## Testing Backlog (prioritized)
 
 1. **pathparser internal helpers** — isLikelyPersonName, stripTrailingAuthor have no direct tests. Covered via ParseBookPath table tests. Low-medium value.
 2. **organize path-escape defense-in-depth test** — the filepath.Rel escape guard in organize.go has no test. Likely unreachable in practice. Low value.
-3. ~~**db/ai_enrichments.go**~~ — Covered by PR #2150 (merged) and PR #2204 (open).
-4. ~~**db/reading_group_lists.go**~~ — Covered by PR #2201 (open) and my 2026-04-18 PR.
-5. ~~**authstore/PasskeyAdapter**~~ — PR #2143 merged ✅.
+3. **SSRF dialer Class B (172.16.x.x)** — ollama/client_test.go tests Class A, C, loopback, AWS metadata but not Class B. Very low value (impl is the same `isPrivateIP` function; Class B is already tested in config_llm_test.go).
+4. ~~**db/ai_enrichments.go**~~ — Covered by PR #2150 (merged) and PR #2204 (merged).
+5. ~~**db/reading_group_lists.go**~~ — PR #2201 and #2221 both merged ✅.
+6. ~~**authstore/PasskeyAdapter**~~ — PR #2143 merged ✅.
+7. ~~**tags in bookDTO handler responses**~~ — Covered by 2026-04-19 PR.
 
 ## Maintainer Priorities
 - All previous monthly issues closed by veverkap as "completed"
 - Signals strong positive reception; maintainer is actively merging Test Improver PRs
-- Merged: #1689, #1771, #1792, #1845, #1943, #2021, #2143
+- Merged: #1689, #1771, #1792, #1845, #1943, #2021, #2143, #2221
 
 ## Completed Work
 
-### 2026-04-18
+### 2026-04-19
+- New monthly activity issue created (prior #2222 closed by veverkap)
+- Created PR on branch `test-assist/book-dto-tags-regression-tests`: 2 tests verifying
+  tags field is embedded in GetBook and CreateBook handler responses (regression guard for dd15bdc9)
+
+### 2026-04-18 (PR #2221 — merged ✅)
 - New monthly activity issue created (prior #2144 closed by veverkap)
 - Created PR on branch `test-assist/reading-group-list-db-tests`: 11 DB-level tests for ShareListWithGroup, UnshareListFromGroup, ListGroupReadingLists
-- NOTE: PR #2201 (Copilot SWE) covers same ground + gofumpt CI; my PR may be duplicate
 
 ### 2026-04-17 (PR #2143 — merged ✅)
 - New monthly activity issue #2144 created
