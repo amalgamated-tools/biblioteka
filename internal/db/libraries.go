@@ -5,7 +5,6 @@ import (
 	"errors"
 	"log/slog"
 	"slices"
-	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
@@ -126,32 +125,4 @@ func (d *DB) UpdateLibrary(ctx context.Context, id, name, paths, organizationTyp
 func (d *DB) DeleteLibrary(ctx context.Context, id string) error {
 	slog.DebugContext(ctx, "db: deleting library", slog.String(otelkeys.LibraryID, id))
 	return d.execAffected(ctx, `DELETE FROM libraries WHERE id = $1`, id)
-}
-
-// isUniqueViolation checks if an error is a unique constraint violation.
-func isUniqueViolation(err error) bool {
-	msg := err.Error()
-	// SQLite: "UNIQUE constraint failed: ..."
-	// PostgreSQL: "duplicate key value violates unique constraint ..."
-	return strings.Contains(msg, "UNIQUE constraint failed") ||
-		strings.Contains(msg, "duplicate key value violates unique constraint")
-}
-
-// isForeignKeyViolation reports whether err is a foreign-key constraint violation.
-func isForeignKeyViolation(err error) bool {
-	msg := err.Error()
-	// SQLite: "FOREIGN KEY constraint failed"
-	// PostgreSQL: "violates foreign key constraint ..."
-	return strings.Contains(msg, "FOREIGN KEY constraint failed") ||
-		strings.Contains(msg, "violates foreign key constraint")
-}
-
-// isColumnUniqueViolation reports whether err is a unique constraint violation
-// on the specified table column or named unique index (as reported in the error message).
-func isColumnUniqueViolation(err error, tableCol, idxName string) bool {
-	if err == nil || !isUniqueViolation(err) {
-		return false
-	}
-	msg := err.Error()
-	return strings.Contains(msg, tableCol) || strings.Contains(msg, idxName)
 }
