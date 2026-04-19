@@ -1,5 +1,5 @@
 {
-  "last_run": "2026-04-19T01:08:26Z",
+  "last_run": "2026-04-19T12:42:45Z",
   "comments_made": {
     "1531": "2026-04-12T01:06:21Z",
     "1888": "2026-04-14T01:25:00Z",
@@ -39,35 +39,9 @@
       "status": "merged"
     },
     {
-      "branch": "repo-assist/fix-reading-list-ownership-helper-2020",
-      "pr_number": 2029,
-      "status": "closed"
-    },
-    {
-      "branch": "repo-assist/improve-tags-frontend-api-2055",
-      "pr_number": 2076,
-      "status": "closed"
-    },
-    {
-      "branch": "repo-assist/fix-passkey-label-2073",
-      "pr_number": 2092,
-      "status": "closed",
-      "notes": "Superseded by PR #2075"
-    },
-    {
-      "branch": "repo-assist/eng-gofumpt-ci-20260417",
-      "status": "superseded",
-      "notes": "Superseded by #2221 (test-assist agent)"
-    },
-    {
       "branch": "repo-assist/test-ai-enrichments-20260417",
       "pr_number": 2150,
       "status": "merged"
-    },
-    {
-      "branch": "repo-assist/fix-groups-op-err-2172",
-      "status": "superseded",
-      "notes": "Superseded by merged PR #2173"
     },
     {
       "branch": "repo-assist/perf-year-in-books-parallel-20260418",
@@ -76,15 +50,25 @@
     },
     {
       "branch": "repo-assist/improve-db-helpers-ci-linters-20260419",
+      "status": "closed",
+      "notes": "closed by maintainer"
+    },
+    {
+      "branch": "repo-assist/fix-migration-timestamps-20260419",
       "status": "open",
-      "notes": "refactor(db): move isUniqueViolation/isForeignKeyViolation/isColumnUniqueViolation from libraries.go to query_helpers.go; ci: add slogcheck+errorfcheck to go-lint job"
+      "notes": "fix(migrations): standardize SQLite timestamps to ISO 8601 in reading-groups era. Closes #2243 #2244 #2245 #2246"
+    },
+    {
+      "branch": "repo-assist/test-book-dto-tags-20260419",
+      "status": "open",
+      "notes": "test(handlers): verify tags are embedded in bookDTO responses. 3 new tests + 1 assertion."
     }
   ],
   "issues_commented": [
     1531, 1888, 1941, 1971, 2019, 2055, 1880, 2084, 2085, 2141, 2217, 2220, 2218
   ],
   "monthly_activity_issue": "2026-04",
-  "monthly_activity_issue_number": 2226,
+  "monthly_activity_issue_number": null,
   "backlog_cursor": 2282,
-  "notes": "PR #2225 merged (perf/year-in-books). PR #2221 merged (gofumpt+reading_group_list tests). PR #2150 merged (ai_enrichments tests). PRs #2215, #2221, #2203, #2190 all merged/closed (no longer in open PR list). New PR created this run: repo-assist/improve-db-helpers-ci-linters-20260419. Issues #2084 and #1880 still open but should be closed by maintainer. Issues #2217/#2218/#2220/#2085 have Repo Assist comments pending acknowledgement."
+  "notes": "Monthly activity issue #2226 was closed by veverkap on 2026-04-19. Created new monthly activity issue this run. Issues #1880 and #2084 should be closed by maintainer. Issues #2217/#2218/#2220/#2085 still have Repo Assist comments pending acknowledgement. Issues #2243-#2246 closed by migration-timestamps PR. Bot-filed issues from veverkananobot (many in #2243-#2261 range) appear to be automated analysis; skip re-engaging on these."
 }
