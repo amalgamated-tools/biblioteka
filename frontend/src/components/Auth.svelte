@@ -32,6 +32,9 @@
   let passkeyLoading = $state(false);
   let loginEmailInvalid = $state(false);
   let loginPasswordInvalid = $state(false);
+  let signupNameInvalid = $state(false);
+  let signupEmailInvalid = $state(false);
+  let signupPasswordInvalid = $state(false);
   let loginErrorVisible = $derived(!!error && isLogin);
   let signupErrorVisible = $derived(!!error && !isLogin);
 
@@ -84,6 +87,47 @@
     }
 
     return { email: false, password: false };
+  }
+
+  function getSignupFieldInvalidState(message: string): {
+    name: boolean;
+    email: boolean;
+    password: boolean;
+  } {
+    const loweredError = message.toLowerCase();
+
+    const mentionsName = [
+      /\bname is required\b/,
+      /\binvalid name\b/,
+      /\bname must\b/,
+      /\bdisplay name\b/,
+      /\bfull name\b/,
+    ].some((pattern) => pattern.test(loweredError));
+    const mentionsEmail = [
+      /\binvalid email\b/,
+      /\bemail is invalid\b/,
+      /\bemail is not valid\b/,
+      /\bplease enter a valid email\b/,
+      /\bemail address\b/,
+    ].some((pattern) => pattern.test(loweredError));
+    const mentionsPassword = [
+      /\bpassword must\b/,
+      /\binvalid password\b/,
+      /\bincorrect password\b/,
+      /\bwrong password\b/,
+      /\bpassword is invalid\b/,
+      /\bpassphrase\b/,
+    ].some((pattern) => pattern.test(loweredError));
+
+    if (!mentionsName && !mentionsEmail && !mentionsPassword) {
+      return { name: false, email: false, password: false };
+    }
+
+    return {
+      name: mentionsName,
+      email: mentionsEmail,
+      password: mentionsPassword,
+    };
   }
 
   function handleTabKeydown(event: KeyboardEvent) {
@@ -185,6 +229,9 @@
     loading = true;
     loginEmailInvalid = false;
     loginPasswordInvalid = false;
+    signupNameInvalid = false;
+    signupEmailInvalid = false;
+    signupPasswordInvalid = false;
 
     if (isLogin) {
       loginEmailInvalid = required()(email) !== null;
@@ -200,10 +247,15 @@
         loading = false;
         return;
       }
-    } else if ([name, email, password].some((f) => required()(f) !== null)) {
-      error = "Please fill in all fields";
-      loading = false;
-      return;
+    } else {
+      signupNameInvalid = required()(name) !== null;
+      signupEmailInvalid = required()(email) !== null;
+      signupPasswordInvalid = required()(password) !== null;
+      if (signupNameInvalid || signupEmailInvalid || signupPasswordInvalid) {
+        error = "Please fill in all fields";
+        loading = false;
+        return;
+      }
     }
 
     const pwdError = validate(password, [
@@ -213,6 +265,8 @@
       error = pwdError;
       if (isLogin) {
         loginPasswordInvalid = true;
+      } else {
+        signupPasswordInvalid = true;
       }
       loading = false;
       return;
@@ -223,6 +277,9 @@
     ]);
     if (emailError) {
       error = emailError;
+      if (!isLogin) {
+        signupEmailInvalid = true;
+      }
       loading = false;
       return;
     }
@@ -237,6 +294,11 @@
         const invalidState = getLoginFieldInvalidState(result.error.message);
         loginEmailInvalid = invalidState.email;
         loginPasswordInvalid = invalidState.password;
+      } else {
+        const invalidState = getSignupFieldInvalidState(result.error.message);
+        signupNameInvalid = invalidState.name;
+        signupEmailInvalid = invalidState.email;
+        signupPasswordInvalid = invalidState.password;
       }
     }
 
@@ -477,8 +539,8 @@
                 placeholder="Your name"
                 disabled={loading}
                 aria-required={true}
-                aria-invalid={signupErrorVisible}
-                aria-describedby={signupErrorVisible
+                aria-invalid={signupNameInvalid}
+                aria-describedby={signupNameInvalid
                   ? "signup-auth-error"
                   : undefined}
               />
@@ -501,8 +563,8 @@
                 placeholder="you@example.com"
                 disabled={loading}
                 aria-required={true}
-                aria-invalid={signupErrorVisible}
-                aria-describedby={signupErrorVisible
+                aria-invalid={signupEmailInvalid}
+                aria-describedby={signupEmailInvalid
                   ? "signup-auth-error"
                   : undefined}
               />
@@ -527,8 +589,8 @@
                 placeholder="••••••••"
                 disabled={loading}
                 aria-required={true}
-                aria-invalid={signupErrorVisible}
-                aria-describedby={signupErrorVisible
+                aria-invalid={signupPasswordInvalid}
+                aria-describedby={signupPasswordInvalid
                   ? "signup-auth-error"
                   : undefined}
               />

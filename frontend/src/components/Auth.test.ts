@@ -369,4 +369,94 @@ describe("Auth", () => {
       "login-auth-error",
     );
   });
+
+  it("marks only the password field invalid for a password-only signup error", async () => {
+    const user = userEvent.setup();
+    await renderAuth();
+
+    await user.click(screen.getByRole("tab", { name: "Sign Up" }));
+    await tick();
+
+    const signupPanel = screen.getByRole("tabpanel", { name: "Sign Up" });
+    const signupName = within(signupPanel).getByLabelText(/Name/i);
+    const signupEmail = within(signupPanel).getByLabelText(/Email/i);
+    const signupPassword = within(signupPanel).getByLabelText(/Password/i);
+
+    await user.type(signupName, "Reader");
+    await user.type(signupEmail, "reader@example.com");
+    await user.type(signupPassword, "12345");
+    await user.click(screen.getByRole("button", { name: "Create Account" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Password must be at least 6 characters");
+
+    expect(signupName).not.toHaveAttribute("aria-invalid", "true");
+    expect(signupEmail).not.toHaveAttribute("aria-invalid", "true");
+    expect(signupPassword).toHaveAttribute("aria-invalid", "true");
+    expect(signupPassword).toHaveAttribute(
+      "aria-describedby",
+      "signup-auth-error",
+    );
+  });
+
+  it("does not mark signup fields invalid for generic signup server errors", async () => {
+    vi.mocked(authStore.signUp).mockResolvedValueOnce({
+      error: new Error("Signup failed"),
+    });
+
+    const user = userEvent.setup();
+    await renderAuth();
+
+    await user.click(screen.getByRole("tab", { name: "Sign Up" }));
+    await tick();
+
+    const signupPanel = screen.getByRole("tabpanel", { name: "Sign Up" });
+    const signupName = within(signupPanel).getByLabelText(/Name/i);
+    const signupEmail = within(signupPanel).getByLabelText(/Email/i);
+    const signupPassword = within(signupPanel).getByLabelText(/Password/i);
+
+    await user.type(signupName, "Reader");
+    await user.type(signupEmail, "reader@example.com");
+    await user.type(signupPassword, "securepass");
+    await user.click(screen.getByRole("button", { name: "Create Account" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Signup failed");
+
+    expect(signupName).not.toHaveAttribute("aria-invalid", "true");
+    expect(signupEmail).not.toHaveAttribute("aria-invalid", "true");
+    expect(signupPassword).not.toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("marks only the email field invalid for an email-specific signup server error", async () => {
+    vi.mocked(authStore.signUp).mockResolvedValueOnce({
+      error: new Error("Email is not valid"),
+    });
+
+    const user = userEvent.setup();
+    await renderAuth();
+
+    await user.click(screen.getByRole("tab", { name: "Sign Up" }));
+    await tick();
+
+    const signupPanel = screen.getByRole("tabpanel", { name: "Sign Up" });
+    const signupName = within(signupPanel).getByLabelText(/Name/i);
+    const signupEmail = within(signupPanel).getByLabelText(/Email/i);
+    const signupPassword = within(signupPanel).getByLabelText(/Password/i);
+
+    await user.type(signupName, "Reader");
+    await user.type(signupEmail, "reader@example.com");
+    await user.type(signupPassword, "securepass");
+    await user.click(screen.getByRole("button", { name: "Create Account" }));
+
+    await screen.findByRole("alert");
+
+    expect(signupName).not.toHaveAttribute("aria-invalid", "true");
+    expect(signupEmail).toHaveAttribute("aria-invalid", "true");
+    expect(signupEmail).toHaveAttribute(
+      "aria-describedby",
+      "signup-auth-error",
+    );
+    expect(signupPassword).not.toHaveAttribute("aria-invalid", "true");
+  });
 });
