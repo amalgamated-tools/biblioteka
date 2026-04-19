@@ -16,16 +16,21 @@
   let usersLoading = $state(false);
   let usersError: string | null = $state(null);
   let togglingId: string | null = $state(null);
+  let hasFetchedUsers = $state(false);
 
   $effect(() => {
+    if (hasFetchedUsers) return;
     if (cachedUsers.length > 0) {
       userList = cachedUsers;
-    } else {
+      hasFetchedUsers = true;
+    } else if (!usersLoading) {
       void loadUsers();
     }
   });
 
   async function loadUsers() {
+    if (usersLoading || hasFetchedUsers) return;
+    hasFetchedUsers = true;
     usersLoading = true;
     usersError = null;
     try {
