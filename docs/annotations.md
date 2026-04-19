@@ -1,6 +1,6 @@
 # Book Annotations
 
-Annotations are notes you attach to books to record highlights, quotes, and observations. Each annotation stores free-form text, an optional EPUB position (CFI), and an optional group association for sharing within a [reading group](reading-groups.md).
+Annotations are notes you attach to books to record highlights, quotes, and observations. Each annotation stores free-form text, an optional EPUB position (CFI), and an optional group association for sharing within a [reading group](api/reading-groups.md).
 
 ## Key concepts
 
@@ -40,7 +40,6 @@ Content-Type: application/json
   "book_id": "01ghi789...",
   "text": "This passage reframes the entire first act.",
   "cfi": "/4/2/4",
-  "group_id": null,
   "user_name": "alice",
   "created_at": "2026-04-18T12:00:00Z",
   "updated_at": "2026-04-18T12:00:00Z"
@@ -91,6 +90,7 @@ Content-Type: application/json
 
 - You must own the annotation.
 - `text` is required and must be non-blank.
+- `cfi` and `group_id` are optional. **PUT is a full replacement**: omitting either field is equivalent to sending `null` and will clear it. Include the current values if you do not intend to clear them.
 - To add or change a group association, set `group_id` to a group ID you belong to. To remove the group association, set `group_id` to `null`.
 
 **Response `200 OK`:** The updated annotation object.
@@ -148,7 +148,6 @@ Creates a new annotation on a book.
 | `400 Bad Request` | Blank `text` or invalid JSON |
 | `401 Unauthorized` | Missing or invalid authentication |
 | `403 Forbidden` | `group_id` refers to a group you are not a member of |
-| `404 Not Found` | Book not found |
 | `500 Internal Server Error` | Database error |
 
 ---
@@ -210,8 +209,8 @@ Deletes an annotation owned by the authenticated user.
 | `user_id` | string | ID of the user who created the annotation |
 | `book_id` | string | ID of the annotated book |
 | `text` | string | Annotation content |
-| `cfi` | string \| null | EPUB CFI position, or `null` |
-| `group_id` | string \| null | Reading group the annotation is shared with, or `null` |
+| `cfi` | string (optional) | EPUB CFI position. Omitted from responses when not set. |
+| `group_id` | string (optional) | Reading group the annotation is shared with. Omitted from responses when not set. |
 | `user_name` | string | Display name of the annotation author |
 | `created_at` | string | ISO 8601 creation timestamp |
 | `updated_at` | string | ISO 8601 last-updated timestamp |
