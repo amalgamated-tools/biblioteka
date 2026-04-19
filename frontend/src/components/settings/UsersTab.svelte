@@ -16,7 +16,7 @@
   let usersLoading = $state(false);
   let usersError: string | null = $state(null);
   let togglingId: string | null = $state(null);
-  let hasFetchedUsers = $state(false);
+  let hasFetchedUsers = false;
 
   $effect(() => {
     if (hasFetchedUsers) return;
