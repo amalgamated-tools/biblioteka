@@ -49,11 +49,12 @@ type uploadAcceptedResponse struct {
 //
 //	@Summary		Upload a book file
 //	@Description	Upload a book file (.epub, .mobi, .azw3, .pdf) to a library. The file is staged and processed asynchronously.
+//	@Description	NOTE: format list above is manually maintained; update when jobs.SupportedExtensions changes.
 //	@Tags			Books
 //	@Accept			multipart/form-data
 //	@Produce		json
 //	@Security		BearerAuth
-//	@Param			file		formData	file	true	"Book file (.epub, .mobi, .azw3, .pdf)"
+//	@Param			file		formData	file	true	"Book file (.epub, .mobi, .azw3, .pdf — see jobs.SupportedExtensions)"
 //	@Param			library_id	formData	string	true	"Target library ID"
 //	@Param			title		formData	string	false	"Title override (takes precedence over extracted metadata)"
 //	@Param			author		formData	string	false	"Author override (takes precedence over extracted metadata)"
