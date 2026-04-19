@@ -50,6 +50,7 @@ var (
 	ErrInvalidToken = goauth.ErrInvalidToken
 	ErrExpiredToken = goauth.ErrExpiredToken
 	ErrEmailExists  = goauth.ErrEmailExists
+	ErrNotFound     = goauth.ErrNotFound
 )
 
 // TokenCookieName returns the cookie name.
