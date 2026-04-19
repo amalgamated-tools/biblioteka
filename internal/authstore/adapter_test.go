@@ -174,6 +174,37 @@ func TestCountUsers_DelegatesToDB(t *testing.T) {
 	require.Equal(t, 1, count)
 }
 
+// ---- APIKeyAdapter tests ----
+
+func newAPIKeyAdapter(t *testing.T) (*APIKeyAdapter, *db.User) {
+	t.Helper()
+	d := newTestDB(t)
+	u, err := d.CreateUser(t.Context(), "API Key User", "apikey@example.com", "hash")
+	require.NoError(t, err)
+	return &APIKeyAdapter{DB: d}, u
+}
+
+func TestAPIKeyAdapter_ValidateAPIKey_NotFound(t *testing.T) {
+	a, _ := newAPIKeyAdapter(t)
+
+	_, _, err := a.ValidateAPIKey(t.Context(), "nonexistent-hash")
+	require.ErrorIs(t, err, auth.ErrNotFound,
+		"ValidateAPIKey must translate sql.ErrNoRows to auth.ErrNotFound")
+}
+
+func TestAPIKeyAdapter_ValidateAPIKey_Success(t *testing.T) {
+	a, u := newAPIKeyAdapter(t)
+	ctx := t.Context()
+
+	key, err := a.DB.CreateAPIKey(ctx, u.ID, "Test Key", "hash-abc", "bib_abc")
+	require.NoError(t, err)
+
+	gotUserID, gotKeyID, err := a.ValidateAPIKey(ctx, "hash-abc")
+	require.NoError(t, err)
+	require.Equal(t, u.ID, gotUserID)
+	require.Equal(t, key.ID, gotKeyID)
+}
+
 // ---- PasskeyAdapter tests ----
 
 func newPasskeyAdapter(t *testing.T) (*PasskeyAdapter, *db.User) {
