@@ -25,6 +25,9 @@ e2e/playwright-report/
 
 .env
 
+# Screenshot script seed directory
+script/screenshots/.demo-books/
+
 # Air live reload
 tmp/
 data/

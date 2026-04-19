@@ -8,6 +8,7 @@ import {
   type Mock,
 } from "vitest";
 import {
+  applyMetadata,
   fetchMetadata,
   getMetadata,
   rejectMetadata,
@@ -18,7 +19,7 @@ import {
   rejectAIEnrichment,
   clearToken,
 } from "../api";
-import type { AIEnrichment, RemoteMetadata } from "../../types";
+import type { AIEnrichment, BookSummary, RemoteMetadata } from "../../types";
 import {
   mockFetchResponse as _mockFetchResponse,
   mockNoContentResponse as _mockNoContentResponse,
@@ -104,6 +105,36 @@ describe("Metadata API", () => {
       expect(url).toBe("/api/books/b1/metadata/reject");
       expect(options.method).toBe("POST");
       expect(result).toBeUndefined();
+    });
+  });
+
+  describe("applyMetadata", () => {
+    it("sends POST /api/books/:id/metadata/apply and returns the updated book summary", async () => {
+      const fakeBookSummary: BookSummary = {
+        id: "b1",
+        title: "The Hobbit",
+        description: "A fantasy novel",
+        asin: null,
+        isbn10: null,
+        isbn13: "9780547928227",
+        goodreads_id: "5907",
+        hardcover_id: null,
+        google_books_id: null,
+        publication_date: "1937-09-21",
+        publisher: "Allen & Unwin",
+        language: "en",
+        cover_image_url: null,
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+      };
+      mockFetchResponse(fakeBookSummary);
+
+      const result = await applyMetadata("b1");
+
+      const [url, options] = fetchMock.mock.calls[0];
+      expect(url).toBe("/api/books/b1/metadata/apply");
+      expect(options.method).toBe("POST");
+      expect(result).toEqual(fakeBookSummary);
     });
   });
 

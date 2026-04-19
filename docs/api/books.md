@@ -187,6 +187,8 @@ The flat book fields (`id`, `title`, `description`, etc.) are described in the [
 | `series.updated_at` | string | Last update timestamp (ISO 8601) |
 | `position`         | number? | Position of this book in the series (e.g. `1` for book one); `null` when unset |
 
+**`tags[]`** — each element is a [tag object](tags.md#post-apitags). Tags embedded here mirror the response from [`GET /api/books/{id}/tags`](#get-apibooksidtags) and are included for convenience so a single request returns the complete book record without extra round-trips.
+
 **`files[]`** — each element is a [book file object](#get-apibook-filesid).
 
 **`tags[]`** — each element is a [tag object](tags.md#post-apitags). Tags embedded here mirror the response from [`GET /api/books/{id}/tags`](#get-apibooksidtags) and are included for convenience so a single request returns the complete book record without extra round-trips.
