@@ -1,6 +1,7 @@
 package calibre
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -249,4 +250,31 @@ func TestWebImport_NoIdentifiers(t *testing.T) {
 	result2, err := WebImport(t.Context(), biblDB, cdb, WebImportOptions{})
 	require.NoError(t, err)
 	require.Equal(t, 1, result2.Imported, "book without identifiers cannot be deduped; import again")
+}
+
+// TestWebImport_LoadBooksError_WrapsOnlySentinel verifies that when LoadBooks
+// fails, the returned error wraps ErrLoadCalibreBooks (so callers can classify
+// the failure via errors.Is) and that the unwrap chain contains only the
+// sentinel. fmt.Errorf("%w: %v", ...) produces a single-wrap implementing
+// Unwrap() error, so errors.Unwrap returns ErrLoadCalibreBooks. A regression
+// to "%w: %w" would produce a multi-wrap implementing Unwrap() []error instead,
+// causing errors.Unwrap to return nil and failing this assertion.
+func TestWebImport_LoadBooksError_WrapsOnlySentinel(t *testing.T) {
+	biblDB := newTestBibliotekaDB(t)
+	cdb := newTestCalibreDB(t)
+
+	// Close the underlying SQL database to force LoadBooks to return an error.
+	require.NoError(t, cdb.db.Close())
+
+	_, err := WebImport(t.Context(), biblDB, cdb, WebImportOptions{})
+	require.Error(t, err)
+
+	// ErrLoadCalibreBooks must be discoverable via errors.Is.
+	require.ErrorIs(t, err, ErrLoadCalibreBooks)
+
+	// The error must unwrap to exactly ErrLoadCalibreBooks — no further.
+	// This catches a regression to double-wrapping (%w: %w), which would
+	// produce a multi-wrap where errors.Unwrap returns nil instead.
+	require.Equal(t, ErrLoadCalibreBooks, errors.Unwrap(err),
+		"err must single-unwrap to ErrLoadCalibreBooks, not produce a multi-wrap")
 }

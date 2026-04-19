@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Book, Tag } from "../../types";
+  import type { Book } from "../../types";
   import { routerStore } from "../../stores/router.svelte";
   import * as api from "../../lib/api";
   import {
@@ -22,7 +22,6 @@
   let { bookId }: Props = $props();
 
   let book: Book | null = $state(null);
-  let tags: Tag[] = $state.raw([]);
   let loading = $state(true);
   let error: string | null = $state(null);
   let fetchSeq = 0;
@@ -34,22 +33,12 @@
   async function loadBook(id: string) {
     const seq = ++fetchSeq;
     book = null;
-    tags = [];
     loading = true;
     error = null;
     try {
-      const [bookResult, tagsResult] = await Promise.allSettled([
-        api.getBook(id),
-        api.getBookTags(id),
-      ]);
+      const result = await api.getBook(id);
       if (seq !== fetchSeq) return;
-
-      if (bookResult.status === "rejected") {
-        throw bookResult.reason;
-      }
-
-      book = bookResult.value;
-      tags = tagsResult.status === "fulfilled" ? tagsResult.value : [];
+      book = result;
     } catch (e) {
       if (seq !== fetchSeq) return;
       error = e instanceof Error ? e.message : "Failed to load book";
@@ -221,7 +210,7 @@
         {/if}
 
         <!-- Tags -->
-        {#if tags.length > 0}
+        {#if book.tags.length > 0}
           <div
             class="bg-white dark:bg-ink-900 rounded-2xl shadow-sm border border-ink-100 dark:border-ink-800 p-6"
           >
@@ -232,7 +221,7 @@
               Tags
             </h2>
             <div class="flex flex-wrap gap-1.5" aria-label="Tags">
-              {#each tags as tag (tag.id)}
+              {#each book.tags as tag (tag.id)}
                 <span
                   class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-accent-100 text-accent-800 dark:bg-accent-800/30 dark:text-accent-300"
                 >

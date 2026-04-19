@@ -19,6 +19,7 @@ import (
 //	@Failure		401	{object}	errorResponse
 //	@Param			id	path		string	true	"Book ID"
 //	@Success		200	{array}		readingListDTO
+//	@Failure		400	{object}	errorResponse
 //	@Failure		500	{object}	errorResponse
 //	@Router			/books/{id}/reading-lists [get]
 func (h *BookHandler) getBookReadingLists(w http.ResponseWriter, r *http.Request, bookID string) {
