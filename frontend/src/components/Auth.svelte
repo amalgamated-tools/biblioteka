@@ -155,36 +155,37 @@
     }
   }
 
-  let authInitialized = false;
   $effect(() => {
-    if (!authInitialized) {
-      authInitialized = true;
-      getOidcEnabled()
-        .then((enabled) => {
-          oidcEnabled = enabled;
-        })
-        .catch(() => {
-          initError ??= "Unable to reach the server to load auth settings";
-        });
-      getSignupEnabled()
-        .then((enabled) => {
-          signupEnabled = enabled;
-          if (!enabled) {
-            isLogin = true;
-          }
-        })
-        .catch(() => {
-          initError ??= "Unable to reach the server to load auth settings";
-        });
-      getPasskeyEnabled()
-        .then((enabled) => {
-          passkeyEnabled = enabled;
-        })
-        .catch(() => {
+    const controller = new AbortController();
+
+    async function initAuth() {
+      try {
+        const [oidc, signup, passkey] = await Promise.all([
+          getOidcEnabled(),
+          getSignupEnabled(),
           // Passkey availability is optional; silently disable the feature on error.
-          passkeyEnabled = false;
-        });
+          getPasskeyEnabled().catch(() => false),
+        ]);
+
+        if (controller.signal.aborted) return;
+
+        oidcEnabled = oidc;
+        signupEnabled = signup;
+        if (!signup) {
+          isLogin = true;
+        }
+        passkeyEnabled = passkey;
+      } catch {
+        if (controller.signal.aborted) return;
+        initError = "Unable to reach the server to load auth settings";
+      }
     }
+
+    initAuth();
+
+    return () => {
+      controller.abort();
+    };
   });
 
   async function handlePasskeySignIn() {

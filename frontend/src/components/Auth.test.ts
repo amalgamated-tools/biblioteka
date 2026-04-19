@@ -23,7 +23,11 @@ vi.mock("../lib/api", () => ({
 
 vi.mock("lucide-svelte", () => ({ BookCheck: () => {} }));
 
-import { getOidcEnabled, getSignupEnabled } from "../lib/api";
+import {
+  getOidcEnabled,
+  getPasskeyEnabled,
+  getSignupEnabled,
+} from "../lib/api";
 
 import Auth from "./Auth.svelte";
 
@@ -152,6 +156,18 @@ describe("Auth", () => {
         screen.getByText("Unable to reach the server to load auth settings"),
       ).toBeInTheDocument();
     });
+  });
+
+  it("silently disables passkeys when passkey check fails", async () => {
+    vi.mocked(getPasskeyEnabled).mockRejectedValueOnce(new Error("network"));
+
+    render(Auth);
+    await vi.waitFor(() => {
+      expect(screen.queryByRole("button", { name: /passkey/i })).toBeNull();
+    });
+    expect(
+      screen.queryByText("Unable to reach the server to load auth settings"),
+    ).toBeNull();
   });
 
   it("marks login fields invalid and associates them with the error banner", async () => {
