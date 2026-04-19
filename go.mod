@@ -4,7 +4,7 @@ go 1.26.2
 
 require (
 	github.com/Khan/genqlient v0.8.1
-	github.com/amalgamated-tools/goauth v0.1.1
+	github.com/amalgamated-tools/goauth v0.2.0
 	github.com/buger/jsonparser v1.1.2
 	github.com/coreos/go-oidc/v3 v3.18.0
 	github.com/go-webauthn/webauthn v0.16.4
@@ -22,14 +22,14 @@ require (
 	golang.org/x/crypto v0.50.0
 	golang.org/x/sync v0.20.0
 	golang.org/x/tools v0.44.0
-	modernc.org/sqlite v1.48.2
+	modernc.org/sqlite v1.49.1
 )
 
 require (
 	dario.cat/mergo v1.0.2 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/agnivade/levenshtein v1.2.1 // indirect
-	github.com/air-verse/air v1.64.5 // indirect
+	github.com/air-verse/air v1.65.1 // indirect
 	github.com/alexflint/go-arg v1.5.1 // indirect
 	github.com/alexflint/go-scalar v1.2.0 // indirect
 	github.com/andybalholm/brotli v1.2.0 // indirect
@@ -103,7 +103,7 @@ require (
 	golang.org/x/text v0.36.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
-	modernc.org/libc v1.70.0 // indirect
+	modernc.org/libc v1.72.0 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
 )

@@ -53,13 +53,13 @@ type calibreSource struct {
 //	@Security		BearerAuth
 //	@Param			metadata_db	formData	file	false	"Calibre metadata.db file (multipart upload)"
 //	@Param			library_id	formData	string	false	"Library ID to associate with imported books (multipart upload)"
-//	@Failure		401	{object}	errorResponse
-//	@Failure		403	{object}	errorResponse
-//	@Success		200	{object}	calibre.Preview
-//	@Failure		400	{object}	errorResponse
-//	@Failure		413	{object}	errorResponse
-//	@Failure		415	{object}	errorResponse
-//	@Failure		500	{object}	errorResponse
+//	@Failure		401			{object}	errorResponse
+//	@Failure		403			{object}	errorResponse
+//	@Success		200			{object}	calibre.Preview
+//	@Failure		400			{object}	errorResponse
+//	@Failure		413			{object}	errorResponse
+//	@Failure		415			{object}	errorResponse
+//	@Failure		500			{object}	errorResponse
 //	@Router			/calibre-import/preview [post]
 func (h *CalibreImportHandler) HandlePreview(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -102,13 +102,13 @@ func (h *CalibreImportHandler) HandlePreview(w http.ResponseWriter, r *http.Requ
 //	@Security		BearerAuth
 //	@Param			metadata_db	formData	file	false	"Calibre metadata.db file (multipart upload)"
 //	@Param			library_id	formData	string	false	"Library ID to associate with imported books (multipart upload)"
-//	@Failure		401	{object}	errorResponse
-//	@Failure		403	{object}	errorResponse
-//	@Success		200	{object}	calibre.ImportResult
-//	@Failure		400	{object}	errorResponse
-//	@Failure		413	{object}	errorResponse
-//	@Failure		415	{object}	errorResponse
-//	@Failure		500	{object}	errorResponse
+//	@Failure		401			{object}	errorResponse
+//	@Failure		403			{object}	errorResponse
+//	@Success		200			{object}	calibre.ImportResult
+//	@Failure		400			{object}	errorResponse
+//	@Failure		413			{object}	errorResponse
+//	@Failure		415			{object}	errorResponse
+//	@Failure		500			{object}	errorResponse
 //	@Router			/calibre-import/confirm [post]
 func (h *CalibreImportHandler) HandleImport(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {

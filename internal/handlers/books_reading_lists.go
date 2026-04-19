@@ -10,6 +10,17 @@ import (
 
 // getBookReadingLists returns all reading lists (owned by the authenticated
 // user) that contain the specified book.
+//
+//	@Summary		List reading lists containing a book
+//	@Description	Returns all reading lists owned by the authenticated user that contain the specified book
+//	@Tags			Books
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401	{object}	errorResponse
+//	@Param			id	path		string	true	"Book ID"
+//	@Success		200	{array}		readingListDTO
+//	@Failure		500	{object}	errorResponse
+//	@Router			/books/{id}/reading-lists [get]
 func (h *BookHandler) getBookReadingLists(w http.ResponseWriter, r *http.Request, bookID string) {
 	ctx := r.Context()
 	userID := auth.UserIDFromContext(ctx)

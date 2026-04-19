@@ -280,16 +280,11 @@ func (h *GroupHandler) updateGroup(w http.ResponseWriter, r *http.Request, id st
 //	@Failure		500	{object}	errorResponse
 //	@Router			/groups/{id} [delete]
 func (h *GroupHandler) deleteGroup(w http.ResponseWriter, r *http.Request, id string) {
-	ctx := r.Context()
-	userID := auth.UserIDFromContext(ctx)
-	if handleOpErr(ctx, w, h.DB.DeleteGroup(ctx, id, userID), "group", "failed to delete group",
-		slog.String(otelkeys.GroupID, id),
-	) {
-		return
-	}
-
-	logAudit(ctx, h.DB, userID, db.AuditActionGroupDeleted, "group", id, nil)
-	w.WriteHeader(http.StatusNoContent)
+	deleteUserOwnedResource(h.DB, w, r, id, "group", "group", otelkeys.GroupID,
+		h.DB.GetGroup, h.DB.DeleteGroup,
+		db.AuditActionGroupDeleted,
+		func(g *db.ReadingGroup) map[string]any { return map[string]any{"name": g.Name} },
+	)
 }
 
 func (h *GroupHandler) handleGroupMembers(w http.ResponseWriter, r *http.Request, groupID string) {
@@ -392,9 +387,9 @@ func (h *GroupHandler) handleGroupMember(w http.ResponseWriter, r *http.Request,
 //	@Description	Remove a member from a reading group. The owner can remove any member; members can remove themselves.
 //	@Tags			Groups
 //	@Security		BearerAuth
-//	@Failure		401		{object}	errorResponse
-//	@Param			id			path	string	true	"Group ID"
-//	@Param			memberID	path	string	true	"Member user ID"
+//	@Failure		401			{object}	errorResponse
+//	@Param			id			path		string	true	"Group ID"
+//	@Param			memberID	path		string	true	"Member user ID"
 //	@Success		204			"No Content"
 //	@Failure		400			{object}	errorResponse
 //	@Failure		404			{object}	errorResponse
