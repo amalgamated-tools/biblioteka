@@ -48,6 +48,7 @@
   }: Props = $props();
 
   let fetchingMetadata = $state(false);
+  let applying = $state(false);
   let metadataError: string | null = $state(null);
   let progressMessage: string | null = $state(null);
   let eventSource: EventSource | null = null;
@@ -237,13 +238,31 @@
     fields[FIELD_MAP[field]] = value;
   }
 
-  function applyAll() {
-    const meta = pendingMetadata;
-    if (!meta) return;
-    (Object.keys(FIELD_MAP) as EditableMetadataKey[]).forEach((metaKey) => {
-      const value = meta[metaKey];
-      if (value != null) fields[FIELD_MAP[metaKey]] = value;
-    });
+  async function applyAll() {
+    if (!pendingMetadata) return;
+    applying = true;
+    metadataError = null;
+    try {
+      const updated = await api.applyMetadata(bookId);
+      fields.title = updated.title;
+      fields.description = updated.description ?? "";
+      fields.publisher = updated.publisher ?? "";
+      fields.language = updated.language ?? "";
+      fields.publicationDate = updated.publication_date ?? "";
+      fields.isbn13 = updated.isbn13 ?? "";
+      fields.isbn10 = updated.isbn10 ?? "";
+      fields.asin = updated.asin ?? "";
+      fields.goodreadsId = updated.goodreads_id ?? "";
+      fields.hardcoverId = updated.hardcover_id ?? "";
+      fields.googleBooksId = updated.google_books_id ?? "";
+      fields.coverImageUrl = updated.cover_image_url ?? "";
+      pendingMetadata = null;
+    } catch (e) {
+      metadataError =
+        e instanceof Error ? e.message : "Failed to apply metadata";
+    } finally {
+      applying = false;
+    }
   }
 </script>
 
@@ -289,6 +308,7 @@
       onApplyField={applyField}
       onApplyAll={applyAll}
       onDismiss={dismissMetadata}
+      {applying}
     />
   {/if}
 </div>

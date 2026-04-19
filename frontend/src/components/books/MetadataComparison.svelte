@@ -9,10 +9,17 @@
     onApplyField: (field: keyof RemoteMetadata & keyof CurrentValues) => void;
     onApplyAll: () => void;
     onDismiss: () => void;
+    applying?: boolean;
   }
 
-  let { metadata, currentValues, onApplyField, onApplyAll, onDismiss }: Props =
-    $props();
+  let {
+    metadata,
+    currentValues,
+    onApplyField,
+    onApplyAll,
+    onDismiss,
+    applying = false,
+  }: Props = $props();
 
   type FieldDef = {
     key: keyof RemoteMetadata & keyof CurrentValues;
@@ -70,9 +77,9 @@
       </span>
     </div>
     <div class="flex items-center gap-2">
-      <Button onclick={onApplyAll} size="sm">
+      <Button onclick={onApplyAll} size="sm" disabled={applying}>
         <Check class="w-3 h-3 mr-1" aria-hidden="true" />
-        Apply All
+        {applying ? "Applying..." : "Apply All"}
       </Button>
       <Button variant="secondary" onclick={onDismiss} size="sm">
         <X class="w-3 h-3 mr-1" aria-hidden="true" />

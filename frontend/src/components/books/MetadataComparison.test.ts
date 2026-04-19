@@ -213,4 +213,19 @@ describe("MetadataComparison", () => {
     expect(matchIndicators).toHaveLength(1);
     expect(matchIndicators[0]).toHaveAccessibleName("Values match for Title");
   });
+
+  it("disables the Apply All button and shows 'Applying...' text when applying is true", () => {
+    render(MetadataComparison, {
+      metadata: baseMetadata,
+      currentValues: baseCurrentValues,
+      onApplyField: vi.fn(),
+      onApplyAll: vi.fn(),
+      onDismiss: vi.fn(),
+      applying: true,
+    });
+
+    const applyAllButton = screen.getByText("Applying...").closest("button");
+    expect(applyAllButton).toBeDisabled();
+    expect(screen.queryByText("Apply All")).not.toBeInTheDocument();
+  });
 });
