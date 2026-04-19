@@ -28,9 +28,14 @@
   let editingName = $state("");
   let renaming = $state(false);
   let renameError: string | null = $state(null);
+  let renameSuccessMessage = $state("");
 
   let pendingDeleteId: string | null = $state(null);
   let deleteError: string | null = $state(null);
+
+  function renameErrorID(tagID: string): string {
+    return `tag-rename-error-${tagID}`;
+  }
 
   async function handleCreate() {
     const name = newTagName.trim();
@@ -52,12 +57,14 @@
     editingId = id;
     editingName = name;
     renameError = null;
+    renameSuccessMessage = "";
   }
 
   function cancelEdit() {
     editingId = null;
     editingName = "";
     renameError = null;
+    renameSuccessMessage = "";
   }
 
   async function handleRename() {
@@ -66,10 +73,16 @@
     if (!name) return;
     renaming = true;
     renameError = null;
+    renameSuccessMessage = "";
     try {
       await tagStore.edit(editingId, { name });
       editingId = null;
       editingName = "";
+      // Defer one macrotask so assistive tech announces the updated status
+      // message after the DOM updates from exiting edit mode.
+      setTimeout(() => {
+        renameSuccessMessage = `Renamed tag to ${name}.`;
+      }, 0);
     } catch (e) {
       renameError = e instanceof Error ? e.message : "Failed to rename tag";
     } finally {
@@ -107,6 +120,7 @@
 </script>
 
 <div>
+  <span role="status" class="sr-only">{renameSuccessMessage}</span>
   <div class="flex items-center justify-between mb-8">
     <div class="flex items-center gap-3">
       <div
@@ -277,15 +291,19 @@
                       void handleRename();
                     }}
                   >
-                    {#if renameError}
-                      <span class="text-xs text-danger-600 dark:text-danger-400"
-                        >{renameError}</span
-                      >
-                    {/if}
+                    <span
+                      id={renameErrorID(tag.id)}
+                      class="text-xs text-danger-600 dark:text-danger-400"
+                      role="alert"
+                    >
+                      {renameError ?? ""}
+                    </span>
                     <TextInput
                       bind:value={editingName}
                       disabled={renaming}
                       aria-label="Tag name"
+                      aria-invalid={!!renameError}
+                      aria-describedby={renameErrorID(tag.id)}
                       class="py-1.5 text-sm"
                     />
                     <button
