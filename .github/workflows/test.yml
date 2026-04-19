@@ -237,10 +237,12 @@ jobs:
 
       - name: Run slogcheck
         id: slogcheck
+        continue-on-error: true
         run: go run ./cmd/slogcheck ./...
 
       - name: Run errorfcheck
         id: errorfcheck
+        continue-on-error: true
         run: go run ./cmd/errorfcheck ./...
 
       - name: Report Go lint check outcomes
