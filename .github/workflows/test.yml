@@ -235,6 +235,16 @@ jobs:
         with:
           version: v2.11.3
 
+      - name: Run slogcheck
+        id: slogcheck
+        continue-on-error: true
+        run: go run ./cmd/slogcheck ./...
+
+      - name: Run errorfcheck
+        id: errorfcheck
+        continue-on-error: true
+        run: go run ./cmd/errorfcheck ./...
+
       - name: Report Go lint check outcomes
         if: always()
         run: |
@@ -244,6 +254,8 @@ jobs:
             echo "- strict go formatting (gofumpt): ${{ steps.gofumpt.outcome }}"
             echo "- go.mod tidy: ${{ steps.gomod.outcome }}"
             echo "- golangci-lint: ${{ steps.golangci.outcome }}"
+            echo "- slogcheck: ${{ steps.slogcheck.outcome }}"
+            echo "- errorfcheck: ${{ steps.errorfcheck.outcome }}"
           } >> "$GITHUB_STEP_SUMMARY"
 
           if [ "${{ steps.gofmt.outcome }}" = "failure" ]; then
@@ -254,6 +266,15 @@ jobs:
             echo "::error::Go Lint failed check: go.mod tidy"
           elif [ "${{ steps.golangci.outcome }}" = "failure" ]; then
             echo "::error::Go Lint failed check: golangci-lint"
+          elif [ "${{ steps.slogcheck.outcome }}" = "failure" ]; then
+            echo "::error::Go Lint failed check: slogcheck"
+          elif [ "${{ steps.errorfcheck.outcome }}" = "failure" ]; then
+            echo "::error::Go Lint failed check: errorfcheck"
+          fi
+
+          if [ "${{ steps.slogcheck.outcome }}" = "failure" ] || \
+             [ "${{ steps.errorfcheck.outcome }}" = "failure" ]; then
+            exit 1
           fi
 
   go-test:
