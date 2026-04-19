@@ -30,7 +30,7 @@ export default defineConfig({
     timeout: 15_000,
     env: {
       PORT: String(TEST_PORT),
-      JWT_SECRET: "e2e-test-jwt-secret",
+      JWT_SECRET: "e2e-test-jwt-secret-playwright-ok!",
     },
   },
 });
