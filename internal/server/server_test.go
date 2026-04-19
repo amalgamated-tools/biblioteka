@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
+	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/handlers"
 	goauthhandler "github.com/amalgamated-tools/goauth/handler"
@@ -435,6 +437,31 @@ func TestNewServer_WithDB(t *testing.T) {
 	require.NoError(t, err, "NewServer")
 
 	require.Equal(t, d, s.DB)
+}
+
+func TestNewServer_JWTSecret_Empty_OK(t *testing.T) {
+	d := newTestDB(t)
+	t.Setenv("JWT_SECRET", "")
+
+	_, err := NewServer(t.Context(), WithDB(d))
+	require.NoError(t, err, "empty JWT_SECRET should generate a random secret")
+}
+
+func TestNewServer_JWTSecret_ExactMinLength_OK(t *testing.T) {
+	d := newTestDB(t)
+	t.Setenv("JWT_SECRET", strings.Repeat("a", auth.MinSecretLength))
+
+	_, err := NewServer(t.Context(), WithDB(d))
+	require.NoError(t, err, "JWT_SECRET of exactly MinSecretLength should be accepted")
+}
+
+func TestNewServer_JWTSecret_TooShort_Error(t *testing.T) {
+	d := newTestDB(t)
+	t.Setenv("JWT_SECRET", "abc")
+
+	_, err := NewServer(t.Context(), WithDB(d))
+	require.Error(t, err, "JWT_SECRET shorter than MinSecretLength should return an error")
+	require.Contains(t, err.Error(), "JWT_SECRET must be at least")
 }
 
 // ---------------------------------------------------------------------------
