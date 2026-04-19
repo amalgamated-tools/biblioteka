@@ -13,8 +13,10 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
-// supportedExtensions maps lowercase file extensions to their file type label.
-var supportedExtensions = map[string]string{
+// SupportedExtensions maps lowercase file extensions to their file type label.
+// It is the canonical source of truth for the set of book formats the
+// application can process; upload validation also references this map.
+var SupportedExtensions = map[string]string{
 	".epub": "epub",
 	".mobi": "mobi",
 	".pdf":  "pdf",
@@ -74,7 +76,7 @@ func ScanDirectory(ctx context.Context, enqueuer Enqueuer, p ScanPathPayload) er
 		}
 
 		ext := strings.ToLower(filepath.Ext(path))
-		fileType, ok := supportedExtensions[ext]
+		fileType, ok := SupportedExtensions[ext]
 		if !ok {
 			slog.DebugContext(ctx, "scan:path skipping unsupported file",
 				slog.String(otelkeys.Path, path),

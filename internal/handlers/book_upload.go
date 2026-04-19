@@ -33,16 +33,6 @@ const (
 	uploadStagingDir = ".uploads"
 )
 
-// uploadSupportedExtensions maps lower-case file extensions to their file type
-// labels. Kept in sync with jobs.supportedExtensions intentionally as a copy in
-// this package.
-var uploadSupportedExtensions = map[string]string{
-	".epub": "epub",
-	".mobi": "mobi",
-	".pdf":  "pdf",
-	".azw3": "azw3",
-}
-
 // uploadAcceptedResponse is the JSON body returned on a successful upload.
 type uploadAcceptedResponse struct {
 	Message   string `json:"message"`
@@ -247,7 +237,7 @@ func (h *BookHandler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 // on its extension. It returns the empty string and false for unsupported types.
 func detectUploadFileType(filename string) (string, bool) {
 	ext := strings.ToLower(filepath.Ext(filename))
-	ft, ok := uploadSupportedExtensions[ext]
+	ft, ok := jobs.SupportedExtensions[ext]
 	return ft, ok
 }
 
