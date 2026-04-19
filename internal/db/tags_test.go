@@ -230,3 +230,60 @@ func TestSetBookTags_ClearAll(t *testing.T) {
 	require.NoError(t, err)
 	require.Empty(t, tags)
 }
+
+// ---- GetTagsForBooks ----
+
+func TestGetTagsForBooks_EmptyInput(t *testing.T) {
+	d := newTestDB(t)
+
+	result, err := d.GetTagsForBooks(t.Context(), []string{})
+	require.NoError(t, err, "GetTagsForBooks(empty) error")
+	require.Nil(t, result)
+}
+
+func TestGetTagsForBooks_NilInput(t *testing.T) {
+	d := newTestDB(t)
+
+	result, err := d.GetTagsForBooks(t.Context(), nil)
+	require.NoError(t, err, "GetTagsForBooks(nil) error")
+	require.Nil(t, result)
+}
+
+func TestGetTagsForBooks_BookWithNoTags(t *testing.T) {
+	d := newTestDB(t)
+
+	book, err := d.CreateBook(t.Context(), BookInput{Title: "Untagged Book"})
+	require.NoError(t, err)
+
+	result, err := d.GetTagsForBooks(t.Context(), []string{book.ID})
+	require.NoError(t, err, "GetTagsForBooks() error")
+	require.Empty(t, result[book.ID])
+}
+
+func TestGetTagsForBooks_MultipleBooks(t *testing.T) {
+	d := newTestDB(t)
+
+	book1, err := d.CreateBook(t.Context(), BookInput{Title: "Book One"})
+	require.NoError(t, err)
+	book2, err := d.CreateBook(t.Context(), BookInput{Title: "Book Two"})
+	require.NoError(t, err)
+
+	tagA, err := d.CreateTag(t.Context(), "Fiction")
+	require.NoError(t, err)
+	tagB, err := d.CreateTag(t.Context(), "History")
+	require.NoError(t, err)
+
+	require.NoError(t, d.SetBookTags(t.Context(), book1.ID, []string{tagA.ID}))
+	require.NoError(t, d.SetBookTags(t.Context(), book2.ID, []string{tagA.ID, tagB.ID}))
+
+	result, err := d.GetTagsForBooks(t.Context(), []string{book1.ID, book2.ID})
+	require.NoError(t, err, "GetTagsForBooks() error")
+
+	require.Len(t, result[book1.ID], 1)
+	require.Equal(t, "Fiction", result[book1.ID][0].Name)
+
+	require.Len(t, result[book2.ID], 2)
+	names := []string{result[book2.ID][0].Name, result[book2.ID][1].Name}
+	require.Contains(t, names, "Fiction")
+	require.Contains(t, names, "History")
+}

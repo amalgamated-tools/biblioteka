@@ -19,6 +19,7 @@ func TestLoadBookRelations_Empty(t *testing.T) {
 	require.Empty(t, rels.Authors)
 	require.Empty(t, rels.Files)
 	require.Empty(t, rels.Series)
+	require.Empty(t, rels.Tags)
 }
 
 func TestLoadBookRelations_WithRelations(t *testing.T) {
@@ -47,6 +48,12 @@ func TestLoadBookRelations_WithRelations(t *testing.T) {
 	_, err = d.CreateBookFile(t.Context(), book.ID, "epub", "book.epub", 1024, nil, filepath.Join(t.TempDir(), "book.epub"))
 	require.NoError(t, err)
 
+	// Add a tag and link it.
+	tag, err := d.CreateTag(t.Context(), "fiction")
+	require.NoError(t, err)
+	err = d.SetBookTags(t.Context(), book.ID, []string{tag.ID})
+	require.NoError(t, err)
+
 	// Load relations.
 	rels, err := d.LoadBookRelations(t.Context(), book.ID)
 	require.NoError(t, err)
@@ -62,4 +69,7 @@ func TestLoadBookRelations_WithRelations(t *testing.T) {
 
 	require.Len(t, rels.Files, 1)
 	require.Equal(t, "book.epub", rels.Files[0].FileName)
+
+	require.Len(t, rels.Tags, 1)
+	require.Equal(t, "fiction", rels.Tags[0].Name)
 }

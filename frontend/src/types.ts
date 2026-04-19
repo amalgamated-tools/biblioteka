@@ -146,6 +146,7 @@ export interface BookSummary {
 export interface Book extends BookSummary {
   authors: Author[];
   series: BookSeriesEntry[];
+  tags: Tag[];
   files: BookFile[];
 }
 
