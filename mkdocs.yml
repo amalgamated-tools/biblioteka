@@ -64,7 +64,21 @@ nav:
       - Tags: tags.md
   - Developer Reference:
       - API Overview: api.md
-      - API Reference: api-reference.md
+      - API Reference:
+          - Overview: api-reference.md
+          - Auth & API Keys: api/auth.md
+          - Config: api/config.md
+          - Admin: api/admin.md
+          - Libraries: api/libraries.md
+          - Authors: api/authors.md
+          - Series: api/series.md
+          - Tags: api/tags.md
+          - Books & Files: api/books.md
+          - OPDS: api/opds.md
+          - Kobo & KOSync: api/kobo.md
+          - Reading Lists: api/reading-lists.md
+          - Reading Groups: api/reading-groups.md
+          - Stats & Recommendations: api/stats.md
       - Database Schema: database-schema.md
       - Frontend: frontend.md
       - Background Jobs: background-jobs.md
