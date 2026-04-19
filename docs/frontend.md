@@ -29,7 +29,7 @@ frontend/
       MyLibrary.svelte    Placeholder for a planned per-user personal library feature; currently shows an empty state
       Recommendations.svelte  "You Might Also Like" panel rendered at the bottom of the Dashboard; fetches up to 10 book recommendations via `getRecommendations(limit)` using a `$effect`; shows skeleton cards while loading; renders an inline error message when the fetch fails (and logs the error to the console) and renders an empty-state message with a link to `#settings/kobo` when the result set is empty; book cards link to `#books/{id}` via `routerStore.navigate`
       Settings.svelte     Settings shell; owns shared admin state; renders one tab at a time
-      Sidebar.svelte      Navigation sidebar; fetches and displays the running server version; uses `<a href>` anchor links for all navigation items; the brand name is rendered as `<p>` (not `<h1>`) to avoid duplicate top-level headings (WCAG 1.3.1); icon-only action links (Create library, Library settings) carry `aria-label`, and the Create-library icon explicitly carries `aria-hidden="true"` (WCAG 4.1.2); the Library-settings link aria-label includes the library name (e.g. "Library settings for Fiction") so each link has a unique, descriptive name (WCAG 2.4.6); the Library-settings link always carries at least `opacity-30` so it is visible when focused via keyboard (WCAG 2.4.7); nav link clusters are wrapped in `role="group"` containers labelled by `<h2>` group headings (WCAG 1.3.1)
+      Sidebar.svelte      Navigation sidebar; fetches and displays the running server version; uses `<a href>` anchor links for all navigation items; the brand name is rendered as `<p>` (not `<h1>`) to avoid duplicate top-level headings (WCAG 1.3.1); icon-only action links (Create library, Library settings) carry `aria-label`, and the Create-library icon explicitly carries `aria-hidden="true"` (WCAG 4.1.2); the Library-settings link aria-label includes the library name (e.g. "Library settings for Fiction") so each link has a unique, descriptive name (WCAG 2.4.6); the Library-settings link uses a contrast-safe resting color (`text-ink-500`) and switches to `text-accent-400` on hover/focus-within to preserve affordance while meeting WCAG 1.4.11; nav link clusters are wrapped in `role="group"` containers labelled by `<h2>` group headings (WCAG 1.3.1)
       books/              Sub-components for book detail and editing
         BookDetail.svelte    Book detail view; displays cover image, metadata, author/series associations, file attachments, and download links
         BookEdit.svelte      Book edit page; fetches book data, manages form state, and coordinates the `BookEditForm` and `MetadataFetchPanel` sub-components
@@ -1664,20 +1664,21 @@ Key details:
 
 **When adding a new view,** no additional changes are required — the focus effect fires automatically whenever `routerStore.hash` changes, regardless of which view component is rendered.
 
-### Focus visible — Library settings link (`Sidebar.svelte`)
+### Non-text contrast + focus visible — Library settings link (`Sidebar.svelte`)
 
 **WCAG criteria:**
-- [2.4.7 Focus Visible](https://www.w3.org/WAI/WCAG21/Understanding/focus-visible.html) (Level AA) — the opacity fix
+- [1.4.11 Non-text Contrast](https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html) (Level AA) — default-state icon contrast
+- [2.4.7 Focus Visible](https://www.w3.org/WAI/WCAG21/Understanding/focus-visible.html) (Level AA) — keyboard focus indicator
 - [2.4.6 Headings and Labels](https://www.w3.org/WAI/WCAG21/Understanding/headings-and-labels.html) (Level AA) — the unique `aria-label` per library
 
-Interactive elements must have a visible focus indicator so keyboard users can tell which element currently has focus. The library-settings gear icon link in the sidebar is a subtle secondary action that should not visually dominate the sidebar. Before this fix it used `opacity-0` on its resting state, which made it invisible when focused via the keyboard — a WCAG 2.4.7 violation.
+Interactive elements must have enough contrast in their resting state and a visible focus indicator for keyboard users. The library-settings gear icon link in the sidebar is a subtle secondary action that should not visually dominate the sidebar, but it still needs to remain discoverable.
 
-The link now uses `opacity-30` as its resting opacity and `opacity-100` on hover or when the parent library row is focused, so it is always perceptible when focused:
+The link now uses `text-ink-500` in the resting state (3.08:1 contrast against `bg-ink-950`, meeting WCAG 1.4.11's 3:1 minimum) and switches to `text-accent-400` on hover or when the parent row is focus-within. This preserves subtle styling while keeping the icon legible by default:
 
 ```svelte
 <a
   href={`#libraries/edit/${lib.id}`}
-  class="opacity-30 group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 rounded text-ink-500 hover:text-accent-400 transition-all p-0.5 flex-shrink-0"
+  class="text-ink-500 group-hover:text-accent-400 group-focus-within:text-accent-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 rounded transition-all p-0.5 flex-shrink-0"
   aria-label={`Library settings for ${lib.name}`}
   onclick={onClose}
 >
@@ -1689,14 +1690,13 @@ Key details:
 
 | Class / attribute | Purpose |
 |-------------------|---------|
-| `opacity-30` | Resting state — slightly dimmed but never invisible; satisfies WCAG 2.4.7 |
-| `group-hover:opacity-100` / `group-focus-within:opacity-100` | Fully reveals the link when the user hovers or tabs into the library row |
-| `focus:opacity-100` | Ensures the link is fully visible when it holds focus directly |
+| `text-ink-500` | Resting state with sufficient contrast against sidebar background (3.08:1, WCAG 1.4.11) |
+| `group-hover:text-accent-400` / `group-focus-within:text-accent-400` | Increases prominence on hover and keyboard focus-within |
 | `focus-visible:ring-2 focus-visible:ring-accent-400` | Provides an explicit focus ring for keyboard navigation |
 | `rounded` | Ensures the focus ring follows the element's shape |
 | `aria-label={...lib.name...}` | Unique, descriptive label per library (WCAG 2.4.6) |
 
-**Rule:** Never apply `opacity-0` to an element that can receive keyboard focus. Use `opacity-30` (or higher) as the minimum resting opacity so focus is always visible. If you add a new icon-only action link to the sidebar, follow the same resting-opacity pattern.
+**Rule:** Do not rely on low opacity for icon-button resting states on dark backgrounds. Use a contrast-safe resting color and reserve hover/focus states for emphasis.
 
 ### Dark-mode placeholder contrast (`TextInput.svelte`)
 

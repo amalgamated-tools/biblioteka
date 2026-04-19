@@ -56,12 +56,12 @@ func (t *Timestamp) Scan(value any) error {
 				return nil
 			}
 		}
-		return fmt.Errorf("Timestamp.Scan: unable to parse %q", v)
+		return fmt.Errorf("timestamp.scan: unable to parse %q", v)
 	case nil:
 		t.Time = time.Time{}
 		return nil
 	default:
-		return fmt.Errorf("Timestamp.Scan: unsupported type %T", value)
+		return fmt.Errorf("timestamp.scan: unsupported type %T", value)
 	}
 }
 

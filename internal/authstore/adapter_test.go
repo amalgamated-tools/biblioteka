@@ -119,6 +119,46 @@ func TestDbAPIKeyToAuth(t *testing.T) {
 	})
 }
 
+func TestUserAdapter_FindByEmail_NotFound(t *testing.T) {
+	d := newTestDB(t)
+	a := &UserAdapter{DB: d}
+
+	_, err := a.FindByEmail(t.Context(), "nobody@example.com")
+	require.ErrorIs(t, err, auth.ErrNotFound,
+		"FindByEmail must translate sql.ErrNoRows to auth.ErrNotFound")
+}
+
+func TestUserAdapter_FindByEmail_Found(t *testing.T) {
+	d := newTestDB(t)
+	a := &UserAdapter{DB: d}
+	ctx := t.Context()
+
+	_, err := d.CreateUser(ctx, "Alice", "alice@example.com", "hash")
+	require.NoError(t, err)
+
+	u, err := a.FindByEmail(ctx, "alice@example.com")
+	require.NoError(t, err)
+	require.Equal(t, "alice@example.com", u.Email)
+}
+
+func TestUserAdapter_FindByID_NotFound(t *testing.T) {
+	d := newTestDB(t)
+	a := &UserAdapter{DB: d}
+
+	_, err := a.FindByID(t.Context(), "nonexistent-id")
+	require.ErrorIs(t, err, auth.ErrNotFound,
+		"FindByID must translate sql.ErrNoRows to auth.ErrNotFound")
+}
+
+func TestUserAdapter_FindByOIDCSubject_NotFound(t *testing.T) {
+	d := newTestDB(t)
+	a := &UserAdapter{DB: d}
+
+	_, err := a.FindByOIDCSubject(t.Context(), "nonexistent-subject")
+	require.ErrorIs(t, err, auth.ErrNotFound,
+		"FindByOIDCSubject must translate sql.ErrNoRows to auth.ErrNotFound")
+}
+
 func TestCreateUser_TranslatesErrEmailExists(t *testing.T) {
 	// db.ErrEmailExists and auth.ErrEmailExists are separate errors.New() calls
 	// with the same message string. errors.Is checks pointer identity, not string
@@ -172,6 +212,37 @@ func TestCountUsers_DelegatesToDB(t *testing.T) {
 	count, err = adapter.CountUsers(ctx)
 	require.NoError(t, err)
 	require.Equal(t, 1, count)
+}
+
+// ---- APIKeyAdapter tests ----
+
+func newAPIKeyAdapter(t *testing.T) (*APIKeyAdapter, *db.User) {
+	t.Helper()
+	d := newTestDB(t)
+	u, err := d.CreateUser(t.Context(), "API Key User", "apikey@example.com", "hash")
+	require.NoError(t, err)
+	return &APIKeyAdapter{DB: d}, u
+}
+
+func TestAPIKeyAdapter_ValidateAPIKey_NotFound(t *testing.T) {
+	a, _ := newAPIKeyAdapter(t)
+
+	_, _, err := a.ValidateAPIKey(t.Context(), "nonexistent-hash")
+	require.ErrorIs(t, err, auth.ErrNotFound,
+		"ValidateAPIKey must translate sql.ErrNoRows to auth.ErrNotFound")
+}
+
+func TestAPIKeyAdapter_ValidateAPIKey_Success(t *testing.T) {
+	a, u := newAPIKeyAdapter(t)
+	ctx := t.Context()
+
+	key, err := a.DB.CreateAPIKey(ctx, u.ID, "Test Key", "hash-abc", "bib_abc")
+	require.NoError(t, err)
+
+	gotUserID, gotKeyID, err := a.ValidateAPIKey(ctx, "hash-abc")
+	require.NoError(t, err)
+	require.Equal(t, u.ID, gotUserID)
+	require.Equal(t, key.ID, gotKeyID)
 }
 
 // ---- PasskeyAdapter tests ----
