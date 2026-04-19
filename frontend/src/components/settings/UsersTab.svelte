@@ -12,30 +12,25 @@
 
   let { cachedUsers, onUsersLoaded }: Props = $props();
 
-  // One-time initialisation – cachedUsers seeds the list; subsequent updates
-  // come from loadUsers() / toggleAdmin(), not from prop changes.
-  // svelte-ignore state_referenced_locally
-  let userList: AdminUser[] = $state.raw(cachedUsers);
+  let userList: AdminUser[] = $state([]);
   let usersLoading = $state(false);
   let usersError: string | null = $state(null);
   let togglingId: string | null = $state(null);
+  let hasFetchedUsers = false;
 
   $effect(() => {
-    if (userList.length === 0 && cachedUsers.length > 0) {
+    if (hasFetchedUsers) return;
+    if (cachedUsers.length > 0) {
       userList = cachedUsers;
-    }
-  });
-
-  let didInit = false;
-
-  $effect(() => {
-    if (!didInit && userList.length === 0 && !usersLoading) {
-      didInit = true;
+      hasFetchedUsers = true;
+    } else if (!usersLoading) {
       void loadUsers();
     }
   });
 
   async function loadUsers() {
+    if (usersLoading || hasFetchedUsers) return;
+    hasFetchedUsers = true;
     usersLoading = true;
     usersError = null;
     try {
