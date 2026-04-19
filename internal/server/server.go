@@ -137,12 +137,6 @@ func NewServer(ctx context.Context, opts ...ServerOption) (_ *Server, err error)
 
 	if s.JWT == nil {
 		jwtSecret := os.Getenv("JWT_SECRET")
-		jwtManager, err := auth.NewJWTManager(jwtSecret, 24*time.Hour, "biblioteka")
-		if err != nil {
-			return nil, fmt.Errorf("failed to initialize JWT manager: %w", err)
-		}
-		s.JWT = jwtManager
-
 		if jwtSecret == "" {
 			slog.WarnContext(ctx, "JWT_SECRET not set, using random secret; all existing JWT tokens and any at-rest encrypted settings (SMTP password, OIDC client secret) will become invalid after a server restart")
 		} else if len(jwtSecret) < auth.MinSecretLength {
@@ -151,6 +145,11 @@ func NewServer(ctx context.Context, opts ...ServerOption) (_ *Server, err error)
 				auth.MinSecretLength, len(jwtSecret),
 			)
 		}
+		jwtManager, err := auth.NewJWTManager(jwtSecret, 24*time.Hour, "biblioteka")
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize JWT manager: %w", err)
+		}
+		s.JWT = jwtManager
 	}
 
 	secretEncrypter, err := s.JWT.NewSecretEncrypter()
