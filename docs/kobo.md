@@ -240,7 +240,7 @@ The sync token encodes three high-water marks:
 
 ## Audit log
 
-Token creation and deletion are recorded in the [audit log](api-reference.md#get-apiaudit-logs--admin):
+Token creation and deletion are recorded in the [audit log](api/admin.md#get-apiaudit-logs--admin):
 
 | Action | Object type | Metadata |
 |--------|------------|----------|
