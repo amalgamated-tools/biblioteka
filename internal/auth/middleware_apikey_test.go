@@ -24,7 +24,7 @@ func (m *mockAPIKeyValidator) ValidateAPIKey(_ context.Context, keyHash string) 
 	}
 	entry, ok := m.keys[keyHash]
 	if !ok {
-		return "", "", sql.ErrNoRows
+		return "", "", ErrNotFound
 	}
 	return entry.userID, entry.keyID, nil
 }
