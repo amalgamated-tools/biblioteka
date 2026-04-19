@@ -235,6 +235,15 @@ async function openGroupsPage(page) {
     await page.getByRole('heading', { name: 'Reading Groups', exact: true }).waitFor({ state: 'visible' });
 }
 
+async function openGroupNewPage(page) {
+    await page.goto(`${BASE_URL}/#groups/new`, {
+        waitUntil: 'networkidle',
+        timeout: NAVIGATION_TIMEOUT_MS,
+    });
+    await page.waitForURL(`**/#groups/new`, { timeout: NAVIGATION_TIMEOUT_MS });
+    await page.locator('input#new-group-name').waitFor({ state: 'visible' });
+}
+
 async function openGroupDetailPage(page, groupId) {
     await page.goto(`${BASE_URL}/#groups/${groupId}`, {
         waitUntil: 'networkidle',
@@ -573,6 +582,11 @@ export async function runVariant({ theme, mobile }) {
         await openGroupsPage(page);
         await setTheme(page, theme);
         await page.screenshot({ path: path.join(screenshotsDir, buildFilename('groups-empty', variantName)) });
+
+        console.log(`Capturing groups-new (${variantName})...`);
+        await openGroupNewPage(page);
+        await setTheme(page, theme);
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('groups-new', variantName)) });
 
         console.log(`Capturing tags-empty (${variantName})...`);
         await openTagsPage(page);
