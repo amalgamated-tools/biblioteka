@@ -264,9 +264,7 @@
     </Button>
   </div>
 
-  <p role="status" aria-live="polite" aria-atomic="true" class="sr-only">
-    {progressMessage ?? ""}
-  </p>
+  <p role="status" class="sr-only">{progressMessage ?? ""}</p>
 
   {#if fetchingMetadata && progressMessage}
     <div

@@ -120,9 +120,7 @@ describe("MetadataFetchPanel", () => {
     renderPanel();
 
     const liveRegion = screen.getByRole("status");
-    expect(liveRegion).toHaveAttribute("aria-live", "polite");
-    expect(liveRegion).toHaveAttribute("aria-atomic", "true");
-    expect(liveRegion).toHaveTextContent("");
+    expect(liveRegion).toHaveTextContent(/^\s*$/);
   });
 
   it("short-circuits on already_exists and loads metadata", async () => {
