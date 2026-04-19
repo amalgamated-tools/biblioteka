@@ -21,6 +21,40 @@ func TestCreateLibrary(t *testing.T) {
 	require.False(t, lib.UpdatedAt.IsZero())
 }
 
+func TestCreateLibrary_NormalizesName(t *testing.T) {
+	d := newTestDB(t)
+
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"  Fiction  ", "Fiction"},
+		{"Non  Fiction", "Non Fiction"},
+		{" My  Library ", "My Library"},
+	}
+
+	for _, tt := range tests {
+		lib, err := d.CreateLibrary(t.Context(), tt.input, `["/mnt/books"]`, LibraryOrganizationBookPerFolder, false)
+		require.NoError(t, err, "CreateLibrary(%q) error", tt.input)
+		require.Equal(t, tt.want, lib.Name)
+		require.NoError(t, d.DeleteLibrary(t.Context(), lib.ID), "cleanup")
+	}
+}
+
+func TestCreateLibrary_BlankName(t *testing.T) {
+	d := newTestDB(t)
+
+	_, err := d.CreateLibrary(t.Context(), "", `["/mnt/books"]`, LibraryOrganizationBookPerFolder, false)
+	require.ErrorIs(t, err, ErrInvalidLibraryName)
+}
+
+func TestCreateLibrary_WhitespaceOnlyName(t *testing.T) {
+	d := newTestDB(t)
+
+	_, err := d.CreateLibrary(t.Context(), "   ", `["/mnt/books"]`, LibraryOrganizationBookPerFolder, false)
+	require.ErrorIs(t, err, ErrInvalidLibraryName)
+}
+
 func TestCreateLibrary_DuplicateName(t *testing.T) {
 	d := newTestDB(t)
 
@@ -78,6 +112,37 @@ func TestUpdateLibrary(t *testing.T) {
 	require.True(t, updated.Monitored)
 }
 
+func TestUpdateLibrary_NormalizesName(t *testing.T) {
+	d := newTestDB(t)
+
+	created, err := d.CreateLibrary(t.Context(), "Fiction", `["/mnt/fiction"]`, LibraryOrganizationBookPerFolder, false)
+	require.NoError(t, err, "CreateLibrary() error")
+
+	updated, err := d.UpdateLibrary(t.Context(), created.ID, "  Novels  ", `["/mnt/novels"]`, LibraryOrganizationBookPerFolder, false)
+	require.NoError(t, err, "UpdateLibrary() error")
+	require.Equal(t, "Novels", updated.Name)
+}
+
+func TestUpdateLibrary_BlankName(t *testing.T) {
+	d := newTestDB(t)
+
+	created, err := d.CreateLibrary(t.Context(), "Fiction", `["/mnt/fiction"]`, LibraryOrganizationBookPerFolder, false)
+	require.NoError(t, err, "CreateLibrary() error")
+
+	_, err = d.UpdateLibrary(t.Context(), created.ID, "", `["/mnt/fiction"]`, LibraryOrganizationBookPerFolder, false)
+	require.ErrorIs(t, err, ErrInvalidLibraryName)
+}
+
+func TestUpdateLibrary_WhitespaceOnlyName(t *testing.T) {
+	d := newTestDB(t)
+
+	created, err := d.CreateLibrary(t.Context(), "Fiction", `["/mnt/fiction"]`, LibraryOrganizationBookPerFolder, false)
+	require.NoError(t, err, "CreateLibrary() error")
+
+	_, err = d.UpdateLibrary(t.Context(), created.ID, "   ", `["/mnt/fiction"]`, LibraryOrganizationBookPerFolder, false)
+	require.ErrorIs(t, err, ErrInvalidLibraryName)
+}
+
 func TestUpdateLibrary_DuplicateName(t *testing.T) {
 	d := newTestDB(t)
 
@@ -88,6 +153,28 @@ func TestUpdateLibrary_DuplicateName(t *testing.T) {
 
 	_, err = d.UpdateLibrary(t.Context(), lib2.ID, "Fiction", `["/mnt/nonfiction"]`, LibraryOrganizationBookPerFolder, false)
 	require.ErrorIs(t, err, ErrLibraryNameExists)
+}
+
+// TestUpdateLibrary_SameNameBypassesNormalization verifies that sending back the
+// currently stored name (even if it contains legacy non-normalized whitespace)
+// does not trigger ErrLibraryNameExists when updating other fields.
+func TestUpdateLibrary_SameNameBypassesNormalization(t *testing.T) {
+	d := newTestDB(t)
+
+	// Simulate a pre-normalization row by injecting a name with extra whitespace directly.
+	var id string
+	err := d.QueryRowContext(t.Context(),
+		`INSERT INTO libraries (name, paths, organization_type, monitored) VALUES ($1, $2, $3, $4) RETURNING id`,
+		"My  Library", `["/mnt/books"]`, LibraryOrganizationNone, false,
+	).Scan(&id)
+	require.NoError(t, err)
+
+	// Sending back the exact same non-normalized name must not return ErrLibraryNameExists.
+	updated, err := d.UpdateLibrary(t.Context(), id, "My  Library", `["/mnt/books2"]`, LibraryOrganizationNone, true)
+	require.NoError(t, err)
+	require.Equal(t, "My  Library", updated.Name, "stored name should be preserved as-is")
+	require.Equal(t, `["/mnt/books2"]`, updated.Paths)
+	require.True(t, updated.Monitored)
 }
 
 func TestDeleteLibrary(t *testing.T) {
