@@ -497,4 +497,124 @@ describe("MetadataFetchPanel", () => {
     // Comparison panel remains visible after a failed apply
     expect(screen.getByText("Apply All")).toBeInTheDocument();
   });
+
+  it("ignores stale apply success results after bookId rerender", async () => {
+    mockGetMetadata.mockResolvedValue(fakeMetadata);
+
+    let resolveApply!: (value: {
+      id: string;
+      title: string;
+      description: string | null;
+      publisher: string | null;
+      language: string | null;
+      publication_date: string | null;
+      isbn13: string | null;
+      isbn10: string | null;
+      asin: string | null;
+      goodreads_id: string | null;
+      hardcover_id: string | null;
+      google_books_id: string | null;
+      cover_image_url: string | null;
+      created_at: string;
+      updated_at: string;
+    }) => void;
+    const applyPromise = new Promise<{
+      id: string;
+      title: string;
+      description: string | null;
+      publisher: string | null;
+      language: string | null;
+      publication_date: string | null;
+      isbn13: string | null;
+      isbn10: string | null;
+      asin: string | null;
+      goodreads_id: string | null;
+      hardcover_id: string | null;
+      google_books_id: string | null;
+      cover_image_url: string | null;
+      created_at: string;
+      updated_at: string;
+    }>((resolve) => {
+      resolveApply = resolve;
+    });
+    mockApplyMetadata.mockReturnValue(applyPromise);
+
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const view = renderPanel();
+
+    await waitFor(() => {
+      expect(screen.getByText("Apply All")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText("Apply All"));
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(mockApplyMetadata).toHaveBeenCalledWith("b1");
+
+    await view.rerender({ bookId: "b2" });
+
+    await waitFor(() => {
+      expect(screen.getByText("Apply All")).toBeInTheDocument();
+    });
+
+    resolveApply({
+      id: "b1",
+      title: fakeMetadata.title,
+      description: fakeMetadata.description,
+      publisher: fakeMetadata.publisher,
+      language: fakeMetadata.language,
+      publication_date: fakeMetadata.publication_date,
+      isbn13: fakeMetadata.isbn13,
+      isbn10: null,
+      asin: null,
+      goodreads_id: fakeMetadata.goodreads_id,
+      hardcover_id: null,
+      google_books_id: null,
+      cover_image_url: null,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    });
+    await vi.advanceTimersByTimeAsync(0);
+
+    await waitFor(() => {
+      expect(screen.getByText("Apply All")).toBeInTheDocument();
+    });
+    expect(screen.queryByText("Apply failed")).not.toBeInTheDocument();
+  });
+
+  it("ignores stale apply errors after bookId rerender", async () => {
+    mockGetMetadata.mockResolvedValue(fakeMetadata);
+
+    let rejectApply!: (reason?: unknown) => void;
+    const applyPromise = new Promise<never>((_resolve, reject) => {
+      rejectApply = reject;
+    });
+    mockApplyMetadata.mockReturnValue(applyPromise);
+
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const view = renderPanel();
+
+    await waitFor(() => {
+      expect(screen.getByText("Apply All")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText("Apply All"));
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(mockApplyMetadata).toHaveBeenCalledWith("b1");
+
+    await view.rerender({ bookId: "b2" });
+
+    await waitFor(() => {
+      expect(screen.getByText("Apply All")).toBeInTheDocument();
+    });
+
+    rejectApply(new Error("Apply failed"));
+    await vi.advanceTimersByTimeAsync(0);
+
+    await waitFor(() => {
+      expect(screen.getByText("Apply All")).toBeInTheDocument();
+    });
+    expect(screen.queryByText("Apply failed")).not.toBeInTheDocument();
+  });
 });

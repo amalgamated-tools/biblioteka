@@ -227,5 +227,14 @@ describe("MetadataComparison", () => {
     const applyAllButton = screen.getByText("Applying...").closest("button");
     expect(applyAllButton).toBeDisabled();
     expect(screen.queryByText("Apply All")).not.toBeInTheDocument();
+
+    const dismissButton = screen.getByRole("button", { name: "Dismiss" });
+    expect(dismissButton).toBeDisabled();
+
+    const applyButtons = screen.getAllByTitle("Use fetched value");
+    expect(applyButtons.length).toBeGreaterThan(0);
+    applyButtons.forEach((button) => {
+      expect(button).toBeDisabled();
+    });
   });
 });

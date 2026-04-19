@@ -88,6 +88,7 @@
     return () => {
       closeSSE();
       fetchingMetadata = false;
+      applying = false;
       metadataError = null;
       progressMessage = null;
     };
