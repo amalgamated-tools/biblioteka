@@ -68,7 +68,7 @@ describe("Tags management page", () => {
     mockTagStore.loading = true;
     mockTagStore.loaded = false;
     render(Tags);
-    expect(screen.getByRole("status")).toHaveTextContent(/loading tags/i);
+    expect(screen.getByText(/loading tags/i)).toBeInTheDocument();
   });
 
   it("shows empty state when no tags exist", () => {
@@ -148,6 +148,43 @@ describe("Tags management page", () => {
       expect(mockTagStore.edit).toHaveBeenCalledWith("t1", {
         name: "literary fiction",
       });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "Renamed tag to literary fiction.",
+      );
+    });
+  });
+
+  it("associates rename errors with the input", async () => {
+    mockTagStore.tags = fakeTags;
+    mockTagStore.edit.mockRejectedValue(new Error("Tag already exists"));
+    const user = userEvent.setup();
+    const { container } = render(Tags);
+
+    await user.click(
+      screen.getByRole("button", { name: "Rename tag fiction" }),
+    );
+
+    const error = container.querySelector("#tag-rename-error");
+    expect(error).toBeInTheDocument();
+    expect(error).toHaveAttribute("role", "alert");
+    expect(error).toHaveTextContent("");
+
+    const input = screen.getByRole("textbox", { name: "Tag name" });
+    await user.clear(input);
+    await user.type(input, "fantasy");
+    await user.click(screen.getByRole("button", { name: "Save tag name" }));
+
+    await waitFor(() => {
+      expect(mockTagStore.edit).toHaveBeenCalledWith("t1", { name: "fantasy" });
+    });
+
+    await waitFor(() => {
+      expect(input).toHaveAttribute("aria-invalid", "true");
+      expect(input).toHaveAttribute("aria-describedby", "tag-rename-error");
+      expect(error).toHaveTextContent("Tag already exists");
     });
   });
 

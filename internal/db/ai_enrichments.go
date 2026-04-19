@@ -19,10 +19,10 @@ const (
 )
 
 // ErrInvalidAIEnrichmentStatus is returned when an invalid status is passed.
-var ErrInvalidAIEnrichmentStatus = errors.New("db: invalid ai_enrichment status")
+var ErrInvalidAIEnrichmentStatus = errors.New("invalid ai_enrichment status")
 
 // ErrAIEnrichmentNotPending is returned when an enrichment is no longer in pending status.
-var ErrAIEnrichmentNotPending = errors.New("db: ai_enrichment is not in pending status")
+var ErrAIEnrichmentNotPending = errors.New("ai_enrichment is not in pending status")
 
 // AIEnrichment represents a row in the ai_enrichments table.
 type AIEnrichment struct {
