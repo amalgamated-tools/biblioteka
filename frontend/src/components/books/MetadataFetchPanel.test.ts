@@ -116,6 +116,13 @@ describe("MetadataFetchPanel", () => {
     expect(screen.getByText("Fetch Metadata")).toBeInTheDocument();
   });
 
+  it("keeps the live region mounted even before fetch starts", () => {
+    renderPanel();
+
+    const liveRegion = screen.getByRole("status");
+    expect(liveRegion).toHaveTextContent(/^\s*$/);
+  });
+
   it("short-circuits on already_exists and loads metadata", async () => {
     const mockES = createMockEventSource();
     mockSubscribeToMetadataEvents.mockReturnValue(mockES);
@@ -294,7 +301,10 @@ describe("MetadataFetchPanel", () => {
     await user.click(screen.getByText("Fetch Metadata"));
     await vi.advanceTimersByTimeAsync(0);
 
-    expect(screen.getByText("Starting metadata fetch...")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Starting metadata fetch...",
+    );
+    expect(screen.getAllByText("Starting metadata fetch...")).toHaveLength(2);
 
     // Simulate progress update
     mockES.onmessage!({
@@ -303,7 +313,8 @@ describe("MetadataFetchPanel", () => {
     await vi.advanceTimersByTimeAsync(0);
 
     await waitFor(() => {
-      expect(screen.getByText("Searching...")).toBeInTheDocument();
+      expect(screen.getByRole("status")).toHaveTextContent("Searching...");
+      expect(screen.getAllByText("Searching...")).toHaveLength(2);
     });
   });
 
@@ -319,9 +330,12 @@ describe("MetadataFetchPanel", () => {
     await vi.advanceTimersByTimeAsync(0);
 
     await waitFor(() => {
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "Metadata fetch already in progress...",
+      );
       expect(
-        screen.getByText("Metadata fetch already in progress..."),
-      ).toBeInTheDocument();
+        screen.getAllByText("Metadata fetch already in progress..."),
+      ).toHaveLength(2);
     });
   });
 
