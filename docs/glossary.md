@@ -118,6 +118,17 @@ A phishing-resistant, passwordless authentication credential based on the WebAut
 
 Passkeys require server-side configuration in non-`localhost` environments: `WEBAUTHN_RP_ID` must exactly match the domain users access (e.g. `books.example.com`); `WEBAUTHN_RP_ORIGINS` lists the allowed origins; `WEBAUTHN_RP_NAME` sets the name shown in the browser dialog. The default values only work at `http://localhost:8080`. See [Authentication](authentication.md).
 
+## Reading Group
+
+A collaborative space where users read together. Each reading group has one **owner** (the user who created it) and any number of **members**. Members can:
+
+- Share their personal [reading lists](#reading-list) with the group so other members can see the shared list metadata and `book_count`
+- Compare per-member reading progress for any book via `GET /api/groups/{id}/progress?book_id={book_id}` (progress values come from each member's Kobo reading data)
+
+A user can only see groups they belong to — non-members receive `404 Not Found` to avoid leaking group existence. Group names are unique per owner after normalization. The owner cannot remove themselves from a group; to disband, they must delete the group with `DELETE /api/groups/{id}`.
+
+Reading groups are managed via the REST API at `/api/groups` and sub-resources `/api/groups/{id}/members`, `/api/groups/{id}/lists`, and `/api/groups/{id}/progress?book_id={book_id}`. See [API Reference — Reading Groups](api/reading-groups.md).
+
 ## Reading List
 
 A user-curated named collection of books. Reading lists are user-scoped — each user manages their own lists independently. Each list has a required name (unique per user after normalization), an optional description, and a `book_count` computed at read time. Books are added and removed individually; both operations are idempotent.
