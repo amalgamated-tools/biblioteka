@@ -412,6 +412,7 @@ func TestOIDCRoute_Configured(t *testing.T) {
 
 func TestNewServer_DefaultPort(t *testing.T) {
 	d := newTestDB(t)
+	t.Setenv("JWT_SECRET", "")
 
 	s, err := NewServer(t.Context(), WithDB(d))
 	require.NoError(t, err, "NewServer")
@@ -422,6 +423,7 @@ func TestNewServer_DefaultPort(t *testing.T) {
 
 func TestNewServer_WithPort(t *testing.T) {
 	d := newTestDB(t)
+	t.Setenv("JWT_SECRET", "")
 
 	s, err := NewServer(t.Context(), WithDB(d), WithPort(9090))
 	require.NoError(t, err, "NewServer")
@@ -432,6 +434,7 @@ func TestNewServer_WithPort(t *testing.T) {
 
 func TestNewServer_WithDB(t *testing.T) {
 	d := newTestDB(t)
+	t.Setenv("JWT_SECRET", "")
 
 	s, err := NewServer(t.Context(), WithDB(d))
 	require.NoError(t, err, "NewServer")
@@ -473,6 +476,7 @@ func TestNewServer_JWTSecret_TooShort_Error(t *testing.T) {
 func newTestServer(t *testing.T) *httptest.Server {
 	t.Helper()
 	d := newTestDB(t)
+	t.Setenv("JWT_SECRET", "")
 	s, err := NewServer(t.Context(), WithDB(d))
 	require.NoError(t, err, "NewServer")
 	ts := httptest.NewServer(s.mux)
