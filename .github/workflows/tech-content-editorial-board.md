@@ -671,7 +671,7 @@ Use this as the behavioral model for the final step:
 }
 ```
 
-The workflow automatically prefixes the title with `[editorial-board] `.
+The workflow automatically prefixes the title with `docs(editorial): `.
 
 ## Phase 4: Create the GitHub Issue
 
