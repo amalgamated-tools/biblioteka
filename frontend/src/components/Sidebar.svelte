@@ -213,7 +213,7 @@
             </a>
             <a
               href={`#libraries/edit/${lib.id}`}
-              class="text-ink-600 group-hover:text-accent-400 group-focus-within:text-accent-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 rounded transition-all p-0.5 flex-shrink-0"
+              class="text-ink-500 group-hover:text-accent-400 group-focus-within:text-accent-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 rounded transition-all p-0.5 flex-shrink-0"
               aria-label={`Library settings for ${lib.name}`}
               onclick={onClose}
             >

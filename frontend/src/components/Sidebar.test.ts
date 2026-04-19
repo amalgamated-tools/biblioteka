@@ -154,7 +154,8 @@ describe("Sidebar navigation accessibility", () => {
     const fictionSettings = screen.getByRole("link", {
       name: "Library settings for Fiction",
     });
-    expect(fictionSettings).toHaveClass("text-ink-600");
+    expect(fictionSettings).toHaveClass("text-ink-500");
+    expect(fictionSettings).not.toHaveClass("text-ink-600");
     expect(fictionSettings.className).toContain("group-hover:text-accent-400");
     expect(fictionSettings.className).toContain(
       "group-focus-within:text-accent-400",
