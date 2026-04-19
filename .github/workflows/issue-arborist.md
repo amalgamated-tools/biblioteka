@@ -47,7 +47,7 @@ steps:
 safe-outputs:
   create-issue:
     expires: 2d
-    title-prefix: "[Parent] "
+    title-prefix: "chore(issues): "
     max: 5
     group: true
   link-sub-issue:
@@ -111,7 +111,7 @@ For each potential relationship, evaluate:
 
 **Creating Parent Issues for Orphan Clusters:**
 - If you identify a cluster of **5 or more related issues** that lack a parent issue, you may create a new parent issue
-- The parent issue should have a clear, descriptive title starting with "[Parent] " that captures the common theme
+- The parent issue title should clearly describe the common theme (note: the safe-output will automatically add the `chore(issues): ` prefix, so created issues will have titles like `chore(issues): [Parent] Theme Description`)
 - Include a body that explains the cluster and references all related issues
 - Use temporary IDs (format: `aw_` + 3-8 alphanumeric characters) for newly created parent issues
 - After creating the parent, link all related issues as sub-issues using the temporary ID
@@ -130,6 +130,7 @@ For each potential relationship, evaluate:
 1. Create a parent issue using the `create_issue` tool with a temporary ID:
    - Format: `{"type": "create_issue", "temporary_id": "aw_XXXXXXXX", "title": "[Parent] Theme Description", "body": "Description with references to related issues"}`
    - Temporary ID must be `aw_` followed by 3-8 alphanumeric characters (e.g., `aw_abc123`, `aw_Test123`)
+   - Note: the safe-output will automatically prefix the title with `chore(issues): `, so the actual GitHub issue title will be `chore(issues): [Parent] Theme Description`
 2. Link each related issue to the parent using `link_sub_issue` tool with the temporary ID:
    - Format: `{"type": "link_sub_issue", "parent_issue_number": "aw_XXXXXXXX", "sub_issue_number": 123}`
 

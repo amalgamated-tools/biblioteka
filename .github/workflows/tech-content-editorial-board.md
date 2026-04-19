@@ -18,13 +18,13 @@ safe-outputs:
   mentions: false
   allowed-github-references: []
   create-issue:
-    title-prefix: "[editorial-board] "
+    title-prefix: "docs(editorial): "
     labels: [quality, automated-analysis]
     max: 1
   noop:
     report-as-issue: false
   create-pull-request:
-    title-prefix: "[editorial-improvements] "
+    title-prefix: "docs(editorial): "
     labels: [quality, content-improvement, automated-analysis]
     draft: false
     if-no-changes: "warn"
@@ -671,7 +671,7 @@ Use this as the behavioral model for the final step:
 }
 ```
 
-The workflow automatically prefixes the title with `[editorial-board] `.
+The workflow automatically prefixes the title with `docs(editorial): `.
 
 ## Phase 4: Create the GitHub Issue
 

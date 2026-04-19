@@ -18,7 +18,7 @@ tools:
 safe-outputs:
   create-issue:
     expires: 7d
-    title-prefix: "[repo-map] "
+    title-prefix: "docs(repo-map): "
     labels: [documentation]
     max: 1
     close-older-issues: true
