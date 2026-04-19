@@ -252,7 +252,7 @@ The pending candidate must be explicitly reviewed and either applied (via `POST 
 
 **Failure handling:** LLM generation errors and parse failures are logged at `ERROR` level, an error progress event is published, and the error is returned so asynq retries the job up to `DefaultMaxRetry` (5) times with exponential back-off. When the LLM provider is `nil` (not configured at startup), the job publishes an error event and returns `nil` — asynq does not retry it.
 
-> **Note:** AI enrichment requires a running Redis worker and a configured LLM provider. See [`PUT /api/config/llm`](api-reference.md#put-apiconfigllm--admin--jwt-only) for configuration details.
+> **Note:** AI enrichment requires a running Redis worker and a configured LLM provider. See [`PUT /api/config/llm`](api/config.md#put-apiconfigllm--admin--jwt-only) for configuration details.
 
 ### `scan:watch-folder`
 

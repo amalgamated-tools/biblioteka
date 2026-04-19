@@ -117,7 +117,7 @@ func (h *LibraryHandler) listLibraries(w http.ResponseWriter, r *http.Request) {
 }
 
 func validateAndPrepareLibrary(ctx context.Context, w http.ResponseWriter, req *libraryRequest, defaultOrganizationType string) (pathsJSON string, ok bool) {
-	if req.Name == "" {
+	if strings.TrimSpace(req.Name) == "" {
 		writeError(ctx, w, http.StatusBadRequest, "name is required")
 		return "", false
 	}
@@ -204,8 +204,7 @@ func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 
 	lib, err := h.DB.CreateLibrary(r.Context(), req.Name, pathsJSON, req.OrganizationType, req.Monitored)
 	if err != nil {
-		if errors.Is(err, db.ErrLibraryNameExists) {
-			writeError(r.Context(), w, http.StatusConflict, "a library with that name already exists")
+		if handleNameErr(r.Context(), w, err, db.ErrInvalidLibraryName, db.ErrLibraryNameExists, "a library") {
 			return
 		}
 		slog.ErrorContext(r.Context(), "failed to create library", slog.Any(otelkeys.Error, err))
@@ -302,7 +301,7 @@ func (h *LibraryHandler) updateLibrary(w http.ResponseWriter, r *http.Request, i
 	)
 
 	lib, err := h.DB.UpdateLibrary(r.Context(), id, req.Name, pathsJSON, req.OrganizationType, req.Monitored)
-	if handleUpdateErr(r.Context(), w, err, nil, db.ErrLibraryNameExists, "a library", "library", id) {
+	if handleUpdateErr(r.Context(), w, err, db.ErrInvalidLibraryName, db.ErrLibraryNameExists, "a library", "library", id) {
 		return
 	}
 

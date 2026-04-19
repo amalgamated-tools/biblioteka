@@ -485,7 +485,7 @@ curl http://localhost:8080/api/books \
 4. Copy the full key immediately — it is shown **only once** at creation and cannot be retrieved later.
 5. To revoke a key, click **Delete** next to it in the key list.
 
-To manage keys programmatically, see the [API Keys endpoints](api-reference.md#api-keys) in the API reference.
+To manage keys programmatically, see the [API Keys endpoints](api/auth.md#api-keys) in the API reference.
 
 ### Security properties
 
