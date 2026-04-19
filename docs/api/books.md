@@ -8,7 +8,7 @@
 
 ### `GET /api/books` 🔒
 
-List books (summary objects — no nested authors, series, or files), with pagination. Results are sorted by `title` ascending.
+List books (summary objects — no nested authors, series, tags, or files), with pagination. Results are sorted by `title` ascending.
 
 When the `query` parameter is provided, its value is trimmed first. If the trimmed value is non-empty, the endpoint searches `title` and `description` and returns only matching books, still paginated. The search implementation depends on the configured database backend:
 
@@ -104,13 +104,13 @@ Create a book.
 | `language`         | string  |          | BCP 47 language tag (e.g., `"en"`) |
 | `cover_image_url`  | string  |          | Cover art URL or a `data:image/...;base64,...` string. Accepts both a plain `https://` URL and a base64-encoded `data:` URL. For EPUB books, the import pipeline sets this field automatically from the embedded cover; for all other formats, set it manually. The 20 MB decoded-size cap applies on read — see [book summary object](#get-apibooks) for details. |
 
-**Response:** `201 Created` with the full book object (includes `authors`, `series`, `files` arrays).
+**Response:** `201 Created` with the full book object (includes `authors`, `series`, `tags`, `files` arrays).
 
 ---
 
 ### `GET /api/books/{id}` 🔒
 
-Get a single book with its full details: authors, series entries, and associated files.
+Get a single book with its full details: authors, series entries, tags, and associated files.
 
 **Book detail object:**
 
@@ -155,6 +155,14 @@ Get a single book with its full details: authors, series entries, and associated
       "position": 1
     }
   ],
+  "tags": [
+    {
+      "id": "<id>",
+      "name": "science fiction",
+      "created_at": "2026-03-14T02:00:00Z",
+      "updated_at": "2026-03-14T02:00:00Z"
+    }
+  ],
   "files": [],
   "created_at": "2026-03-14T02:00:00Z",
   "updated_at": "2026-03-14T02:00:00Z"
@@ -180,6 +188,8 @@ The flat book fields (`id`, `title`, `description`, etc.) are described in the [
 | `position`         | number? | Position of this book in the series (e.g. `1` for book one); `null` when unset |
 
 **`files[]`** — each element is a [book file object](#get-apibook-filesid).
+
+**`tags[]`** — each element is a [tag object](tags.md#post-apitags). Tags embedded here mirror the response from [`GET /api/books/{id}/tags`](#get-apibooksidtags) and are included for convenience so a single request returns the complete book record without extra round-trips.
 
 ---
 
@@ -435,7 +445,7 @@ After a successful apply, the candidate's `status` changes to `"applied"` and th
 
 **Request body:** none
 
-**Response body (`200`):** Updated book object (same schema as the items in [`GET /api/books`](#get-apibooks) — core fields only, without `authors`, `series`, or `files`).
+**Response body (`200`):** Updated book object (same schema as the items in [`GET /api/books`](#get-apibooks) — core fields only, without `authors`, `series`, `tags`, or `files`).
 
 > A successful apply is recorded in the audit log as `metadata.applied`.
 
