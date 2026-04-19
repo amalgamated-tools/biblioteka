@@ -17,7 +17,7 @@ Annotations are notes you attach to books to record highlights, quotes, and obse
 
 ```http
 POST /api/books/{id}/annotations
-Authorization: Bearer <jwt>
+Authorization: Bearer <token-or-api-key>
 Content-Type: application/json
 
 {
@@ -35,9 +35,9 @@ Content-Type: application/json
 
 ```json
 {
-  "id": "01abc123...",
-  "user_id": "01def456...",
-  "book_id": "01ghi789...",
+  "id": "4f8c2a1d9b6e4c3f8a7d1e2b5c6f9a0d",
+  "user_id": "9a1b2c3d4e5f6780a1b2c3d4e5f67890",
+  "book_id": "0f1e2d3c4b5a69788796a5b4c3d2e1f0",
   "text": "This passage reframes the entire first act.",
   "cfi": "/4/2/4",
   "user_name": "alice",
@@ -52,7 +52,7 @@ Content-Type: application/json
 
 ```http
 GET /api/books/{id}/annotations
-Authorization: Bearer <jwt>
+Authorization: Bearer <token-or-api-key>
 ```
 
 Returns all annotations visible to you for the given book: your own annotations plus annotations shared with any reading group you belong to.
@@ -67,7 +67,7 @@ Returns all annotations visible to you for the given book: your own annotations 
 
 ```http
 GET /api/annotations/{id}
-Authorization: Bearer <jwt>
+Authorization: Bearer <token-or-api-key>
 ```
 
 Returns the annotation if you own it. Returns `404 Not Found` for annotations owned by other users, even if they appear in the book's annotation list.
@@ -78,13 +78,13 @@ Returns the annotation if you own it. Returns `404 Not Found` for annotations ow
 
 ```http
 PUT /api/annotations/{id}
-Authorization: Bearer <jwt>
+Authorization: Bearer <token-or-api-key>
 Content-Type: application/json
 
 {
   "text": "Updated note text.",
   "cfi": "/4/2/6",
-  "group_id": "01grp123..."
+  "group_id": "a1b2c3d4e5f678901234567890abcdef"
 }
 ```
 
@@ -101,7 +101,7 @@ Content-Type: application/json
 
 ```http
 DELETE /api/annotations/{id}
-Authorization: Bearer <jwt>
+Authorization: Bearer <token-or-api-key>
 ```
 
 Permanently removes the annotation. You must own it.
@@ -112,7 +112,7 @@ Permanently removes the annotation. You must own it.
 
 ## API reference
 
-All annotation endpoints require authentication (`Authorization: Bearer <jwt>`).
+All annotation endpoints require authentication (`Authorization: Bearer <token-or-api-key>`). See [Authentication](api.md#authentication) for accepted credential types (JWT, API key, or session cookie).
 
 ### `GET /api/books/{id}/annotations` 🔒
 
