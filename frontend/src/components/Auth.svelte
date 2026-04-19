@@ -252,7 +252,21 @@
       signupEmailInvalid = required()(email) !== null;
       signupPasswordInvalid = required()(password) !== null;
       if (signupNameInvalid || signupEmailInvalid || signupPasswordInvalid) {
-        error = "Please fill in all fields";
+        if (signupNameInvalid && signupEmailInvalid && signupPasswordInvalid) {
+          error = "Please fill in all fields";
+        } else if (signupNameInvalid && signupEmailInvalid) {
+          error = "Please fill in the name and email fields";
+        } else if (signupNameInvalid && signupPasswordInvalid) {
+          error = "Please fill in the name and password fields";
+        } else if (signupEmailInvalid && signupPasswordInvalid) {
+          error = "Please fill in the email and password fields";
+        } else if (signupNameInvalid) {
+          error = "Please fill in the name field";
+        } else if (signupEmailInvalid) {
+          error = "Please fill in the email field";
+        } else {
+          error = "Please fill in the password field";
+        }
         loading = false;
         return;
       }
