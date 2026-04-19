@@ -15,12 +15,38 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	goauthhandler "github.com/amalgamated-tools/goauth/handler"
 )
+
+// apiKeyDTO is the JSON representation of an API key (without the raw token).
+// Defined here for swagger documentation; the actual serialization is performed
+// by goauth's unexported types.
+type apiKeyDTO struct { //nolint:unused
+	ID         string     `json:"id"`
+	Name       string     `json:"name"`
+	KeyPrefix  string     `json:"key_prefix"`
+	LastUsedAt *time.Time `json:"last_used_at"`
+	CreatedAt  time.Time  `json:"created_at"`
+}
+
+// apiKeyCreateRequest is the request body for creating an API key.
+// Defined here for swagger documentation; the actual decoding is performed by goauth.
+type apiKeyCreateRequest struct { //nolint:unused
+	Name string `json:"name"`
+}
+
+// apiKeyCreateResponse is the response body for a newly created API key.
+// The raw key is returned only once and is never retrievable again.
+// Defined here for swagger documentation; the actual serialization is performed by goauth.
+type apiKeyCreateResponse struct { //nolint:unused
+	apiKeyDTO
+	Key string `json:"key"`
+}
 
 // AuthHandler wraps goauth's AuthHandler with biblioteka-specific methods (Logout)
 // and audit logging for signup and password-change.
@@ -116,6 +142,24 @@ func (h *APIKeyHandler) Delete(w http.ResponseWriter, r *http.Request) {
 }
 
 // HandleAPIKeys dispatches GET (list) and POST (create) for /api/api-keys.
+//
+//	@Summary	List and create API keys
+//	@Description
+//	@Description	GET lists all API keys for the authenticated user.
+//	@Description	POST creates a new API key. The raw key is returned only in the creation response and is never retrievable again.
+//	@Description	POST body: {"name": "string"} (required)
+//	@Tags			api-keys
+//	@Security		BearerAuth
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{array}		apiKeyDTO				"List of API keys"
+//	@Success		201	{object}	apiKeyCreateResponse	"API key created"
+//	@Failure		400	{object}	errorResponse			"Bad request"
+//	@Failure		401	{object}	errorResponse			"Unauthorized"
+//	@Failure		405	{object}	errorResponse			"Method not allowed"
+//	@Failure		500	{object}	errorResponse			"Internal server error"
+//	@Router			/api-keys [get]
+//	@Router			/api-keys [post]
 func (h *APIKeyHandler) HandleAPIKeys(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
@@ -128,6 +172,20 @@ func (h *APIKeyHandler) HandleAPIKeys(w http.ResponseWriter, r *http.Request) {
 }
 
 // HandleAPIKey dispatches DELETE for /api/api-keys/{id}.
+//
+//	@Summary		Delete an API key
+//	@Description	Delete an API key by ID. Requests authenticated with this key will receive 401 afterward.
+//	@Tags			api-keys
+//	@Security		BearerAuth
+//	@Produce		json
+//	@Param			id	path	string	true	"API key ID"
+//	@Success		204	"API key deleted"
+//	@Failure		400	{object}	errorResponse	"Bad request"
+//	@Failure		401	{object}	errorResponse	"Unauthorized"
+//	@Failure		404	{object}	errorResponse	"API key not found"
+//	@Failure		405	{object}	errorResponse	"Method not allowed"
+//	@Failure		500	{object}	errorResponse	"Internal server error"
+//	@Router			/api-keys/{id} [delete]
 func (h *APIKeyHandler) HandleAPIKey(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
 		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
