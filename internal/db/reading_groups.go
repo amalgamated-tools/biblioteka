@@ -54,8 +54,9 @@ func scanReadingGroupMember(row interface{ Scan(...any) error }) (*ReadingGroupM
 }
 
 // CreateGroup creates a new reading group and inserts the owner as a member with role="owner".
-// It cannot use namedEntityCreate because it needs a transaction to atomically insert both the
-// group row and the owner's membership row in a single operation.
+// It uses explicit transaction handling rather than namedEntityCreate because this is a
+// multi-step create operation that must atomically insert both the group row and the owner's
+// membership row.
 func (d *DB) CreateGroup(ctx context.Context, ownerID, name string, description *string) (*ReadingGroup, error) {
 	name = NormalizeGroupName(name)
 	if name == "" {
@@ -138,6 +139,8 @@ func (d *DB) ListGroups(ctx context.Context, userID string) ([]ReadingGroup, err
 }
 
 // UpdateGroup updates the name and description. Only the owner can update.
+// sql.ErrNoRows propagates unchanged when the id+ownerID pair matches no row
+// (group not found, or caller is not the owner), which handleUpdateErr maps to 404.
 func (d *DB) UpdateGroup(ctx context.Context, id, ownerID, name string, description *string) (*ReadingGroup, error) {
 	return namedEntityUpdate(ctx, "reading group", id, name,
 		NormalizeGroupName, ErrInvalidGroupName, ErrGroupNameExists,
