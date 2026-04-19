@@ -296,7 +296,9 @@
                       disabled={renaming}
                       aria-label="Tag name"
                       aria-invalid={!!renameError}
-                      aria-describedby={renameError ? "tag-rename-error" : undefined}
+                      aria-describedby={renameError
+                        ? "tag-rename-error"
+                        : undefined}
                       class="py-1.5 text-sm"
                     />
                     <button
