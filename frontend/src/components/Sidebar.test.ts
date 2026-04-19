@@ -111,6 +111,27 @@ describe("Sidebar navigation accessibility", () => {
     expect(dashboard).not.toHaveAttribute("aria-current");
   });
 
+  it("renders Tags link with correct href", () => {
+    render(Sidebar, {
+      props: { currentView: "dashboard", open: true, onClose: () => {} },
+    });
+
+    const tags = screen.getByRole("link", { name: "Tags" });
+    expect(tags).toHaveAttribute("href", "#tags");
+  });
+
+  it("sets aria-current='page' on the Tags link when active", () => {
+    render(Sidebar, {
+      props: { currentView: "tags", open: true, onClose: () => {} },
+    });
+
+    const tags = screen.getByRole("link", { name: "Tags" });
+    expect(tags).toHaveAttribute("aria-current", "page");
+
+    const dashboard = screen.getByRole("link", { name: "Dashboard" });
+    expect(dashboard).not.toHaveAttribute("aria-current");
+  });
+
   it("sets aria-current='page' on the active library link", () => {
     render(Sidebar, {
       props: {
