@@ -123,7 +123,7 @@ func (d *DB) UpdateAIEnrichmentStatus(ctx context.Context, userID, id, status st
 	switch status {
 	case AIEnrichmentStatusPending, AIEnrichmentStatusApplied, AIEnrichmentStatusRejected:
 	default:
-		return nil, fmt.Errorf("invalid ai_enrichment status %q: %w", status, ErrInvalidAIEnrichmentStatus)
+		return nil, fmt.Errorf("unknown ai_enrichment status %q: %w", status, ErrInvalidAIEnrichmentStatus)
 	}
 	slog.DebugContext(ctx, "db: updating AI enrichment status",
 		slog.String(otelkeys.AIEnrichmentID, id),
