@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from "svelte";
   import {
     Tag as TagIcon,
     Plus,
@@ -28,6 +29,7 @@
   let editingName = $state("");
   let renaming = $state(false);
   let renameError: string | null = $state(null);
+  let renameSuccessMessage = $state("");
 
   let pendingDeleteId: string | null = $state(null);
   let deleteError: string | null = $state(null);
@@ -52,12 +54,14 @@
     editingId = id;
     editingName = name;
     renameError = null;
+    renameSuccessMessage = "";
   }
 
   function cancelEdit() {
     editingId = null;
     editingName = "";
     renameError = null;
+    renameSuccessMessage = "";
   }
 
   async function handleRename() {
@@ -66,10 +70,13 @@
     if (!name) return;
     renaming = true;
     renameError = null;
+    renameSuccessMessage = "";
     try {
       await tagStore.edit(editingId, { name });
       editingId = null;
       editingName = "";
+      await tick();
+      renameSuccessMessage = `Renamed tag to ${name}.`;
     } catch (e) {
       renameError = e instanceof Error ? e.message : "Failed to rename tag";
     } finally {
@@ -107,6 +114,10 @@
 </script>
 
 <div>
+  <span role="status" class="sr-only">{renameSuccessMessage}</span>
+  <span id="tag-rename-error" role="alert" class="sr-only"
+    >{renameError ?? ""}</span
+  >
   <div class="flex items-center justify-between mb-8">
     <div class="flex items-center gap-3">
       <div
@@ -277,15 +288,17 @@
                       void handleRename();
                     }}
                   >
-                    {#if renameError}
-                      <span class="text-xs text-danger-600 dark:text-danger-400"
-                        >{renameError}</span
-                      >
-                    {/if}
+                    <span class="text-xs text-danger-600 dark:text-danger-400">
+                      {renameError ?? ""}
+                    </span>
                     <TextInput
                       bind:value={editingName}
                       disabled={renaming}
                       aria-label="Tag name"
+                      aria-invalid={!!renameError}
+                      aria-describedby={renameError
+                        ? "tag-rename-error"
+                        : undefined}
                       class="py-1.5 text-sm"
                     />
                     <button
