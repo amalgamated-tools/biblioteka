@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
@@ -64,23 +65,19 @@ func (d *DB) SetBookAuthors(ctx context.Context, bookID string, authorIDs []stri
 		}
 	}
 
-	tx, err := d.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer deferRollback(ctx, tx)
-
-	if _, err := tx.ExecContext(ctx, `DELETE FROM book_authors WHERE book_id = $1`, bookID); err != nil {
-		return err
-	}
-
-	for _, authorID := range unique {
-		if _, err := tx.ExecContext(ctx, `INSERT INTO book_authors (book_id, author_id) VALUES ($1, $2)`, bookID, authorID); err != nil {
+	return d.WithTx(ctx, func(tx *sql.Tx) error {
+		if _, err := tx.ExecContext(ctx, `DELETE FROM book_authors WHERE book_id = $1`, bookID); err != nil {
 			return err
 		}
-	}
 
-	return tx.Commit()
+		for _, authorID := range unique {
+			if _, err := tx.ExecContext(ctx, `INSERT INTO book_authors (book_id, author_id) VALUES ($1, $2)`, bookID, authorID); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
 }
 
 // GetBookSeries returns all series entries for a book.
@@ -119,23 +116,19 @@ func (d *DB) SetBookSeries(ctx context.Context, bookID string, entries []BookSer
 		}
 	}
 
-	tx, err := d.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer deferRollback(ctx, tx)
-
-	if _, err := tx.ExecContext(ctx, `DELETE FROM book_series WHERE book_id = $1`, bookID); err != nil {
-		return err
-	}
-
-	for _, entry := range unique {
-		if _, err := tx.ExecContext(ctx, `INSERT INTO book_series (book_id, series_id, position) VALUES ($1, $2, $3)`, bookID, entry.SeriesID, entry.Position); err != nil {
+	return d.WithTx(ctx, func(tx *sql.Tx) error {
+		if _, err := tx.ExecContext(ctx, `DELETE FROM book_series WHERE book_id = $1`, bookID); err != nil {
 			return err
 		}
-	}
 
-	return tx.Commit()
+		for _, entry := range unique {
+			if _, err := tx.ExecContext(ctx, `INSERT INTO book_series (book_id, series_id, position) VALUES ($1, $2, $3)`, bookID, entry.SeriesID, entry.Position); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
 }
 
 // GetAuthorsForBooks returns authors grouped by book ID for the given book IDs.
