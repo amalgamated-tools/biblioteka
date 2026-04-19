@@ -240,24 +240,22 @@
 
   async function applyAll() {
     if (!pendingMetadata) return;
+    const targetBookId = bookId;
     applying = true;
     metadataError = null;
     try {
-      const updated = await api.applyMetadata(bookId);
-      fields.title = updated.title;
-      fields.description = updated.description ?? "";
-      fields.publisher = updated.publisher ?? "";
-      fields.language = updated.language ?? "";
-      fields.publicationDate = updated.publication_date ?? "";
-      fields.isbn13 = updated.isbn13 ?? "";
-      fields.isbn10 = updated.isbn10 ?? "";
-      fields.asin = updated.asin ?? "";
-      fields.goodreadsId = updated.goodreads_id ?? "";
-      fields.hardcoverId = updated.hardcover_id ?? "";
-      fields.googleBooksId = updated.google_books_id ?? "";
-      fields.coverImageUrl = updated.cover_image_url ?? "";
+      const updated = await api.applyMetadata(targetBookId);
+      if (bookId !== targetBookId) return;
+      const src = updated as unknown as Record<
+        EditableMetadataKey,
+        string | null
+      >;
+      for (const key of Object.keys(FIELD_MAP) as EditableMetadataKey[]) {
+        fields[FIELD_MAP[key]] = src[key] ?? "";
+      }
       pendingMetadata = null;
     } catch (e) {
+      if (bookId !== targetBookId) return;
       metadataError =
         e instanceof Error ? e.message : "Failed to apply metadata";
     } finally {
