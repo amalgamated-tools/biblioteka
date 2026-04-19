@@ -1,5 +1,5 @@
 {
-  "last_run": "2026-04-18T20:27:05Z",
+  "last_run": "2026-04-19T20:22:12Z",
   "tasks_run": ["task2", "task3", "task7"],
   "commands": {
     "build": "make build (requires frontend first)",
@@ -69,19 +69,31 @@
     },
     {
       "id": "tags-name-sort-index",
-      "status": "pr_created",
+      "status": "merged",
       "description": "Add idx_tags_name_sort on tags(name) to eliminate temp B-tree for ListTags ORDER BY",
-      "pr_branch": "perf-assist/tags-name-sort-index-20260418",
-      "evidence": "BEFORE: SCAN tags + USE TEMP B-TREE FOR ORDER BY; AFTER: SCAN tags USING INDEX idx_tags_name_sort"
+      "pr_number": 2275
+    },
+    {
+      "id": "user-created-at-sort-indexes",
+      "status": "pr_created",
+      "description": "Add composite (user_id, created_at, id) indexes for api_keys, kobo_tokens, passkey_credentials - eliminates temp B-tree on 3 list-by-user queries",
+      "pr_branch": "perf-assist/user-created-at-sort-indexes-20260419",
+      "evidence": "BEFORE: SEARCH ... USING INDEX idx_*_user_id (user_id=?) + USE TEMP B-TREE FOR ORDER BY; AFTER: SEARCH ... USING INDEX idx_*_user_created_at (user_id=?)"
     },
     {
       "id": "book-annotations-sort-index",
       "status": "pending",
       "description": "Add (book_id, created_at) index on book_annotations to avoid temp B-tree for ListAnnotationsForBook; low priority since result sets are small",
       "priority": "low"
+    },
+    {
+      "id": "reading-group-members-joined-at-index",
+      "status": "pending",
+      "description": "Add (group_id, joined_at) index on reading_group_members to avoid temp B-tree for ListGroupMembers ORDER BY joined_at; low priority since groups are small",
+      "priority": "low"
     }
   ],
   "monthly_activity_issue_number": null,
-  "monthly_activity_issue_note": "Issue #2052 was closed by veverkap on 2026-04-18; new issue created for April 2026",
+  "monthly_activity_issue_note": "Issue #2276 was closed by veverkap on 2026-04-19; new issue created for April 2026",
   "checked_off_items": []
 }
