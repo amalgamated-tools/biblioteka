@@ -106,7 +106,7 @@ func ScanDirectory(ctx context.Context, enqueuer Enqueuer, p ScanPathPayload) er
 		}
 
 		ext := strings.ToLower(filepath.Ext(path))
-		fileType, ok := SupportedExtensions[ext]
+		fileType, ok := LookupSupportedFileType(ext)
 		if !ok {
 			slog.DebugContext(ctx, "scan:path skipping unsupported file",
 				slog.String(otelkeys.Path, path),

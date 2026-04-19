@@ -238,7 +238,7 @@ func (h *BookHandler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 // on its extension. It returns the empty string and false for unsupported types.
 func detectUploadFileType(filename string) (string, bool) {
 	ext := strings.ToLower(filepath.Ext(filename))
-	ft, ok := jobs.SupportedExtensions[ext]
+	ft, ok := jobs.LookupSupportedFileType(ext)
 	return ft, ok
 }
 
