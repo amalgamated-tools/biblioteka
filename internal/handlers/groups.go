@@ -280,16 +280,11 @@ func (h *GroupHandler) updateGroup(w http.ResponseWriter, r *http.Request, id st
 //	@Failure		500	{object}	errorResponse
 //	@Router			/groups/{id} [delete]
 func (h *GroupHandler) deleteGroup(w http.ResponseWriter, r *http.Request, id string) {
-	ctx := r.Context()
-	userID := auth.UserIDFromContext(ctx)
-	if handleOpErr(ctx, w, h.DB.DeleteGroup(ctx, id, userID), "group", "failed to delete group",
-		slog.String(otelkeys.GroupID, id),
-	) {
-		return
-	}
-
-	logAudit(ctx, h.DB, userID, db.AuditActionGroupDeleted, "group", id, nil)
-	w.WriteHeader(http.StatusNoContent)
+	deleteUserOwnedResource(h.DB, w, r, id, "group", "group", otelkeys.GroupID,
+		h.DB.GetGroup, h.DB.DeleteGroup,
+		db.AuditActionGroupDeleted,
+		func(g *db.ReadingGroup) map[string]any { return map[string]any{"name": g.Name} },
+	)
 }
 
 func (h *GroupHandler) handleGroupMembers(w http.ResponseWriter, r *http.Request, groupID string) {
