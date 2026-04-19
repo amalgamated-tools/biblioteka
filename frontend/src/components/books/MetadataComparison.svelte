@@ -9,10 +9,17 @@
     onApplyField: (field: keyof RemoteMetadata & keyof CurrentValues) => void;
     onApplyAll: () => void;
     onDismiss: () => void;
+    applying?: boolean;
   }
 
-  let { metadata, currentValues, onApplyField, onApplyAll, onDismiss }: Props =
-    $props();
+  let {
+    metadata,
+    currentValues,
+    onApplyField,
+    onApplyAll,
+    onDismiss,
+    applying = false,
+  }: Props = $props();
 
   type FieldDef = {
     key: keyof RemoteMetadata & keyof CurrentValues;
@@ -70,11 +77,16 @@
       </span>
     </div>
     <div class="flex items-center gap-2">
-      <Button onclick={onApplyAll} size="sm">
+      <Button onclick={onApplyAll} size="sm" disabled={applying}>
         <Check class="w-3 h-3 mr-1" aria-hidden="true" />
-        Apply All
+        {applying ? "Applying..." : "Apply All"}
       </Button>
-      <Button variant="secondary" onclick={onDismiss} size="sm">
+      <Button
+        variant="secondary"
+        onclick={onDismiss}
+        size="sm"
+        disabled={applying}
+      >
         <X class="w-3 h-3 mr-1" aria-hidden="true" />
         Dismiss
       </Button>
@@ -122,7 +134,8 @@
                 {#if different}
                   <button
                     onclick={() => onApplyField(field.key)}
-                    class="p-1 rounded-md text-accent-600 dark:text-accent-400 hover:bg-accent-100 dark:hover:bg-accent-800/30 transition-colors"
+                    disabled={applying}
+                    class="p-1 rounded-md text-accent-600 dark:text-accent-400 hover:bg-accent-100 dark:hover:bg-accent-800/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     title="Use fetched value"
                     aria-label="Use fetched {field.label}"
                   >
