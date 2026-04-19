@@ -5,6 +5,7 @@ import path from 'path';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const screenshotsDir = path.join(__dirname, '..', '..', 'screenshots');
+const demoBooksDir = path.join(__dirname, '.demo-books');
 const BASE_URL = process.env.BASE_URL || 'http://localhost:5173';
 const DEMO_NAME = process.env.DEMO_NAME || 'Demo';
 const DEMO_EMAIL = process.env.DEMO_EMAIL || 'demo@veverka.net';
@@ -132,10 +133,10 @@ async function openBookDetailPage(page, bookId) {
         waitUntil: 'networkidle',
         timeout: NAVIGATION_TIMEOUT_MS,
     });
-    // Wait for the book title h1 to be populated (empty while loading)
+    // Wait for the book title h1 (aria-busy is set while loading, removed once the book is fetched)
     await page.waitForFunction(() => {
-        const h1 = document.querySelector('h1');
-        return h1 && h1.textContent.trim().length > 0;
+        const h1 = document.querySelector('main h1');
+        return h1 && !h1.hasAttribute('aria-busy') && h1.textContent.trim().length > 0;
     });
 }
 
@@ -219,7 +220,7 @@ async function openReadingListDetailPage(page, listId) {
     });
     // Wait for the list name h1 to appear (only rendered once the store has loaded)
     await page.waitForFunction(() => {
-        const h1 = document.querySelector('h1');
+        const h1 = document.querySelector('main h1');
         return h1 && h1.textContent.trim().length > 0;
     });
 }
@@ -239,7 +240,7 @@ async function openGroupDetailPage(page, groupId) {
     });
     // Wait for the group name h1 to appear (only rendered once the store has loaded)
     await page.waitForFunction(() => {
-        const h1 = document.querySelector('h1');
+        const h1 = document.querySelector('main h1');
         return h1 && h1.textContent.trim().length > 0;
     });
 }
@@ -304,13 +305,18 @@ async function loginAsNonadmin(page) {
 }
 
 /**
- * Seeds a library via the API. Returns the library ID.
- * Must be called while a user is logged in (uses the session cookie forwarded
- * by the Vite dev proxy from port 5173 to the Go backend on port 8080).
+ * Injects shared fetch helpers into the page context as window globals.
+ * Must be called before any page.evaluate that uses __apiGet/__apiPost/__apiPut.
+ * Re-inject after any navigation that clears the page context.
  */
-async function seedLibrary(page) {
-    return page.evaluate(async () => {
-        async function apiPost(urlPath, body) {
+async function injectApiHelpers(page) {
+    await page.evaluate(() => {
+        window.__apiGet = async function (urlPath) {
+            const res = await fetch(urlPath);
+            if (!res.ok) throw new Error(`GET ${urlPath} failed (${res.status})`);
+            return res.json();
+        };
+        window.__apiPost = async function (urlPath, body) {
             const res = await fetch(urlPath, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -320,41 +326,10 @@ async function seedLibrary(page) {
                 const text = await res.text();
                 throw new Error(`POST ${urlPath} failed (${res.status}): ${text}`);
             }
+            if (res.status === 204) return null;
             return res.json();
-        }
-
-        const library = await apiPost('/api/libraries', {
-            name: 'Demo Library',
-            paths: ['/tmp/demo-books'],
-            organization_type: 'book_per_folder',
-            monitored: false,
-        });
-        return { libraryId: library.id };
-    });
-}
-
-/**
- * Seeds books, authors, tags, reading lists, and a reading group via the API.
- * Returns entity IDs for use in navigation.
- * Must be called while a user is logged in (uses the session cookie forwarded
- * by the Vite dev proxy from port 5173 to the Go backend on port 8080).
- */
-async function seedBooksAndMore(page) {
-    return page.evaluate(async () => {
-        async function apiPost(urlPath, body) {
-            const res = await fetch(urlPath, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body),
-            });
-            if (!res.ok) {
-                const text = await res.text();
-                throw new Error(`POST ${urlPath} failed (${res.status}): ${text}`);
-            }
-            return res.json();
-        }
-
-        async function apiPut(urlPath, body) {
+        };
+        window.__apiPut = async function (urlPath, body) {
             const res = await fetch(urlPath, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -365,9 +340,52 @@ async function seedBooksAndMore(page) {
                 throw new Error(`PUT ${urlPath} failed (${res.status}): ${text}`);
             }
             return res.json();
+        };
+    });
+}
+
+/**
+ * Seeds a library via the API. Idempotent: skips creation if "Demo Library"
+ * already exists. Returns the library ID.
+ * Must be called while a user is logged in.
+ */
+async function seedLibrary(page, demoBooksPath) {
+    await injectApiHelpers(page);
+    return page.evaluate(async (demoBooksPath) => {
+        const libs = await window.__apiGet('/api/libraries');
+        const existing = libs.find((l) => l.name === 'Demo Library');
+        if (existing) return { libraryId: existing.id };
+
+        const library = await window.__apiPost('/api/libraries', {
+            name: 'Demo Library',
+            paths: [demoBooksPath],
+            organization_type: 'book_per_folder',
+            monitored: false,
+        });
+        return { libraryId: library.id };
+    }, demoBooksPath);
+}
+
+/**
+ * Seeds books, authors, tags, reading lists, and a reading group via the API.
+ * Idempotent: skips all creation if books already exist and returns existing IDs.
+ * Returns entity IDs for use in navigation.
+ * Must be called while a user is logged in.
+ */
+async function seedBooksAndMore(page) {
+    await injectApiHelpers(page);
+    return page.evaluate(async () => {
+        const booksResult = await window.__apiGet('/api/books');
+        if (booksResult.total > 0) {
+            const lists = await window.__apiGet('/api/reading-lists');
+            const groups = await window.__apiGet('/api/groups');
+            return {
+                bookIds: booksResult.books.slice(0, 5).map((b) => b.id),
+                listIds: lists.slice(0, 2).map((l) => l.id),
+                groupIds: groups.slice(0, 1).map((g) => g.id),
+            };
         }
 
-        // Create 5 books
         const bookInputs = [
             {
                 title: 'Dune',
@@ -405,49 +423,45 @@ async function seedBooksAndMore(page) {
                 language: 'en',
             },
         ];
-        const books = await Promise.all(bookInputs.map((b) => apiPost('/api/books', b)));
+        const books = await Promise.all(bookInputs.map((b) => window.__apiPost('/api/books', b)));
         const bookIds = books.map((b) => b.id);
 
-        // Create 3 authors and assign to books
         const authorInputs = [
             { name: 'Frank Herbert' },
             { name: 'Patrick Rothfuss' },
             { name: 'William Gibson' },
         ];
-        const authors = await Promise.all(authorInputs.map((a) => apiPost('/api/authors', a)));
+        const authors = await Promise.all(authorInputs.map((a) => window.__apiPost('/api/authors', a)));
         const authorIds = authors.map((a) => a.id);
 
-        await apiPut(`/api/books/${bookIds[0]}/authors`, { author_ids: [authorIds[0]] });
-        await apiPut(`/api/books/${bookIds[1]}/authors`, { author_ids: [authorIds[1]] });
-        await apiPut(`/api/books/${bookIds[2]}/authors`, { author_ids: [authorIds[2]] });
+        await window.__apiPut(`/api/books/${bookIds[0]}/authors`, { author_ids: [authorIds[0]] });
+        await window.__apiPut(`/api/books/${bookIds[1]}/authors`, { author_ids: [authorIds[1]] });
+        await window.__apiPut(`/api/books/${bookIds[2]}/authors`, { author_ids: [authorIds[2]] });
 
-        // Create 3 tags and assign to books
         const tagInputs = [{ name: 'sci-fi' }, { name: 'fantasy' }, { name: 'classic' }];
-        const tags = await Promise.all(tagInputs.map((t) => apiPost('/api/tags', t)));
+        const tags = await Promise.all(tagInputs.map((t) => window.__apiPost('/api/tags', t)));
         const tagIds = tags.map((t) => t.id);
 
-        await apiPut(`/api/books/${bookIds[0]}/tags`, { tag_ids: [tagIds[0], tagIds[2]] });
-        await apiPut(`/api/books/${bookIds[1]}/tags`, { tag_ids: [tagIds[1]] });
-        await apiPut(`/api/books/${bookIds[2]}/tags`, { tag_ids: [tagIds[0]] });
-        await apiPut(`/api/books/${bookIds[4]}/tags`, { tag_ids: [tagIds[0], tagIds[2]] });
+        await window.__apiPut(`/api/books/${bookIds[0]}/tags`, { tag_ids: [tagIds[0], tagIds[2]] });
+        await window.__apiPut(`/api/books/${bookIds[1]}/tags`, { tag_ids: [tagIds[1]] });
+        await window.__apiPut(`/api/books/${bookIds[2]}/tags`, { tag_ids: [tagIds[0]] });
+        await window.__apiPut(`/api/books/${bookIds[4]}/tags`, { tag_ids: [tagIds[0], tagIds[2]] });
 
-        // Create 2 reading lists and add books
-        const list1 = await apiPost('/api/reading-lists', {
+        const list1 = await window.__apiPost('/api/reading-lists', {
             name: 'To Read',
             description: 'Books I want to read next',
         });
-        const list2 = await apiPost('/api/reading-lists', {
+        const list2 = await window.__apiPost('/api/reading-lists', {
             name: 'Favorites',
             description: 'All-time favorites',
         });
         const listIds = [list1.id, list2.id];
 
-        await apiPost(`/api/reading-lists/${listIds[0]}/books`, { book_id: bookIds[1] });
-        await apiPost(`/api/reading-lists/${listIds[0]}/books`, { book_id: bookIds[2] });
-        await apiPost(`/api/reading-lists/${listIds[1]}/books`, { book_id: bookIds[0] });
+        await window.__apiPost(`/api/reading-lists/${listIds[0]}/books`, { book_id: bookIds[1] });
+        await window.__apiPost(`/api/reading-lists/${listIds[0]}/books`, { book_id: bookIds[2] });
+        await window.__apiPost(`/api/reading-lists/${listIds[1]}/books`, { book_id: bookIds[0] });
 
-        // Create 1 reading group
-        const group1 = await apiPost('/api/groups', {
+        const group1 = await window.__apiPost('/api/groups', {
             name: 'Sci-Fi Book Club',
             description: 'A group for science fiction enthusiasts',
         });
@@ -468,6 +482,7 @@ function getViewport(mobile) {
 export async function runVariant({ theme, mobile }) {
     const variantName = mobile ? `${theme}-mobile` : theme;
     await mkdir(screenshotsDir, { recursive: true });
+    await mkdir(demoBooksDir, { recursive: true });
 
     const browser = await chromium.launch();
     const context = await browser.newContext({
@@ -566,7 +581,7 @@ export async function runVariant({ theme, mobile }) {
         // ── Phase 2a: Seed library only (needed before books-empty) ───────────
 
         console.log(`Seeding library (${variantName})...`);
-        const { libraryId } = await seedLibrary(page);
+        const { libraryId } = await seedLibrary(page, demoBooksDir);
 
         // ── Phase 3a: books-empty (library exists, no scanned books yet) ──────
 
