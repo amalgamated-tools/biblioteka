@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, afterEach, beforeEach } from "vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/svelte";
 import { userEvent } from "@testing-library/user-event";
-import type { RemoteMetadata } from "../../types";
+import type { BookSummary, RemoteMetadata } from "../../types";
 import type { FormFields } from "./BookEditForm.svelte";
 
 vi.mock("lucide-svelte", () => ({
@@ -501,40 +501,8 @@ describe("MetadataFetchPanel", () => {
   it("ignores stale apply success results after bookId rerender", async () => {
     mockGetMetadata.mockResolvedValue(fakeMetadata);
 
-    let resolveApply!: (value: {
-      id: string;
-      title: string;
-      description: string | null;
-      publisher: string | null;
-      language: string | null;
-      publication_date: string | null;
-      isbn13: string | null;
-      isbn10: string | null;
-      asin: string | null;
-      goodreads_id: string | null;
-      hardcover_id: string | null;
-      google_books_id: string | null;
-      cover_image_url: string | null;
-      created_at: string;
-      updated_at: string;
-    }) => void;
-    const applyPromise = new Promise<{
-      id: string;
-      title: string;
-      description: string | null;
-      publisher: string | null;
-      language: string | null;
-      publication_date: string | null;
-      isbn13: string | null;
-      isbn10: string | null;
-      asin: string | null;
-      goodreads_id: string | null;
-      hardcover_id: string | null;
-      google_books_id: string | null;
-      cover_image_url: string | null;
-      created_at: string;
-      updated_at: string;
-    }>((resolve) => {
+    let resolveApply!: (value: BookSummary) => void;
+    const applyPromise = new Promise<BookSummary>((resolve) => {
       resolveApply = resolve;
     });
     mockApplyMetadata.mockReturnValue(applyPromise);
@@ -559,7 +527,7 @@ describe("MetadataFetchPanel", () => {
 
     resolveApply({
       id: "b1",
-      title: fakeMetadata.title,
+      title: "New Title",
       description: fakeMetadata.description,
       publisher: fakeMetadata.publisher,
       language: fakeMetadata.language,
