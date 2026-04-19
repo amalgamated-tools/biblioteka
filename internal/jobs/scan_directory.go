@@ -8,17 +8,49 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
 // supportedExtensions maps lowercase file extensions to their file type label.
+// It is the canonical source of truth for the set of book formats the
+// application can process; upload validation also references this data.
 var supportedExtensions = map[string]string{
 	".epub": "epub",
 	".mobi": "mobi",
 	".pdf":  "pdf",
 	".azw3": "azw3",
+}
+
+// SupportedExtensions returns a defensive copy of the supported extension map.
+func SupportedExtensions() map[string]string {
+	extensions := make(map[string]string, len(supportedExtensions))
+	for ext, fileType := range supportedExtensions {
+		extensions[ext] = fileType
+	}
+	return extensions
+}
+
+// LookupSupportedFileType reports the file type for a lowercase file extension.
+func LookupSupportedFileType(ext string) (string, bool) {
+	fileType, ok := supportedExtensions[ext]
+	return fileType, ok
+}
+
+// SupportedFileTypes returns a sorted slice of file-type labels from the supported extensions.
+func SupportedFileTypes() []string {
+	seen := make(map[string]struct{}, len(supportedExtensions))
+	for _, ft := range supportedExtensions {
+		seen[ft] = struct{}{}
+	}
+	types := make([]string, 0, len(seen))
+	for ft := range seen {
+		types = append(types, ft)
+	}
+	sort.Strings(types)
+	return types
 }
 
 // Enqueuer is the subset of worker.Worker needed to enqueue jobs.
@@ -74,7 +106,7 @@ func ScanDirectory(ctx context.Context, enqueuer Enqueuer, p ScanPathPayload) er
 		}
 
 		ext := strings.ToLower(filepath.Ext(path))
-		fileType, ok := supportedExtensions[ext]
+		fileType, ok := LookupSupportedFileType(ext)
 		if !ok {
 			slog.DebugContext(ctx, "scan:path skipping unsupported file",
 				slog.String(otelkeys.Path, path),

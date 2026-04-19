@@ -6,8 +6,8 @@ CREATE TABLE book_annotations (
     text        TEXT     NOT NULL,
     cfi         TEXT,
     group_id    TEXT     REFERENCES reading_groups(id) ON DELETE SET NULL,
-    created_at  DATETIME NOT NULL DEFAULT (datetime('now')),
-    updated_at  DATETIME NOT NULL DEFAULT (datetime('now'))
+    created_at  DATETIME NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+    updated_at  DATETIME NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
 );
 
 CREATE INDEX idx_book_annotations_book_user ON book_annotations(book_id, user_id);

@@ -33,16 +33,6 @@ const (
 	uploadStagingDir = ".uploads"
 )
 
-// uploadSupportedExtensions maps lower-case file extensions to their file type
-// labels. Kept in sync with jobs.supportedExtensions intentionally as a copy in
-// this package.
-var uploadSupportedExtensions = map[string]string{
-	".epub": "epub",
-	".mobi": "mobi",
-	".pdf":  "pdf",
-	".azw3": "azw3",
-}
-
 // uploadAcceptedResponse is the JSON body returned on a successful upload.
 type uploadAcceptedResponse struct {
 	Message   string `json:"message"`
@@ -58,12 +48,12 @@ type uploadAcceptedResponse struct {
 // extraction, file organisation, and database record creation.
 //
 //	@Summary		Upload a book file
-//	@Description	Upload a book file (.epub, .mobi, .azw3, .pdf) to a library. The file is staged and processed asynchronously.
+//	@Description	Upload a supported book file to a library. The file is staged and processed asynchronously.
 //	@Tags			Books
 //	@Accept			multipart/form-data
 //	@Produce		json
 //	@Security		BearerAuth
-//	@Param			file		formData	file	true	"Book file (.epub, .mobi, .azw3, .pdf)"
+//	@Param			file		formData	file	true	"Book file in a supported format"
 //	@Param			library_id	formData	string	true	"Target library ID"
 //	@Param			title		formData	string	false	"Title override (takes precedence over extracted metadata)"
 //	@Param			author		formData	string	false	"Author override (takes precedence over extracted metadata)"
@@ -138,7 +128,7 @@ func (h *BookHandler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 	filename := filepath.Base(header.Filename)
 	fileType, ok := detectUploadFileType(filename)
 	if !ok {
-		writeError(r.Context(), w, http.StatusBadRequest, "unsupported file type: must be one of epub, mobi, azw3, pdf")
+		writeError(r.Context(), w, http.StatusBadRequest, "unsupported file type: must be one of "+strings.Join(jobs.SupportedFileTypes(), ", "))
 		return
 	}
 
@@ -247,7 +237,7 @@ func (h *BookHandler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 // on its extension. It returns the empty string and false for unsupported types.
 func detectUploadFileType(filename string) (string, bool) {
 	ext := strings.ToLower(filepath.Ext(filename))
-	ft, ok := uploadSupportedExtensions[ext]
+	ft, ok := jobs.LookupSupportedFileType(ext)
 	return ft, ok
 }
 
