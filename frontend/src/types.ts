@@ -248,8 +248,10 @@ export interface SetWatchFolderConfigInput {
 
 // LLM Config
 
+export type LLMProvider = "" | "ollama";
+
 export interface LLMConfig {
-  provider: string;
+  provider: LLMProvider;
   endpoint: string;
   model: string;
   enabled: boolean;
@@ -257,7 +259,7 @@ export interface LLMConfig {
 }
 
 export interface SetLLMConfigInput {
-  provider: string;
+  provider: LLMProvider;
   endpoint: string;
   model: string;
   enabled: boolean;

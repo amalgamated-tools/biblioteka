@@ -1,19 +1,30 @@
 <script lang="ts">
   import { getLLMConfig, setLLMConfig } from "../../lib/api";
+  import type { LLMProvider } from "../../types";
   import { required, validate } from "../../lib/validation";
   import { BrainCircuit } from "lucide-svelte";
   import Button from "../ui/Button.svelte";
   import TextInput from "../ui/TextInput.svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
 
-  let form = $state({
+  let form = $state<{
+    provider: LLMProvider;
+    endpoint: string;
+    model: string;
+    enabled: boolean;
+  }>({
     provider: "ollama",
     endpoint: "",
     model: "",
     enabled: false,
   });
 
-  let savedConfig = $state({
+  let savedConfig = $state<{
+    provider: LLMProvider;
+    endpoint: string;
+    model: string;
+    enabled: boolean;
+  }>({
     provider: "ollama",
     endpoint: "",
     model: "",
@@ -74,13 +85,13 @@
 
     try {
       const result = await setLLMConfig({
-        provider: form.provider.trim() || "ollama",
+        provider: form.provider || "ollama",
         endpoint: form.endpoint.trim(),
         model: form.model.trim(),
         enabled: form.enabled,
       });
       savedConfig = {
-        provider: form.provider.trim() || "ollama",
+        provider: form.provider || "ollama",
         endpoint: form.endpoint.trim(),
         model: form.model.trim(),
         enabled: form.enabled,

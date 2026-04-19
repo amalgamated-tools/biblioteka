@@ -20,12 +20,7 @@
   }: Props = $props();
 
   const resolvedRole = $derived(
-    role ??
-      (variant === "error"
-        ? "alert"
-        : variant === "warning"
-          ? "status"
-          : "status"),
+    role ?? (variant === "error" ? "alert" : "status"),
   );
   const liveRegion = $derived(
     resolvedRole === "alert" ? "assertive" : "polite",
