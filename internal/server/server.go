@@ -151,6 +151,10 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 		return nil, fmt.Errorf("failed to initialize settings encrypter: %w", err)
 	}
 
+	if err := s.seedInitialAdmin(ctx); err != nil {
+		return nil, fmt.Errorf("failed to seed initial admin: %w", err)
+	}
+
 	apiKeyAdapter := &authstore.APIKeyAdapter{DB: s.DB}
 	userAdapter := &authstore.UserAdapter{DB: s.DB}
 	if err := s.initHandlers(ctx, secretEncrypter, apiKeyAdapter, userAdapter); err != nil {

@@ -133,9 +133,14 @@ func ssrfSafeHTTPClient() *http.Client {
 		}
 		var safeIP string
 		for _, ipStr := range ips {
-			if ip := net.ParseIP(ipStr); ip != nil && isPrivateIP(ip) {
+			ip := net.ParseIP(ipStr)
+			if ip == nil {
+				continue
+			}
+			if isPrivateIP(ip) {
 				return nil, fmt.Errorf("refusing to connect to private address %s", ipStr)
-			} else if safeIP == "" {
+			}
+			if safeIP == "" {
 				safeIP = ipStr
 			}
 		}
