@@ -58,6 +58,25 @@ func TestSetBookAuthors_DeduplicatesIDs(t *testing.T) {
 	require.Len(t, authors, 1)
 }
 
+func TestSetBookAuthors_RollsBackOnInsertError(t *testing.T) {
+	d := newTestDB(t)
+
+	book, err := d.CreateBook(t.Context(), BookInput{Title: "Rollback Authors"})
+	require.NoError(t, err, "CreateBook()")
+	author, err := d.CreateAuthor(t.Context(), "Author A", nil, nil, nil, nil)
+	require.NoError(t, err, "CreateAuthor()")
+
+	require.NoError(t, d.SetBookAuthors(t.Context(), book.ID, []string{author.ID}), "SetBookAuthors(initial)")
+
+	err = d.SetBookAuthors(t.Context(), book.ID, []string{"missing-author-id"})
+	require.Error(t, err, "SetBookAuthors() should fail for missing author ID")
+
+	authors, err := d.GetBookAuthors(t.Context(), book.ID)
+	require.NoError(t, err, "GetBookAuthors() error")
+	require.Len(t, authors, 1)
+	require.Equal(t, author.ID, authors[0].ID)
+}
+
 // ---- GetBookSeries ----
 
 func TestGetBookSeries_Empty(t *testing.T) {
@@ -113,6 +132,28 @@ func TestSetBookSeries_DeduplicatesLastPositionWins(t *testing.T) {
 	// element (position 99) is the one that survives deduplication.
 	require.NotNil(t, got[0].Position)
 	require.Equal(t, 99.0, *got[0].Position)
+}
+
+func TestSetBookSeries_RollsBackOnInsertError(t *testing.T) {
+	d := newTestDB(t)
+
+	book, err := d.CreateBook(t.Context(), BookInput{Title: "Rollback Series"})
+	require.NoError(t, err, "CreateBook()")
+	series, err := d.CreateSeries(t.Context(), "A Series", nil, nil, nil)
+	require.NoError(t, err, "CreateSeries()")
+	initialPosition := new(1.0)
+
+	require.NoError(t, d.SetBookSeries(t.Context(), book.ID, []BookSeriesInput{{SeriesID: series.ID, Position: initialPosition}}), "SetBookSeries(initial)")
+
+	err = d.SetBookSeries(t.Context(), book.ID, []BookSeriesInput{{SeriesID: "missing-series-id", Position: new(2.0)}})
+	require.Error(t, err, "SetBookSeries() should fail for missing series ID")
+
+	entries, err := d.GetBookSeries(t.Context(), book.ID)
+	require.NoError(t, err, "GetBookSeries() error")
+	require.Len(t, entries, 1)
+	require.Equal(t, series.ID, entries[0].Series.ID)
+	require.NotNil(t, entries[0].Position)
+	require.Equal(t, 1.0, *entries[0].Position)
 }
 
 // ---- GetAuthorsForBooks ----
