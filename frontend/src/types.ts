@@ -245,6 +245,23 @@ export interface SetWatchFolderConfigInput {
   library_id: string;
 }
 
+// LLM Config
+
+export interface LLMConfig {
+  provider: string;
+  endpoint: string;
+  model: string;
+  enabled: boolean;
+  restart_required?: boolean;
+}
+
+export interface SetLLMConfigInput {
+  provider: string;
+  endpoint: string;
+  model: string;
+  enabled: boolean;
+}
+
 // Admin - User Management
 
 export interface AdminUser {

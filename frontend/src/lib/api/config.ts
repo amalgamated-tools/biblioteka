@@ -1,6 +1,8 @@
 import type {
   ConfigStatus,
+  LLMConfig,
   OIDCConfig,
+  SetLLMConfigInput,
   SetOIDCConfigInput,
   SMTPConfig,
   SetSMTPConfigInput,
@@ -49,4 +51,14 @@ export async function setWatchFolderConfig(
     "/api/config/watch-folder",
     config,
   );
+}
+
+export async function getLLMConfig(): Promise<LLMConfig> {
+  return request<LLMConfig>("GET", "/api/config/llm");
+}
+
+export async function setLLMConfig(
+  config: SetLLMConfigInput,
+): Promise<LLMConfig> {
+  return request<LLMConfig>("PUT", "/api/config/llm", config);
 }

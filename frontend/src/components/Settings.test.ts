@@ -40,6 +40,7 @@ vi.mock("lucide-svelte", () => ({
   FolderSearch: () => {},
   DatabaseZap: () => {},
   Search: () => {},
+  BrainCircuit: () => {},
 }));
 
 import Settings from "./Settings.svelte";
