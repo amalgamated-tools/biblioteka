@@ -264,15 +264,19 @@
     </Button>
   </div>
 
+  <p role="status" aria-live="polite" aria-atomic="true" class="sr-only">
+    {progressMessage ?? ""}
+  </p>
+
   {#if fetchingMetadata && progressMessage}
     <div
       class="flex items-center gap-3 p-3 bg-accent-50 dark:bg-accent-900/20 rounded-xl text-sm text-accent-700 dark:text-accent-300"
+      aria-hidden="true"
     >
       <div
         class="w-4 h-4 rounded-full border-2 border-accent-300 dark:border-accent-600 border-t-accent-600 dark:border-t-accent-300 animate-spin flex-shrink-0"
-        aria-hidden="true"
       ></div>
-      <span aria-live="polite">{progressMessage}</span>
+      <span>{progressMessage}</span>
     </div>
   {/if}
 
