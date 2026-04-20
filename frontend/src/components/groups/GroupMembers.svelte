@@ -32,6 +32,39 @@
   let confirmRemoveMemberId: string | null = $state(null);
   let removingMemberId: string | null = $state(null);
 
+  $effect(() => {
+    if (!groupId) return;
+    let cancelled = false;
+    showAddMember = false;
+    newMemberUserId = "";
+    addingMember = false;
+    addMemberError = null;
+    confirmRemoveMemberId = null;
+    removingMemberId = null;
+    members = [];
+
+    membersLoading = true;
+    membersError = null;
+    listGroupMembers(groupId)
+      .then((fetched) => {
+        if (!cancelled) {
+          members = fetched;
+          membersLoading = false;
+        }
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          membersError =
+            e instanceof Error ? e.message : "Failed to load members";
+          membersLoading = false;
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  });
+
   async function loadMembers(): Promise<ReadingGroupMember[] | null> {
     membersLoading = true;
     membersError = null;
@@ -46,18 +79,6 @@
       membersLoading = false;
     }
   }
-
-  $effect(() => {
-    if (!groupId) return;
-    showAddMember = false;
-    newMemberUserId = "";
-    addingMember = false;
-    addMemberError = null;
-    confirmRemoveMemberId = null;
-    removingMemberId = null;
-    members = [];
-    void loadMembers();
-  });
 
   async function handleAddMember() {
     const uid = newMemberUserId.trim();

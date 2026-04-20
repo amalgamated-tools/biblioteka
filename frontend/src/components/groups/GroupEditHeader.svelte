@@ -52,6 +52,7 @@
 
   async function saveEdit() {
     if (!editName.trim()) return;
+    const capturedGroupId = groupId;
     saving = true;
     saveError = null;
     try {
@@ -59,24 +60,28 @@
         name: editName.trim(),
         description: editDescription.trim() || null,
       });
+      if (groupId !== capturedGroupId) return;
       editing = false;
     } catch (e) {
+      if (groupId !== capturedGroupId) return;
       saveError = e instanceof Error ? e.message : "Failed to update group";
     } finally {
-      saving = false;
+      if (groupId === capturedGroupId) saving = false;
     }
   }
 
   async function handleDelete() {
+    const capturedGroupId = groupId;
     deleting = true;
     try {
       await groupStore.remove(group.id);
       routerStore.navigate("groups");
     } catch (e) {
+      if (groupId !== capturedGroupId) return;
       onDeleteError(e instanceof Error ? e.message : "Failed to delete group");
       confirmDelete = false;
     } finally {
-      deleting = false;
+      if (groupId === capturedGroupId) deleting = false;
     }
   }
 </script>

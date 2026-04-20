@@ -34,6 +34,38 @@
     }
   });
 
+  $effect(() => {
+    if (!groupId) return;
+    let cancelled = false;
+    shareListId = "";
+    sharingList = false;
+    shareListError = null;
+    confirmUnshareListId = null;
+    unsharingListId = null;
+    sharedLists = [];
+
+    sharedListsLoading = true;
+    sharedListsError = null;
+    listGroupReadingLists(groupId)
+      .then((fetched) => {
+        if (!cancelled) {
+          sharedLists = fetched;
+          sharedListsLoading = false;
+        }
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          sharedListsError =
+            e instanceof Error ? e.message : "Failed to load shared lists";
+          sharedListsLoading = false;
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  });
+
   async function loadSharedLists() {
     sharedListsLoading = true;
     sharedListsError = null;
@@ -46,17 +78,6 @@
       sharedListsLoading = false;
     }
   }
-
-  $effect(() => {
-    if (!groupId) return;
-    shareListId = "";
-    sharingList = false;
-    shareListError = null;
-    confirmUnshareListId = null;
-    unsharingListId = null;
-    sharedLists = [];
-    void loadSharedLists();
-  });
 
   let availableListsToShare = $derived(
     readingListStore.lists.filter(
