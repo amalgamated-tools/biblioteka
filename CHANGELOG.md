@@ -1,5 +1,66 @@
 # Changelog
 
+## [0.16.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.15.0...v0.16.0) (2026-04-20)
+
+
+### Features
+
+* **annotations:** HTTP handler and frontend API for book annotations ([#2213](https://github.com/amalgamated-tools/biblioteka/issues/2213)) ([9b19b94](https://github.com/amalgamated-tools/biblioteka/commit/9b19b947357a8e07ac82eec96e7403c3f9f5a1ac))
+* **auth:** support INITIAL_ADMIN_EMAIL and INITIAL_ADMIN_PASSWORD bootstrap env vars ([#2321](https://github.com/amalgamated-tools/biblioteka/issues/2321)) ([458e511](https://github.com/amalgamated-tools/biblioteka/commit/458e511245396ef9b81dfea1c69514a0561f8c88))
+* **books:** embed tags in bookDTO and TypeScript Book interface ([#2325](https://github.com/amalgamated-tools/biblioteka/issues/2325)) ([dd15bdc](https://github.com/amalgamated-tools/biblioteka/commit/dd15bdc9c6cf5060c57381425e39e89f15b1f0a4))
+* **frontend:** add AI enrichment API client functions and TypeScript types ([#2366](https://github.com/amalgamated-tools/biblioteka/issues/2366)) ([13a1fdb](https://github.com/amalgamated-tools/biblioteka/commit/13a1fdb57c48a2fe2cc72d5cc2839eca04802ec7))
+* **frontend:** add LLM config TypeScript types, API client, and admin settings tab ([#2331](https://github.com/amalgamated-tools/biblioteka/issues/2331)) ([68260bd](https://github.com/amalgamated-tools/biblioteka/commit/68260bd9d88a5834a3daf77842bad59cf019c352))
+* **frontend:** add ReadingGroup TypeScript types and API client module ([#2198](https://github.com/amalgamated-tools/biblioteka/issues/2198)) ([1deff97](https://github.com/amalgamated-tools/biblioteka/commit/1deff97c63e316543ea8e1b05e7d281581c71a50))
+* **frontend:** tag management UI — display, edit, and manage tags ([#2232](https://github.com/amalgamated-tools/biblioteka/issues/2232)) ([776361f](https://github.com/amalgamated-tools/biblioteka/commit/776361f984e6e6d674fd856cc6e6e0d58f30720d))
+* **frontend:** tag management UI — display, edit, and manage tags ([#2317](https://github.com/amalgamated-tools/biblioteka/issues/2317)) ([79f808c](https://github.com/amalgamated-tools/biblioteka/commit/79f808c477391e0766541e83c1de5532591e1179))
+* **groups:** add Reading Groups UI ([#2211](https://github.com/amalgamated-tools/biblioteka/issues/2211)) ([393dcba](https://github.com/amalgamated-tools/biblioteka/commit/393dcba167bdb9c3e704504ab436aebc33bd41e4))
+* **metadata:** add AI enrichment TypeScript type and frontend API client ([#2324](https://github.com/amalgamated-tools/biblioteka/issues/2324)) ([708981c](https://github.com/amalgamated-tools/biblioteka/commit/708981c679ed2c8155ca77f1b2fb5445787df72d))
+* **metadata:** wire "Apply All" to server-side atomic apply endpoint ([#2330](https://github.com/amalgamated-tools/biblioteka/issues/2330)) ([5433ef5](https://github.com/amalgamated-tools/biblioteka/commit/5433ef53522e10f8fa922301e02a7f28b811989f))
+* **settings:** add Rebuild Search Index button in admin settings ([#2208](https://github.com/amalgamated-tools/biblioteka/issues/2208)) ([1f28af0](https://github.com/amalgamated-tools/biblioteka/commit/1f28af0b187d4b1ea66b220617d9a0bb3f0b9b9c))
+
+
+### Bug Fixes
+
+* **accessibility:** correct listbox option semantics in BookTagsEditor ([#2295](https://github.com/amalgamated-tools/biblioteka/issues/2295)) ([c88bf02](https://github.com/amalgamated-tools/biblioteka/commit/c88bf0243c0337bb94152e324a676da2dee89595))
+* **accessibility:** keep metadata fetch live region mounted for initial progress announcement ([#2292](https://github.com/amalgamated-tools/biblioteka/issues/2292)) ([8165206](https://github.com/amalgamated-tools/biblioteka/commit/81652066a3244e5fbc89d8828c2de07df5bc7aed))
+* **Auth.svelte:** remove redundant console.error calls for OIDC/signup status checks ([#2309](https://github.com/amalgamated-tools/biblioteka/issues/2309)) ([dae1381](https://github.com/amalgamated-tools/biblioteka/commit/dae1381990f0ceb66028f98e0ab66186a316a389))
+* **Auth.svelte:** replace promise chains with async/await and Promise.all ([#2370](https://github.com/amalgamated-tools/biblioteka/issues/2370)) ([70cc270](https://github.com/amalgamated-tools/biblioteka/commit/70cc2700036363e1b234e572bd5f92c0312f4d9d))
+* **auth:** scope signup aria-invalid to the actual invalid field ([#2288](https://github.com/amalgamated-tools/biblioteka/issues/2288)) ([eea1ac3](https://github.com/amalgamated-tools/biblioteka/commit/eea1ac3e90dac50f004616f243b05c193cbea255))
+* **calibre:** resolve ambiguous double-wrap error chain in web_import.go ([#2303](https://github.com/amalgamated-tools/biblioteka/issues/2303)) ([9c1e624](https://github.com/amalgamated-tools/biblioteka/commit/9c1e62451fcc108087b4a8fe7350e6584b19ecc4))
+* **ci:** update Daily Workflow Updater to handle missing gh aw extension ([#2376](https://github.com/amalgamated-tools/biblioteka/issues/2376)) ([d692c35](https://github.com/amalgamated-tools/biblioteka/commit/d692c354bbb701acf377feea86912432a5d9b03f))
+* **db:** add ErrInvalidLibraryName sentinel and name normalization to libraries ([#2266](https://github.com/amalgamated-tools/biblioteka/issues/2266)) ([983e989](https://github.com/amalgamated-tools/biblioteka/commit/983e989602699acbf366d356f9ac49d3204bad92))
+* **db:** add ErrInvalidLibraryName sentinel and name normalization to libraries ([#2365](https://github.com/amalgamated-tools/biblioteka/issues/2365)) ([f7cb9b1](https://github.com/amalgamated-tools/biblioteka/commit/f7cb9b1c6fc8bcebf288b12c0da371dd92c3aa1c))
+* **db:** lowercase error strings in Timestamp.Scan ([#2302](https://github.com/amalgamated-tools/biblioteka/issues/2302)) ([cb60d31](https://github.com/amalgamated-tools/biblioteka/commit/cb60d31d35a5f7d17df9c5bd28a23feae03d62d7))
+* **db:** make AddGroupMember owner check and insert atomic ([#2320](https://github.com/amalgamated-tools/biblioteka/issues/2320)) ([8541099](https://github.com/amalgamated-tools/biblioteka/commit/8541099ce724a73ab8068740ec251aee0fc60f35))
+* **db:** remove "db: " prefix from sentinel errors in ai_enrichments.go ([#2301](https://github.com/amalgamated-tools/biblioteka/issues/2301)) ([a42150c](https://github.com/amalgamated-tools/biblioteka/commit/a42150c8deb428ab67e58377059c4f1fb95c3fea))
+* **db:** standardize ErrInvalidAuthorName message ([#2300](https://github.com/amalgamated-tools/biblioteka/issues/2300)) ([fe10c08](https://github.com/amalgamated-tools/biblioteka/commit/fe10c084da1121ad8709d4dd3b659400ba539d64))
+* **db:** standardize sentinel error message wording in internal/db ([#2313](https://github.com/amalgamated-tools/biblioteka/issues/2313)) ([c7091fd](https://github.com/amalgamated-tools/biblioteka/commit/c7091fddbd5870e3c6ca40ab0ff990c245296764))
+* **frontend:** remove redundant console.error calls in Recommendations and Auth components ([#2199](https://github.com/amalgamated-tools/biblioteka/issues/2199)) ([a547dc4](https://github.com/amalgamated-tools/biblioteka/commit/a547dc4ccd0280f3813a757a7552f9135d8064cc))
+* **handlers:** add empty-ID guard to APIKeyHandler.Create logAudit call ([#2194](https://github.com/amalgamated-tools/biblioteka/issues/2194)) ([9b01227](https://github.com/amalgamated-tools/biblioteka/commit/9b012274b6ae81d6b35109465a114594e994162b))
+* **handlers:** record group name in deleteGroup audit log ([#2319](https://github.com/amalgamated-tools/biblioteka/issues/2319)) ([ba9c4ae](https://github.com/amalgamated-tools/biblioteka/commit/ba9c4ae20a9bc1b1e78c8675bf3655e191697120))
+* **migrations:** standardize SQLite timestamp format to ISO 8601 in reading_groups era migrations ([#2306](https://github.com/amalgamated-tools/biblioteka/issues/2306)) ([992447f](https://github.com/amalgamated-tools/biblioteka/commit/992447fa501fbb906d0e6423e0fc78199031153f))
+* **Recommendations.svelte:** replace promise chain with async/await and AbortController ([#2369](https://github.com/amalgamated-tools/biblioteka/issues/2369)) ([ff539d9](https://github.com/amalgamated-tools/biblioteka/commit/ff539d92e569c56b14b8f8ebf26ec1e49add9e96))
+* **repo assist:** fix(migrations): standardize SQLite timestamps to ISO 8601 in reading-groups era ([#2348](https://github.com/amalgamated-tools/biblioteka/issues/2348)) ([adc55af](https://github.com/amalgamated-tools/biblioteka/commit/adc55af312a6d06b153e96169d1b5fe57d476e0e))
+* **repo assist:** perf(db): run GetYearInBooks queries concurrently via errgroup ([#2225](https://github.com/amalgamated-tools/biblioteka/issues/2225)) ([92d00ff](https://github.com/amalgamated-tools/biblioteka/commit/92d00ff539d21340db254a3d545dd861babc4cf6))
+* **screenshots:** expand coverage to all routes and UI states ([#2322](https://github.com/amalgamated-tools/biblioteka/issues/2322)) ([ca3714e](https://github.com/amalgamated-tools/biblioteka/commit/ca3714ec17db6dd19c29cfef84dd57ce3c57e894))
+* **security:** add SSRF validation to admin-configurable LLM endpoint URL ([#2367](https://github.com/amalgamated-tools/biblioteka/issues/2367)) ([6d8d7e8](https://github.com/amalgamated-tools/biblioteka/commit/6d8d7e8b1245caa7b340a1ca4c3316c484a0121d))
+* **security:** Add SSRF validation to LLM Ollama endpoint URL ([#2311](https://github.com/amalgamated-tools/biblioteka/issues/2311)) ([fc9be90](https://github.com/amalgamated-tools/biblioteka/commit/fc9be90720cf973db5d5e97711c0b8c781fe05e3))
+* **security:** reject non-empty JWT_SECRET shorter than MinSecretLength at startup ([#2315](https://github.com/amalgamated-tools/biblioteka/issues/2315)) ([7b0a4e9](https://github.com/amalgamated-tools/biblioteka/commit/7b0a4e9f007fe1c9fd2ce719c1a4214630b19ef5))
+* **sidebar:** raise library settings icon resting-state contrast ([#2294](https://github.com/amalgamated-tools/biblioteka/issues/2294)) ([c8055ba](https://github.com/amalgamated-tools/biblioteka/commit/c8055ba2862631a64aab485d5accd31069561792))
+* **smtp:** inject time into BuildAttachmentMessage for deterministic output ([#2267](https://github.com/amalgamated-tools/biblioteka/issues/2267)) ([91d05c2](https://github.com/amalgamated-tools/biblioteka/commit/91d05c211a23ced8bd7904e8628df2251b2923d7))
+* **smtp:** inject time parameter into BuildAttachmentMessage for deterministic testing ([#2368](https://github.com/amalgamated-tools/biblioteka/issues/2368)) ([4a81b42](https://github.com/amalgamated-tools/biblioteka/commit/4a81b42e2bd116f07ff2bdffbe2dae49a8df539b))
+* **swagger:** correct OpenAPI annotations from review feedback ([#2327](https://github.com/amalgamated-tools/biblioteka/issues/2327)) ([cfc0924](https://github.com/amalgamated-tools/biblioteka/commit/cfc0924ed8f40740fca278b684742fb5899fbf2b))
+* **tags:** associate rename errors with rename input and add status announcement ([#2290](https://github.com/amalgamated-tools/biblioteka/issues/2290)) ([858fe2a](https://github.com/amalgamated-tools/biblioteka/commit/858fe2aec263e6972fcc4ebb9c060436fc6e6f3f))
+* **types:** correct ReadingProgressItem nullable fields to optional-only ([#2196](https://github.com/amalgamated-tools/biblioteka/issues/2196)) ([01506d6](https://github.com/amalgamated-tools/biblioteka/commit/01506d69a6cc01fb942d50724bf275deccd751bc))
+* **UsersTab:** replace fragile $state.raw init with clean $props + $effect ([#2307](https://github.com/amalgamated-tools/biblioteka/issues/2307)) ([d79f330](https://github.com/amalgamated-tools/biblioteka/commit/d79f33062b79eca23918d433da179d7170fb5d51))
+* **workflows:** enforce Conventional Commits format on agentic workflow issue/PR title prefixes ([#2381](https://github.com/amalgamated-tools/biblioteka/issues/2381)) ([0d3a51d](https://github.com/amalgamated-tools/biblioteka/commit/0d3a51d9d8da709f2343eac6f1771cfcfbcefd1c))
+
+
+### Performance Improvements
+
+* add composite sort indexes for api_keys, kobo_tokens, passkey_credentials ([#2361](https://github.com/amalgamated-tools/biblioteka/issues/2361)) ([85cf002](https://github.com/amalgamated-tools/biblioteka/commit/85cf0026fe586052d0764af81b52868705385abf))
+* add sort index on tags.name for ORDER BY optimization ([#2275](https://github.com/amalgamated-tools/biblioteka/issues/2275)) ([814fe5d](https://github.com/amalgamated-tools/biblioteka/commit/814fe5d311c27aaba2785b2c14358f6b084b9c3d))
+
 ## [0.15.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.14.0...v0.15.0) (2026-04-18)
 
 
