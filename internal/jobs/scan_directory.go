@@ -24,15 +24,6 @@ var supportedExtensions = map[string]string{
 	".azw3": "azw3",
 }
 
-// SupportedExtensions returns a defensive copy of the supported extension map.
-func SupportedExtensions() map[string]string {
-	extensions := make(map[string]string, len(supportedExtensions))
-	for ext, fileType := range supportedExtensions {
-		extensions[ext] = fileType
-	}
-	return extensions
-}
-
 // LookupSupportedFileType reports the file type for a lowercase file extension.
 func LookupSupportedFileType(ext string) (string, bool) {
 	fileType, ok := supportedExtensions[ext]
