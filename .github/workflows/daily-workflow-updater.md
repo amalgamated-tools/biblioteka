@@ -96,10 +96,10 @@ fi
 Verify that `gh aw` is actually available before running the update. If this check fails, **skip to Approach B** instead:
 
 ```bash
-if command -v gh >/dev/null 2>&1 && gh aw --help >/dev/null 2>&1; then
+if [ -n "${GH_TOKEN:-}" ] && command -v gh >/dev/null 2>&1 && gh aw --help >/dev/null 2>&1; then
   gh aw update --verbose
 else
-  echo "gh aw is not available after check/install; skip to Approach B"
+  echo "gh aw is not available after check/install, or GH_TOKEN is unset; skip to Approach B"
 fi
 ```
 
@@ -158,11 +158,23 @@ For each entry in the `entries` section of `actions-lock.json` (format: `"owner/
 For public repos, you can also use curl to check versions without authentication:
 
 ```bash
-# Example: check latest release for actions/checkout
+# For semver pins (e.g. @v6.0.2): check the absolute latest release for the repo
 curl -s "https://api.github.com/repos/actions/checkout/releases/latest" | grep '"tag_name"'
 
-# Get the SHA for a specific tag (singular /git/ref/ for exact match)
-curl -s "https://api.github.com/repos/actions/checkout/git/ref/tags/v6.1.0"
+# WARNING: /releases/latest returns the latest release across all majors.
+# Do NOT use it alone for major-only pins (e.g. @v9) if the repo may already have v10+.
+
+# For major-only pins (e.g. @v9): list releases and select the newest tag matching the
+# current major. Page through results if needed (add &page=2, &page=3, …).
+curl -s "https://api.github.com/repos/actions/checkout/releases?per_page=100" \
+  | grep -o '"tag_name": "[^"]*"' \
+  | cut -d'"' -f4 \
+  | grep '^v9\.' \
+  | head -1
+
+# If no matching release is found via /releases, fall back to listing tags — some repos
+# publish tags without GitHub Releases. Resolve the chosen tag to a commit SHA using
+# the /git/ref/ endpoint (see SHA resolution below).
 ```
 
 **Note on annotated tags**: GitHub Actions often use annotated tags. If the API response shows `"type": "tag"` instead of `"type": "commit"`, you need a second API call to dereference it:
