@@ -139,7 +139,7 @@ Railway bills based on resource consumption. A lightly used personal library typ
 
 | Problem | Solution |
 |---------|----------|
-| Container exits immediately | Check the **Logs** tab — unreachable Redis can cause a startup failure. If `JWT_SECRET` is missing, the server logs a warning and starts with a random secret instead; set a strong `JWT_SECRET` in production so sessions remain valid across restarts |
+| Container exits immediately | Check the **Logs** tab — unreachable Redis can cause a startup failure. If `JWT_SECRET` is missing, the server starts with a random secret (suitable for dev only; sessions won't survive restarts). If `JWT_SECRET` is set but shorter than 32 bytes, the server **refuses to start** — set it to a value of at least 32 bytes (e.g. `openssl rand -hex 32`) |
 | `REDIS_URL` shows as empty | Verify the reference variable uses the correct service name (e.g., `${{Redis.REDIS_URL}}`) |
 | Volume not mounted | Go to **Volumes** and confirm the mount path is exactly `/data` |
 | App unreachable | Confirm a public domain is configured under **Settings → Networking** and the port is `8080` |

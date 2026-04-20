@@ -286,7 +286,7 @@ If a user signs in via OIDC and no existing account has that `sub` claim, the se
 | Expiry | 24 hours |
 | `iss` claim | `"biblioteka"` — issuer; validated on every request |
 | `aud` claim | `"biblioteka"` — audience; validated on every request; tokens missing this claim are rejected |
-| Secret | Configured via `JWT_SECRET` environment variable; minimum recommended length is **32 characters** |
+| Secret | Configured via `JWT_SECRET` environment variable; minimum **required** length is **32 bytes** (enforced at startup) |
 | Cookie name | `biblioteka_token` |
 | Cookie flags | `HttpOnly`, `SameSite=Strict`, `Secure` (when `SECURE_COOKIES=true`) |
 
@@ -294,7 +294,7 @@ If a user signs in via OIDC and no existing account has that `sub` claim, the se
 >
 > `JWT_SECRET` is also used to derive the encryption key for sensitive settings stored in the database — specifically the SMTP password and OIDC client secret. These values are encrypted at rest using AES-256-GCM with an HKDF-derived key (purpose label: `settings-secret-v1`). If `JWT_SECRET` changes, existing encrypted DB-stored values become unreadable, so operators must reconfigure the SMTP password and OIDC client secret after a key rotation. This can be done through the admin UI or the admin config APIs, and values supplied via environment variables take precedence over database settings. Settings stored in plaintext before the upgrade are accepted transparently and re-encrypted on the next write.
 >
-> If `JWT_SECRET` is set but shorter than 32 characters, the server logs a warning at startup because a short secret weakens HMAC-SHA256 signing. Use `openssl rand -hex 32` to generate a strong 64-character secret.
+> If `JWT_SECRET` is set but shorter than 32 bytes, the **server refuses to start** with an error. Either unset `JWT_SECRET` (the server generates a random secret on startup — suitable for development only) or provide a value of at least 32 bytes. Use `openssl rand -hex 32` to generate a strong 64-character secret.
 
 ---
 

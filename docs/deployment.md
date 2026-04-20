@@ -178,7 +178,7 @@ See the [Configuration](../README.md#configuration) table in the README for the 
 
 | Variable | Required | Notes |
 |----------|----------|-------|
-| `JWT_SECRET` | **Yes** | Signs JWTs (24 h validity) and derives the AES-256-GCM key for sensitive DB-stored settings (SMTP password, OIDC client secret). Minimum 32 characters recommended. **Rotating invalidates all active sessions and makes previously-encrypted DB settings unreadable.** See [JWT Secret Rotation](#jwt-secret-rotation) |
+| `JWT_SECRET` | **Yes** | Signs JWTs (24 h validity) and derives the AES-256-GCM key for sensitive DB-stored settings (SMTP password, OIDC client secret). Minimum **32 bytes required** — the server refuses to start if a shorter value is provided. **Rotating invalidates all active sessions and makes previously-encrypted DB settings unreadable.** See [JWT Secret Rotation](#jwt-secret-rotation) |
 | `SECURE_COOKIES` | **Yes** (set to `true`) | Prevents cookies being sent over HTTP |
 | `DATABASE_URL` | No | Omit for SQLite; set to a PostgreSQL DSN for Postgres |
 | `REDIS_URL` | No | Defaults to `redis://localhost:6379` |
