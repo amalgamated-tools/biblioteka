@@ -11,17 +11,36 @@
   let error = $state<string | null>(null);
 
   $effect(() => {
-    getRecommendations(limit)
-      .then((data) => {
-        books = data;
-      })
-      .catch((err) => {
-        error =
-          err instanceof Error ? err.message : "Failed to load recommendations";
-      })
-      .finally(() => {
-        loading = false;
-      });
+    const controller = new AbortController();
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const data = await getRecommendations(limit, controller.signal);
+        if (!cancelled && !controller.signal.aborted) {
+          books = data;
+        }
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        if (!cancelled && !controller.signal.aborted) {
+          error =
+            err instanceof Error
+              ? err.message
+              : "Failed to load recommendations";
+        }
+      } finally {
+        if (!cancelled && !controller.signal.aborted) {
+          loading = false;
+        }
+      }
+    }
+
+    load();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   });
 </script>
 
