@@ -193,7 +193,7 @@ For automated, headless, or infrastructure-as-code deployments where signing up 
 
 ```bash
 INITIAL_ADMIN_EMAIL=admin@example.com
-INITIAL_ADMIN_PASSWORD=supersecret
+INITIAL_ADMIN_PASSWORD=<your-bootstrap-password>
 INITIAL_ADMIN_NAME=Library Admin   # optional; defaults to "Admin"
 ```
 
