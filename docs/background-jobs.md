@@ -387,7 +387,7 @@ internal/
   jobs/
     enrich_goodreads.go            # enrich:goodreads handler — fetches Goodreads metadata and creates a pending goodreads_metadata record
     enrich_ai.go               # enrich:ai handler — generates metadata via LLM and creates a pending ai_enrichments record
-    scan_directory.go          # ScanDirectory: walks a path and enqueues process:file jobs; defines Enqueuer interface and SupportedExtensions/LookupSupportedFileType/SupportedFileTypes (canonical source of truth for supported book formats)
+    scan_directory.go          # ScanDirectory: walks a path and enqueues process:file jobs; defines Enqueuer interface, LookupSupportedFileType, and SupportedFileTypes (canonical source of truth for supported book formats)
     scan_libraries.go          # scan:libraries handler (scans all monitored libraries)
     scan_library.go            # scan:library handler (scans a single library)
     scan_path.go               # scan:path handler (NewScanPathHandler → ScanDirectory)
