@@ -157,6 +157,9 @@ Copy `.env.sample` to `.env` and adjust as needed. The `PORT` value can also be 
 | `JWT_SECRET` | — | **Required in production** – random secret for signing tokens (minimum 32 characters recommended; a shorter value logs a startup warning) |
 | `SECURE_COOKIES` | `true` | Marks session cookies as `Secure`. Set to `false` for local HTTP development (the provided `.env.sample` defaults to `false`) |
 | `DISABLE_SIGNUP` | `false` | Set to `true` to disable public self-registration. When set, `POST /api/auth/signup` returns `403 Forbidden` and the Sign Up tab is hidden in the UI. Useful for single-user or invite-only deployments. |
+| `INITIAL_ADMIN_EMAIL` | *(empty)* | Email address of the first admin user to create on startup. Only takes effect when the users table is empty. Must be set together with `INITIAL_ADMIN_PASSWORD`. Useful for automated, headless, or infrastructure-as-code deployments where no interactive signup is possible. |
+| `INITIAL_ADMIN_PASSWORD` | *(empty)* | Password for the bootstrap admin user. Stored as a bcrypt hash. Only takes effect when `INITIAL_ADMIN_EMAIL` is also set and the users table is empty. |
+| `INITIAL_ADMIN_NAME` | `Admin` | Display name for the bootstrap admin user. Only used when `INITIAL_ADMIN_EMAIL` and `INITIAL_ADMIN_PASSWORD` are set. Defaults to `"Admin"` when omitted. |
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error` |
 | `LOG_FORMAT` | `json` | `json` or `text` |
 | `OIDC_ISSUER_URL` | *(empty)* | OIDC provider issuer URL |

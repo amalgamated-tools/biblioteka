@@ -20,7 +20,7 @@ network:
 
 safe-outputs:
   create-issue:
-    title-prefix: "[task-miner] "
+    title-prefix: "chore(tasks): "
     labels: [automated-analysis]
     max: 5
     group: true

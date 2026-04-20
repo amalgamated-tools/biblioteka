@@ -20,7 +20,7 @@ tools:
 
 safe-outputs:
   create-issue:
-    title-prefix: "[task] "
+    title-prefix: "chore(plan): "
     labels: [task, ai-generated]
     max: 5
   close-discussion:

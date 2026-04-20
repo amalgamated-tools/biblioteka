@@ -28,6 +28,7 @@ safe-outputs:
     draft: false
     auto-merge: true
   create-issue:
+    title-prefix: "chore(review): "
     labels: [automation]
     max: 1
   add-comment:
