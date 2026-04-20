@@ -20,6 +20,7 @@ network:
 
 safe-outputs:
   create-issue:
+    title-prefix: "fix(security): "
     labels: [security, automation]
     max: 5
     expires: 30d

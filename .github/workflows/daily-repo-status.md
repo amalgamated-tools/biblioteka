@@ -33,7 +33,7 @@ safe-outputs:
   mentions: false
   allowed-github-references: []
   create-issue:
-    title-prefix: "[repo-status] "
+    title-prefix: "chore(repo-status): "
     labels: [report, daily-status]
     close-older-issues: true
   noop:
