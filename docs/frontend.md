@@ -48,6 +48,9 @@ frontend/
         PreferencesTab.svelte   Display theme selection; announces the new theme to screen readers via a `role="status"` live region so assistive technologies are notified without moving focus (WCAG 4.1.3)
         SmtpTab.svelte          Admin: SMTP mail server configuration
         UsersTab.svelte         Admin: user list and admin-role toggling; all `<th>` column headers carry `scope="col"` (WCAG 1.3.1); the role-toggle button carries an action-oriented `aria-label` describing the operation it will perform (WCAG 4.1.2)
+        WatchFolderTab.svelte   Admin: watch-folder path and target-library configuration; scans every minute for new `.epub`, `.mobi`, `.pdf`, `.azw3` files; a Clear button disables the watch folder without deleting any files
+        CalibreImportTab.svelte Admin: three-step import wizard (upload or server path → preview → result); supports both file-upload and server-side `metadata.db` path import modes; shows per-book import counts (imported, skipped, errors); library selection is optional
+        SearchIndexTab.svelte   Admin: triggers `POST /api/admin/search/reindex` to rebuild the SQLite FTS5 full-text search index in the background; displays a success or error banner; on PostgreSQL the endpoint completes immediately and no rebuild is needed
       ui/                 Generic reusable UI components
         AlertBanner.svelte   Dismissible alert / error banner
         BookCard.svelte      Card widget displaying a single book summary
@@ -401,6 +404,9 @@ Views that need their own internal navigation use `routerStore.subPath`. The con
 | `settings` | `api-keys` | API keys management tab (all users) |
 | `settings` | `kobo` | Kobo sync token management tab (all users) |
 | `settings` | `llm` | LLM provider configuration tab (admin) |
+| `settings` | `watch-folder` | Watch folder configuration tab (admin) |
+| `settings` | `calibre-import` | Calibre library import wizard tab (admin) |
+| `settings` | `search-index` | Full-text search index rebuild tab (admin) |
 
 **Example — navigating to a library's book list:**
 
@@ -1492,6 +1498,9 @@ Detail page for a single reading list. Receives the `listId` prop from `ReadingL
 | `SmtpTab.svelte` | `settings/smtp` | Admins only | Configure SMTP mail server |
 | `UsersTab.svelte` | `settings/users` | Admins only | List users; toggle admin role |
 | `LLMTab.svelte` | `settings/llm` | Admins only | Configure LLM provider for AI metadata enrichment |
+| `WatchFolderTab.svelte` | `settings/watch-folder` | Admins only | Configure the watch folder for automatic book file import |
+| `CalibreImportTab.svelte` | `settings/calibre-import` | Admins only | Import a Calibre library via file upload or server-side path |
+| `SearchIndexTab.svelte` | `settings/search-index` | Admins only | Trigger a full rebuild of the full-text search index |
 
 `Settings.svelte` passes data down as props and receives updates via callback props (`onOidcSaved`, `onUsersLoaded`), keeping each tab stateless with respect to shared data.
 
@@ -1538,7 +1547,53 @@ Detail page for a single reading list. Receives the `listId` prop from `ReadingL
 - **Idempotent load** — On mount, the tab fetches the current config via `GET /api/config/llm` and populates the form. If the fetch fails, the form starts empty.
 - **API endpoints** — `GET /api/config/llm` (load) and `PUT /api/config/llm` (save); see [GET LLM config](api/config.md#get-apiconfigllm--admin--jwt-only) and [PUT LLM config](api/config.md#put-apiconfigllm--admin--jwt-only) in the API reference.
 
-### One-time prop initialisation (`svelte-ignore state_referenced_locally`)
+### WatchFolderTab (`settings/watch-folder`)
+
+`WatchFolderTab.svelte` lets admins configure a server-side directory that the server monitors every minute for new book files. It is only shown to admin users.
+
+**Form fields:**
+
+| Field | Required | Notes |
+|-------|----------|-------|
+| Folder Path | Yes | Absolute path to a directory on the server (validated by the API) |
+| Target Library | Yes | Library to import new files into; populated from `GET /api/libraries` on mount |
+
+**Key behaviours:**
+
+- **Save / Update** — `PUT /api/config/watch-folder` with `path` and `library_id`; the API validates that the path exists and is a directory.
+- **Clear button** — Shown when a watch folder is configured; sends `PUT /api/config/watch-folder` with an empty `path`, which disables monitoring without deleting any files.
+- **Idempotent load** — On mount the tab fetches current config via `GET /api/config/watch-folder` and fetches the library list via `GET /api/libraries`. If either fetch fails, the form starts empty.
+
+### CalibreImportTab (`settings/calibre-import`)
+
+`CalibreImportTab.svelte` is a three-step import wizard for loading a Calibre library into Biblioteka. It is only shown to admin users.
+
+**Steps:**
+
+| Step | Label | Description |
+|------|-------|-------------|
+| 1 | Upload | Choose import source: upload a `metadata.db` file from your local machine, or specify a server-side absolute path to a `metadata.db` file |
+| 2 | Preview | Displays a summary of books, authors, and series that will be imported; allows optionally selecting a target library |
+| 3 | Done | Shows per-book import counts: total books, imported, skipped (already present), and errors |
+
+**Key behaviours:**
+
+- **Dual import modes** — *Upload* mode sends the `metadata.db` as a multipart form to `POST /api/admin/calibre/preview` (then `POST /api/admin/calibre/confirm`). *Server path* mode posts the path string to `POST /api/admin/calibre/preview/path` (then `POST /api/admin/calibre/confirm/path`). Both flows follow the same preview → confirm sequence.
+- **Library selection** — Optional; when omitted, books are imported without a library association. The library list is fetched from `GET /api/libraries` on mount.
+- **Idempotent import** — Books already indexed by file path are skipped, not duplicated.
+- **Start over** — After a completed import, a **Start Over** button resets the wizard to step 1.
+
+### SearchIndexTab (`settings/search-index`)
+
+`SearchIndexTab.svelte` lets admins trigger a full rebuild of the full-text search index. It is only shown to admin users.
+
+**Key behaviours:**
+
+- **Rebuild button** — Calls `POST /api/admin/search/reindex`. On SQLite, this starts an asynchronous background rebuild of the `books_fts` FTS5 table; the response (`202 Accepted`) arrives immediately and the rebuild continues in the background. On PostgreSQL, the endpoint returns `200 OK` immediately because pg_trgm indexes are maintained automatically.
+- **Success / error banner** — Shown after each rebuild attempt. A success message confirms the rebuild has started; an error message surfaces API failures inline.
+- **When to use** — Useful after bulk imports (Calibre import, library scan) that may temporarily leave the index stale, or after running `VACUUM` on the SQLite database file outside normal server operation. See [Manual rebuild](administration.md#manual-rebuild) in the Administration guide.
+
+
 
 Some settings tabs receive initial values from `Settings.svelte` as props and then manage those values as **local state** for the duration of the tab's lifetime. Because the values are not expected to react to future prop changes (the parent passes them once at mount), the tabs use `$state(initialProp)` to seed local state:
 
