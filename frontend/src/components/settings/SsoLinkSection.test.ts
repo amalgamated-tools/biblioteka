@@ -94,37 +94,52 @@ describe("SsoLinkSection", () => {
   });
 
   it("calls createOidcLinkNonce when the Link SSO Account button is clicked", async () => {
-    render(SsoLinkSection, { props: { oidcConfigured: true } });
+    const originalLocation = window.location;
+    try {
+      Object.defineProperty(window, "location", {
+        value: { href: "" },
+        writable: true,
+      });
 
-    await fireEvent.click(
-      screen.getByRole("button", { name: /Link SSO Account/i }),
-    );
-    await tick();
+      render(SsoLinkSection, { props: { oidcConfigured: true } });
 
-    expect(createOidcLinkNonce).toHaveBeenCalled();
+      await fireEvent.click(
+        screen.getByRole("button", { name: /Link SSO Account/i }),
+      );
+      await tick();
+
+      expect(createOidcLinkNonce).toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(window, "location", {
+        value: originalLocation,
+        writable: true,
+      });
+    }
   });
 
   it("redirects to the OIDC link URL after receiving a nonce", async () => {
     const originalLocation = window.location;
-    Object.defineProperty(window, "location", {
-      value: { href: "" },
-      writable: true,
-    });
+    try {
+      Object.defineProperty(window, "location", {
+        value: { href: "" },
+        writable: true,
+      });
 
-    render(SsoLinkSection, { props: { oidcConfigured: true } });
+      render(SsoLinkSection, { props: { oidcConfigured: true } });
 
-    await fireEvent.click(
-      screen.getByRole("button", { name: /Link SSO Account/i }),
-    );
-    await tick();
-    await tick();
+      await fireEvent.click(
+        screen.getByRole("button", { name: /Link SSO Account/i }),
+      );
+      await tick();
+      await tick();
 
-    expect(window.location.href).toBe("/api/auth/oidc/link?nonce=nonce-abc");
-
-    Object.defineProperty(window, "location", {
-      value: originalLocation,
-      writable: true,
-    });
+      expect(window.location.href).toBe("/api/auth/oidc/link?nonce=nonce-abc");
+    } finally {
+      Object.defineProperty(window, "location", {
+        value: originalLocation,
+        writable: true,
+      });
+    }
   });
 
   it("shows error banner when oidcLinkError is set on the store", () => {

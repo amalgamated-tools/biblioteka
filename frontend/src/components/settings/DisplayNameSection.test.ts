@@ -33,6 +33,16 @@ import { authStore } from "../../stores/auth.svelte";
 import { updateProfile } from "../../lib/api";
 
 describe("DisplayNameSection", () => {
+  beforeEach(() => {
+    vi.mocked(authStore).user = {
+      id: "u1",
+      name: "Test User",
+      email: "test@example.com",
+      oidc_linked: false,
+      is_admin: false,
+    };
+  });
+
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();
