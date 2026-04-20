@@ -1,7 +1,7 @@
 # Test Improver Memory — biblioteka
 
 ## Last Updated
-2026-04-19
+2026-04-20
 
 ## Build/Test/Coverage Commands
 
@@ -16,14 +16,16 @@ go tool cover -func=/tmp/coverage.out    # function-level report
 ### Coverage Pipeline
 - A `weekly-coverage-summary.md` CI workflow generates weekly coverage trends in discussions.
 - The CI installs `exiftool` (`sudo apt-get install -y libimage-exiftool-perl`) before running tests - required by metadata extraction tests.
-- Frontend: `cd frontend && pnpm run test`
+- Frontend: `cd frontend && node_modules/.bin/vitest run`
+- npm install required if node_modules/.bin/vitest missing
 
 ### Formatting/Lint
 ```bash
 make fmt       # go fmt ./...
 make hardfmt   # strict formatting (gofumpt)
 make lint      # golangci-lint run ./...
-cd frontend && pnpm run lint && pnpm run check
+cd frontend && node_modules/.bin/eslint src/
+cd frontend && node_modules/.bin/prettier --write .
 ```
 
 ## Agent Environment Note
@@ -44,6 +46,9 @@ go.mod requires go >= 1.26.2; use GOTOOLCHAIN=auto.
 - Sub-resource handler tests call h.HandleBookRoutes(w, r) with the full path
 - readingListDTO is in reading_lists.go; AddBookToReadingList(ctx, listID, userID, bookID)
 - authstore package has own `newTestDB` helper in adapter_test.go
+- Frontend tests: use vitest + vi.stubGlobal("fetch", fetchMock) pattern
+- Frontend testUtils.ts has mockFetchResponse and mockNoContentResponse helpers
+- Frontend tests import from "../api" (the barrel file) not individual modules
 
 ## Testing Landscape
 Codebase is very well tested overall. Most packages have 1:1 test file ratio.
@@ -52,6 +57,10 @@ Packages with no test files (intentional):
 - internal/otelkeys   (pure constants)
 - internal/testutils  (test helpers, used only in tests)
 - internal/errorfcheck/testdata, internal/slogcheck/testdata (test data dirs)
+
+Frontend API modules with no tests: (now all covered as of 2026-04-20)
+- frontend/src/lib/api/recommendations.ts — added in this run
+- frontend/src/lib/api/calibre.ts — added in this run
 
 ## Task Round-Robin Status
 - 2026-04-11: Tasks 1, 2, 3, 7 (discovery + sanitizeDirName PR + monthly issue)
@@ -63,7 +72,8 @@ Packages with no test files (intentional):
 - 2026-04-17: Tasks 3, 7 (PasskeyAdapter tests PR; new monthly issue created)
 - 2026-04-18: Tasks 4, 2, 3, 7 (no open test-assist PRs to maintain; reading_group_lists DB tests PR; new monthly issue)
 - 2026-04-19: Tasks 5, 2, 3, 7 (no testing-label issues; tags-in-bookDTO regression tests PR; new monthly issue)
-- Next run: Tasks 6, 4, 2, 7
+- 2026-04-20: Tasks 6, 4, 2, 3, 7 (no open PRs; calibre+recommendations frontend API tests PR; new monthly issue)
+- Next run: Tasks 1, 5, 6, 7
 
 ## Testing Backlog (prioritized)
 
@@ -73,19 +83,29 @@ Packages with no test files (intentional):
 4. ~~**db/ai_enrichments.go**~~ — Covered by PR #2150 (merged) and PR #2204 (merged).
 5. ~~**db/reading_group_lists.go**~~ — PR #2201 and #2221 both merged ✅.
 6. ~~**authstore/PasskeyAdapter**~~ — PR #2143 merged ✅.
-7. ~~**tags in bookDTO handler responses**~~ — Covered by 2026-04-19 PR.
+7. ~~**tags in bookDTO handler responses**~~ — Covered by 2026-04-19 PR #2349.
+8. ~~**frontend/src/lib/api/calibre.ts**~~ — Covered 2026-04-20 ✅
+9. ~~**frontend/src/lib/api/recommendations.ts**~~ — Covered 2026-04-20 ✅
 
 ## Maintainer Priorities
 - All previous monthly issues closed by veverkap as "completed"
 - Signals strong positive reception; maintainer is actively merging Test Improver PRs
-- Merged: #1689, #1771, #1792, #1845, #1943, #2021, #2143, #2221
+- Merged: #1689, #1771, #1792, #1845, #1943, #2021, #2143, #2221, #2349
 
 ## Completed Work
+
+### 2026-04-20
+- New monthly activity issue created (prior #2343 closed by veverkap)
+- Created PR on branch `test-assist/frontend-api-calibre-recommendations-tests`:
+  - 8 tests for calibre.ts (previewCalibreImport, confirmCalibreImport + path variants)
+  - 5 tests for recommendations.ts (getRecommendations)
+  - Total: 13 new tests
 
 ### 2026-04-19
 - New monthly activity issue created (prior #2222 closed by veverkap)
 - Created PR on branch `test-assist/book-dto-tags-regression-tests`: 2 tests verifying
   tags field is embedded in GetBook and CreateBook handler responses (regression guard for dd15bdc9)
+  (merged as PR #2349)
 
 ### 2026-04-18 (PR #2221 — merged ✅)
 - New monthly activity issue created (prior #2144 closed by veverkap)
