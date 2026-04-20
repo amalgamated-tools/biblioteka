@@ -211,7 +211,7 @@ KOSync credential changes are recorded in the [audit log](api/admin.md#get-apiau
 
 - Ensure both KOReader devices are configured to use the same custom sync server and the same KOSync credentials.
 - Trigger a manual sync from the Progress sync plugin.
-- The `document` identifier is derived from the book file's hash. If the same book file has a different hash on each device (e.g. different editions or encoding), KOReader will treat them as different documents and maintain separate progress entries.
+- The `document` identifier is derived from the book file's hash or path, depending on the KOReader version and plugin settings. If the same book produces a different identifier on each device — because the files have different contents (e.g. different editions or encoding), or because the files are stored at different paths on the two devices — KOReader will treat them as separate documents and maintain independent progress entries. Ensure the same edition of each book is present on both devices at consistent paths to keep identifiers in sync.
 
 **I forgot my KOSync password**
 
