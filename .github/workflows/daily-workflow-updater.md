@@ -180,13 +180,18 @@ curl -s "https://api.github.com/repos/actions/checkout/releases?per_page=100" \
 ```bash
 # Step 1: Get the ref for the tag (singular /git/ref/ for exact match)
 ref_response=$(curl -s "https://api.github.com/repos/actions/checkout/git/ref/tags/v6.1.0")
-object_type=$(echo "$ref_response" | grep -o '"type": "[^"]*"' | head -1 | cut -d'"' -f4)
-object_sha=$(echo "$ref_response" | grep -o '"sha": "[^"]*"' | head -1 | cut -d'"' -f4)
+object_type=$(printf '%s' "$ref_response" | python3 -c 'import json, sys; print(json.load(sys.stdin)["object"]["type"])')
+object_sha=$(printf '%s' "$ref_response" | python3 -c 'import json, sys; print(json.load(sys.stdin)["object"]["sha"])')
 
 # Step 2: If it's an annotated tag object, dereference to get the commit SHA
 if [ "$object_type" = "tag" ]; then
-  commit_sha=$(curl -s "https://api.github.com/repos/actions/checkout/git/tags/$object_sha" \
-    | grep -o '"sha": "[^"]*"' | tail -1 | cut -d'"' -f4)
+  tag_response=$(curl -s "https://api.github.com/repos/actions/checkout/git/tags/$object_sha")
+  target_type=$(printf '%s' "$tag_response" | python3 -c 'import json, sys; print(json.load(sys.stdin)["object"]["type"])')
+  if [ "$target_type" != "commit" ]; then
+    echo "Expected annotated tag to point to a commit, got: $target_type" >&2
+    exit 1
+  fi
+  commit_sha=$(printf '%s' "$tag_response" | python3 -c 'import json, sys; print(json.load(sys.stdin)["object"]["sha"])')
 else
   commit_sha="$object_sha"
 fi
