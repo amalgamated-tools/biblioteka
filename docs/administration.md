@@ -83,7 +83,7 @@ Work through this checklist before issuing the `DELETE` statement:
 
 2. **Check for user-scoped background jobs before deletion.** Review the job queue in Redis or the Asynqmon dashboard (`/asynqmon/`) for any queued or in-progress jobs whose payload includes the user's ID, such as `enrich:ai` or `enrich:goodreads`. Allow those jobs to finish, or cancel them, before proceeding. `scan:library` jobs reference `library_id` and paths rather than `user_id`, so they do not by themselves create an orphaned `user_id` risk when deleting a user.
 
-3. **Confirm audit log retention.** Rows in `audit_logs` that reference the deleted `user_id` are intentionally retained for accountability — there is no foreign key constraint on `audit_logs.user_id`. After deletion those rows will contain an orphaned `user_id` value, which is expected behavior. Ensure your compliance or audit policies accept this before proceeding.
+3. **Confirm audit log retention.** `audit_logs` rows referencing the deleted `user_id` are intentionally retained with an orphaned reference — confirm your audit or compliance policies accept this before proceeding (see [What is NOT deleted](#what-is-not-deleted) below).
 
 **SQLite**
 
@@ -129,11 +129,9 @@ The following rows are deleted along with the user record via `ON DELETE CASCADE
 | `book_downloads` | All download-tracking events for the user |
 | `ai_enrichments` | Any AI metadata enrichment requests |
 
-> **Libraries are not deleted.** Libraries are global resources managed by admins. Deleting a user does not remove any libraries. Existing library–book associations (`library_books`) are also unaffected. **Books themselves are not deleted** — they remain in the catalog and retain their authors, series, and tags.
-
 #### What is NOT deleted
 
-- **Books, authors, series, and tags** — catalog records are global and are not removed.
+- **Libraries, books, authors, series, and tags** — catalog records and library–book associations (`library_books`) are global; none are removed when a user is deleted.
 - **Audit log entries** — `audit_logs` rows referencing the deleted `user_id` are retained for historical accountability. The `user_id` field on those rows becomes an orphaned reference, which is intentional: Biblioteka does not place a foreign key constraint on `audit_logs.user_id` so audit records survive account removal. This preserves the audit event and associated `user_id` even after the account no longer exists.
 
 > **SQLite note:** The cascades above only fire when `PRAGMA foreign_keys = ON` is set for the connection. The application always enables this pragma, but if you connect via a separate client (e.g. `sqlite3` CLI or a GUI tool), you must set it yourself before issuing the `DELETE`.
@@ -651,17 +649,4 @@ Biblioteka writes structured JSON logs to stdout. Increase verbosity by setting 
 LOG_LEVEL=debug LOG_FORMAT=text docker compose up
 ```
 
-Useful patterns:
-
-```bash
-# Watch all ERROR-level entries
-docker compose logs -f biblioteka | jq 'select(.level == "ERROR")'
-
-# Trace a specific request by its ID
-docker compose logs biblioteka | jq 'select(.request_id == "<id>")'
-
-# See all background job activity
-docker compose logs biblioteka | jq 'select(.msg | test("job|scan|process|file"))'
-```
-
-See the [Observability guide](observability.md) for the full log field reference.
+Useful `jq` patterns and the full log field reference are in the [Observability guide](observability.md#useful-jq-queries-local-development).
