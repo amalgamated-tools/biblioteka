@@ -24,6 +24,10 @@ A Svelte 5 rune that declares a reactive state variable. Used for scalar values 
 
 A variant of [`$state`](#state) that tracks only the reference to a value, not its contents. Used for array properties that are replaced wholesale on every fetch, avoiding unnecessary deep-proxy overhead and preventing the "state mutated outside a reactive context" console warning. See also [runes](#runes).
 
+## AI Enrichment
+
+A metadata enrichment feature that calls a configured LLM provider (currently Ollama) to generate a book description, tags, and reading level. Triggered on demand via `POST /api/books/{id}/metadata/ai-fetch`, which enqueues an `enrich:ai` background job. The job produces an `ai_enrichments` record with `status = "pending"`. The user must then review and either apply (via `POST /api/books/{id}/metadata/ai-apply`) or reject (via `POST /api/books/{id}/metadata/ai-reject`) the suggestion before any changes are written to the book record. Real-time job progress is streamed via [SSE](#sse) at `GET /api/books/{id}/metadata/events`. Requires a configured LLM provider and a running Redis worker. See [Background Jobs](background-jobs.md).
+
 ## API Key
 
 A long-lived authentication token with the `bib_` prefix used for programmatic access to the Biblioteka API. API keys are generated as cryptographically random hex strings, stored by their hash (not in plaintext), and returned only once at creation time. Managed under **Settings → API Keys** or via the REST API. See [Authentication](authentication.md).
@@ -154,6 +158,10 @@ Two companion files written alongside every imported book file, regardless of wh
 
 For `book_per_file` libraries where multiple books share the same directory, sidecar filenames are prefixed with the book's filename stem (e.g. `gatsby.jpg`, `gatsby.opf`). Sidecar files are compatible with Calibre, KOReader, and Kobo. See [Administration](administration.md).
 
+## SSE
+
+**Server-Sent Events.** A unidirectional HTTP streaming protocol that Biblioteka uses to push real-time progress updates from background metadata enrichment jobs to browser clients. The SSE endpoint at `GET /api/books/{id}/metadata/events` emits progress events (e.g. `fetching_book`, `building_prompt`, `generating`) as an [`enrich:ai`](#ai-enrichment) or [Goodreads Metadata](#goodreads-metadata) job runs. Clients subscribe by opening the URL in a browser `EventSource`. The connection is server-to-client only; clients control enrichment via separate API calls. See [Background Jobs](background-jobs.md).
+
 ## Tag
 
 A user-defined label applied to books for categorization and discovery. Tags are globally-scoped named entities (not per-user) with their own CRUD API at `/api/tags`. A tag name is normalized before storage (whitespace trimmed and collapsed). Tags can be assigned to a book via `PUT /api/books/{id}/tags` and retrieved via `GET /api/books/{id}/tags`. Multiple tags can be applied to a single book, and a single tag can be applied to many books. Tags are also populated during AI metadata enrichment when using the Ollama provider. See [API Reference](api-reference.md).
@@ -161,3 +169,7 @@ A user-defined label applied to books for categorization and discovery. Tags are
 ## WAL
 
 **Write-Ahead Logging.** The SQLite journal mode used by Biblioteka (`PRAGMA journal_mode=WAL`). WAL mode allows concurrent readers and a single writer without blocking reads during writes, improving performance for a multi-user web application. Combined with `synchronous=NORMAL` and `foreign_keys=ON` in all SQLite connections. See [Database Schema](database-schema.md).
+
+## Watch Folder
+
+A single filesystem directory that Biblioteka polls every minute for new book files. When both `watch_folder_path` and `watch_folder_library_id` are configured, the `scan:watch-folder` background job walks the directory and enqueues a `process:file` job for every supported file found (`.epub`, `.mobi`, `.pdf`, `.azw3`). Files are imported into the target library but remain at their original path — the watch folder intentionally does not apply the library's `organization_type` layout. Requires a running Redis worker; when the server runs in `server`-only mode, the watch folder is never polled. See [Administration — Watch Folder](administration.md#watch-folder), [Background Jobs](background-jobs.md).
