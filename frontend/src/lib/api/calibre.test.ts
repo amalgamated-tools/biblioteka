@@ -13,6 +13,7 @@ import {
   previewCalibreImportFromPath,
   confirmCalibreImportFromPath,
   clearToken,
+  setToken,
 } from "../api";
 import type { CalibrePreview, CalibreImportResult } from "../../types";
 import { mockFetchResponse } from "./testUtils";
@@ -79,16 +80,17 @@ describe("Calibre API", () => {
       expect(result).toEqual(fakePreview);
     });
 
-    it("returns the preview with total and books array", async () => {
+    it("forwards the Authorization header when a token is set", async () => {
+      setToken("test-token");
       mockFetch(fakePreview);
       const file = new File(["db"], "metadata.db");
 
-      const result = await previewCalibreImport(file);
+      await previewCalibreImport(file);
 
-      expect(result.total).toBe(2);
-      expect(result.books).toHaveLength(2);
-      expect(result.books[0].title).toBe("Foundation");
-      expect(result.books[1].series).toEqual([]);
+      const options = fetchMock.mock.calls[0][1] as RequestInit;
+      expect((options.headers as Record<string, string>)["Authorization"]).toBe(
+        "Bearer test-token",
+      );
     });
   });
 

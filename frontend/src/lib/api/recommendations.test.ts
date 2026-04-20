@@ -54,8 +54,7 @@ describe("Recommendations API", () => {
 
       expect(fetchMock).toHaveBeenCalledOnce();
       const url: string = fetchMock.mock.calls[0][0] as string;
-      expect(url).toContain("/api/recommendations");
-      expect(url).toContain("limit=10");
+      expect(url).toBe("/api/recommendations?limit=10");
       expect(fetchMock.mock.calls[0][1].method).toBe("GET");
       expect(result).toEqual([fakeBook]);
     });
@@ -66,7 +65,7 @@ describe("Recommendations API", () => {
       await getRecommendations(25);
 
       const url: string = fetchMock.mock.calls[0][0] as string;
-      expect(url).toContain("limit=25");
+      expect(url).toBe("/api/recommendations?limit=25");
     });
 
     it("returns an empty array when no recommendations are available", async () => {
