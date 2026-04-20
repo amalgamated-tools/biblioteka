@@ -253,35 +253,51 @@ describe("Recommendations", () => {
   });
 
   describe("AbortController", () => {
-    it("passes an AbortSignal to getRecommendations", async () => {
-      vi.mocked(getRecommendations).mockResolvedValue([]);
-      render(Recommendations);
-      await tick();
-
-      expect(vi.mocked(getRecommendations)).toHaveBeenCalledWith(
-        10,
-        expect.any(AbortSignal),
-      );
-    });
-
     it("does not update state after unmount (aborted request)", async () => {
-      let resolve!: (books: BookSummary[]) => void;
-      vi.mocked(getRecommendations).mockReturnValue(
-        new Promise<BookSummary[]>((r) => {
-          resolve = r;
-        }),
+      let passedSignal: AbortSignal | undefined;
+      let requestPromise: Promise<BookSummary[]> | undefined;
+
+      vi.mocked(getRecommendations).mockImplementation(
+        (_limit?: number, signal?: AbortSignal) => {
+          passedSignal = signal;
+          requestPromise = new Promise<BookSummary[]>((_resolve, reject) => {
+            if (signal?.aborted) {
+              reject(
+                new DOMException("The operation was aborted.", "AbortError"),
+              );
+              return;
+            }
+            signal?.addEventListener(
+              "abort",
+              () => {
+                reject(
+                  new DOMException("The operation was aborted.", "AbortError"),
+                );
+              },
+              { once: true },
+            );
+          });
+          return requestPromise;
+        },
       );
 
       const { unmount } = render(Recommendations);
-      unmount();
-
-      // Resolve the promise after unmount — state should not change.
-      resolve([fakeBook]);
       await tick();
 
-      // The component is unmounted; the signal was aborted so books is never
-      // set. The test just verifies no error is thrown.
       expect(vi.mocked(getRecommendations)).toHaveBeenCalledOnce();
+      expect(passedSignal).toBeInstanceOf(AbortSignal);
+      expect(passedSignal?.aborted).toBe(false);
+      expect(requestPromise).toBeDefined();
+
+      unmount();
+
+      await waitFor(() => {
+        expect(passedSignal?.aborted).toBe(true);
+      });
+
+      await expect(requestPromise).rejects.toMatchObject({
+        name: "AbortError",
+      });
     });
   });
 });

@@ -12,23 +12,33 @@
 
   $effect(() => {
     const controller = new AbortController();
+    let cancelled = false;
 
     async function load() {
       try {
         const data = await getRecommendations(limit, controller.signal);
-        books = data;
+        if (!cancelled && !controller.signal.aborted) {
+          books = data;
+        }
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return;
-        error =
-          err instanceof Error ? err.message : "Failed to load recommendations";
+        if (!cancelled && !controller.signal.aborted) {
+          error =
+            err instanceof Error
+              ? err.message
+              : "Failed to load recommendations";
+        }
       } finally {
-        loading = false;
+        if (!cancelled && !controller.signal.aborted) {
+          loading = false;
+        }
       }
     }
 
     load();
 
     return () => {
+      cancelled = true;
       controller.abort();
     };
   });
