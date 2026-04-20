@@ -155,36 +155,47 @@
     }
   }
 
-  let authInitialized = false;
   $effect(() => {
-    if (!authInitialized) {
-      authInitialized = true;
-      getOidcEnabled()
-        .then((enabled) => {
-          oidcEnabled = enabled;
-        })
-        .catch(() => {
-          initError ??= "Unable to reach the server to load auth settings";
-        });
-      getSignupEnabled()
-        .then((enabled) => {
-          signupEnabled = enabled;
-          if (!enabled) {
-            isLogin = true;
-          }
-        })
-        .catch(() => {
-          initError ??= "Unable to reach the server to load auth settings";
-        });
-      getPasskeyEnabled()
-        .then((enabled) => {
-          passkeyEnabled = enabled;
-        })
-        .catch(() => {
-          // Passkey availability is optional; silently disable the feature on error.
-          passkeyEnabled = false;
-        });
+    const controller = new AbortController();
+
+    async function initAuth() {
+      const [oidcResult, signupResult, passkeyResult] =
+        await Promise.allSettled([
+          getOidcEnabled(controller.signal),
+          getSignupEnabled(controller.signal),
+          getPasskeyEnabled(controller.signal),
+        ]);
+
+      if (controller.signal.aborted) return;
+
+      if (oidcResult.status === "fulfilled") {
+        oidcEnabled = oidcResult.value;
+      }
+
+      if (signupResult.status === "fulfilled") {
+        signupEnabled = signupResult.value;
+        if (!signupResult.value) {
+          isLogin = true;
+        }
+      }
+
+      // Passkey availability is optional; silently disable the feature on error.
+      passkeyEnabled =
+        passkeyResult.status === "fulfilled" ? passkeyResult.value : false;
+
+      if (
+        oidcResult.status === "rejected" ||
+        signupResult.status === "rejected"
+      ) {
+        initError = "Unable to reach the server to load auth settings";
+      }
     }
+
+    initAuth();
+
+    return () => {
+      controller.abort();
+    };
   });
 
   async function handlePasskeySignIn() {

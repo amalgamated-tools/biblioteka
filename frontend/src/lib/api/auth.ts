@@ -41,17 +41,25 @@ export async function logout(): Promise<void> {
   }
 }
 
-async function getFeatureEnabled(path: string): Promise<boolean> {
-  const data = await request<{ enabled: boolean }>("GET", path);
+async function getFeatureEnabled(
+  path: string,
+  signal?: AbortSignal,
+): Promise<boolean> {
+  const data = await request<{ enabled: boolean }>(
+    "GET",
+    path,
+    undefined,
+    signal,
+  );
   return data.enabled === true;
 }
 
-export async function getOidcEnabled(): Promise<boolean> {
-  return getFeatureEnabled("/api/auth/oidc/enabled");
+export async function getOidcEnabled(signal?: AbortSignal): Promise<boolean> {
+  return getFeatureEnabled("/api/auth/oidc/enabled", signal);
 }
 
-export async function getSignupEnabled(): Promise<boolean> {
-  return getFeatureEnabled("/api/auth/signup/enabled");
+export async function getSignupEnabled(signal?: AbortSignal): Promise<boolean> {
+  return getFeatureEnabled("/api/auth/signup/enabled", signal);
 }
 
 export async function createOidcLinkNonce(): Promise<string> {

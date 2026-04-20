@@ -179,6 +179,16 @@ describe("request()", () => {
     const [, options] = fetchMock.mock.calls[0];
     expect(options.headers).not.toHaveProperty("Authorization");
   });
+
+  it("forwards the AbortSignal to fetch when provided", async () => {
+    mockFetchResponse(fetchMock, {});
+    const controller = new AbortController();
+
+    await request("GET", "/api/test", undefined, controller.signal);
+
+    const [, options] = fetchMock.mock.calls[0];
+    expect(options.signal).toBe(controller.signal);
+  });
 });
 
 describe("getVersion()", () => {
