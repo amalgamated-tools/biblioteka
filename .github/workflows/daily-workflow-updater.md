@@ -164,13 +164,11 @@ curl -s "https://api.github.com/repos/actions/checkout/releases/latest" | grep '
 # WARNING: /releases/latest returns the latest release across all majors.
 # Do NOT use it alone for major-only pins (e.g. @v9) if the repo may already have v10+.
 
-# For major-only pins (e.g. @v9): list releases and select the newest tag matching the
-# current major. Page through results if needed (add &page=2, &page=3, …).
+# For major-only pins (e.g. @v9): list releases and select the newest non-draft,
+# non-prerelease tag matching the current major. Page through results if needed
+# (add &page=2, &page=3, …).
 curl -s "https://api.github.com/repos/actions/checkout/releases?per_page=100" \
-  | grep -o '"tag_name": "[^"]*"' \
-  | cut -d'"' -f4 \
-  | grep '^v9\.' \
-  | head -1
+  | python3 -c 'import json, sys; releases = json.load(sys.stdin); print(next((r["tag_name"] for r in releases if not r.get("draft") and not r.get("prerelease") and r.get("tag_name", "").startswith("v9.")), ""))'
 
 # If no matching release is found via /releases, fall back to listing tags — some repos
 # publish tags without GitHub Releases. Resolve the chosen tag to a commit SHA using
@@ -200,9 +198,10 @@ echo "Commit SHA: $commit_sha"
 
 If any actions have newer versions available, update `actions-lock.json`:
 
-- Update the entry key (e.g., `"actions/checkout@v6.0.2"` → `"actions/checkout@v6.1.0"`)
-- Update the `version` field
-- Update the `sha` field with the commit SHA of the new tag
+- **Semver pins** (e.g. `@v6.0.2`): update the entry key, the `version` field, and the `sha` field.
+  - Example: `"actions/checkout@v6.0.2"` → `"actions/checkout@v6.1.0"`
+- **Major-only pins** (e.g. `@v9`): update **only** the `sha` field — do NOT change the entry key or `version` field.
+  - The key must stay as `owner/repo/path@v9`; only the pinned commit SHA is refreshed.
 
 **Skip container image updates** — container digest updates require container registry API access and should be left for `gh aw update`.
 
