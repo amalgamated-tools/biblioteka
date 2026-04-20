@@ -183,6 +183,28 @@ See the [Configuration](../README.md#configuration) table in the README for the 
 | `DATABASE_URL` | No | Omit for SQLite; set to a PostgreSQL DSN for Postgres |
 | `REDIS_URL` | No | Defaults to `redis://localhost:6379` |
 | `TRUSTED_PROXIES` | No | Comma-separated CIDR ranges of trusted reverse proxies (e.g. `10.0.0.0/8,172.16.0.0/12`). When set, the rate limiter uses the rightmost non-trusted IP from `X-Forwarded-For`. When unset, `X-Forwarded-For` is ignored and `RemoteAddr` is used directly. |
+| `INITIAL_ADMIN_EMAIL` | No | Email address of the first admin user to create on startup. Only takes effect when the users table is empty **and** `INITIAL_ADMIN_PASSWORD` is also set. Idempotent — if a user already exists the variable is ignored. |
+| `INITIAL_ADMIN_PASSWORD` | No | Password for the bootstrap admin user. Stored as a bcrypt hash. Requires `INITIAL_ADMIN_EMAIL`. Has no effect once any user exists. |
+| `INITIAL_ADMIN_NAME` | No | Display name for the bootstrap admin. Defaults to `"Admin"` when omitted. Only used alongside `INITIAL_ADMIN_EMAIL` + `INITIAL_ADMIN_PASSWORD`. |
+
+### Bootstrap Admin User
+
+For automated, headless, or infrastructure-as-code deployments where signing up interactively is not possible, set `INITIAL_ADMIN_EMAIL` and `INITIAL_ADMIN_PASSWORD` to pre-create the first admin account. Consider also setting `DISABLE_SIGNUP=true` to prevent public self-registration once the first account exists.
+
+```bash
+INITIAL_ADMIN_EMAIL=admin@example.com
+INITIAL_ADMIN_PASSWORD=supersecret
+INITIAL_ADMIN_NAME=Library Admin   # optional; defaults to "Admin"
+```
+
+**Behavior:**
+
+- Only runs when the `users` table is **empty**. If any user already exists, the variables are ignored and startup logs may include an informational message that initial admin seeding was skipped.
+- The operation is idempotent — if two instances start concurrently and both attempt to seed, the second duplicate insert is treated as a no-op.
+- The password is stored as a bcrypt hash; the plaintext value is never persisted.
+- The created account has admin privileges (same as the first account created via the sign-up form).
+
+> **Security note:** These variables are start-up secrets. Remove them from your environment or secrets manager once the initial admin account has been verified. The variables are no longer needed after at least one user exists, and leaving them set has no effect (but adds unnecessary secret surface).
 
 ### JWT Secret Rotation
 
