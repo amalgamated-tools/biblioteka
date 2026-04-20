@@ -93,10 +93,14 @@ fi
 
 ### A3. Run the Update Command
 
-If `gh aw` is available, run:
+Verify that `gh aw` is actually available before running the update. If this check fails, **skip to Approach B** instead:
 
 ```bash
-gh aw update --verbose
+if command -v gh >/dev/null 2>&1 && gh aw --help >/dev/null 2>&1; then
+  gh aw update --verbose
+else
+  echo "gh aw is not available after check/install; skip to Approach B"
+fi
 ```
 
 This command will:
@@ -137,13 +141,17 @@ cat .github/aw/actions-lock.json
 
 ### B2. Check Each Action for Updates
 
-For each entry in the `entries` section of `actions-lock.json` (format: `"owner/repo@vX.Y.Z"`):
+For each entry in the `entries` section of `actions-lock.json` (format: `"owner/repo/optional-path@vX[.Y.Z]"`):
 
-1. Parse the `repo` field (e.g., `actions/checkout`) and `version` field (e.g., `v6.0.2`)
-2. Use the GitHub MCP server tool to get the latest release for that repo
-3. Compare the latest release version to the current version
-4. If a newer version exists within the **same major version** (e.g., `v6.x.x` → `v6.1.0`), record the update
-5. For updated actions, get the commit SHA of the new tag using the GitHub API
+1. Parse the **action path** (e.g., `actions/cache/restore`, `github/codeql-action/upload-sarif`) and `version` field (e.g., `v9`, `v6.0.2`).
+   - Derive the **API repository** from the first two path segments only (e.g., `actions/cache` from `actions/cache/restore`).
+   - Preserve the full action path as the lock entry key (do not strip sub-paths).
+2. Use the GitHub MCP server tool to get the latest release for the **API repository** (first two path segments).
+3. Compare the latest release version to the current version.
+4. If a newer version exists within the **same major version** (e.g., `v6.x.x` → `v6.1.0`, or `v9` → look for the latest `v9.x.x` release), record the update.
+   - For **major-only versions** (e.g., `v9`): find the latest release whose major matches; update the pinned SHA to that release's tag commit SHA without changing the version key (the key stays `owner/repo/path@v9`).
+   - For **semver versions** (e.g., `v6.0.2`): update both the entry key and the `version` field to the newer patch/minor version.
+5. For updated actions, get the commit SHA of the new tag using the GitHub API (see SHA resolution below).
 
 **Semver constraint**: Only update within the same major version. Do NOT update across major versions (e.g., do NOT change `v6.x.x` to `v7.x.x`).
 
@@ -153,15 +161,15 @@ For public repos, you can also use curl to check versions without authentication
 # Example: check latest release for actions/checkout
 curl -s "https://api.github.com/repos/actions/checkout/releases/latest" | grep '"tag_name"'
 
-# Get the SHA for a specific tag
-curl -s "https://api.github.com/repos/actions/checkout/git/refs/tags/v6.1.0"
+# Get the SHA for a specific tag (singular /git/ref/ for exact match)
+curl -s "https://api.github.com/repos/actions/checkout/git/ref/tags/v6.1.0"
 ```
 
 **Note on annotated tags**: GitHub Actions often use annotated tags. If the API response shows `"type": "tag"` instead of `"type": "commit"`, you need a second API call to dereference it:
 
 ```bash
-# Step 1: Get the ref for the tag
-ref_response=$(curl -s "https://api.github.com/repos/actions/checkout/git/refs/tags/v6.1.0")
+# Step 1: Get the ref for the tag (singular /git/ref/ for exact match)
+ref_response=$(curl -s "https://api.github.com/repos/actions/checkout/git/ref/tags/v6.1.0")
 object_type=$(echo "$ref_response" | grep -o '"type": "[^"]*"' | head -1 | cut -d'"' -f4)
 object_sha=$(echo "$ref_response" | grep -o '"sha": "[^"]*"' | head -1 | cut -d'"' -f4)
 
@@ -207,7 +215,7 @@ git status
 
 2. **Use the `create-pull-request` safe-output** with:
 
-**PR Title Format**: `[actions] Update GitHub Actions versions - [date]`
+**PR Title Format**: `Update GitHub Actions versions - [date]`
 
 **PR Body Template**:
 ```markdown
