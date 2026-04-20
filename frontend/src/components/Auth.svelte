@@ -159,24 +159,34 @@
     const controller = new AbortController();
 
     async function initAuth() {
-      try {
-        const [oidc, signup, passkey] = await Promise.all([
-          getOidcEnabled(),
-          getSignupEnabled(),
-          // Passkey availability is optional; silently disable the feature on error.
-          getPasskeyEnabled().catch(() => false),
+      const [oidcResult, signupResult, passkeyResult] =
+        await Promise.allSettled([
+          getOidcEnabled(controller.signal),
+          getSignupEnabled(controller.signal),
+          getPasskeyEnabled(controller.signal),
         ]);
 
-        if (controller.signal.aborted) return;
+      if (controller.signal.aborted) return;
 
-        oidcEnabled = oidc;
-        signupEnabled = signup;
-        if (!signup) {
+      if (oidcResult.status === "fulfilled") {
+        oidcEnabled = oidcResult.value;
+      }
+
+      if (signupResult.status === "fulfilled") {
+        signupEnabled = signupResult.value;
+        if (!signupResult.value) {
           isLogin = true;
         }
-        passkeyEnabled = passkey;
-      } catch {
-        if (controller.signal.aborted) return;
+      }
+
+      // Passkey availability is optional; silently disable the feature on error.
+      passkeyEnabled =
+        passkeyResult.status === "fulfilled" ? passkeyResult.value : false;
+
+      if (
+        oidcResult.status === "rejected" ||
+        signupResult.status === "rejected"
+      ) {
         initError = "Unable to reach the server to load auth settings";
       }
     }

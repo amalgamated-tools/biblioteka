@@ -89,10 +89,14 @@ export function prepareRequestOptions(
   return prepared as unknown as PublicKeyCredentialRequestOptions;
 }
 
-export async function getPasskeyEnabled(): Promise<boolean> {
+export async function getPasskeyEnabled(
+  signal?: AbortSignal,
+): Promise<boolean> {
   const resp = await request<{ enabled: boolean }>(
     "GET",
     "/api/auth/passkey/enabled",
+    undefined,
+    signal,
   );
   return resp.enabled;
 }

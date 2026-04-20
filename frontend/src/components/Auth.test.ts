@@ -163,6 +163,7 @@ describe("Auth", () => {
 
     render(Auth);
     await vi.waitFor(() => {
+      expect(getPasskeyEnabled).toHaveBeenCalled();
       expect(screen.queryByRole("button", { name: /passkey/i })).toBeNull();
     });
     expect(
