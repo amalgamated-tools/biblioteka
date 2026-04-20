@@ -1527,16 +1527,16 @@ Detail page for a single reading list. Receives the `listId` prop from `ReadingL
 |-------|----------|-------|
 | Enabled | — | Toggle to enable or disable LLM enrichment |
 | Provider | When enabled | Dropdown; currently only `"ollama"` is supported |
-| Endpoint URL | When enabled | Base URL of the LLM server (e.g. `http://localhost:11434`) |
+| Endpoint | When enabled | Base URL of the LLM server (e.g. `http://ollama.internal:11434`) |
 | Model | When enabled | Name of the model to use (e.g. `llama3`) |
 
 **Key behaviours:**
 
-- **Status badge** — Shows *Configured* (green) or *Not configured* (grey) based on whether LLM is enabled and both endpoint and model are set.
+- **Status badge** — Shows *Enabled* (green) or *Disabled* (grey) based on whether LLM is enabled and both endpoint and model are set.
 - **Restart-required banner** — After a successful save, a warning banner is shown: *"A server restart is required for this change to take effect."* LLM configuration is read at startup; the running server is not updated until it is restarted.
 - **Client-side validation** — When the toggle is enabled, endpoint and model fields are required before the form is submitted. Toggling LLM off clears the validation requirement.
 - **Idempotent load** — On mount, the tab fetches the current config via `GET /api/config/llm` and populates the form. If the fetch fails, the form starts empty.
-- **API endpoints** — `GET /api/config/llm` (load) and `PUT /api/config/llm` (save); see [LLM config endpoints](api/config.md#get-apiconfigllm) in the API reference.
+- **API endpoints** — `GET /api/config/llm` (load) and `PUT /api/config/llm` (save); see [GET LLM config](api/config.md#get-apiconfigllm--admin--jwt-only) and [PUT LLM config](api/config.md#put-apiconfigllm--admin--jwt-only) in the API reference.
 
 ### One-time prop initialisation (`svelte-ignore state_referenced_locally`)
 
