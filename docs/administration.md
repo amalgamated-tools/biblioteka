@@ -525,9 +525,21 @@ curl -X PUT http://localhost:8080/api/config/llm \
 | Field | Required when `enabled` | Description |
 |-------|------------------------|-------------|
 | `provider` | No (defaults to `"ollama"`) | LLM provider name. Currently only `"ollama"` is accepted. |
-| `endpoint` | Yes | Base URL of the Ollama server (e.g. `"http://localhost:11434"`). |
+| `endpoint` | Yes | Base URL of the Ollama server (e.g. `"http://ollama.example.com:11434"`). Subject to SSRF validation — see below. |
 | `model` | Yes | Ollama model name (e.g. `"llama3"`, `"mistral"`, `"gemma3"`). The model must already be pulled on the Ollama server. |
 | `enabled` | — | `true` to activate AI enrichment; `false` to disable it. |
+
+#### Endpoint validation (SSRF protection)
+
+Before saving, the server validates the `endpoint` URL against the following rules. Violations are rejected with `400 Bad Request`:
+
+- Only the `http` and `https` schemes are accepted.
+- URLs containing userinfo (e.g. `http://user:pass@ollama.internal`) are rejected to prevent credential leakage.
+- Literal private, loopback, or link-local IP addresses are blocked (RFC 1918, `127.0.0.0/8`, `169.254.0.0/16`, IPv6 loopback `::1`, link-local `fe80::/10`).
+- IPv6 literals with zone identifiers (e.g. `http://[fe80::1%lo0]:11434`) are rejected.
+- If the host is a DNS name, it is resolved (with a short timeout) and any private or loopback result is also blocked. DNS failures are treated as a pass — the enrichment job will fail when it actually connects, and a second SSRF-safe dialer in the Ollama client provides an additional layer of defense.
+
+> **Local Ollama note:** Because private IP addresses are blocked, `http://localhost:11434` and `http://127.0.0.1:11434` are rejected when set via the API or admin UI. For a local Ollama instance on the same host as Biblioteka, point the endpoint at a non-private, publicly routable hostname or address that the Biblioteka process can reach (for example, the host's public IP or a hostname that resolves to it). If Ollama is on a separate private-network host, access it via a reverse proxy reachable from a routable hostname.
 
 A successful update is recorded in the audit log as `llm.config_updated`.
 
