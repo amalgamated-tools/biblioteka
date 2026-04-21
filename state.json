@@ -1,13 +1,13 @@
 {
-  "last_run": "2026-04-20T20:27:31Z",
-  "tasks_run": ["task2", "task3", "task7"],
+  "last_run": "2026-04-21T20:30:17Z",
+  "tasks_run": ["task4", "task6", "task7"],
   "commands": {
     "build": "make build (requires frontend first)",
     "test": "go test ./... (Go 1.26.2 auto-downloaded; internal/jobs failures are pre-existing)",
     "lint": "make lint",
     "fmt": "make fmt && make hardfmt",
     "bench": "go test -bench=. -benchmem ./internal/db/",
-    "note": "Go 1.26.2 is auto-downloaded when needed. internal/jobs tests have pre-existing failures."
+    "note": "Go 1.26.2 is auto-downloaded when needed. internal/jobs tests have pre-existing failures. pnpm not installed in CI so frontend fmt fails but Go fmt works fine."
   },
   "backlog": [
     {
@@ -82,23 +82,17 @@
     {
       "id": "group-members-audit-logs-sort-indexes",
       "status": "pr_created",
-      "description": "Add (group_id, joined_at) index on reading_group_members + replace idx_audit_logs_created_at with (created_at DESC, id DESC) covering index - eliminates temp B-tree in ListGroupMembers and RIGHT PART B-tree in ListAuditLogs",
-      "pr_branch": "perf-assist/sort-indexes-group-members-audit-logs-20260420",
-      "evidence": "BEFORE group_members: SEARCH USING sqlite_autoindex_reading_group_members_1 + USE TEMP B-TREE; AFTER: SEARCH USING idx_reading_group_members_group_joined_at. BEFORE audit_logs: SCAN USING idx_audit_logs_created_at + USE TEMP B-TREE FOR RIGHT PART; AFTER: SCAN USING COVERING INDEX idx_audit_logs_created_at_id"
-    },
-    {
-      "id": "book-annotations-sort-index",
-      "status": "low_priority",
-      "description": "Add (book_id, created_at) index on book_annotations - BUT query uses complex OR+subquery so temp B-tree unavoidable; skip",
-      "priority": "skip"
+      "description": "Add (group_id, joined_at) index on reading_group_members + replace idx_audit_logs_created_at with (created_at DESC, id DESC) covering index - eliminates temp B-tree in ListGroupMembers and RIGHT PART B-tree in ListAuditLogs. Fixed CONCURRENTLY bug in Postgres migration in run 2026-04-21.",
+      "pr_number": 2423,
+      "pr_branch": "perf-assist/sort-indexes-group-members-audit-logs-20260420-42b197145d5ca68e"
     },
     {
       "id": "benchmark-gaps",
-      "status": "pending",
-      "description": "Add benchmarks for ListAuditLogs, ListGroupMembers, ListAnnotationsForBook to the bench_test.go suite",
-      "priority": "medium"
+      "status": "pr_created",
+      "description": "Added benchmarks for ListAuditLogs (100/1000), ListGroupMembers (20 members), ListAnnotationsForBook (10 annotations) to bench_test.go",
+      "pr_branch": "perf-assist/add-benchmarks-audit-logs-group-members-annotations-20260421"
     }
   ],
-  "monthly_activity_issue_number": null,
+  "monthly_activity_issue_number": 2424,
   "checked_off_items": []
 }
