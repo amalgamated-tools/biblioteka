@@ -337,3 +337,116 @@ func BenchmarkGetYearInBooks(b *testing.B) {
 		}
 	}
 }
+
+// ---- ListAuditLogs ----
+
+// BenchmarkListAuditLogs measures pagination over the audit_logs table using
+// the covering index idx_audit_logs_created_at_id (created_at DESC, id DESC).
+func BenchmarkListAuditLogs_100(b *testing.B) {
+	d := newBenchDB(b)
+	ctx := b.Context()
+
+	user, err := d.CreateUser(ctx, "bench-audit-user", "audit@example.com", "hashedpw")
+	require.NoError(b, err, "CreateUser")
+
+	for range 100 {
+		err := d.CreateAuditLog(ctx, user.ID, "book.created", "book", "book-1", nil)
+		require.NoError(b, err, "CreateAuditLog")
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for range b.N {
+		_, _, err := d.ListAuditLogs(ctx, 50, 0)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkListAuditLogs_1000(b *testing.B) {
+	d := newBenchDB(b)
+	ctx := b.Context()
+
+	user, err := d.CreateUser(ctx, "bench-audit-user", "audit@example.com", "hashedpw")
+	require.NoError(b, err, "CreateUser")
+
+	for range 1000 {
+		err := d.CreateAuditLog(ctx, user.ID, "book.created", "book", "book-1", nil)
+		require.NoError(b, err, "CreateAuditLog")
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for range b.N {
+		_, _, err := d.ListAuditLogs(ctx, 50, 0)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+// ---- ListGroupMembers ----
+
+// BenchmarkListGroupMembers measures the reading_group_members query that
+// uses the composite index idx_reading_group_members_group_joined_at
+// (group_id, joined_at) to avoid a temp B-tree sort.
+func BenchmarkListGroupMembers_20(b *testing.B) {
+	d := newBenchDB(b)
+	ctx := b.Context()
+
+	owner, err := d.CreateUser(ctx, "bench-owner", "owner@example.com", "hashedpw")
+	require.NoError(b, err, "CreateUser owner")
+
+	grp, err := d.CreateGroup(ctx, owner.ID, "Bench Group", nil)
+	require.NoError(b, err, "CreateGroup")
+
+	for i := range 19 {
+		member, err := d.CreateUser(ctx,
+			fmt.Sprintf("bench-member-%02d", i),
+			fmt.Sprintf("member%02d@example.com", i),
+			"hashedpw",
+		)
+		require.NoError(b, err, "CreateUser member")
+		_, err = d.AddGroupMember(ctx, grp.ID, owner.ID, member.ID)
+		require.NoError(b, err, "AddGroupMember")
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for range b.N {
+		_, err := d.ListGroupMembers(ctx, grp.ID, owner.ID)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+// ---- ListAnnotationsForBook ----
+
+// BenchmarkListAnnotationsForBook measures the annotation list query which
+// filters by book_id and user membership with an OR+subquery predicate.
+func BenchmarkListAnnotationsForBook_10(b *testing.B) {
+	d := newBenchDB(b)
+	ctx := b.Context()
+
+	user, err := d.CreateUser(ctx, "bench-annot-user", "annot@example.com", "hashedpw")
+	require.NoError(b, err, "CreateUser")
+
+	book, err := d.CreateBook(ctx, BookInput{Title: "Bench Book"})
+	require.NoError(b, err, "CreateBook")
+
+	for i := range 10 {
+		_, err := d.CreateAnnotation(ctx, user.ID, book.ID, fmt.Sprintf("annotation %d", i), nil, nil)
+		require.NoError(b, err, "CreateAnnotation")
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for range b.N {
+		_, err := d.ListAnnotationsForBook(ctx, book.ID, user.ID)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
