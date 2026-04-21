@@ -354,6 +354,7 @@ Additionally, the 24-hour asynq deduplication window (via `asynq.Unique(24*time.
 
 - **Files reachable from multiple paths** — If the same physical file is reachable under two different library paths (e.g. via symlinks or overlapping mounts), each path produces a distinct job payload with a different `file_path`. Both jobs can succeed and create separate `book_file` rows pointing at different paths on disk.
 - **Redis data loss** — If the Redis store is cleared or the server is restarted against a fresh Redis instance, the 24-hour deduplication window is reset. A subsequent scan may re-enqueue jobs for files already indexed; however, the database-level `UNIQUE(file_path)` constraint prevents new duplicate `book_file` rows from being created for files that have not moved.
+- **Watch folder + Redis restart** — Because `scan:watch-folder` runs every 1 minute and its `process:file` jobs go through `Worker.Enqueue`, clearing Redis resets the deduplication window for all watch-folder enqueues. On the next 1-minute poll, the watch-folder handler will re-enqueue `process:file` jobs for every supported file in the watch folder. The burst of enqueue attempts is expected behavior — not a sign of malfunction — and the database `UNIQUE(file_path)` constraint prevents duplicate book records from being created for files that are already indexed.
 
 ## Monitoring Dashboard (Asynqmon)
 
@@ -375,9 +376,16 @@ The dashboard lets you:
 
 **Common failure causes:**
 
-| Cause | Details |
-|-------|---------|
-| Library deleted during scan | If a library is deleted while a `scan:library` job is already queued, the job still completes successfully — filesystem paths are embedded in the payload at enqueue time and no database lookup occurs. Downstream `process:file` jobs treat a missing library record as a warning rather than an error, so no entries appear in the Asynqmon Failed tab. The observable consequence is that scanned books are created without a library association (orphaned books). To recover, re-add the library and run a fresh scan, or delete the orphaned book records directly. |
+| Cause | What you see in Asynqmon | Details |
+|-------|--------------------------|---------|
+| Library deleted during scan | No Failed entry | If a library is deleted while a `scan:library` job is already queued, the job still completes successfully — filesystem paths are embedded in the payload at enqueue time and no database lookup occurs. Downstream `process:file` jobs treat a missing library record as a warning rather than an error, so no entries appear in the Asynqmon Failed tab. The observable consequence is that scanned books are created without a library association (orphaned books). To recover, re-add the library and run a fresh scan, or delete the orphaned book records directly. |
+| ExifTool absent | No Failed entry | When ExifTool is not installed, `process:file` falls back to filename-derived title and logs at `DEBUG` level. The job succeeds and creates a book record with minimal metadata — title from the filename and no author, ISBN, or description. Check for this pattern in the log stream using the [structured log queries in Observability](observability.md#book-import-troubleshooting). |
+| `enrich:goodreads` or `enrich:ai` exhausting retries | Dead queue | If all 5 retries are exhausted (e.g. Goodreads is unreachable or the LLM provider is misconfigured), asynq moves the job to the **Dead** queue — a separate view in Asynqmon distinct from the Retrying/Failed view. Dead jobs do **not** resolve on their own and require explicit operator action: open the Dead tab in Asynqmon and either **retry** the job (once the root cause is resolved) or **delete** it. A job in the Dead queue does not affect the book record — the book was already committed by the API call that triggered the enrichment. |
+| `enrich:ai` with no LLM provider configured | No retry, no Dead entry | When the LLM provider is not configured at startup, `enrich:ai` publishes an error progress event and returns `nil`. asynq does not retry it and it does not enter the Dead queue. The book record is unaffected. Fix: configure an LLM provider via [`PUT /api/config/llm`](api/config.md#put-apiconfigllm--admin--jwt-only). |
+
+> **The Dead queue vs. the Retrying/Failed view:** Asynqmon's main queue view shows jobs that are actively retrying (status `Retry`). The **Dead** tab shows jobs that have exhausted all `DefaultMaxRetry` (5) attempts. A job in the Dead tab will never retry on its own — it is waiting for a human decision. Check the Dead tab after any sustained service disruption.
+
+> **For structured-log-based alerting on job failures**, see [Observability → Alerting Guidance](observability.md#alerting-guidance) and the [jq queries for background job activity](observability.md#book-import-troubleshooting).
 
 ## Project Layout
 
