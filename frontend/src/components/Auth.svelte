@@ -2,22 +2,22 @@
   import { BookCheck } from "lucide-svelte";
   import { authStore } from "../stores/auth.svelte";
   import {
-    getOidcEnabled,
-    getSignupEnabled,
-    getPasskeyEnabled,
     beginPasskeyLogin,
     finishPasskeyLogin,
     prepareRequestOptions,
   } from "../lib/api";
+  import { fetchAuthFeatureFlags } from "../lib/authFeatureFlags";
   import {
-    required,
-    minLength,
-    email as emailRule,
-    validate,
-  } from "../lib/validation";
+    validateAuthForm,
+    type AuthFormValidationResult,
+  } from "../lib/authFormValidation";
+  import {
+    getLoginFieldInvalidState,
+    getSignupFieldInvalidState,
+  } from "../lib/authErrors";
   import AlertBanner from "./ui/AlertBanner.svelte";
-  import Button from "./ui/Button.svelte";
-  import TextInput from "./ui/TextInput.svelte";
+  import LoginForm from "./auth/LoginForm.svelte";
+  import SignupForm from "./auth/SignupForm.svelte";
 
   let isLogin = $state(true);
   let email = $state("");
@@ -38,112 +38,12 @@
   let loginErrorVisible = $derived(!!error && isLogin);
   let signupErrorVisible = $derived(!!error && !isLogin);
 
-  function getLoginFieldInvalidState(message: string): {
-    email: boolean;
-    password: boolean;
-  } {
-    const loweredError = message.toLowerCase();
-
-    // Deliberately ambiguous messages (e.g. anti-enumeration) — don't mark any field.
-    const ambiguous = [
-      /\bemail\s+or\s+password\b/,
-      /\bemail\s+and\s+password\b/,
-    ].some((pattern) => pattern.test(loweredError));
-    if (ambiguous) {
-      return { email: false, password: false };
-    }
-
-    const mentionsEmail = [
-      /\binvalid email\b/,
-      /\bemail is invalid\b/,
-      /\bemail is not valid\b/,
-      /\bunknown account\b/,
-      /\baccount not found\b/,
-      /\buser not found\b/,
-    ].some((pattern) => pattern.test(loweredError));
-    const mentionsPassword = [
-      /\bpassword must\b/,
-      /\binvalid password\b/,
-      /\bincorrect password\b/,
-      /\bwrong password\b/,
-    ].some((pattern) => pattern.test(loweredError));
-    const mentionsCredentials = [
-      /\binvalid credentials\b/,
-      /\bincorrect credentials\b/,
-      /\bwrong credentials\b/,
-    ].some((pattern) => pattern.test(loweredError));
-
-    if (mentionsEmail && mentionsPassword) {
-      return { email: true, password: true };
-    }
-    if (mentionsEmail) {
-      return { email: true, password: false };
-    }
-    if (mentionsPassword) {
-      return { email: false, password: true };
-    }
-    if (mentionsCredentials) {
-      return { email: true, password: true };
-    }
-
-    return { email: false, password: false };
-  }
-
-  function getSignupFieldInvalidState(message: string): {
-    name: boolean;
-    email: boolean;
-    password: boolean;
-  } {
-    const loweredError = message.toLowerCase();
-
-    const mentionsName = [
-      /\bname is required\b/,
-      /\binvalid name\b/,
-      /\bname must\b/,
-      /\bdisplay name\b/,
-      /\bfull name\b/,
-    ].some((pattern) => pattern.test(loweredError));
-    const mentionsEmail = [
-      /\binvalid email\b/,
-      /\bemail is invalid\b/,
-      /\bemail is not valid\b/,
-      /\bplease enter a valid email\b/,
-      /\binvalid email address\b/,
-      /\bemail already exists\b/,
-      /\bemail .* already exists\b/,
-      /\bemail already registered\b/,
-      /\bemail .* already registered\b/,
-      /\bemail already taken\b/,
-      /\bemail .* already taken\b/,
-      /\bemail is already in use\b/,
-      /\bemail .* is already in use\b/,
-    ].some((pattern) => pattern.test(loweredError));
-    const mentionsPassword = [
-      /\bpassword must\b/,
-      /\binvalid password\b/,
-      /\bpassword is invalid\b/,
-      /\bpassphrase\b/,
-    ].some((pattern) => pattern.test(loweredError));
-
-    if (!mentionsName && !mentionsEmail && !mentionsPassword) {
-      return { name: false, email: false, password: false };
-    }
-
-    return {
-      name: mentionsName,
-      email: mentionsEmail,
-      password: mentionsPassword,
-    };
-  }
-
   function handleTabKeydown(event: KeyboardEvent) {
-    if (loading) return;
-    if (!signupEnabled) return;
+    if (loading || !signupEnabled) return;
     if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
       event.preventDefault();
       isLogin = !isLogin;
-      const nextId = isLogin ? "login-tab" : "signup-tab";
-      document.getElementById(nextId)?.focus();
+      document.getElementById(isLogin ? "login-tab" : "signup-tab")?.focus();
     } else if (event.key === "Home") {
       event.preventDefault();
       isLogin = true;
@@ -159,43 +59,17 @@
     const controller = new AbortController();
 
     async function initAuth() {
-      const [oidcResult, signupResult, passkeyResult] =
-        await Promise.allSettled([
-          getOidcEnabled(controller.signal),
-          getSignupEnabled(controller.signal),
-          getPasskeyEnabled(controller.signal),
-        ]);
-
+      const flags = await fetchAuthFeatureFlags(controller.signal);
       if (controller.signal.aborted) return;
-
-      if (oidcResult.status === "fulfilled") {
-        oidcEnabled = oidcResult.value;
-      }
-
-      if (signupResult.status === "fulfilled") {
-        signupEnabled = signupResult.value;
-        if (!signupResult.value) {
-          isLogin = true;
-        }
-      }
-
-      // Passkey availability is optional; silently disable the feature on error.
-      passkeyEnabled =
-        passkeyResult.status === "fulfilled" ? passkeyResult.value : false;
-
-      if (
-        oidcResult.status === "rejected" ||
-        signupResult.status === "rejected"
-      ) {
-        initError = "Unable to reach the server to load auth settings";
-      }
+      oidcEnabled = flags.oidcEnabled;
+      signupEnabled = flags.signupEnabled;
+      passkeyEnabled = flags.passkeyEnabled;
+      initError = flags.initError;
+      if (!flags.signupEnabled) isLogin = true;
     }
 
     initAuth();
-
-    return () => {
-      controller.abort();
-    };
+    return () => controller.abort();
   });
 
   async function handlePasskeySignIn() {
@@ -204,7 +78,6 @@
 
     try {
       const { session_id, options } = await beginPasskeyLogin();
-
       const assertion = await navigator.credentials.get({
         publicKey: prepareRequestOptions(options),
       });
@@ -214,17 +87,13 @@
         return;
       }
 
-      // Serialize the credential to JSON for the server.
-      // PublicKeyCredential.toJSON() is available in all modern browsers.
       const assertionJSON = (
         assertion as PublicKeyCredential & { toJSON(): unknown }
       ).toJSON();
-
       const result = await finishPasskeyLogin(session_id, assertionJSON);
       authStore.user = result.user;
     } catch (err) {
       if (err instanceof DOMException && err.name === "NotAllowedError") {
-        // User cancelled or no passkey available — don't surface as an error.
         error = null;
       } else {
         error = err instanceof Error ? err.message : "Passkey sign-in failed";
@@ -234,79 +103,12 @@
     }
   }
 
-  async function handleSubmit(e: SubmitEvent) {
-    e.preventDefault();
+  async function handleSubmit(event: SubmitEvent) {
+    event.preventDefault();
     error = null;
     loading = true;
-    loginEmailInvalid = false;
-    loginPasswordInvalid = false;
-    signupNameInvalid = false;
-    signupEmailInvalid = false;
-    signupPasswordInvalid = false;
-
-    if (isLogin) {
-      loginEmailInvalid = required()(email) !== null;
-      loginPasswordInvalid = required()(password) !== null;
-      if (loginEmailInvalid || loginPasswordInvalid) {
-        if (loginEmailInvalid && loginPasswordInvalid) {
-          error = "Please fill in all fields";
-        } else if (loginEmailInvalid) {
-          error = "Please fill in the email field";
-        } else {
-          error = "Please fill in the password field";
-        }
-        loading = false;
-        return;
-      }
-    } else {
-      signupNameInvalid = required()(name) !== null;
-      signupEmailInvalid = required()(email) !== null;
-      signupPasswordInvalid = required()(password) !== null;
-      if (signupNameInvalid || signupEmailInvalid || signupPasswordInvalid) {
-        if (signupNameInvalid && signupEmailInvalid && signupPasswordInvalid) {
-          error = "Please fill in all fields";
-        } else if (signupNameInvalid && signupEmailInvalid) {
-          error = "Please fill in the name and email fields";
-        } else if (signupNameInvalid && signupPasswordInvalid) {
-          error = "Please fill in the name and password fields";
-        } else if (signupEmailInvalid && signupPasswordInvalid) {
-          error = "Please fill in the email and password fields";
-        } else if (signupNameInvalid) {
-          error = "Please fill in the name field";
-        } else if (signupEmailInvalid) {
-          error = "Please fill in the email field";
-        } else {
-          error = "Please fill in the password field";
-        }
-        loading = false;
-        return;
-      }
-    }
-
-    const pwdError = validate(password, [
-      minLength(6, "Password must be at least 6 characters"),
-    ]);
-    if (pwdError) {
-      error = pwdError;
-      if (isLogin) {
-        loginPasswordInvalid = true;
-      } else {
-        signupPasswordInvalid = true;
-      }
-      loading = false;
-      return;
-    }
-
-    const emailError = validate(email, [
-      emailRule("Please enter a valid email address"),
-    ]);
-    if (emailError) {
-      error = emailError;
-      if (isLogin) {
-        loginEmailInvalid = true;
-      } else {
-        signupEmailInvalid = true;
-      }
+    applyValidationState(validateAuthForm({ isLogin, name, email, password }));
+    if (error) {
       loading = false;
       return;
     }
@@ -331,12 +133,20 @@
 
     loading = false;
   }
+
+  function applyValidationState(state: AuthFormValidationResult) {
+    error = state.error;
+    loginEmailInvalid = state.loginEmailInvalid;
+    loginPasswordInvalid = state.loginPasswordInvalid;
+    signupNameInvalid = state.signupNameInvalid;
+    signupEmailInvalid = state.signupEmailInvalid;
+    signupPasswordInvalid = state.signupPasswordInvalid;
+  }
 </script>
 
 <div
   class="min-h-screen bg-cream-50 dark:bg-ink-950 flex items-center justify-center p-4 relative bg-texture"
 >
-  <!-- Decorative background elements -->
   <div class="absolute inset-0 overflow-hidden pointer-events-none">
     <div
       class="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-accent-200/30 dark:bg-accent-800/10 blur-3xl"
@@ -457,190 +267,32 @@
         {/if}
       </div>
 
-      <div
-        id="login-panel"
-        role="tabpanel"
-        aria-labelledby="login-tab"
+      <LoginForm
+        bind:email
+        bind:password
+        bind:emailInvalid={loginEmailInvalid}
+        bind:passwordInvalid={loginPasswordInvalid}
+        bind:error
+        errorVisible={loginErrorVisible}
+        bind:loading
         hidden={!isLogin}
-      >
-        <form onsubmit={handleSubmit} novalidate class="space-y-4">
-          <p class="text-xs text-ink-500 dark:text-ink-400">
-            Fields marked with
-            <span class="text-danger-600" aria-hidden="true">*</span>
-            <span class="sr-only">an asterisk</span> are required.
-          </p>
-          <div>
-            <label
-              for="login-email"
-              class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
-            >
-              Email <span class="text-danger-600" aria-hidden="true">*</span>
-            </label>
-            <TextInput
-              id="login-email"
-              type="email"
-              bind:value={email}
-              autocomplete="email"
-              required
-              class="w-full py-3"
-              placeholder="you@example.com"
-              disabled={loading}
-              aria-required={true}
-              aria-invalid={loginEmailInvalid}
-              aria-describedby={loginEmailInvalid
-                ? "login-auth-error"
-                : undefined}
-            />
-          </div>
-
-          <div>
-            <label
-              for="login-password"
-              class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
-            >
-              Password <span class="text-danger-600" aria-hidden="true">*</span>
-            </label>
-            <TextInput
-              id="login-password"
-              type="password"
-              bind:value={password}
-              autocomplete="current-password"
-              required
-              class="w-full py-3"
-              placeholder="••••••••"
-              disabled={loading}
-              aria-required={true}
-              aria-invalid={loginPasswordInvalid}
-              aria-describedby={loginPasswordInvalid
-                ? "login-auth-error"
-                : undefined}
-            />
-          </div>
-
-          {#if loginErrorVisible}
-            <AlertBanner
-              id="login-auth-error"
-              variant="error"
-              testId="auth-error"
-              role="alert">{error}</AlertBanner
-            >
-          {/if}
-
-          <Button
-            type="submit"
-            disabled={loading}
-            class="w-full py-3 px-4 active:scale-[0.98]"
-          >
-            {loading ? "Processing..." : "Sign In"}
-          </Button>
-        </form>
-      </div>
+        onsubmit={handleSubmit}
+      />
 
       {#if signupEnabled}
-        <div
-          id="signup-panel"
-          role="tabpanel"
-          aria-labelledby="signup-tab"
+        <SignupForm
+          bind:name
+          bind:email
+          bind:password
+          bind:nameInvalid={signupNameInvalid}
+          bind:emailInvalid={signupEmailInvalid}
+          bind:passwordInvalid={signupPasswordInvalid}
+          bind:error
+          errorVisible={signupErrorVisible}
+          bind:loading
           hidden={isLogin}
-        >
-          <form onsubmit={handleSubmit} novalidate class="space-y-4">
-            <p class="text-xs text-ink-500 dark:text-ink-400">
-              Fields marked with
-              <span class="text-danger-600" aria-hidden="true">*</span>
-              <span class="sr-only">an asterisk</span> are required.
-            </p>
-            <div>
-              <label
-                for="signup-name"
-                class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
-              >
-                Name <span class="text-danger-600" aria-hidden="true">*</span>
-              </label>
-              <TextInput
-                id="signup-name"
-                type="text"
-                bind:value={name}
-                autocomplete="name"
-                required
-                class="w-full py-3"
-                placeholder="Your name"
-                disabled={loading}
-                aria-required={true}
-                aria-invalid={signupNameInvalid}
-                aria-describedby={signupNameInvalid
-                  ? "signup-auth-error"
-                  : undefined}
-              />
-            </div>
-
-            <div>
-              <label
-                for="signup-email"
-                class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
-              >
-                Email <span class="text-danger-600" aria-hidden="true">*</span>
-              </label>
-              <TextInput
-                id="signup-email"
-                type="email"
-                bind:value={email}
-                autocomplete="email"
-                required
-                class="w-full py-3"
-                placeholder="you@example.com"
-                disabled={loading}
-                aria-required={true}
-                aria-invalid={signupEmailInvalid}
-                aria-describedby={signupEmailInvalid
-                  ? "signup-auth-error"
-                  : undefined}
-              />
-            </div>
-
-            <div>
-              <label
-                for="signup-password"
-                class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
-              >
-                Password <span class="text-danger-600" aria-hidden="true"
-                  >*</span
-                >
-              </label>
-              <TextInput
-                id="signup-password"
-                type="password"
-                bind:value={password}
-                autocomplete="new-password"
-                required
-                class="w-full py-3"
-                placeholder="••••••••"
-                disabled={loading}
-                aria-required={true}
-                aria-invalid={signupPasswordInvalid}
-                aria-describedby={signupPasswordInvalid
-                  ? "signup-auth-error"
-                  : undefined}
-              />
-            </div>
-
-            {#if signupErrorVisible}
-              <AlertBanner
-                id="signup-auth-error"
-                variant="error"
-                testId="auth-error"
-                role="alert">{error}</AlertBanner
-              >
-            {/if}
-
-            <Button
-              type="submit"
-              disabled={loading}
-              class="w-full py-3 px-4 active:scale-[0.98]"
-            >
-              {loading ? "Processing..." : "Create Account"}
-            </Button>
-          </form>
-        </div>
+          onsubmit={handleSubmit}
+        />
       {/if}
     </div>
   </main>
