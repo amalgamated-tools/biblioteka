@@ -1,7 +1,7 @@
 # Test Improver Memory — biblioteka
 
 ## Last Updated
-2026-04-20
+2026-04-21
 
 ## Build/Test/Coverage Commands
 
@@ -49,6 +49,7 @@ go.mod requires go >= 1.26.2; use GOTOOLCHAIN=auto.
 - Frontend tests: use vitest + vi.stubGlobal("fetch", fetchMock) pattern
 - Frontend testUtils.ts has mockFetchResponse and mockNoContentResponse helpers
 - Frontend tests import from "../api" (the barrel file) not individual modules
+- pathparser uses `package pathparser` (not _test), so unexported helpers are accessible
 
 ## Testing Landscape
 Codebase is very well tested overall. Most packages have 1:1 test file ratio.
@@ -73,11 +74,12 @@ Frontend API modules with no tests: (now all covered as of 2026-04-20)
 - 2026-04-18: Tasks 4, 2, 3, 7 (no open test-assist PRs to maintain; reading_group_lists DB tests PR; new monthly issue)
 - 2026-04-19: Tasks 5, 2, 3, 7 (no testing-label issues; tags-in-bookDTO regression tests PR; new monthly issue)
 - 2026-04-20: Tasks 6, 4, 2, 3, 7 (no open PRs; calibre+recommendations frontend API tests PR; new monthly issue)
-- Next run: Tasks 1, 5, 6, 7
+- 2026-04-21: Tasks 3, 7 (pathparser helper tests PR #2414; monthly issue updated)
+- Next run: Tasks 1, 4, 5, 6, 7
 
 ## Testing Backlog (prioritized)
 
-1. **pathparser internal helpers** — isLikelyPersonName, stripTrailingAuthor have no direct tests. Covered via ParseBookPath table tests. Low-medium value.
+1. ~~**pathparser internal helpers**~~ — PR #2414 submitted ✅. Also discovered: isLikelyPersonName("Special Edition") = true (false positive heuristic, documented in tests)
 2. **organize path-escape defense-in-depth test** — the filepath.Rel escape guard in organize.go has no test. Likely unreachable in practice. Low value.
 3. **SSRF dialer Class B (172.16.x.x)** — ollama/client_test.go tests Class A, C, loopback, AWS metadata but not Class B. Very low value (impl is the same `isPrivateIP` function; Class B is already tested in config_llm_test.go).
 4. ~~**db/ai_enrichments.go**~~ — Covered by PR #2150 (merged) and PR #2204 (merged).
@@ -90,13 +92,20 @@ Frontend API modules with no tests: (now all covered as of 2026-04-20)
 ## Maintainer Priorities
 - All previous monthly issues closed by veverkap as "completed"
 - Signals strong positive reception; maintainer is actively merging Test Improver PRs
-- Merged: #1689, #1771, #1792, #1845, #1943, #2021, #2143, #2221, #2349
+- Merged: #1689, #1771, #1792, #1845, #1943, #2021, #2143, #2221, #2349, #2403
 
 ## Completed Work
 
+### 2026-04-21
+- Monthly activity issue #2404 updated with new run entry
+- Created PR #2414 on branch `test-assist/pathparser-helper-tests`:
+  - 6 new test functions, 44 test cases
+  - Covers: isLikelyPersonName, stripTrailingAuthor, extractSeriesPosition, extractYear, normalizeName, namesEqual
+  - Notable find: isLikelyPersonName has a known false positive for "Special Edition" type suffixes
+
 ### 2026-04-20
 - New monthly activity issue created (prior #2343 closed by veverkap)
-- Created PR on branch `test-assist/frontend-api-calibre-recommendations-tests`:
+- Created PR on branch `test-assist/frontend-api-calibre-recommendations-tests` (merged as #2403):
   - 8 tests for calibre.ts (previewCalibreImport, confirmCalibreImport + path variants)
   - 5 tests for recommendations.ts (getRecommendations)
   - Total: 13 new tests
