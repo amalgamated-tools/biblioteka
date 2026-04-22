@@ -65,6 +65,8 @@ docker compose -f docker-compose.yml -f docker-compose.override.yml up -d
 
 Database migrations still run on startup of the `server` container; the `worker` container skips the HTTP listener and begins processing jobs immediately.
 
+> **Shared book storage:** Both the `server` and `worker` containers need read/write access to the same book file storage. If your books are on a bind-mounted volume, add the same volume mount to the `biblioteka-worker` service definition. Without it, the worker can enqueue and process file metadata but cannot read book files for serving or sidecar generation.
+
 ## Container Images
 
 Pre-built multi-arch container images (`linux/amd64`, `linux/arm64`) are published to the GitHub Container Registry (GHCR) automatically by the **Build Container** CI workflow:
@@ -154,6 +156,7 @@ Before going live, verify each item:
 - [ ] **TLS** — terminate TLS at a reverse proxy (nginx, Caddy, Traefik). Do not expose port 8080 directly to the internet.
 - [ ] **Redis persistence** — configure Redis with at least `appendonly yes` if background job durability matters to you.
 - [ ] **Redis eviction policy** — set `maxmemory-policy noeviction`. Other policies may silently evict queued jobs under memory pressure; `noeviction` surfaces the problem as an error instead.
+- [ ] **Redis authentication and TLS** — For deployments where Redis is reachable over a network, configure authentication and TLS using the full URL form: `REDIS_URL=redis://:yourpassword@host:6379` for password auth, or `REDIS_URL=rediss://host:6379` for TLS. The default `redis://localhost:6379` is appropriate only for single-host, trusted-network deployments.
 - [ ] **PostgreSQL backups** — if using PostgreSQL, schedule regular `pg_dump` backups of the `biblioteka` database.
 - [ ] **SQLite backups** — if using SQLite, back up the Docker volume (`biblioteka-data`) or the `*.db` file.
 - [ ] **`TELEMETRY_ENABLED`** — leave unset (or set to `false`) to keep anonymous telemetry disabled (default). Set to `true` to enable it.
