@@ -1,7 +1,7 @@
 # Test Improver Memory — biblioteka
 
 ## Last Updated
-2026-04-21
+2026-04-22
 
 ## Build/Test/Coverage Commands
 
@@ -74,13 +74,15 @@ Frontend API modules with no tests: (now all covered as of 2026-04-20)
 - 2026-04-18: Tasks 4, 2, 3, 7 (no open test-assist PRs to maintain; reading_group_lists DB tests PR; new monthly issue)
 - 2026-04-19: Tasks 5, 2, 3, 7 (no testing-label issues; tags-in-bookDTO regression tests PR; new monthly issue)
 - 2026-04-20: Tasks 6, 4, 2, 3, 7 (no open PRs; calibre+recommendations frontend API tests PR; new monthly issue)
-- 2026-04-21: Tasks 3, 7 (pathparser helper tests PR #2414; monthly issue updated)
-- Next run: Tasks 1, 4, 5, 6, 7
+- 2026-04-21: Tasks 3, 7 (pathparser helper tests PR #2439; monthly issue updated)
+- 2026-04-22: Tasks 4, 3, 7 (updated PR #2439 addressing 4 review comments; new library handler 409 conflict tests PR; monthly issue updated)
+- Next run: Tasks 1, 5, 6, 7
 
 ## Testing Backlog (prioritized)
 
-1. ~~**pathparser internal helpers**~~ — PR #2414 submitted ✅. Also discovered: isLikelyPersonName("Special Edition") = true (false positive heuristic, documented in tests)
-2. **organize path-escape defense-in-depth test** — the filepath.Rel escape guard in organize.go has no test. Likely unreachable in practice. Low value.
+1. ~~**pathparser internal helpers**~~ — PR #2439 open, review comments addressed 2026-04-22 ✅. Also discovered: isLikelyPersonName("Special Edition") = true (false positive heuristic, documented in tests)
+2. ~~**library handler 409 conflict**~~ — PR submitted 2026-04-22 (branch `test-assist/library-handler-conflict-tests`)
+3. **organize path-escape defense-in-depth test** — the filepath.Rel escape guard in organize.go has no test. Likely unreachable in practice. Low value.
 3. **SSRF dialer Class B (172.16.x.x)** — ollama/client_test.go tests Class A, C, loopback, AWS metadata but not Class B. Very low value (impl is the same `isPrivateIP` function; Class B is already tested in config_llm_test.go).
 4. ~~**db/ai_enrichments.go**~~ — Covered by PR #2150 (merged) and PR #2204 (merged).
 5. ~~**db/reading_group_lists.go**~~ — PR #2201 and #2221 both merged ✅.
@@ -96,9 +98,20 @@ Frontend API modules with no tests: (now all covered as of 2026-04-20)
 
 ## Completed Work
 
+### 2026-04-22
+- Updated PR #2439 (pathparser helper tests): addressed all 4 review comments (Greptile + Copilot):
+  - Converted `TestNamesEqual` to table-driven
+  - Added explicit `name` fields to blank/whitespace subtests in `TestIsLikelyPersonName`, `TestNormalizeName`
+  - Added `"1.5. Title"` nil-result test case to `TestExtractSeriesPosition` (decimal positions unsupported)
+  - Fixed misleading code comment in `stripTrailingAuthor` (removed wrong "Special Edition" claim)
+- Created new PR on branch `test-assist/library-handler-conflict-tests`:
+  - Added `TestCreateLibrary_DuplicateName` to `libraries_create_test.go`
+  - Added `TestUpdateLibrary_DuplicateName` to `libraries_update_delete_test.go`
+  - Both verify HTTP 409 Conflict response when duplicate library name submitted at handler level
+
 ### 2026-04-21
 - Monthly activity issue #2404 updated with new run entry
-- Created PR #2414 on branch `test-assist/pathparser-helper-tests`:
+- Created PR #2439 on branch `test-assist/pathparser-helper-tests-36bb45049c5b3ec5`:
   - 6 new test functions, 44 test cases
   - Covers: isLikelyPersonName, stripTrailingAuthor, extractSeriesPosition, extractYear, normalizeName, namesEqual
   - Notable find: isLikelyPersonName has a known false positive for "Special Edition" type suffixes
