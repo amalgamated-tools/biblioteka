@@ -209,8 +209,9 @@ func extractYear(name string) *int {
 
 func stripTrailingAuthor(name string) string {
 	// Only strip if there's a " - " separator and the part after it
-	// looks like an author name. Be conservative to avoid truncating
-	// legitimate subtitles such as "Title - A Novel" or "Title - Special Edition".
+	// looks like an author name. Leading-article suffixes like "A Novel" or
+	// "The Unabridged Edition" are protected, but two-word capitalized suffixes
+	// such as "Special Edition" are not (known heuristic limitation).
 	idx := strings.LastIndex(name, " - ")
 	if idx == -1 {
 		return name

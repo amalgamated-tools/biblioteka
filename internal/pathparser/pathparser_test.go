@@ -170,44 +170,45 @@ func TestParseBookPath(t *testing.T) {
 
 func TestIsLikelyPersonName(t *testing.T) {
 	tests := []struct {
+		name  string
 		input string
 		want  bool
 	}{
 		// Valid names
-		{"Jane Doe", true},
-		{"Isaac Asimov", true},
-		{"Mary Shelley", true},
-		{"Alexander McCall Smith", true}, // three words
-		{"Jean Paul Sartre Jr", true},    // four words (max)
+		{"two words", "Jane Doe", true},
+		{"two words alt", "Isaac Asimov", true},
+		{"two words alt2", "Mary Shelley", true},
+		{"three words", "Alexander McCall Smith", true},
+		{"four words (max)", "Jean Paul Sartre Jr", true},
 
 		// Too few words
-		{"", false},
-		{"Shakespeare", false}, // single word
-		{"   ", false},         // blank
+		{"empty string", "", false},
+		{"single word", "Shakespeare", false},
+		{"blank whitespace", "   ", false},
 
 		// Too many words (> 4)
-		{"One Two Three Four Five", false},
+		{"five words", "One Two Three Four Five", false},
 
 		// Contains digits
-		{"Jane Doe 2", false},
-		{"H3nry Ford", false},
+		{"digit at end", "Jane Doe 2", false},
+		{"digit in word", "H3nry Ford", false},
 
 		// Leading articles (common subtitle patterns)
-		{"A Novel", false},
-		{"An Introduction", false},
-		{"The Great Adventure", false},
+		{"leading a", "A Novel", false},
+		{"leading an", "An Introduction", false},
+		{"leading the", "The Great Adventure", false},
 
 		// Word not starting with uppercase letter
-		{"jane Doe", false},
-		{"Jane doe", false},
-		{"jean-Paul Sartre", false},
+		{"lowercase first", "jane Doe", false},
+		{"lowercase second", "Jane doe", false},
+		{"hyphen lowercase", "jean-Paul Sartre", false},
 
 		// Unicode names starting with uppercase
-		{"Émile Zola", true},
-		{"Óscar Wilde", true},
+		{"unicode accented first", "Émile Zola", true},
+		{"unicode accented first alt", "Óscar Wilde", true},
 	}
 	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			got := isLikelyPersonName(tt.input)
 			require.Equal(t, tt.want, got, "isLikelyPersonName(%q)", tt.input)
 		})
@@ -266,6 +267,9 @@ func TestExtractSeriesPosition(t *testing.T) {
 		{"The Book", nil},
 		// Non-numeric prefix
 		{"abc. Title", nil},
+		// Decimal/fractional format (e.g. "1.5. Title") is not supported by the
+		// regex — after "1." comes "5", not whitespace, so the match fails.
+		{"1.5. The Name of the Wind", nil},
 	}
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
@@ -306,19 +310,20 @@ func TestExtractYear(t *testing.T) {
 
 func TestNormalizeName(t *testing.T) {
 	tests := []struct {
+		name  string
 		input string
 		want  string
 	}{
-		{"Jane Doe", "janedoe"},
-		{"jane doe", "janedoe"},
-		{"  Jane  Doe  ", "janedoe"},
-		{"Jane's Cousin", "janescousin"},
-		{"Mary-Shelley", "maryshelley"},
-		{"", ""},
-		{"42 Main St", "42mainst"}, // digits kept
+		{"two words", "Jane Doe", "janedoe"},
+		{"lowercase", "jane doe", "janedoe"},
+		{"extra spaces", "  Jane  Doe  ", "janedoe"},
+		{"apostrophe", "Jane's Cousin", "janescousin"},
+		{"hyphen", "Mary-Shelley", "maryshelley"},
+		{"empty string", "", ""},
+		{"digits kept", "42 Main St", "42mainst"},
 	}
 	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			got := normalizeName(tt.input)
 			require.Equal(t, tt.want, got, "normalizeName(%q)", tt.input)
 		})
@@ -328,13 +333,25 @@ func TestNormalizeName(t *testing.T) {
 // --- namesEqual ---
 
 func TestNamesEqual(t *testing.T) {
-	require.True(t, namesEqual("Jane Doe", "Jane Doe"))
-	require.True(t, namesEqual("Jane Doe", "jane doe"))
-	require.True(t, namesEqual("Jane Doe", "JANE DOE"))
-	require.False(t, namesEqual("Jane's Doe", "Jane Doe")) // "s" from "Jane's" is kept, so not equal
-	require.False(t, namesEqual("Jane Doe", "Jane Smith"))
-	require.False(t, namesEqual("Jane Doe", ""))
-	require.True(t, namesEqual("", ""))
+	tests := []struct {
+		name string
+		a, b string
+		want bool
+	}{
+		{"same", "Jane Doe", "Jane Doe", true},
+		{"case insensitive lower", "Jane Doe", "jane doe", true},
+		{"case insensitive upper", "Jane Doe", "JANE DOE", true},
+		{"apostrophe difference", "Jane's Doe", "Jane Doe", false}, // "s" from "Jane's" is kept
+		{"different surnames", "Jane Doe", "Jane Smith", false},
+		{"one empty", "Jane Doe", "", false},
+		{"both empty", "", "", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := namesEqual(tt.a, tt.b)
+			require.Equal(t, tt.want, got, "namesEqual(%q, %q)", tt.a, tt.b)
+		})
+	}
 }
 
 func float64PtrEqual(a, b *float64) bool {
