@@ -1,55 +1,54 @@
-# Agent Performance — 2026-04-21
-**Run:** 2026-04-21T23:44Z
+# Agent Performance — 2026-04-22
+**Run:** 2026-04-22T23:45Z
 
 ## Snapshot
-- 55 workflows registered, all Copilot; repo-assist NOT compiled (⚠️)
-- 34 open issues (↑ from 27 Apr 20)
-- 10 open PRs (4 drafts, 5 ready, 1 release)
-- [aw] Failures: **8 active** (↑ from 5 Apr 20) — **3 new engine crash failures**
+- 55 workflows registered, all Copilot; **repo-assist NOT compiled (4th day ⚠️)**
+- 37 open issues (↑ from 34 Apr 21)
+- 12 open PRs (5 drafts, 7 ready)
+- [aw] Failures: **6 active** (↓ from 8 — engine crashes from Apr 21 resolved)
+- 18 new issues today, 16 PRs merged recently (merge rate: ~80%)
 
 ## Top Performers
-- **discussion-task-miner**: #2435, #2432, #2433, #2434 — 4 actionable refactor tasks. Score: 88/100
-- **repository-quality-improver**: #2454 Swagger coverage issue. Score: 80/100
-- **tech-content-editorial-board**: #2449 new editorial review. Score: 75/100
-- **daily-doc-updater**: #2448 editorial PR (clean, no duplication). Score: 70/100
-- **daily-perf-improver**: #2451 benchmark PR (draft). Score: 70/100
+- **discussion-task-miner**: 5 high-quality actionable tasks (#2457-#2461). Score: 87/100
+- **repository-quality-improver**: #2476 handler pattern compliance analysis (deep, actionable). Score: 85/100
+- **tech-content-editorial-board**: #2473 multi-protocol editorial review. Score: 78/100
+- **daily-doc-updater**: #2472 clean editorial PR. Score: 72/100
+- **dependabot-pr-bundler**: RECOVERED — #2467 clean deps bundle. Score: 70/100
 
 ## Agents Needing Improvement
-- **repo-assist**: NOT COMPILED + FAILED (#2389). Score: 15/100 — CRITICAL (3rd day)
-- **daily-workflow-updater**: Engine crash (#2440). Score: 25/100
-- **sergo**: Engine crash (#2441). Score: 28/100
-- **dependabot-pr-bundler**: Engine crash (#2442). Score: 30/100
-- **daily-accessibility-review**: FAILED (#2390) — persistent 3+ days. Score: 30/100
-- **issue-arborist**: FAILED (#2405) — persistent 2+ days. Score: 30/100
-- **daily-repo-status/daily-team-status/daily-plan/daily-repo-chronicle**: Status as issues (wrong output type, persistent pattern). Score: 45/100
+- **repo-assist**: NOT COMPILED + FAILED (#2389). Score: 10/100 — CRITICAL (4th day)
+- **daily-accessibility-review**: FAILED (#2390) — 4+ days persistent. Score: 20/100
+- **issue-arborist**: FAILED (#2405) — 3+ days persistent. Score: 20/100
+- **daily-repo-status/daily-plan/daily-repo-chronicle/daily-team-status**: Status-as-issue pattern DAY 3 (3 new issues today: #2475, #2471, #2470). Score: 35/100 each
+- **daily-workflow-updater**: Partial recovery — produced #2466 PR but #2440 still open. Score: 60/100
+
+## Improvements vs Yesterday (Apr 21)
+- Engine crash cluster RESOLVED: sergo, dependabot-bundler active again ✅
+- daily-workflow-updater partial recovery: created #2466 ✅
+- No new engine crash failures today ✅
+
+## Regressions vs Yesterday
+- Status-as-issue pattern escalating: 3 MORE today (#2475, #2471, #2470) — now 8+ total
+- repo-assist still not compiled (4th day, no action taken)
+- Auth.svelte duplication risk: #2462 (issue) + #2437 (issue) + #2438 (PR) — 3 items for same task
 
 ## Critical Issues
+### 1. CRITICAL: repo-assist NOT COMPILED (4th day)
+- #2389 still open, no recompile action
 
-### 1. CRITICAL: Copilot Engine Crash Cluster — 3 NEW failures today
-- #2440 daily-workflow-updater: Crashed during gh-aw-actions v0.68.7→v0.69.0 update
-- #2441 sergo: Crashed after writing cache (3 tasks created, success_score:8)
-- #2442 dependabot-bundler: Crashed during git commit
-- **Pattern**: All "⚠️ Engine Failure: The copilot engine terminated unexpectedly"
-- **Likely cause**: Copilot API instability on April 21 AM UTC
+### 2. CRITICAL: Status-as-Issue Pattern Day 3 — Escalating
+- #2475 repo-status, #2471 daily-plan, #2470 repo-chronicle (NEW today)
+- #2450 team-status, #2416 repo-map (from previous days)
+- Still no fix — pattern getting worse, not better
 
-### 2. CRITICAL: repo-assist NOT COMPILED + FAILED (3rd consecutive day)
-- #2389 still open, workflow lock file stale
+### 3. HIGH: 3 Persistent [aw] Failures
+- #2390 daily-accessibility-review (4+ days)
+- #2405 issue-arborist (3+ days)
+- #2389 repo-assist (4+ days)
 
-### 3. HIGH: [aw] Failure Total = 8 (↑ from 5)
-- 3 new engine crash failures (Apr 21 AM)
-- 2 persistent failures (accessibility, issue-arborist)
-- 3 older/stale failures (#2328, #2389, #1733)
-
-### 4. HIGH: Status-as-Issue Pattern Persists (5 agents, day 2)
-- #2453, #2450, #2447, #2446, #2416 — all status content in issues
-
-### 5. MEDIUM: Draft PR Backlog = 4 open drafts
-- #2451 (perf benchmarks), #2425 (unbloat docs), #2423 (composite sort indexes), #2418 (reading groups)
-
-## Improvements vs Yesterday (Apr 20)
-- discussion-task-miner productivity maintained ✅
-- daily-doc-updater: no duplicate PRs for 2nd day ✅
-- sergo partially recovered (created 3 tasks before crashing)
+### 4. MEDIUM: Auth.svelte Duplication
+- #2462 (new refactor issue today), #2437 (issue from Apr 21), #2438 (open PR from Apr 21)
+- Three agents/runs addressing same issue without checking for existing work
 
 ## Discussions Created
-"Agent Performance Report — Week of 2026-04-21" in Audits category
+"Agent Performance Report — Week of 2026-04-22" in Audits category

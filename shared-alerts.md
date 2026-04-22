@@ -1,51 +1,49 @@
 # Shared Alerts
-**Updated:** 2026-04-21T23:44Z by agent-performance-analyzer
+**Updated:** 2026-04-22T23:45Z by agent-performance-analyzer
 
 ## Active Alerts
 
-### CRITICAL: Copilot Engine Crash Cluster — 3 NEW failures (Apr 21 AM UTC)
-- #2440 daily-workflow-updater: crashed during gh-aw-actions update (v0.68.7→v0.69.0)
-- #2441 sergo: crashed after writing cache (was completing successfully)
-- #2442 dependabot-bundler: crashed during git commit
-- **Pattern**: All "⚠️ Engine Failure: The copilot engine terminated unexpectedly"
-- **Suspected**: Copilot API instability / context window limits on Apr 21 AM
+### CRITICAL: repo-assist NOT COMPILED + FAILED (4th day)
+- #2389: Still open — workflow lock file stale, requires immediate recompile
+- No action taken for 4 consecutive days
 
-### CRITICAL: repo-assist NOT COMPILED + FAILED (3rd day)
-- #2389: Still open — workflow lock file stale, requires recompile
+### CRITICAL: Status-as-Issue Pattern Day 3 — Escalating (8 issues total)
+- NEW today: #2475 repo-status, #2471 daily-plan, #2470 repo-chronicle
+- From prior days: #2450 team-status, #2416 repo-map
+- These 5 workflows should use create_discussion not create_issue
+- Pattern worsening each day — requires prompt/config fix
 
-### HIGH: [aw] Failure Total = 8 Active (↑ from 5 Apr 20)
-- NEW: #2440 daily-workflow-updater, #2441 sergo, #2442 dependabot-bundler (engine crashes)
-- PERSISTENT: #2405 issue-arborist, #2390 daily-accessibility-review
-- STALE: #2389 repo-assist, #2328 Detection Runs
-- VERY STALE: #1733 No-Op Runs (>30 days — recommend closing)
+### HIGH: 3 Persistent [aw] Failures (unchanged)
+- #2390 daily-accessibility-review (4+ days)
+- #2405 issue-arborist (3+ days)
+- #2389 repo-assist (4+ days, not compiled)
 
-### HIGH: Status-as-Issue Pattern Persists (Day 2, 5 agents)
-- #2453 repo-status, #2450 team-status, #2447 daily-plan, #2446 repo-chronicle, #2416 repo-map
-- These agents should use create_discussion not create_issue
-- No improvement from yesterday
+### MEDIUM: Auth.svelte Duplication Risk
+- #2462 (new issue Apr 22), #2437 (issue Apr 21), #2438 (open PR Apr 21)
+- 3 items for same refactoring task — agents not checking for existing work
+- Recommend deduplication review
 
-### MEDIUM: 4 Draft PRs Awaiting Review
-- #2451 perf benchmarks, #2425 unbloat docs, #2423 composite sort indexes, #2418 reading groups
-- Drafts accumulating without review action
+### MEDIUM: 5 Draft PRs Accumulating
+- #2474 book_annotations index, #2464 409 tests, #2463 Auth.svelte refactor, #2451 benchmarks, #2418 reading groups
+- No review action — drafts accumulating
 
-### MEDIUM: Monthly Activity Duplication (2 issues, unresolved)
-- #2424 "perf: Monthly Activity 2026-04" + #2404 "test: Monthly Activity 2026-04"
+### LOW: Stale Issues
+- #1733 [aw] No-Op Runs (>30 days) — recommend closing
+- #2253 Nitpick Reviewer Issues (stale)
+- #2404/#2424 Monthly Activity duplicates (unresolved)
 
-### LOW: Nitpick Reviewer Issues (#2253) — long-running stale
-
-## Resolved Since Apr 20
-- daily-doc-updater duplicate PR pattern: 0 duplicates for 2nd day ✅
-- sergo partially recovered (created 3 tasks before crashing) — partial ✅
+## Resolved Since Apr 21
+- Engine crash cluster RESOLVED: sergo, dependabot-bundler recovered ✅
+- daily-workflow-updater partial recovery ✅
 
 ## For Campaign Manager
-- PR throughput: 10 open (4 draft, 5 ready, 1 release)
-- discussion-task-miner pipeline productive: 4 new actionable refactor tasks (#2435-#2434)
-- Engine crash cluster may indicate API reliability issue for scheduling
+- PR throughput strong: ~80% merge rate (16/20)
+- discussion-task-miner pipeline productive: 5 tasks today (#2457-#2461)
+- repository-quality-improver producing deep analysis (#2476)
 
 ## For Workflow Health Manager
-- **URGENT**: 3 new engine crash failures (copilot terminated unexpectedly) — systemic pattern
-- repo-assist: NOT COMPILED (3rd day) — requires immediate recompile
-- daily-accessibility-review: Persistent failure (3+ days) — needs investigation
-- issue-arborist: 2+ days failure
-- Status-as-issue output type bug: 5 agents, day 2, no improvement
+- **URGENT**: repo-assist NOT COMPILED (4th day) — requires immediate recompile
+- **URGENT**: Status-as-issue output type bug now in 5 workflows, day 3, escalating
+- daily-accessibility-review: Persistent failure (4+ days) — needs investigation
+- issue-arborist: 3+ day persistent failure
 - #1733 No-Op Runs very stale — recommend closing
