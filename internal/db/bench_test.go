@@ -341,7 +341,8 @@ func BenchmarkGetYearInBooks(b *testing.B) {
 // ---- ListAuditLogs ----
 
 // BenchmarkListAuditLogs measures pagination over the audit_logs table using
-// the covering index idx_audit_logs_created_at_id (created_at DESC, id DESC).
+// the idx_audit_logs_created_at_id ordering index (created_at DESC, id DESC)
+// to support efficient ORDER BY and page traversal.
 func BenchmarkListAuditLogs_100(b *testing.B) {
 	d := newBenchDB(b)
 	ctx := b.Context()
@@ -426,6 +427,8 @@ func BenchmarkListGroupMembers_20(b *testing.B) {
 
 // BenchmarkListAnnotationsForBook measures the annotation list query which
 // filters by book_id and user membership with an OR+subquery predicate.
+// Half the annotations are personal (group_id IS NULL) and half are shared
+// via a group the user belongs to, exercising the subquery branch.
 func BenchmarkListAnnotationsForBook_10(b *testing.B) {
 	d := newBenchDB(b)
 	ctx := b.Context()
@@ -433,11 +436,24 @@ func BenchmarkListAnnotationsForBook_10(b *testing.B) {
 	user, err := d.CreateUser(ctx, "bench-annot-user", "annot@example.com", "hashedpw")
 	require.NoError(b, err, "CreateUser")
 
+	other, err := d.CreateUser(ctx, "bench-annot-other", "other@example.com", "hashedpw")
+	require.NoError(b, err, "CreateUser other")
+
 	book, err := d.CreateBook(ctx, BookInput{Title: "Bench Book"})
 	require.NoError(b, err, "CreateBook")
 
+	grp, err := d.CreateGroup(ctx, other.ID, "Bench Group", nil)
+	require.NoError(b, err, "CreateGroup")
+
+	_, err = d.AddGroupMember(ctx, grp.ID, other.ID, user.ID)
+	require.NoError(b, err, "AddGroupMember")
+
 	for i := range 10 {
-		_, err := d.CreateAnnotation(ctx, user.ID, book.ID, fmt.Sprintf("annotation %d", i), nil, nil)
+		gid := (*string)(nil)
+		if i%2 == 0 {
+			gid = &grp.ID // shared annotation — exercises the subquery branch
+		}
+		_, err := d.CreateAnnotation(ctx, user.ID, book.ID, fmt.Sprintf("annotation %d", i), nil, gid)
 		require.NoError(b, err, "CreateAnnotation")
 	}
 
