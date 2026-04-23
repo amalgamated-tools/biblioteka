@@ -166,6 +166,197 @@ func TestParseBookPath(t *testing.T) {
 	}
 }
 
+// --- isLikelyPersonName ---
+
+func TestIsLikelyPersonName(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  bool
+	}{
+		// Valid names
+		{"two words", "Jane Doe", true},
+		{"two words alt", "Isaac Asimov", true},
+		{"two words alt2", "Mary Shelley", true},
+		{"three words", "Alexander McCall Smith", true},
+		{"four words (max)", "Jean Paul Sartre Jr", true},
+
+		// Too few words
+		{"empty string", "", false},
+		{"single word", "Shakespeare", false},
+		{"blank whitespace", "   ", false},
+
+		// Too many words (> 4)
+		{"five words", "One Two Three Four Five", false},
+
+		// Contains digits
+		{"digit at end", "Jane Doe 2", false},
+		{"digit in word", "H3nry Ford", false},
+
+		// Leading articles (common subtitle patterns)
+		{"leading a", "A Novel", false},
+		{"leading an", "An Introduction", false},
+		{"leading the", "The Great Adventure", false},
+
+		// Word not starting with uppercase letter
+		{"lowercase first", "jane Doe", false},
+		{"lowercase second", "Jane doe", false},
+		{"hyphen lowercase", "jean-Paul Sartre", false},
+
+		// Unicode names starting with uppercase
+		{"unicode accented first", "Émile Zola", true},
+		{"unicode accented first alt", "Óscar Wilde", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := isLikelyPersonName(tt.input)
+			require.Equal(t, tt.want, got, "isLikelyPersonName(%q)", tt.input)
+		})
+	}
+}
+
+// --- stripTrailingAuthor ---
+
+func TestStripTrailingAuthor(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		// Strips when suffix looks like a person name
+		{"two-word author name", "Tea Time for the Traditionally Built - Alexander McCall Smith", "Tea Time for the Traditionally Built"},
+		{"two-word author name alt", "Frankenstein - Mary Shelley", "Frankenstein"},
+
+		// Does not strip when suffix is not a person name
+		{"leading article blocks strip", "Title - A Novel", "Title - A Novel"},
+		{"single word not a name", "Title - Unabridged", "Title - Unabridged"},
+
+		// Two-word capitalized suffixes are treated as person names (heuristic
+		// false positive — known limitation of the simple rule-based approach).
+		{"two-word capitalized suffix (false positive)", "Title - Special Edition", "Title"},
+
+		// Does not strip when there is no " - " separator
+		{"no separator", "No Separator Here", "No Separator Here"},
+		{"parenthesized year", "Title (2009)", "Title (2009)"},
+
+		// Empty suffix after " - " is left unchanged
+		{"empty suffix", "Title - ", "Title - "},
+
+		// Single-word suffix (not a person name) is left unchanged
+		{"single word surname only", "Harry Potter - Rowling", "Harry Potter - Rowling"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := stripTrailingAuthor(tt.input)
+			require.Equal(t, tt.want, got, "stripTrailingAuthor(%q)", tt.input)
+		})
+	}
+}
+
+// --- extractSeriesPosition ---
+
+func TestExtractSeriesPosition(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  *float64
+	}{
+		{"integer position 10", "10. Tea Time for the Traditionally Built", new(float64(10))},
+		{"integer position 1", "1. The Seven Dials Mystery", new(float64(1))},
+		{"integer position 2", "2. Something", new(float64(2))},
+		// No leading position prefix
+		{"no prefix", "Tea Time for the Traditionally Built", nil},
+		{"short title no prefix", "The Book", nil},
+		// Non-numeric prefix
+		{"non-numeric prefix", "abc. Title", nil},
+		// Decimal/fractional format (e.g. "1.5. Title") is not supported by the
+		// regex — after "1." comes "5", not whitespace, so the match fails.
+		{"decimal position unsupported", "1.5. The Name of the Wind", nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := extractSeriesPosition(tt.input)
+			require.True(t, float64PtrEqual(got, tt.want),
+				"extractSeriesPosition(%q): got %s, want %s", tt.input, fmtF64(got), fmtF64(tt.want))
+		})
+	}
+}
+
+// --- extractYear ---
+
+func TestExtractYear(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  *int
+	}{
+		{"year in parens with author suffix", "Tea Time for the Traditionally Built - Alexander McCall Smith (2009)", new(int(2009))},
+		{"year in parens", "Pride and Prejudice (1813)", new(int(1813))},
+		// No year
+		{"no year", "The Book", nil},
+		// Trailing spaces after year
+		{"trailing spaces", "Title (2000)  ", new(int(2000))},
+		// Non-4-digit number in parens does not match
+		{"two-digit number", "Title (99)", nil},
+		{"five-digit number", "Title (12345)", nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := extractYear(tt.input)
+			require.True(t, intPtrEqual(got, tt.want),
+				"extractYear(%q): got %s, want %s", tt.input, fmtInt(got), fmtInt(tt.want))
+		})
+	}
+}
+
+// --- normalizeName ---
+
+func TestNormalizeName(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{"two words", "Jane Doe", "janedoe"},
+		{"lowercase", "jane doe", "janedoe"},
+		{"extra spaces", "  Jane  Doe  ", "janedoe"},
+		{"apostrophe", "Jane's Cousin", "janescousin"},
+		{"hyphen", "Mary-Shelley", "maryshelley"},
+		{"empty string", "", ""},
+		{"digits kept", "42 Main St", "42mainst"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := normalizeName(tt.input)
+			require.Equal(t, tt.want, got, "normalizeName(%q)", tt.input)
+		})
+	}
+}
+
+// --- namesEqual ---
+
+func TestNamesEqual(t *testing.T) {
+	tests := []struct {
+		name string
+		a, b string
+		want bool
+	}{
+		{"same", "Jane Doe", "Jane Doe", true},
+		{"case insensitive lower", "Jane Doe", "jane doe", true},
+		{"case insensitive upper", "Jane Doe", "JANE DOE", true},
+		{"apostrophe difference", "Jane's Doe", "Jane Doe", false}, // "s" from "Jane's" is kept
+		{"different surnames", "Jane Doe", "Jane Smith", false},
+		{"one empty", "Jane Doe", "", false},
+		{"both empty", "", "", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := namesEqual(tt.a, tt.b)
+			require.Equal(t, tt.want, got, "namesEqual(%q, %q)", tt.a, tt.b)
+		})
+	}
+}
+
 func float64PtrEqual(a, b *float64) bool {
 	if a == nil && b == nil {
 		return true
