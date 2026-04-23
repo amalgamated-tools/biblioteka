@@ -210,8 +210,10 @@ func extractYear(name string) *int {
 func stripTrailingAuthor(name string) string {
 	// Only strip if there's a " - " separator and the part after it
 	// looks like an author name. Leading-article suffixes like "A Novel" or
-	// "The Unabridged Edition" are protected, but two-word capitalized suffixes
-	// such as "Special Edition" are not (known heuristic limitation).
+	// "The Unabridged Edition" are protected from stripping, but two-word
+	// capitalized suffixes such as "Special Edition" are not protected — they
+	// are incorrectly stripped as if they were author names (known heuristic
+	// limitation of the simple rule-based approach).
 	idx := strings.LastIndex(name, " - ")
 	if idx == -1 {
 		return name

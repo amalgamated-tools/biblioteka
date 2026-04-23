@@ -219,33 +219,34 @@ func TestIsLikelyPersonName(t *testing.T) {
 
 func TestStripTrailingAuthor(t *testing.T) {
 	tests := []struct {
+		name  string
 		input string
 		want  string
 	}{
 		// Strips when suffix looks like a person name
-		{"Tea Time for the Traditionally Built - Alexander McCall Smith", "Tea Time for the Traditionally Built"},
-		{"Frankenstein - Mary Shelley", "Frankenstein"},
+		{"two-word author name", "Tea Time for the Traditionally Built - Alexander McCall Smith", "Tea Time for the Traditionally Built"},
+		{"two-word author name alt", "Frankenstein - Mary Shelley", "Frankenstein"},
 
 		// Does not strip when suffix is not a person name
-		{"Title - A Novel", "Title - A Novel"},       // leading article blocks strip
-		{"Title - Unabridged", "Title - Unabridged"}, // single word, not a name
+		{"leading article blocks strip", "Title - A Novel", "Title - A Novel"},
+		{"single word not a name", "Title - Unabridged", "Title - Unabridged"},
 
 		// Two-word capitalized suffixes are treated as person names (heuristic
 		// false positive — known limitation of the simple rule-based approach).
-		{"Title - Special Edition", "Title"},
+		{"two-word capitalized suffix (false positive)", "Title - Special Edition", "Title"},
 
 		// Does not strip when there is no " - " separator
-		{"No Separator Here", "No Separator Here"},
-		{"Title (2009)", "Title (2009)"},
+		{"no separator", "No Separator Here", "No Separator Here"},
+		{"parenthesized year", "Title (2009)", "Title (2009)"},
 
 		// Empty suffix after " - " is left unchanged
-		{"Title - ", "Title - "},
+		{"empty suffix", "Title - ", "Title - "},
 
 		// Single-word suffix (not a person name) is left unchanged
-		{"Harry Potter - Rowling", "Harry Potter - Rowling"},
+		{"single word surname only", "Harry Potter - Rowling", "Harry Potter - Rowling"},
 	}
 	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			got := stripTrailingAuthor(tt.input)
 			require.Equal(t, tt.want, got, "stripTrailingAuthor(%q)", tt.input)
 		})
