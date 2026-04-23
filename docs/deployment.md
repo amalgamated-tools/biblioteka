@@ -65,6 +65,8 @@ docker compose -f docker-compose.yml -f docker-compose.override.yml up -d
 
 Database migrations still run on startup of the `server` container; the `worker` container skips the HTTP listener and begins processing jobs immediately.
 
+> **Shared book storage:** In split-process deployments, both roles must see the same library path, but they use it differently. The `server` serves and downloads book files and needs read access to the shared book storage. The `worker` scans libraries, reads book files to extract metadata, processes imports and organize jobs, and writes sidecars when enabled — it needs read access at minimum, and write access if you use workflows that reorganize files or create sidecar files. If your books are on a bind-mounted volume or named Docker volume, add the same volume mount to the `biblioteka-worker` service definition; otherwise scan and process jobs will fail because the worker cannot read the underlying files. A read-only mount can be appropriate for the `server` in serving-only setups, but not for a `worker` that must reorganize files or write sidecars.
+
 ## Container Images
 
 Pre-built multi-arch container images (`linux/amd64`, `linux/arm64`) are published to the GitHub Container Registry (GHCR) automatically by the **Build Container** CI workflow:
@@ -154,6 +156,7 @@ Before going live, verify each item:
 - [ ] **TLS** — terminate TLS at a reverse proxy (nginx, Caddy, Traefik). Do not expose port 8080 directly to the internet.
 - [ ] **Redis persistence** — configure Redis with at least `appendonly yes` if background job durability matters to you.
 - [ ] **Redis eviction policy** — set `maxmemory-policy noeviction`. Other policies may silently evict queued jobs under memory pressure; `noeviction` surfaces the problem as an error instead.
+- [ ] **Redis authentication and TLS** — For deployments where Redis is reachable over a network, configure both authentication and TLS. Use the full URL form: `REDIS_URL=rediss://:yourpassword@host:6379` for TLS with password auth (recommended for networked deployments), `REDIS_URL=redis://:yourpassword@host:6379` for password auth without TLS, or `REDIS_URL=rediss://host:6379` for TLS without a password. The default `redis://localhost:6379` is appropriate only for single-host, trusted-network deployments.
 - [ ] **PostgreSQL backups** — if using PostgreSQL, schedule regular `pg_dump` backups of the `biblioteka` database.
 - [ ] **SQLite backups** — if using SQLite, back up the Docker volume (`biblioteka-data`) or the `*.db` file.
 - [ ] **`TELEMETRY_ENABLED`** — leave unset (or set to `false`) to keep anonymous telemetry disabled (default). Set to `true` to enable it.
