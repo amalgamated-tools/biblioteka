@@ -23,7 +23,9 @@ export async function fetchAuthFeatureFlags(
     passkeyEnabled:
       passkeyResult.status === "fulfilled" ? passkeyResult.value : false,
     initError:
-      oidcResult.status === "rejected" || signupResult.status === "rejected"
+      oidcResult.status === "rejected" ||
+      signupResult.status === "rejected" ||
+      passkeyResult.status === "rejected"
         ? "Unable to reach the server to load auth settings"
         : null,
   };

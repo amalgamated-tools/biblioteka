@@ -8,7 +8,10 @@ export function getLoginRequiredFieldError(
   if (emailMissing) {
     return "Please fill in the email field";
   }
-  return "Please fill in the password field";
+  if (passwordMissing) {
+    return "Please fill in the password field";
+  }
+  throw new Error("getLoginRequiredFieldError called with no missing fields");
 }
 
 export function getSignupRequiredFieldError(
@@ -34,5 +37,8 @@ export function getSignupRequiredFieldError(
   if (emailMissing) {
     return "Please fill in the email field";
   }
-  return "Please fill in the password field";
+  if (passwordMissing) {
+    return "Please fill in the password field";
+  }
+  throw new Error("getSignupRequiredFieldError called with no missing fields");
 }

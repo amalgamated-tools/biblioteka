@@ -30,42 +30,42 @@ export function validateAuthForm(
 ): AuthFormValidationResult {
   let loginEmailInvalid = false;
   let loginPasswordInvalid = false;
-  let signupNameInvalid = false;
+  const signupNameInvalid = false;
   let signupEmailInvalid = false;
   let signupPasswordInvalid = false;
 
   if (input.isLogin) {
-    loginEmailInvalid = required()(input.email) !== null;
-    loginPasswordInvalid = required()(input.password) !== null;
-    if (loginEmailInvalid || loginPasswordInvalid) {
+    const loginEmailMissing = required()(input.email) !== null;
+    const loginPasswordMissing = required()(input.password) !== null;
+    if (loginEmailMissing || loginPasswordMissing) {
       return {
         error: getLoginRequiredFieldError(
-          loginEmailInvalid,
-          loginPasswordInvalid,
+          loginEmailMissing,
+          loginPasswordMissing,
         ),
-        loginEmailInvalid,
-        loginPasswordInvalid,
+        loginEmailInvalid: loginEmailMissing,
+        loginPasswordInvalid: loginPasswordMissing,
         signupNameInvalid,
         signupEmailInvalid,
         signupPasswordInvalid,
       };
     }
   } else {
-    signupNameInvalid = required()(input.name) !== null;
-    signupEmailInvalid = required()(input.email) !== null;
-    signupPasswordInvalid = required()(input.password) !== null;
-    if (signupNameInvalid || signupEmailInvalid || signupPasswordInvalid) {
+    const signupNameMissing = required()(input.name) !== null;
+    const signupEmailMissing = required()(input.email) !== null;
+    const signupPasswordMissing = required()(input.password) !== null;
+    if (signupNameMissing || signupEmailMissing || signupPasswordMissing) {
       return {
         error: getSignupRequiredFieldError(
-          signupNameInvalid,
-          signupEmailInvalid,
-          signupPasswordInvalid,
+          signupNameMissing,
+          signupEmailMissing,
+          signupPasswordMissing,
         ),
         loginEmailInvalid,
         loginPasswordInvalid,
-        signupNameInvalid,
-        signupEmailInvalid,
-        signupPasswordInvalid,
+        signupNameInvalid: signupNameMissing,
+        signupEmailInvalid: signupEmailMissing,
+        signupPasswordInvalid: signupPasswordMissing,
       };
     }
   }

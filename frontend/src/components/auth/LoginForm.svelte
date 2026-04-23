@@ -21,7 +21,7 @@
     emailInvalid = $bindable(false),
     passwordInvalid = $bindable(false),
     error = $bindable(null) as string | null,
-    errorVisible = $bindable(false),
+    errorVisible = false,
     loading = $bindable(false),
     hidden = false,
     onsubmit,

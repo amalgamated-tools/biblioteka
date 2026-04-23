@@ -113,25 +113,30 @@
       return;
     }
 
-    const result = isLogin
-      ? await authStore.signIn(email, password)
-      : await authStore.signUp(name, email, password);
+    try {
+      const result = isLogin
+        ? await authStore.signIn(email, password)
+        : await authStore.signUp(name, email, password);
 
-    if (result.error) {
-      error = result.error.message;
-      if (isLogin) {
-        const invalidState = getLoginFieldInvalidState(result.error.message);
-        loginEmailInvalid = invalidState.email;
-        loginPasswordInvalid = invalidState.password;
-      } else {
-        const invalidState = getSignupFieldInvalidState(result.error.message);
-        signupNameInvalid = invalidState.name;
-        signupEmailInvalid = invalidState.email;
-        signupPasswordInvalid = invalidState.password;
+      if (result.error) {
+        error = result.error.message;
+        if (isLogin) {
+          const invalidState = getLoginFieldInvalidState(result.error.message);
+          loginEmailInvalid = invalidState.email;
+          loginPasswordInvalid = invalidState.password;
+        } else {
+          const invalidState = getSignupFieldInvalidState(result.error.message);
+          signupNameInvalid = invalidState.name;
+          signupEmailInvalid = invalidState.email;
+          signupPasswordInvalid = invalidState.password;
+        }
       }
+    } catch (err) {
+      error =
+        err instanceof Error ? err.message : "An unexpected error occurred";
+    } finally {
+      loading = false;
     }
-
-    loading = false;
   }
 
   function applyValidationState(state: AuthFormValidationResult) {
