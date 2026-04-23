@@ -257,23 +257,24 @@ func TestStripTrailingAuthor(t *testing.T) {
 
 func TestExtractSeriesPosition(t *testing.T) {
 	tests := []struct {
+		name  string
 		input string
 		want  *float64
 	}{
-		{"10. Tea Time for the Traditionally Built", new(float64(10))},
-		{"1. The Seven Dials Mystery", new(float64(1))},
-		{"2. Something", new(float64(2))},
+		{"integer position 10", "10. Tea Time for the Traditionally Built", new(float64(10))},
+		{"integer position 1", "1. The Seven Dials Mystery", new(float64(1))},
+		{"integer position 2", "2. Something", new(float64(2))},
 		// No leading position prefix
-		{"Tea Time for the Traditionally Built", nil},
-		{"The Book", nil},
+		{"no prefix", "Tea Time for the Traditionally Built", nil},
+		{"short title no prefix", "The Book", nil},
 		// Non-numeric prefix
-		{"abc. Title", nil},
+		{"non-numeric prefix", "abc. Title", nil},
 		// Decimal/fractional format (e.g. "1.5. Title") is not supported by the
 		// regex — after "1." comes "5", not whitespace, so the match fails.
-		{"1.5. The Name of the Wind", nil},
+		{"decimal position unsupported", "1.5. The Name of the Wind", nil},
 	}
 	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			got := extractSeriesPosition(tt.input)
 			require.True(t, float64PtrEqual(got, tt.want),
 				"extractSeriesPosition(%q): got %s, want %s", tt.input, fmtF64(got), fmtF64(tt.want))
@@ -285,21 +286,22 @@ func TestExtractSeriesPosition(t *testing.T) {
 
 func TestExtractYear(t *testing.T) {
 	tests := []struct {
+		name  string
 		input string
 		want  *int
 	}{
-		{"Tea Time for the Traditionally Built - Alexander McCall Smith (2009)", new(int(2009))},
-		{"Pride and Prejudice (1813)", new(int(1813))},
+		{"year in parens with author suffix", "Tea Time for the Traditionally Built - Alexander McCall Smith (2009)", new(int(2009))},
+		{"year in parens", "Pride and Prejudice (1813)", new(int(1813))},
 		// No year
-		{"The Book", nil},
+		{"no year", "The Book", nil},
 		// Trailing spaces after year
-		{"Title (2000)  ", new(int(2000))},
+		{"trailing spaces", "Title (2000)  ", new(int(2000))},
 		// Non-4-digit number in parens does not match
-		{"Title (99)", nil},
-		{"Title (12345)", nil},
+		{"two-digit number", "Title (99)", nil},
+		{"five-digit number", "Title (12345)", nil},
 	}
 	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			got := extractYear(tt.input)
 			require.True(t, intPtrEqual(got, tt.want),
 				"extractYear(%q): got %s, want %s", tt.input, fmtInt(got), fmtInt(tt.want))
