@@ -342,19 +342,14 @@ Jobs enter the queue in two ways:
    - `scan:libraries` every 24 hours — the trigger is issued directly by the asynq scheduler (not through `Worker.Enqueue`) and carries no deduplication. When the handler runs, it calls `Worker.Enqueue` to create `scan:library` jobs, which cascade into `scan:path` and `process:file` jobs — all of which go through `Worker.Enqueue` and benefit from the 24-hour deduplication window.
    - `scan:watch-folder` every 1 minute — the trigger is also issued directly by the asynq scheduler. The handler calls `ScanDirectory`, which enqueues `process:file` jobs through `Worker.Enqueue`.
 
-API-triggered jobs call `Worker.Enqueue`, which serialises the payload to JSON and pushes an asynq task onto the `"default"` queue with the configured deduplication options. The root scheduled triggers (`scan:libraries` and `scan:watch-folder`) are created directly by the asynq scheduler and do not go through `Worker.Enqueue`.
-
 ### Deduplication
 
 The `book_files` table has a `UNIQUE` constraint on `file_path` (`idx_book_files_file_path`). If a `process:file` job tries to insert a `book_file` row for a path that is already indexed, the database rejects the insert and the handler skips creating a duplicate record. The handler also proactively checks whether the target path is already indexed before creating database records — both at the start of the job (when the original path already exists in the database) and after a file reorganization (in case a concurrent worker processed the same file first).
 
-Additionally, the 24-hour asynq deduplication window (via `asynq.Unique(24*time.Hour)`) prevents the same job payload from being enqueued more than once within that window.
-
 **Remaining edge cases:**
 
 - **Files reachable from multiple paths** — If the same physical file is reachable under two different library paths (e.g. via symlinks or overlapping mounts), each path produces a distinct job payload with a different `file_path`. Both jobs can succeed and create separate `book_file` rows pointing at different paths on disk.
-- **Redis data loss** — If the Redis store is cleared or the server is restarted against a fresh Redis instance, the 24-hour deduplication window is reset. A subsequent scan may re-enqueue jobs for files already indexed; however, the database-level `UNIQUE(file_path)` constraint prevents new duplicate `book_file` rows from being created for files that have not moved.
-- **Watch folder + Redis restart** — Because `scan:watch-folder` runs every 1 minute and its `process:file` jobs go through `Worker.Enqueue`, clearing Redis resets the deduplication window for all watch-folder enqueues. On the next 1-minute poll, the watch-folder handler will re-enqueue `process:file` jobs for every supported file in the watch folder. The burst of enqueue attempts is expected behavior — not a sign of malfunction — and the database `UNIQUE(file_path)` constraint prevents duplicate book records from being created for files that are already indexed.
+- **Redis cleared or restarted** — If the Redis store is cleared or the server is restarted against a fresh Redis instance, the 24-hour deduplication window resets. Subsequent scans (including the 1-minute `scan:watch-folder` poll) may re-enqueue `process:file` jobs for files already indexed; the database `UNIQUE(file_path)` constraint prevents duplicate `book_file` rows. The burst of re-enqueues from the watch folder is expected behavior — not a sign of malfunction.
 
 ## Monitoring Dashboard (Asynqmon)
 
