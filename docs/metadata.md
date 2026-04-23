@@ -249,6 +249,48 @@ Goodreads ID: kca://book/amzn1.gr.book.v1.xyz
 
 ---
 
+## AI enrichment
+
+Biblioteka can enrich book metadata using a locally-hosted large language model (LLM). When configured, the AI enrichment API sends the book's title, authors, and existing description to the LLM. The model returns suggested tags (which can include genres, themes, or mood-related labels), a reading level, and a generated catalog description. Results are stored as a **pending enrichment record** that you review before any changes are committed to the book.
+
+> **Requires Redis and an LLM provider.** AI enrichment runs as a background job; a Redis worker must be running and an LLM provider must be configured by an administrator. See [Administration — LLM Configuration](administration.md#llm-configuration-runtime) for setup instructions and [Background Jobs — enrich:ai](background-jobs.md#enrichai) for job internals.
+
+### Enrichment workflow
+
+1. **Trigger** — send `POST /api/books/{id}/metadata/ai-fetch`. The server enqueues an `enrich:ai` job and returns immediately. The request is idempotent: if a pending enrichment already exists for the book, or the job is already running, it returns `202` without enqueueing a duplicate.
+2. **Monitor progress** — subscribe to the SSE stream at `GET /api/books/{id}/metadata/events`. The same event stream used for Goodreads enrichment publishes `progress`, `complete`, and `error` events for AI enrichment jobs.
+3. **Review** — fetch the pending result with `GET /api/books/{id}/metadata/ai`. The response includes suggested tags, a reading level, and an AI-generated description (all pending, not yet applied).
+4. **Apply or reject** — choose one of:
+   - `POST /api/books/{id}/metadata/ai-apply` — merges the AI-suggested tags into the book's existing tag set (union, no duplicates) and sets the description if the book has no description yet.
+   - `POST /api/books/{id}/metadata/ai-reject` — marks the pending record as rejected without modifying the book.
+
+### `AIEnrichment` object fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Opaque enrichment record ID |
+| `book_id` | string\|null | ID of the associated book |
+| `status` | `"pending"` \| `"applied"` \| `"rejected"` | Current review state |
+| `provider` | string | LLM provider that generated the enrichment (e.g. `"ollama"`) |
+| `model` | string | Model name used (e.g. `"llama3"`) |
+| `suggested_tags` | string[] | AI-suggested tag names |
+| `reading_level` | string\|null | Suggested reading level. Expected values: `"children"`, `"young_adult"`, `"adult"`, `"academic"` (stored as free-form text; not server-validated) |
+| `generated_description` | string\|null | AI-generated catalog description |
+| `created_at` | string | ISO 8601 creation timestamp |
+| `updated_at` | string | ISO 8601 last-updated timestamp |
+
+### Apply semantics
+
+- **Tags** — the suggested tags are merged with the book's existing tags using a union (existing tags are never removed).
+- **Description** — the generated description is applied only when the book's current description is blank. If the book already has a description it is left unchanged.
+- **Blank tags** — suggested tag strings that are blank or whitespace-only are silently skipped during apply.
+
+> **User isolation.** Only enrichment records owned by the authenticated user are returned or modifiable. Each user's pending enrichments are fully isolated from other users'.
+
+For the full request/response schemas and error codes, see the [API Reference — Books: AI enrichment endpoints](api/books.md#get-apibooksidmetadataai).
+
+---
+
 ## Contributing
 
 To add support for a new extracted field:
