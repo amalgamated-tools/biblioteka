@@ -317,3 +317,31 @@ func TestCreateLibrary_WhitespaceOnlyName(t *testing.T) {
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	require.NotEmpty(t, resp["error"])
 }
+
+func TestCreateLibrary_DuplicateName(t *testing.T) {
+	h, adminID, _ := setupLibraryHandler(t)
+
+	dir1 := t.TempDir()
+	dir2 := t.TempDir()
+
+	// Create first library.
+	body := mustMarshal(t, libraryRequest{Name: "Fiction", Paths: []string{dir1}})
+	r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+	h.HandleLibraries(w, r)
+	require.Equal(t, http.StatusCreated, w.Code, "setup: create first library")
+
+	// Attempt to create second library with the same name.
+	body2 := mustMarshal(t, libraryRequest{Name: "Fiction", Paths: []string{dir2}})
+	r2 := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body2))
+	r2 = withUserID(r2, adminID)
+	w2 := httptest.NewRecorder()
+	h.HandleLibraries(w2, r2)
+
+	require.Equal(t, http.StatusConflict, w2.Code)
+
+	var resp errorResponse
+	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &resp), "unmarshal")
+	require.Contains(t, resp.Error, "already exists")
+}

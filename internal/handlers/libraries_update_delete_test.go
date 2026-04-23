@@ -242,3 +242,40 @@ func TestUpdateLibrary_WhitespaceOnlyName(t *testing.T) {
 	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &resp), "unmarshal")
 	require.NotEmpty(t, resp["error"])
 }
+
+func TestUpdateLibrary_DuplicateName(t *testing.T) {
+	h, adminID, _ := setupLibraryHandler(t)
+
+	dir1 := t.TempDir()
+	dir2 := t.TempDir()
+
+	// Create two distinct libraries.
+	body1 := mustMarshal(t, libraryRequest{Name: "Fiction", Paths: []string{dir1}})
+	r1 := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body1))
+	r1 = withUserID(r1, adminID)
+	w1 := httptest.NewRecorder()
+	h.HandleLibraries(w1, r1)
+	require.Equal(t, http.StatusCreated, w1.Code, "setup: create Fiction")
+
+	body2 := mustMarshal(t, libraryRequest{Name: "Non-Fiction", Paths: []string{dir2}})
+	r2 := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body2))
+	r2 = withUserID(r2, adminID)
+	w2 := httptest.NewRecorder()
+	h.HandleLibraries(w2, r2)
+	require.Equal(t, http.StatusCreated, w2.Code, "setup: create Non-Fiction")
+	var lib2 libraryDTO
+	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &lib2), "unmarshal lib2")
+
+	// Attempt to rename Non-Fiction to Fiction (already taken).
+	updateBody := mustMarshal(t, libraryRequest{Name: "Fiction", Paths: []string{dir2}})
+	r3 := httptest.NewRequest(http.MethodPut, "/api/libraries/"+lib2.ID, bytes.NewReader(updateBody))
+	r3 = withUserID(r3, adminID)
+	w3 := httptest.NewRecorder()
+	h.HandleLibrary(w3, r3)
+
+	require.Equal(t, http.StatusConflict, w3.Code)
+
+	var resp errorResponse
+	require.NoError(t, json.Unmarshal(w3.Body.Bytes(), &resp), "unmarshal")
+	require.Contains(t, resp.Error, "already exists")
+}
