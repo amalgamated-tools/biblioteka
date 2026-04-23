@@ -13,10 +13,11 @@
 --   SEARCH ba USING INDEX idx_book_annotations_book_created_at (book_id=?)
 --   (no temp B-tree)
 --
--- The (book_id, user_id) index is no longer needed: the only book_id-filtered
--- query in the codebase is ListAnnotationsForBook, which does not equality-
--- filter on user_id (it uses a complex OR / subquery predicate).
--- The FK cascade for books.id ON DELETE CASCADE is now served by this index.
+-- ListAnnotationsForBook does include a ba.user_id = ? predicate, but only as
+-- part of a more complex OR / subquery condition. This migration keeps the
+-- index change because the SQLite query plan above shows that (book_id,
+-- created_at) avoids the temp B-tree for ORDER BY while still serving the
+-- book_id lookup and the books.id ON DELETE CASCADE FK.
 -- The separate idx_book_annotations_user_id index continues to serve the
 -- users.id ON DELETE CASCADE FK.
 DROP INDEX IF EXISTS idx_book_annotations_book_user;
