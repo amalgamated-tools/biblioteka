@@ -501,7 +501,7 @@ Append-only record of create, update, and delete actions performed on entities.
 | `created_at`  | DATETIME| NOT NULL | `now()`  | When the action occurred                                |
 
 **Indexes:**
-- `idx_audit_logs_created_at` — supports ordered pagination (newest first)
+- `idx_audit_logs_created_at_id` — composite index on `(created_at DESC, id DESC)`; supports ordered pagination with a stable tiebreaker (covers both columns in `ORDER BY created_at DESC, id DESC`, eliminating the secondary sort step)
 - `idx_audit_logs_entity` — fast lookup by `(entity_type, entity_id)`
 - `idx_audit_logs_user_id` — fast lookup by `user_id`
 
@@ -696,6 +696,7 @@ Tracks membership of users in reading groups, including the member's role.
 **Primary key:** `(group_id, user_id)`
 
 **Indexes:**
+- `idx_reading_group_members_group_joined_at` — composite index on `(group_id, joined_at)`; supports `ListGroupMembers` queries that filter by `group_id` and sort by `joined_at ASC`, eliminating a temp sort step
 - `idx_reading_group_members_user` — fast lookup of all groups a user belongs to
 
 **Notes:**
@@ -746,6 +747,7 @@ User annotations and highlights on books. Annotations may be private to the auth
 | `updated_at` | DATETIME | NOT NULL | `now()`  | When the annotation was last updated                                         |
 
 **Indexes:**
+- `idx_book_annotations_book_created_at` — composite index on `(book_id, created_at ASC)`; supports `ListAnnotationsForBook` queries that filter by `book_id` and sort by `created_at`, eliminating a temp sort step
 - `idx_book_annotations_book_user` — composite index on `(book_id, user_id)` for listing a user's annotations for a given book
 - `idx_book_annotations_group` — fast lookup of annotations shared with a given group
 
