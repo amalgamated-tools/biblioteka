@@ -1,6 +1,6 @@
 {
-  "last_run": "2026-04-23T20:33:38Z",
-  "tasks_run": ["task3", "task4", "task7"],
+  "last_run": "2026-04-24T20:28:44Z",
+  "tasks_run": ["task2", "task3", "task7"],
   "commands": {
     "build": "make build (requires frontend first)",
     "test": "go test ./... (Go 1.26.2 auto-downloaded; internal/jobs failures are pre-existing)",
@@ -104,9 +104,15 @@
       "pr_branch": "perf-assist/reading-list-books-added-at-index-20260423"
     },
     {
+      "id": "reading-lists-correlated-subquery",
+      "status": "pr_created",
+      "description": "Rewrite ListReadingLists/GetReadingList/ListGroupReadingLists to use correlated subquery for book_count instead of GROUP BY + LEFT JOIN - eliminates temp B-tree in ListReadingLists",
+      "pr_branch": "perf-assist/reading-lists-correlated-subquery-20260424"
+    },
+    {
       "id": "group-lists-reading-lists-temp-btree",
       "status": "identified",
-      "description": "ListReadingLists, ListGroups, ListGroupReadingLists all show USE TEMP B-TREE FOR ORDER BY/GROUP BY. Root cause: GROUP BY with COUNT aggregate; not fixable with indexes alone - requires query rewrite.",
+      "description": "ListGroups has USE TEMP B-TREE FOR ORDER BY. Caused by membership subquery then GROUP BY; requires denormalization or query rewrite.",
       "priority": "low"
     },
     {
