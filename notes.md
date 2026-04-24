@@ -1,7 +1,7 @@
 # Test Improver Memory — biblioteka
 
 ## Last Updated
-2026-04-22
+2026-04-24
 
 ## Build/Test/Coverage Commands
 
@@ -50,6 +50,7 @@ go.mod requires go >= 1.26.2; use GOTOOLCHAIN=auto.
 - Frontend testUtils.ts has mockFetchResponse and mockNoContentResponse helpers
 - Frontend tests import from "../api" (the barrel file) not individual modules
 - pathparser uses `package pathparser` (not _test), so unexported helpers are accessible
+- Frontend vi.mock("./api", ...) pattern works for mocking API module functions in lib/ tests
 
 ## Testing Landscape
 Codebase is very well tested overall. Most packages have 1:1 test file ratio.
@@ -57,11 +58,11 @@ Packages with no test files (intentional):
 - internal/otel       (bootstrap/init code)
 - internal/otelkeys   (pure constants)
 - internal/testutils  (test helpers, used only in tests)
+- internal/storage    (pure interface, no implementation)
+- internal/timeutil   (one-liner NowRFC3339, trivial)
 - internal/errorfcheck/testdata, internal/slogcheck/testdata (test data dirs)
 
-Frontend API modules with no tests: (now all covered as of 2026-04-20)
-- frontend/src/lib/api/recommendations.ts — added in this run
-- frontend/src/lib/api/calibre.ts — added in this run
+Frontend API modules: all covered as of 2026-04-24
 
 ## Task Round-Robin Status
 - 2026-04-11: Tasks 1, 2, 3, 7 (discovery + sanitizeDirName PR + monthly issue)
@@ -76,83 +77,66 @@ Frontend API modules with no tests: (now all covered as of 2026-04-20)
 - 2026-04-20: Tasks 6, 4, 2, 3, 7 (no open PRs; calibre+recommendations frontend API tests PR; new monthly issue)
 - 2026-04-21: Tasks 3, 7 (pathparser helper tests PR #2439; monthly issue updated)
 - 2026-04-22: Tasks 4, 3, 7 (updated PR #2439 addressing 4 review comments; new library handler 409 conflict tests PR; monthly issue updated)
-- Next run: Tasks 1, 5, 6, 7
+- 2026-04-24: Tasks 1, 5, 6, 7 (cmds valid; no open testing issues; authRequiredErrors+authFeatureFlags tests PR; monthly issue updated)
+- Next run: Tasks 2, 3, 4, 7
 
 ## Testing Backlog (prioritized)
 
-1. ~~**pathparser internal helpers**~~ — PR #2439 open, review comments addressed 2026-04-22 ✅. Also discovered: isLikelyPersonName("Special Edition") = true (false positive heuristic, documented in tests)
-2. ~~**library handler 409 conflict**~~ — PR submitted 2026-04-22 (branch `test-assist/library-handler-conflict-tests`)
-3. **organize path-escape defense-in-depth test** — the filepath.Rel escape guard in organize.go has no test. Likely unreachable in practice. Low value.
-3. **SSRF dialer Class B (172.16.x.x)** — ollama/client_test.go tests Class A, C, loopback, AWS metadata but not Class B. Very low value (impl is the same `isPrivateIP` function; Class B is already tested in config_llm_test.go).
-4. ~~**db/ai_enrichments.go**~~ — Covered by PR #2150 (merged) and PR #2204 (merged).
-5. ~~**db/reading_group_lists.go**~~ — PR #2201 and #2221 both merged ✅.
-6. ~~**authstore/PasskeyAdapter**~~ — PR #2143 merged ✅.
-7. ~~**tags in bookDTO handler responses**~~ — Covered by 2026-04-19 PR #2349.
-8. ~~**frontend/src/lib/api/calibre.ts**~~ — Covered 2026-04-20 ✅
-9. ~~**frontend/src/lib/api/recommendations.ts**~~ — Covered 2026-04-20 ✅
+1. ~~**pathparser internal helpers**~~ — PR #2439 merged 2026-04-23 ✅
+2. ~~**library handler 409 conflict**~~ — PR #2464 merged 2026-04-23 ✅
+3. ~~**authRequiredErrors + authFeatureFlags**~~ — PR submitted 2026-04-24 (branch `test-assist/auth-util-tests`)
+4. **organize path-escape defense-in-depth test** — the filepath.Rel escape guard in organize.go has no test. Likely unreachable in practice. Low value.
+5. **SSRF dialer Class B (172.16.x.x)** — ollama/client_test.go tests Class A, C, loopback, AWS metadata but not Class B. Very low value (impl is the same `isPrivateIP` function; Class B is already tested in config_llm_test.go).
 
 ## Maintainer Priorities
 - All previous monthly issues closed by veverkap as "completed"
 - Signals strong positive reception; maintainer is actively merging Test Improver PRs
-- Merged: #1689, #1771, #1792, #1845, #1943, #2021, #2143, #2221, #2349, #2403
+- Merged: #1689, #1771, #1792, #1845, #1943, #2021, #2143, #2221, #2349, #2403, #2439, #2464
 
 ## Completed Work
 
+### 2026-04-24
+- Tasks: 1 (validated commands still work), 5 (no open testing issues found), 6 (new PR), 7 (monthly issue updated)
+- Created PR on branch `test-assist/auth-util-tests`:
+  - `authRequiredErrors.test.ts`: 12 tests covering all 8 branch combos for login/signup required-field messages
+  - `authFeatureFlags.test.ts`: 7 tests for Promise.allSettled fallback logic
+  - Total: 19 new tests, 1097 total passing
+- Discovered new packages without tests: `internal/storage` (pure interface), `internal/timeutil` (trivial)
+- Notable: vi.mock("./api", ...) pattern works for lib/ test files
+
 ### 2026-04-22
-- Updated PR #2439 (pathparser helper tests): addressed all 4 review comments (Greptile + Copilot):
-  - Converted `TestNamesEqual` to table-driven
-  - Added explicit `name` fields to blank/whitespace subtests in `TestIsLikelyPersonName`, `TestNormalizeName`
-  - Added `"1.5. Title"` nil-result test case to `TestExtractSeriesPosition` (decimal positions unsupported)
-  - Fixed misleading code comment in `stripTrailingAuthor` (removed wrong "Special Edition" claim)
-- Created new PR on branch `test-assist/library-handler-conflict-tests`:
-  - Added `TestCreateLibrary_DuplicateName` to `libraries_create_test.go`
-  - Added `TestUpdateLibrary_DuplicateName` to `libraries_update_delete_test.go`
-  - Both verify HTTP 409 Conflict response when duplicate library name submitted at handler level
+- Updated PR #2439 (pathparser helper tests): addressed all 4 review comments
+- Created PR #2464: 2 handler-level 409 Conflict tests for CreateLibrary/UpdateLibrary
 
 ### 2026-04-21
-- Monthly activity issue #2404 updated with new run entry
-- Created PR #2439 on branch `test-assist/pathparser-helper-tests-36bb45049c5b3ec5`:
-  - 6 new test functions, 44 test cases
-  - Covers: isLikelyPersonName, stripTrailingAuthor, extractSeriesPosition, extractYear, normalizeName, namesEqual
-  - Notable find: isLikelyPersonName has a known false positive for "Special Edition" type suffixes
+- Created PR #2439: 44 test cases across 6 new test functions for pathparser helpers
 
 ### 2026-04-20
-- New monthly activity issue created (prior #2343 closed by veverkap)
-- Created PR on branch `test-assist/frontend-api-calibre-recommendations-tests` (merged as #2403):
-  - 8 tests for calibre.ts (previewCalibreImport, confirmCalibreImport + path variants)
-  - 5 tests for recommendations.ts (getRecommendations)
-  - Total: 13 new tests
+- Created PR #2403 (merged): 13 tests for calibre.ts + recommendations.ts
 
 ### 2026-04-19
-- New monthly activity issue created (prior #2222 closed by veverkap)
-- Created PR on branch `test-assist/book-dto-tags-regression-tests`: 2 tests verifying
-  tags field is embedded in GetBook and CreateBook handler responses (regression guard for dd15bdc9)
-  (merged as PR #2349)
+- Created PR #2349 (merged): 2 regression guard tests for tags in bookDTO
 
-### 2026-04-18 (PR #2221 — merged ✅)
-- New monthly activity issue created (prior #2144 closed by veverkap)
-- Created PR on branch `test-assist/reading-group-list-db-tests`: 11 DB-level tests for ShareListWithGroup, UnshareListFromGroup, ListGroupReadingLists
+### 2026-04-18
+- PR #2221 merged: 11 DB-level tests for reading_group_lists
 
-### 2026-04-17 (PR #2143 — merged ✅)
-- New monthly activity issue #2144 created
-- Submitted PR #2143 on branch `test-assist/passkey-adapter-tests`: 15 tests for PasskeyAdapter
+### 2026-04-17
+- PR #2143 merged: 15 tests for PasskeyAdapter
 
 ### 2026-04-15
-- New monthly activity issue created (prior #1944 closed by maintainer)
-- Submitted PR #2021 on branch `test-assist/llm-prompt-tests`: 7 unit tests for BuildEnrichPrompt
+- PR #2021 merged: 7 unit tests for BuildEnrichPrompt
 
 ### 2026-04-14
-- New monthly activity issue created (prior #1846 closed by maintainer)
-- Submitted PR on branch `test-assist/books-reading-lists-handler`: tests for getBookReadingLists
+- PR merged: tests for getBookReadingLists handler
 
-### 2026-04-13 (PR #1845 — merged ✅)
-- Submitted PR on branch `test-assist/oidc-password-change-guard`
+### 2026-04-13 (PR #1845 merged)
+- PR #1845: OIDC password change guard test
 
-### 2026-04-12 Run 3 (PR #1792 — merged ✅)
-- Created PR on branch `test-assist/auth-origin-csrf-tests`
+### 2026-04-12 Run 3 (PR #1792 merged)
+- PR #1792: auth origin CSRF helpers tests
 
-### 2026-04-12 Run 2 (PR #1771 — merged ✅)
-- Created PR on branch `test-assist/oidc-login-enumeration-regression`
+### 2026-04-12 Run 2 (PR #1771 merged)
+- PR #1771: OIDC login enumeration regression tests
 
-### 2026-04-11 Run 1 (PR #1689 — merged ✅)
-- Created PR #1689: `test(organize): add direct unit tests for sanitizeDirName`
+### 2026-04-11 Run 1 (PR #1689 merged)
+- PR #1689: sanitizeDirName unit tests
