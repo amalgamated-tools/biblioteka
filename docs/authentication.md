@@ -322,9 +322,7 @@ WEBAUTHN_RP_NAME=My Biblioteka
 
 > **Production requirement:** `WEBAUTHN_RP_ID` must exactly match the effective domain of your Biblioteka instance. For example, if your instance is at `https://books.example.com`, set `WEBAUTHN_RP_ID=books.example.com`. The default `localhost` value makes passkeys non-functional outside of local development — ceremonies will silently fail while the UI still shows passkeys as available. On startup, `WebAuthn passkeys enabled` is logged at `INFO` level confirming the RP ID and name.
 
-The `GET /api/auth/passkey/enabled` endpoint returns `{"enabled": true}` when WebAuthn initializes successfully, including when the server falls back to localhost defaults, and `{"enabled": false}` only when WebAuthn initialization fails. The frontend uses this to conditionally show the passkey login button.
-
-For non-localhost or production deployments, you must set `WEBAUTHN_RP_ID` and `WEBAUTHN_RP_ORIGINS` to the real domain and allowed origins for your Biblioteka instance. If these values are left at localhost defaults or otherwise do not match the deployed site, the endpoint may still report `{"enabled": true}` and the UI may show passkey actions, but passkey registration and login ceremonies will fail in the browser.
+The `GET /api/auth/passkey/enabled` endpoint returns `{"enabled": true}` when WebAuthn initializes successfully (including when using localhost defaults), and `{"enabled": false}` only when WebAuthn initialization fails. The frontend uses this to conditionally show the passkey login button. Note that `{"enabled": true}` does **not** guarantee ceremonies will succeed — if `WEBAUTHN_RP_ID` does not match your deployed domain, registrations and logins will fail in the browser even though the endpoint reports enabled.
 
 ### Registering a passkey
 
@@ -448,13 +446,7 @@ API keys provide a convenient way to authenticate programmatic access to Bibliot
 
 ### When to use API keys
 
-Use API keys when:
-
-- You are calling the Biblioteka API from a script, CI pipeline, or external service.
-- You want long-lived credentials that do not expire on a fixed schedule.
-- You need to avoid storing your password in automation tooling.
-
-Use JWT tokens (from login/signup) for interactive browser sessions.
+Use API keys for programmatic access — scripts, CI pipelines, and external services that need long-lived credentials without storing a password. For interactive browser sessions, use JWT tokens (from login/signup) instead.
 
 ### Key format
 
@@ -494,7 +486,7 @@ To manage keys programmatically, see the [API Keys endpoints](api/auth.md#api-ke
 | Property | Detail |
 |----------|--------|
 | Entropy | 160 bits (cryptographically random; meets [NIST SP 800-63B §5.1.2.1](https://pages.nist.gov/800-63-3/sp800-63b.html) ≥ 20-byte minimum for look-up secrets) |
-| Storage | SHA-256 hash only — plaintext key is never persisted after creation (SHA-256 is appropriate because keys are 160-bit random values, not passwords) |
+| Storage | SHA-256 hash only — plaintext key is never persisted after creation |
 | Scope | Tied to the creating user; inherits that user's permissions |
 | Transmission | HTTPS only in production; `Authorization` header only (cookies rejected) |
 | Visibility | Key prefix (`bib_XXXXXXXXXXXX`) shown in the UI for identification |
