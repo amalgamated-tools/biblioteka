@@ -24,6 +24,10 @@ A Svelte 5 rune that declares a reactive state variable. Used for scalar values 
 
 A variant of [`$state`](#state) that tracks only the reference to a value, not its contents. Used for array properties that are replaced wholesale on every fetch, avoiding unnecessary deep-proxy overhead and preventing the "state mutated outside a reactive context" console warning. See also [runes](#runes).
 
+## Annotation
+
+A note a user attaches to a book to record a highlight, quote, or observation. Each annotation stores required free-form `text`, an optional `cfi` (EPUB position), and an optional `group_id` that shares the annotation with a [reading group](#reading-group). Annotations are user-scoped: `GET /api/books/{id}/annotations` returns the authenticated user's own annotations plus any group annotations for groups they belong to; `GET /api/annotations/{id}` is restricted to the annotation owner. Managed via the REST API at `/api/books/{id}/annotations` and `/api/annotations/{id}`. See [Book Annotations](annotations.md).
+
 ## API Key
 
 A long-lived authentication token with the `bib_` prefix used for programmatic access to the Biblioteka API. API keys are generated as cryptographically random hex strings, stored by their hash (not in plaintext), and returned only once at creation time. Managed under **Settings → API Keys** or via the REST API. See [Authentication](authentication.md).
@@ -47,6 +51,10 @@ A library organization layout where imported book files are moved into `<Author>
 ## `book_per_folder`
 
 A library organization layout where imported book files are moved into `<Author>/<Title>/` directories (two levels deep). Both an author and a title must be present after metadata extraction; if either is absent the file stays in place. See also [`book_per_file`](#book_per_file), [`none`](#none-organization).
+
+## CFI
+
+**Canonical Fragment Identifier.** An EPUB position string defined by the [IDPF CFI specification](https://idpf.org/epub/linking/cfi/) that pinpoints a specific location within an EPUB file (e.g. `/4/2/4`). Biblioteka stores CFIs as an optional field on [annotations](#annotation) so a note can be anchored to a particular passage in the text. CFI values are set by the reading client and treated as opaque strings by the server. See [Book Annotations](annotations.md).
 
 ## CrudStore
 
