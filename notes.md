@@ -1,7 +1,7 @@
 # Test Improver Memory — biblioteka
 
 ## Last Updated
-2026-04-24
+2026-04-25
 
 ## Build/Test/Coverage Commands
 
@@ -77,15 +77,16 @@ Frontend API modules: all covered as of 2026-04-24
 - 2026-04-20: Tasks 6, 4, 2, 3, 7 (no open PRs; calibre+recommendations frontend API tests PR; new monthly issue)
 - 2026-04-21: Tasks 3, 7 (pathparser helper tests PR #2439; monthly issue updated)
 - 2026-04-22: Tasks 4, 3, 7 (updated PR #2439 addressing 4 review comments; new library handler 409 conflict tests PR; monthly issue updated)
-- 2026-04-24: Tasks 1, 5, 6, 7 (cmds valid; no open testing issues; authRequiredErrors+authFeatureFlags tests PR; monthly issue updated)
-- Next run: Tasks 2, 3, 4, 7
+- 2026-04-25: Tasks 2, 3, 4, 7 (no open PR issues; enrich_ai error-path tests PR; monthly issue updated)
+- Next run: Tasks 1, 5, 6, 7
 
 ## Testing Backlog (prioritized)
 
 1. ~~**pathparser internal helpers**~~ — PR #2439 merged 2026-04-23 ✅
 2. ~~**library handler 409 conflict**~~ — PR #2464 merged 2026-04-23 ✅
-3. ~~**authRequiredErrors + authFeatureFlags**~~ — PR submitted 2026-04-24 (branch `test-assist/auth-util-tests`)
-4. **organize path-escape defense-in-depth test** — the filepath.Rel escape guard in organize.go has no test. Likely unreachable in practice. Low value.
+3. ~~**authRequiredErrors + authFeatureFlags**~~ — PR #2519 open (submitted 2026-04-24)
+4. ~~**enrich_ai error paths**~~ — PR submitted 2026-04-25 (branch `test-assist/enrich-ai-error-paths`)
+5. **organize path-escape defense-in-depth test** — the filepath.Rel escape guard in organize.go has no test. Likely unreachable in practice. Low value.
 5. **SSRF dialer Class B (172.16.x.x)** — ollama/client_test.go tests Class A, C, loopback, AWS metadata but not Class B. Very low value (impl is the same `isPrivateIP` function; Class B is already tested in config_llm_test.go).
 
 ## Maintainer Priorities
@@ -94,6 +95,13 @@ Frontend API modules: all covered as of 2026-04-24
 - Merged: #1689, #1771, #1792, #1845, #1943, #2021, #2143, #2221, #2349, #2403, #2439, #2464
 
 ## Completed Work
+
+### 2026-04-25
+- Tasks: 2 (identified enrich_ai error paths), 3 (new PR), 4 (verified PR #2519 still open, no action needed), 7 (monthly issue updated)
+- Created PR on branch `test-assist/enrich-ai-error-paths`:
+  - 4 new tests: InvalidPayload, BookNotFound, ParseError, EmptyReadingLevelAndDescription
+  - All 7 `TestEnrichAI_*` tests pass
+- Pre-existing failures confirmed in `TestProcessBookFile_*` on `main` (unrelated)
 
 ### 2026-04-24
 - Tasks: 1 (validated commands still work), 5 (no open testing issues found), 6 (new PR), 7 (monthly issue updated)
