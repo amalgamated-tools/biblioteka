@@ -1,62 +1,64 @@
 # Shared Alerts
-**Updated:** 2026-04-24T23:44Z by agent-performance-analyzer
+**Updated:** 2026-04-25T23:44Z by agent-performance-analyzer
 
 ## Active Alerts
 
-### CRITICAL: repo-assist NOT COMPILED + FAILED (6th day)
+### CRITICAL: repo-assist NOT COMPILED + FAILED (Day 7)
 - #2389: Still open — workflow lock file stale, requires immediate recompile
-- No action taken for 6 consecutive days
+- No action taken for 7 consecutive days
 
-### CRITICAL: Status-as-Issue Pattern Day 5 — Escalating (12+ issues total)
-- NEW today: #2536 repo-status, #2530 team-status, #2529 daily-plan, #2528 chronicle
-- Prior days: #2501, #2498, #2495 (Apr 23), #2470 (Apr 22), #2416 (earlier)
-- daily-repo-chronicle "fixed" failure but now also creates issues instead of discussions
-- Requires prompt/config fix for: daily-repo-status, daily-team-status, daily-plan, daily-repo-chronicle
+### CRITICAL: Status-as-Issue Pattern Day 6 — Still No Fix
+- TODAY: #2556 repo-status, #2554 team-status, #2553 daily-plan
+- Prior days: #2536/#2530/#2529 (Apr 24), #2501/#2498/#2495 (Apr 23), #2470 (Apr 22)
+- Requires prompt/config fix for: daily-repo-status, daily-team-status, daily-plan
+- daily-repo-chronicle: creates issue #2528 (wrong output type) + still has [aw] #2494
 
-### HIGH: Groups.go Refactoring 4-Way Duplication
-- Issue #2486 (Apr 23): "split groups.go into focused sub-modules"
-- Issue #2520 (Apr 24): "split groups.go into focused sub-files" (DUPLICATE)
-- PR #2487 (Apr 23): "split group route handlers into focused modules"
-- PR #2521 (Apr 24): "split groups.go into focused sub-files" (DUPLICATE)
-- Need to close #2520 and #2521 as duplicates; code-simplifier lacks dedup check
+### HIGH: duplicate-code-detector Self-Duplication (SSRF)
+- Issue #2503 (earlier): SSRF utilities duplication
+- Issue #2557 (Apr 25): SSRF URL validation duplication — DUPLICATE of #2503
+- PR #2504 (earlier): SSRF utilities into internal/ssrf package
+- PR #2558 (Apr 25): extract validateSSRFURL helper — DUPLICATE fix attempt
+- Agent lacks dedup check; is finding the same code pattern repeatedly from different angles
+- Recommendation: Add skip-if-match "is:issue is:open SSRF" guard
 
-### HIGH: Triple-Duplicate Reading Groups Docs PRs (Day 3+)
-- #2418 (Apr 20, open), #2480 (Apr 23, open), #2481 (Apr 23, open)
-- Add skip-if-match guard: is:pr is:open "reading groups"
-- Recommend closing #2480 and #2481 as duplicates
+### HIGH: Groups.go Refactoring 4-Way Duplication (Day 3 — unchanged)
+- Issue #2486 (Apr 23), Issue #2520 (Apr 24): near-identical refactoring requests
+- PR #2487 (Apr 23), PR #2521 (Apr 24): near-identical PRs
+- code-simplifier lacks dedup guard; created 2 redundant items on 2 consecutive days
 
-### HIGH: 7 Active [aw] Failures (stable since Apr 23)
+### HIGH: Triple-Duplicate Reading Groups Docs PRs (Day 4 — unchanged)
+- #2418 (Apr 20), #2480 (Apr 23), #2481 (Apr 23) — all still open
+- daily-doc-updater needs skip-if-match: is:pr is:open "reading groups"
+
+### HIGH: 7 Active [aw] Failures (stable)
 - #2494 daily-repo-chronicle (Apr 23)
-- #2442 dependabot-bundler (Apr 21, 4 days)
-- #2441 sergo (Apr 21, 4 days) — but sergo ran today (#2523)
-- #2440 daily-workflow-updater (Apr 21, 4 days)
-- #2405 issue-arborist (Apr 20, 5 days)
-- #2390 daily-accessibility-review (Apr 20, 5 days)
-- #2389 repo-assist (older, 6+ days)
+- #2442 dependabot-bundler (Apr 21)
+- #2441 sergo (Apr 21) — may be stale; sergo ran today
+- #2440 daily-workflow-updater (Apr 21)
+- #2405 issue-arborist (Apr 20)
+- #2390 daily-accessibility-review (Apr 20)
+- #2389 repo-assist (oldest)
 
-### MEDIUM: Dependabot Bundle Issues Stacking (4 open)
-- #2524 (Apr 24), #2490 (Apr 23), #2467, #2411
-- dependabot-bundler should close previous bundle issues after creating a new one
+### MEDIUM: Dependabot Bundle Issues Stacking (5 open)
+- #2549 (Apr 25 NEW), #2524 (Apr 24), #2490 (Apr 23), #2467, #2411
+- dependabot-pr-bundler should close previous bundle issues on new creation
 
-### MEDIUM: Auth.svelte Duplication Items
-- #2462 (issue Apr 22), #2463 (PR Apr 22) - but #2438 was MERGED, so these may be stale
-- Check if #2462, #2463 are still valid after #2438 merge
+### MEDIUM: Auth.svelte Stale Items
+- #2462 (issue), #2463 (PR): still open despite #2438 merged Apr 22
+- These items are now outdated; should be closed
 
-## Resolved Since Apr 23
-- No new [aw] failure issues today (good sign)
-- daily-repo-chronicle: no new failure [aw] issue (run succeeded, though output type wrong)
-- sergo appears to have run today (#2523)
+## Resolved Since Apr 24
+- No new [aw] failure issues today
 
 ## For Campaign Manager
-- 25 open PRs, strong merge cadence (10 PRs merged Apr 23-24)
-- duplicate-code-detector highly productive: issues + PRs together
-- Groups.go refactoring blocked by 4-way duplication — human needs to decide which PR to use
-- Auth.svelte split is DONE (#2438 merged) — related issues #2462, #2463 may be stale
+- 27 open PRs, good merge cadence in recent week
+- discussion-task-miner highly productive today (4 tasks)
+- SSRF fix (2 competing approaches): #2504 vs #2558 — one should be closed
+- Groups.go refactoring remains blocked by 4-way dup — needs human decision
 
 ## For Workflow Health Manager
-- URGENT: repo-assist NOT COMPILED (6th day) — requires recompile
-- URGENT: Status-as-issue bug in 4 workflows, Day 5, getting worse
-- URGENT: daily-repo-chronicle still outputting wrong type (issue vs discussion)
-- daily-accessibility-review: 5+ day failure
-- issue-arborist: 5+ day failure
-- sergo, dependabot-bundler, daily-workflow-updater: 4+ day failures
+- URGENT: repo-assist NOT COMPILED (Day 7)
+- URGENT: Status-as-issue bug Day 6, 3 workflows, getting worse
+- URGENT: daily-repo-chronicle: wrong output type + [aw] failure still open
+- SSRF issue: duplicate-code-detector needs dedup guard added
+- Auth.svelte: #2462, #2463 stale — recommend closing
