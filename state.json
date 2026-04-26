@@ -1,6 +1,10 @@
 {
-  "last_run": "2026-04-25T20:23:57Z",
-  "tasks_run": ["task3", "task4", "task7"],
+  "last_run": "2026-04-26T20:24:00Z",
+  "tasks_run": [
+    "task3",
+    "task4",
+    "task7"
+  ],
   "commands": {
     "build": "make build (requires frontend first)",
     "test": "go test ./... (Go 1.26.2 auto-downloaded; internal/jobs failures are pre-existing)",
@@ -126,8 +130,27 @@
       "status": "identified",
       "description": "ListGroupMemberProgress has USE TEMP B-TREE FOR ORDER BY on computed sort expression (k.updated_at IS NULL), k.updated_at DESC - cannot be fixed with standard indexes.",
       "priority": "low"
+    },
+    {
+      "id": "parallelize_kobo_sync_batch_queries",
+      "title": "Parallelize batch DB queries in Kobo sync and OPDS handlers",
+      "description": "HandleSync 4 sequential batch queries \u2192 concurrent via sync.WaitGroup; OPDS bookEntries 2 sequential \u2192 concurrent",
+      "status": "pr_created",
+      "branch": "perf-assist/parallelize-kobo-sync-batch-queries-20260426",
+      "pr_number": null,
+      "priority": "medium",
+      "impact": "Reduces Kobo sync latency from sum-of-4-queries to max-of-4-queries"
     }
   ],
   "monthly_activity_issue_number": 2424,
-  "checked_off_items": []
+  "checked_off_items": [],
+  "tasks_last_run": {
+    "task1_commands": "2026-04-14T20:32:00Z",
+    "task2_opportunities": "2026-04-26T20:24:00Z",
+    "task3_implement": "2026-04-26T20:24:00Z",
+    "task4_pr_maintenance": "2026-04-26T20:24:00Z",
+    "task5_comments": "2026-04-24T20:28:00Z",
+    "task6_infrastructure": "2026-04-23T20:33:00Z",
+    "task7_monthly_summary": "2026-04-26T20:24:00Z"
+  }
 }
