@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
@@ -267,22 +268,38 @@ func (h *OPDSHandler) bookEntries(ctx context.Context, books []db.Book, baseURL 
 		bookIDs[i] = b.ID
 	}
 
-	// Batch-load authors and files in two queries.
-	authorsByBook, err := h.DB.GetAuthorsForBooks(ctx, bookIDs)
-	if err != nil {
-		slog.ErrorContext(ctx, "OPDS: failed to batch-load book authors",
-			slog.Any(otelkeys.Error, err),
-		)
-		authorsByBook = nil
-	}
+	// Batch-load authors and files concurrently.
+	var (
+		authorsByBook map[string][]db.Author
+		filesByBook   map[string][]db.BookFile
+	)
 
-	filesByBook, err := h.DB.GetFilesForBooks(ctx, bookIDs)
-	if err != nil {
-		slog.ErrorContext(ctx, "OPDS: failed to batch-load book files",
-			slog.Any(otelkeys.Error, err),
-		)
-		filesByBook = nil
-	}
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		var err error
+		authorsByBook, err = h.DB.GetAuthorsForBooks(ctx, bookIDs)
+		if err != nil {
+			slog.ErrorContext(ctx, "OPDS: failed to batch-load book authors",
+				slog.Any(otelkeys.Error, err),
+			)
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		var err error
+		filesByBook, err = h.DB.GetFilesForBooks(ctx, bookIDs)
+		if err != nil {
+			slog.ErrorContext(ctx, "OPDS: failed to batch-load book files",
+				slog.Any(otelkeys.Error, err),
+			)
+		}
+	}()
+
+	wg.Wait()
 
 	entries := make([]opdspkg.Entry, 0, len(books))
 	for _, book := range books {
