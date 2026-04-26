@@ -1,7 +1,7 @@
 # Test Improver Memory — biblioteka
 
 ## Last Updated
-2026-04-25
+2026-04-26
 
 ## Build/Test/Coverage Commands
 
@@ -51,6 +51,7 @@ go.mod requires go >= 1.26.2; use GOTOOLCHAIN=auto.
 - Frontend tests import from "../api" (the barrel file) not individual modules
 - pathparser uses `package pathparser` (not _test), so unexported helpers are accessible
 - Frontend vi.mock("./api", ...) pattern works for mocking API module functions in lib/ tests
+- autofocusFirstButton action is mocked as: `() => ({ destroy: () => {} })` in tests
 
 ## Testing Landscape
 Codebase is very well tested overall. Most packages have 1:1 test file ratio.
@@ -62,7 +63,9 @@ Packages with no test files (intentional):
 - internal/timeutil   (one-liner NowRFC3339, trivial)
 - internal/errorfcheck/testdata, internal/slogcheck/testdata (test data dirs)
 
-Frontend API modules: all covered as of 2026-04-24
+Frontend API modules: all covered
+Frontend stores: all covered
+Frontend components: all covered as of 2026-04-26
 
 ## Task Round-Robin Status
 - 2026-04-11: Tasks 1, 2, 3, 7 (discovery + sanitizeDirName PR + monthly issue)
@@ -78,16 +81,18 @@ Frontend API modules: all covered as of 2026-04-24
 - 2026-04-21: Tasks 3, 7 (pathparser helper tests PR #2439; monthly issue updated)
 - 2026-04-22: Tasks 4, 3, 7 (updated PR #2439 addressing 4 review comments; new library handler 409 conflict tests PR; monthly issue updated)
 - 2026-04-25: Tasks 2, 3, 4, 7 (no open PR issues; enrich_ai error-path tests PR; monthly issue updated)
-- Next run: Tasks 1, 5, 6, 7
+- 2026-04-26: Tasks 2, 3, 7 (DeleteConfirmation component direct tests PR; monthly issue updated)
+- Next run: Tasks 1, 4, 5, 6, 7
 
 ## Testing Backlog (prioritized)
 
 1. ~~**pathparser internal helpers**~~ — PR #2439 merged 2026-04-23 ✅
 2. ~~**library handler 409 conflict**~~ — PR #2464 merged 2026-04-23 ✅
-3. ~~**authRequiredErrors + authFeatureFlags**~~ — PR #2519 open (submitted 2026-04-24)
-4. ~~**enrich_ai error paths**~~ — PR submitted 2026-04-25 (branch `test-assist/enrich-ai-error-paths`)
-5. **organize path-escape defense-in-depth test** — the filepath.Rel escape guard in organize.go has no test. Likely unreachable in practice. Low value.
-5. **SSRF dialer Class B (172.16.x.x)** — ollama/client_test.go tests Class A, C, loopback, AWS metadata but not Class B. Very low value (impl is the same `isPrivateIP` function; Class B is already tested in config_llm_test.go).
+3. **authRequiredErrors + authFeatureFlags** — PR #2519 open
+4. **enrich_ai.go error paths** — PR #2546 open
+5. **DeleteConfirmation component** — PR submitted 2026-04-26
+6. **organize path-escape defense-in-depth test** — the filepath.Rel escape guard in organize.go has no test. Likely unreachable in practice. Low value.
+7. **SSRF dialer Class B (172.16.x.x)** — ollama/client_test.go tests Class A, C, loopback, AWS metadata but not Class B. Very low value.
 
 ## Maintainer Priorities
 - All previous monthly issues closed by veverkap as "completed"
@@ -96,16 +101,25 @@ Frontend API modules: all covered as of 2026-04-24
 
 ## Completed Work
 
+### 2026-04-26
+- Tasks: 2 (scanned for new opportunities; found DeleteConfirmation component), 3 (new PR), 7 (monthly issue updated)
+- Created PR on branch `test-assist/delete-confirmation-tests`:
+  - 7 tests: renders item name, role=group, aria-labelledby, onConfirm, onCancel, no cross-fire
+  - All 1085 frontend tests pass (90 test files)
+- Found: GroupDetail.test.ts already covers GroupEditHeader/GroupMembers/GroupSharedLists indirectly
+- Found: Auth.test.ts covers LoginForm/SignupForm thoroughly through parent
+- All frontend API modules, stores, and components now have tests
+
 ### 2026-04-25
 - Tasks: 2 (identified enrich_ai error paths), 3 (new PR), 4 (verified PR #2519 still open, no action needed), 7 (monthly issue updated)
-- Created PR on branch `test-assist/enrich-ai-error-paths`:
+- Created PR on branch `test-assist/enrich-ai-error-paths` (became PR #2546):
   - 4 new tests: InvalidPayload, BookNotFound, ParseError, EmptyReadingLevelAndDescription
-  - All 7 `TestEnrichAI_*` tests pass
+  - All 7 `TestEnrichAI_*` tests pass (3 existing + 4 new)
 - Pre-existing failures confirmed in `TestProcessBookFile_*` on `main` (unrelated)
 
 ### 2026-04-24
 - Tasks: 1 (validated commands still work), 5 (no open testing issues found), 6 (new PR), 7 (monthly issue updated)
-- Created PR on branch `test-assist/auth-util-tests`:
+- Created PR on branch `test-assist/auth-util-tests` (became PR #2519):
   - `authRequiredErrors.test.ts`: 12 tests covering all 8 branch combos for login/signup required-field messages
   - `authFeatureFlags.test.ts`: 7 tests for Promise.allSettled fallback logic
   - Total: 19 new tests, 1097 total passing
