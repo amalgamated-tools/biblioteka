@@ -21,7 +21,10 @@ frontend/
     index.css           Tailwind CSS directives
     types.ts            Shared TypeScript interfaces for API entities
     components/         Page-level Svelte components (PascalCase)
-      Auth.svelte         Login and signup forms; wraps all form content in a `<main>` landmark (WCAG 1.3.6); the Login/Sign Up toggle uses the ARIA tablist/tab/tabpanel pattern with roving tabindex and keyboard navigation (WCAG 4.1.2)
+      Auth.svelte         Login and signup page shell; owns tab-switching state and delegates form rendering to `LoginForm.svelte` and `SignupForm.svelte`; wraps all form content in a `<main>` landmark (WCAG 1.3.6); the Login/Sign Up toggle uses the ARIA tablist/tab/tabpanel pattern with roving tabindex and keyboard navigation (WCAG 4.1.2); calls `fetchAuthFeatureFlags` on mount to enable or disable OIDC, signup, and passkey flows
+      auth/               Sub-components for the login and signup page forms
+        LoginForm.svelte    Email + password login form; implements `role="tabpanel"` with `aria-labelledby="login-tab"`; accepts `$bindable` props (`email`, `password`, `emailInvalid`, `passwordInvalid`, `error`, `loading`) for reactive two-way binding with `Auth.svelte`; renders an `AlertBanner` when `errorVisible` is true; fields carry `aria-required`, `aria-invalid`, and `aria-describedby` linked to the error banner (WCAG 3.3.1)
+        SignupForm.svelte   Name + email + password registration form; implements `role="tabpanel"` with `aria-labelledby="signup-tab"`; accepts `$bindable` props (`name`, `email`, `password`, `nameInvalid`, `emailInvalid`, `passwordInvalid`, `error`, `loading`) for reactive two-way binding with `Auth.svelte`; fields carry `aria-required`, `aria-invalid`, and `aria-describedby` (WCAG 3.3.1)
       Books.svelte        Book listing and detail view; includes a debounced search input that persists the search term in the URL hash query string (`#books?query=tolkien`); reads `initialOffset` from the URL and writes page changes back via `routerStore.setQueryParam`
       NotFound.svelte     404 page rendered when the router encounters an unknown hash path
       Dashboard.svelte    Home screen; shows an empty-state onboarding card only after libraries are loaded and the list is empty; otherwise renders four content areas: (1) a two-card stats grid (Total Books, Libraries); (2) a downloads-per-month histogram (via `DownloadsHistogram.svelte`); (3) a Reading Activity section showing KOSync reading streaks, finished-books count, and in-progress books with per-book progress bars and estimated time remaining — falls back to a "Welcome to Biblioteka" prose panel while stats are loading or a KOSync nudge when no reading data exists; (4) a Year in Books card (`data-testid="year-in-books-card"`) showing books finished, longest streak, days reading, and total downloads for the current calendar year — hidden when all counts are zero; followed by a `Recommendations.svelte` "You Might Also Like" panel; all four data sets (total books count, downloads, reading stats, year-in-books) are fetched concurrently in `onMount` with a cancellation guard that prevents stale writes after unmount; each fetch surfaces errors independently via `AlertBanner` so a failure in one section does not block the others; Total Books shows "…" while in flight and falls back to `0` on error; Libraries reflects the live `libraryStore.libraries.length`; each stat card uses a `<dl>/<dt>/<dd>` description-list structure so that screen readers can announce the label–value relationship correctly (WCAG 1.3.1)
@@ -69,6 +72,12 @@ frontend/
     stores/             Reactive state modules (lowercase, *.svelte.ts)
     lib/
       actions.ts              Svelte action utilities (`autofocusFirstButton`)
+      authErrors.ts           Field-level ARIA invalid-state helpers for the auth page; `getLoginFieldInvalidState` and `getSignupFieldInvalidState` parse server error messages to decide which form fields should carry `aria-invalid={true}`
+      authErrors.test.ts      Unit tests for `authErrors.ts`; covers ambiguous, field-specific, and credential error messages
+      authFeatureFlags.ts     `fetchAuthFeatureFlags` function and `AuthFeatureFlags` interface; concurrently resolves OIDC, signup, and passkey availability from the server via `Promise.allSettled` and returns an aggregate result even when individual requests fail
+      authFormValidation.ts   Client-side form validation for the auth page; `validateAuthForm` runs email, minLength, and required rules via `validation.ts` helpers and returns field validity flags plus a single error string; exports `AuthFormValidationInput` and `AuthFormValidationResult` interfaces
+      authFormValidation.test.ts  Unit tests for `authFormValidation.ts`
+      authRequiredErrors.ts   Human-readable required-field error generators; `getLoginRequiredFieldError` and `getSignupRequiredFieldError` produce accessible error strings for missing fields, used by `authFormValidation.ts`
       api.ts                  Barrel re-export; re-exports every symbol from `api/` sub-modules
       api.test.ts             API client unit tests; imports from the barrel and covers core, auth, config, admin, and credentials sub-modules
       api/                    Domain-specific API sub-modules
@@ -1621,6 +1630,74 @@ Displays the reading lists shared with the group, allows members to share their 
 
 ---
 
+## Auth page components
+
+The unauthenticated login and signup page is built from three layers:
+
+1. **`Auth.svelte`** — page shell; owns ARIA tab state, passkey/OIDC feature flags, and form submission logic.
+2. **`auth/LoginForm.svelte`** and **`auth/SignupForm.svelte`** — focused form panels; receive all field state via `$bindable` props and emit a single `onsubmit` callback.
+3. **Auth lib modules** — reusable utilities for validation, error interpretation, and feature-flag fetching (see [Utility modules](#utility-modules)).
+
+### `LoginForm.svelte`
+
+**Location:** `frontend/src/components/auth/LoginForm.svelte`
+
+Renders the email + password login form inside a `role="tabpanel"` element, composing the ARIA tab widget owned by `Auth.svelte`.
+
+**Props (`$bindable` unless noted):**
+
+| Prop | Type | Default | Notes |
+|------|------|---------|-------|
+| `email` | `string` | `""` | Bound to the email input |
+| `password` | `string` | `""` | Bound to the password input |
+| `emailInvalid` | `boolean` | `false` | Sets `aria-invalid` on the email field |
+| `passwordInvalid` | `boolean` | `false` | Sets `aria-invalid` on the password field |
+| `error` | `string \| null` | `null` | Error message shown in `AlertBanner` |
+| `errorVisible` | `boolean` | `false` | Read-only; controls whether `AlertBanner` renders |
+| `loading` | `boolean` | `false` | Disables inputs and changes button label |
+| `hidden` | `boolean` | `false` | Passed to the `role="tabpanel"` `hidden` attribute |
+| `onsubmit` | `(SubmitEvent) => void` | required | Called when the form is submitted |
+
+**Accessibility:**
+
+- Each field carries `aria-required={true}` and `aria-invalid` tied to the corresponding prop.
+- `aria-describedby` on invalid fields points to the `AlertBanner` (`id="login-auth-error"`), linking the error announcement to the fields that caused it (WCAG 3.3.1).
+- `autocomplete="email"` and `autocomplete="current-password"` are set on the respective inputs (WCAG 1.3.5).
+
+**Dependencies:** `AlertBanner`, `Button`, `TextInput`.
+
+### `SignupForm.svelte`
+
+**Location:** `frontend/src/components/auth/SignupForm.svelte`
+
+Renders the name + email + password registration form inside a `role="tabpanel"` element.
+
+**Props (`$bindable` unless noted):**
+
+| Prop | Type | Default | Notes |
+|------|------|---------|-------|
+| `name` | `string` | `""` | Bound to the display name input |
+| `email` | `string` | `""` | Bound to the email input |
+| `password` | `string` | `""` | Bound to the password input |
+| `nameInvalid` | `boolean` | `false` | Sets `aria-invalid` on the name field |
+| `emailInvalid` | `boolean` | `false` | Sets `aria-invalid` on the email field |
+| `passwordInvalid` | `boolean` | `false` | Sets `aria-invalid` on the password field |
+| `error` | `string \| null` | `null` | Error message shown in `AlertBanner` |
+| `errorVisible` | `boolean` | `false` | Read-only; controls whether `AlertBanner` renders |
+| `loading` | `boolean` | `false` | Disables inputs and changes button label |
+| `hidden` | `boolean` | `false` | Passed to the `role="tabpanel"` `hidden` attribute |
+| `onsubmit` | `(SubmitEvent) => void` | required | Called when the form is submitted |
+
+**Accessibility:**
+
+- All three fields carry `aria-required={true}` and `aria-invalid` tied to the corresponding props.
+- `aria-describedby` on invalid fields points to the `AlertBanner` (`id="signup-auth-error"`) (WCAG 3.3.1).
+- `autocomplete="name"`, `autocomplete="email"`, and `autocomplete="new-password"` are set (WCAG 1.3.5).
+
+**Dependencies:** `AlertBanner`, `Button`, `TextInput`.
+
+---
+
 ## Settings component architecture
 
 `Settings.svelte` is a shell that owns shared state (admin flag, OIDC config) and renders one tab at a time. Each tab is a standalone sub-component in `frontend/src/components/settings/`.
@@ -2149,10 +2226,10 @@ The Login/Sign Up toggle implements the [ARIA tab widget pattern](https://www.w3
 
 <!-- Panels: one per tab (no tabindex — each panel contains focusable form elements) -->
 <div id="login-panel"  role="tabpanel" aria-labelledby="login-tab"  hidden={!isLogin}>
-  <!-- login form -->
+  <!-- login form rendered by LoginForm.svelte -->
 </div>
 <div id="signup-panel" role="tabpanel" aria-labelledby="signup-tab" hidden={isLogin}>
-  <!-- sign-up form -->
+  <!-- signup form rendered by SignupForm.svelte -->
 </div>
 ```
 
