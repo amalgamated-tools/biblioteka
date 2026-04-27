@@ -1,7 +1,7 @@
 # Test Improver Memory — biblioteka
 
 ## Last Updated
-2026-04-26
+2026-04-27
 
 ## Build/Test/Coverage Commands
 
@@ -65,7 +65,7 @@ Packages with no test files (intentional):
 
 Frontend API modules: all covered
 Frontend stores: all covered
-Frontend components: all covered as of 2026-04-26
+Frontend components: all covered as of 2026-04-27
 
 ## Task Round-Robin Status
 - 2026-04-11: Tasks 1, 2, 3, 7 (discovery + sanitizeDirName PR + monthly issue)
@@ -82,7 +82,8 @@ Frontend components: all covered as of 2026-04-26
 - 2026-04-22: Tasks 4, 3, 7 (updated PR #2439 addressing 4 review comments; new library handler 409 conflict tests PR; monthly issue updated)
 - 2026-04-25: Tasks 2, 3, 4, 7 (no open PR issues; enrich_ai error-path tests PR; monthly issue updated)
 - 2026-04-26: Tasks 2, 3, 7 (DeleteConfirmation component direct tests PR; monthly issue updated)
-- Next run: Tasks 1, 4, 5, 6, 7
+- 2026-04-27: Tasks 1, 4, 5, 6, 7 (no open PR issues/conflicts; kobo metadata branch coverage PR; monthly issue updated)
+- Next run: Tasks 2, 3, 7
 
 ## Testing Backlog (prioritized)
 
@@ -90,9 +91,10 @@ Frontend components: all covered as of 2026-04-26
 2. ~~**library handler 409 conflict**~~ — PR #2464 merged 2026-04-23 ✅
 3. **authRequiredErrors + authFeatureFlags** — PR #2519 open
 4. **enrich_ai.go error paths** — PR #2546 open
-5. **DeleteConfirmation component** — PR submitted 2026-04-26
-6. **organize path-escape defense-in-depth test** — the filepath.Rel escape guard in organize.go has no test. Likely unreachable in practice. Low value.
-7. **SSRF dialer Class B (172.16.x.x)** — ollama/client_test.go tests Class A, C, loopback, AWS metadata but not Class B. Very low value.
+5. **DeleteConfirmation component** — PR #2567 open
+6. **kobo metadata branch coverage** — PR submitted 2026-04-27 (branch test-assist/kobo-metadata-coverage)
+7. **organize path-escape defense-in-depth test** — the filepath.Rel escape guard in organize.go has no test. Likely unreachable in practice. Low value.
+8. **SSRF dialer Class B (172.16.x.x)** — ollama/client_test.go tests Class A, C, loopback, AWS metadata but not Class B. Very low value.
 
 ## Maintainer Priorities
 - All previous monthly issues closed by veverkap as "completed"
@@ -101,9 +103,15 @@ Frontend components: all covered as of 2026-04-26
 
 ## Completed Work
 
+### 2026-04-27
+- Tasks: 1 (commands validated, no changes needed), 4 (all 3 open PRs #2519, #2546, #2567 have no conflicts or review comments), 5 (no open testing issues), 6 (kobo metadata PR), 7 (monthly issue updated)
+- Created PR on branch `test-assist/kobo-metadata-coverage`:
+  - 12 new tests: ReadingStateResponse (location, partial-location guard, timestamps), BookMetadata PubDate (RFC3339/YYYY-MM-DD/year/unparseable/empty), SeriesNumber (nil/fractional/whole)
+  - All 26 kobo tests pass (14 existing + 12 new)
+
 ### 2026-04-26
 - Tasks: 2 (scanned for new opportunities; found DeleteConfirmation component), 3 (new PR), 7 (monthly issue updated)
-- Created PR on branch `test-assist/delete-confirmation-tests`:
+- Created PR #2567 on branch `test-assist/delete-confirmation-tests`:
   - 7 tests: renders item name, role=group, aria-labelledby, onConfirm, onCancel, no cross-fire
   - All 1085 frontend tests pass (90 test files)
 - Found: GroupDetail.test.ts already covers GroupEditHeader/GroupMembers/GroupSharedLists indirectly
