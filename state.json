@@ -1,8 +1,8 @@
 {
-  "last_run": "2026-04-26T20:24:00Z",
+  "last_run": "2026-04-27T20:37:52Z",
   "tasks_run": [
-    "task3",
     "task4",
+    "task6",
     "task7"
   ],
   "commands": {
@@ -117,7 +117,24 @@
       "id": "book-series-position-index",
       "status": "pr_created",
       "description": "Add idx_book_series_series_position(series_id, position ASC) - eliminates full temp B-tree in ListBooksBySeries/ListBooksBySeriesPaginated (reduces to RIGHT PART only for title tiebreaker)",
-      "pr_branch": "perf-assist/book-series-position-index-20260425"
+      "pr_number": 2555
+    },
+    {
+      "id": "parallelize_kobo_sync_batch_queries",
+      "title": "Parallelize batch DB queries in Kobo sync and OPDS handlers",
+      "description": "HandleSync 4 sequential batch queries -> concurrent via sync.WaitGroup; OPDS bookEntries 2 sequential -> concurrent",
+      "status": "pr_created",
+      "pr_number": 2576,
+      "priority": "medium",
+      "impact": "Reduces Kobo sync latency from sum-of-4-queries to max-of-4-queries"
+    },
+    {
+      "id": "bench-reading-list-queries",
+      "title": "Benchmarks for ListReadingLists and ListReadingListBooks",
+      "description": "Added BenchmarkListReadingLists_10 (232K ns/op) and BenchmarkListReadingListBooks_50 (678K ns/op) - measurement infra for PRs #2499 and #2533",
+      "status": "pr_created",
+      "branch": "perf-assist/bench-reading-list-queries-20260427",
+      "priority": "low"
     },
     {
       "id": "group-lists-reading-lists-temp-btree",
@@ -130,16 +147,6 @@
       "status": "identified",
       "description": "ListGroupMemberProgress has USE TEMP B-TREE FOR ORDER BY on computed sort expression (k.updated_at IS NULL), k.updated_at DESC - cannot be fixed with standard indexes.",
       "priority": "low"
-    },
-    {
-      "id": "parallelize_kobo_sync_batch_queries",
-      "title": "Parallelize batch DB queries in Kobo sync and OPDS handlers",
-      "description": "HandleSync 4 sequential batch queries \u2192 concurrent via sync.WaitGroup; OPDS bookEntries 2 sequential \u2192 concurrent",
-      "status": "pr_created",
-      "branch": "perf-assist/parallelize-kobo-sync-batch-queries-20260426",
-      "pr_number": null,
-      "priority": "medium",
-      "impact": "Reduces Kobo sync latency from sum-of-4-queries to max-of-4-queries"
     }
   ],
   "monthly_activity_issue_number": 2424,
@@ -148,9 +155,9 @@
     "task1_commands": "2026-04-14T20:32:00Z",
     "task2_opportunities": "2026-04-26T20:24:00Z",
     "task3_implement": "2026-04-26T20:24:00Z",
-    "task4_pr_maintenance": "2026-04-26T20:24:00Z",
+    "task4_pr_maintenance": "2026-04-27T20:37:00Z",
     "task5_comments": "2026-04-24T20:28:00Z",
-    "task6_infrastructure": "2026-04-23T20:33:00Z",
-    "task7_monthly_summary": "2026-04-26T20:24:00Z"
+    "task6_infrastructure": "2026-04-27T20:37:00Z",
+    "task7_monthly_summary": "2026-04-27T20:37:00Z"
   }
 }
