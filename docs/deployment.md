@@ -325,9 +325,9 @@ gunzip < biblioteka-20260314.sql.gz | \
 
 Database migrations run automatically on startup — no separate migration step is needed.
 
-> **In-flight background jobs:** `docker compose up -d` issues a graceful stop to the running container before starting the new one. Any asynq job actively processing at that moment will not complete cleanly. asynq re-enqueues the interrupted job once the worker reconnects to Redis, using the configured retry budget (`DefaultMaxRetry = 5`). Long-running jobs such as large library scans may appear in the Asynqmon *Retrying* tab immediately after an upgrade — this is expected behaviour and not an error.
+> **In-flight background jobs:** `docker compose up -d` issues a graceful stop to the running container before starting the new one. Any Asynq job actively processing at that moment will not complete cleanly. Asynq re-enqueues the interrupted job once the worker reconnects to Redis, using the configured retry budget (`DefaultMaxRetry = 5`). Long-running jobs such as large library scans may appear in the Asynqmon *Retrying* tab immediately after an upgrade — this is expected behaviour and not an error.
 
-> **Split-process deployments:** When running separate `server` and `worker` containers, restart the `server` container first. The `server` runs database migrations on startup; the `worker` should not begin processing jobs against the new schema until those migrations have completed. Restarting both containers simultaneously is usually safe for minor upgrades, but sequential restart (`server` → `worker`) eliminates any risk of a job handler running against a partially-migrated schema.
+> **Split-process deployments:** When running separate `server` and `worker` containers, restart the `server` container first. The `server` runs database migrations on startup; restart the `worker` only after the `server` has started and those migrations have completed successfully. Restarting both containers simultaneously is usually safe for minor upgrades, but sequential restart (`server` → `worker`) minimizes the risk of a job handler running against a partially-migrated schema.
 
 ## HTTP Security Headers
 
