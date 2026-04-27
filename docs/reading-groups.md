@@ -144,7 +144,7 @@ Authorization: Bearer <jwt>
 
 All group members appear in the response. Members with no recorded Kobo reading progress have `percentage: 0` and `updated_at: null`.
 
-> **Kobo sync only:** Reading progress shown here comes exclusively from native Kobo device sync. Progress synced via the KOSync protocol (used by [KOReader's Progress sync plugin](koreader.md)) is stored in a separate table and is **not** included in group progress comparisons. Members who rely solely on KOReader sync will always appear as `percentage: 0` with `updated_at: null`, even if they are actively reading the book. See the [Kobo Sync guide](kobo.md) for Kobo setup instructions.
+> **Kobo sync endpoint only:** Reading progress shown here comes exclusively from the Kobo sync endpoint (`/kobo/<token>/...`). Progress synced via the KOSync protocol (used by [KOReader's Progress sync plugin](koreader.md)) is stored in a separate table and is **not** included in group progress comparisons. Members who rely solely on KOReader sync will always appear as `percentage: 0` with `updated_at: null`, even if they are actively reading the book. See the [Kobo Sync guide](kobo.md) for Kobo setup instructions.
 
 ---
 
