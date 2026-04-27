@@ -25,6 +25,7 @@ frontend/
       Books.svelte        Book listing and detail view; includes a debounced search input that persists the search term in the URL hash query string (`#books?query=tolkien`); reads `initialOffset` from the URL and writes page changes back via `routerStore.setQueryParam`
       NotFound.svelte     404 page rendered when the router encounters an unknown hash path
       Dashboard.svelte    Home screen; shows an empty-state onboarding card only after libraries are loaded and the list is empty; otherwise renders four content areas: (1) a two-card stats grid (Total Books, Libraries); (2) a downloads-per-month histogram (via `DownloadsHistogram.svelte`); (3) a Reading Activity section showing KOSync reading streaks, finished-books count, and in-progress books with per-book progress bars and estimated time remaining — falls back to a "Welcome to Biblioteka" prose panel while stats are loading or a KOSync nudge when no reading data exists; (4) a Year in Books card (`data-testid="year-in-books-card"`) showing books finished, longest streak, days reading, and total downloads for the current calendar year — hidden when all counts are zero; followed by a `Recommendations.svelte` "You Might Also Like" panel; all four data sets (total books count, downloads, reading stats, year-in-books) are fetched concurrently in `onMount` with a cancellation guard that prevents stale writes after unmount; each fetch surfaces errors independently via `AlertBanner` so a failure in one section does not block the others; Total Books shows "…" while in flight and falls back to `0` on error; Libraries reflects the live `libraryStore.libraries.length`; each stat card uses a `<dl>/<dt>/<dd>` description-list structure so that screen readers can announce the label–value relationship correctly (WCAG 1.3.1)
+      Groups.svelte       Reading Groups top-level view; renders either a group list with an inline create form (when no sub-path is active) or `GroupDetail` for a specific group; supports the sub-path `"new"` to open the create form via `routerStore`; delegates entirely to `GroupDetail` when `routerStore.subPath` is a group ID
       Libraries.svelte    Library management view; dispatches to sub-components based on `routerStore.subPath`: `"new"` → `LibraryForm` (create mode), `"edit/{id}"` → `LibraryForm` (edit mode), `"setup"` → `FirstLibraryWizard` (first-library onboarding wizard), `"{id}"` → `LibraryView`, or empty → list / empty state; a `$effect` redirects away from `"setup"` automatically if the user already has at least one library
       MyLibrary.svelte    Placeholder for a planned per-user personal library feature; currently shows an empty state
       Recommendations.svelte  "You Might Also Like" panel rendered at the bottom of the Dashboard; fetches up to 10 book recommendations via `getRecommendations(limit)` using a `$effect`; shows skeleton cards while loading; renders an inline error message when the fetch fails (and logs the error to the console) and renders an empty-state message with a link to `#settings/kobo` when the result set is empty; book cards link to `#books/{id}` via `routerStore.navigate`
@@ -36,6 +37,11 @@ frontend/
         BookEditForm.svelte  Book metadata edit form; required fields carry `aria-required={true}` and a visible legend ("Fields marked with an asterisk are required") uses `aria-hidden` on the visual `*` and a `sr-only` span for the spoken label (WCAG 3.3.2); when a Cover Image URL is entered, a live preview thumbnail renders below the field — the image is hidden automatically via an `onerror` handler if the URL fails to load
         MetadataComparison.svelte   Side-by-side comparison of current and fetched remote metadata; lets the user selectively apply individual fields
         MetadataFetchPanel.svelte   Panel that triggers a remote metadata fetch, streams progress events, and renders `MetadataComparison` once results arrive
+      groups/             Sub-components for the Reading Groups detail view
+        GroupDetail.svelte       Detail view shell for a single reading group; fetches the group from `groupStore` by ID; derives `isOwner` from `authStore.user.id`; composes `GroupEditHeader`, `GroupMembers`, and `GroupSharedLists`
+        GroupEditHeader.svelte   Group title, description, and owner-only edit / delete controls; inline name + description edit form; delete action uses an inline two-step confirmation guard
+        GroupMembers.svelte      Member list with add-member and remove-member controls; fetches members via `listGroupMembers` on mount and after each successful mutation; owner can add members by user ID; only owners can remove members
+        GroupSharedLists.svelte  Shared reading lists panel; fetches shared lists via `listGroupReadingLists`; members can share one of their own lists via a dropdown; group owners can unshare any shared list, and list owners can unshare their own shared list — both with a two-step inline confirmation
       libraries/          Reusable sub-components for the Libraries view
         FirstLibraryWizard.svelte  Four-step onboarding wizard shown at `#libraries/setup` when the user has no libraries; guides the user through naming the library (step 1), choosing folder paths (step 2), selecting file-organization type and monitoring toggle (step 3), and reviewing settings before creation (step 4); a "Skip for now" button in the header calls `onboardingStore.skip()` and navigates to the dashboard; the step progress bar uses a `role="group"` container with an `aria-label` of `"Progress: step N of 4"` and a `role="status"` live region below it so screen readers announce the current step title without moving focus (WCAG 4.1.3); name and folder inputs carry `aria-invalid` and `aria-describedby` wired to inline `role="alert"` error messages (WCAG 1.3.1, 3.3.1); the monitor toggle uses `role="switch"` with explicit `aria-checked` (WCAG 4.1.2)
         LibraryForm.svelte   Create / edit library form; required fields carry `aria-required={true}` and a visible legend ("Fields marked with an asterisk are required") uses `aria-hidden` on the visual `*` and a `sr-only` span for the spoken label (WCAG 3.3.2); the "Monitor for new content" toggle uses `role="switch"` and explicit `aria-checked` to communicate on/off state to assistive technologies (WCAG 4.1.2); delete library action uses the `DeleteConfirmation` component for an accessible inline confirmation with keyboard-focus management and Escape-to-dismiss (WCAG 4.1.2)
@@ -196,6 +202,7 @@ For stores with additional state beyond basic CRUD (e.g. scan tracking in `libra
 | `authors.svelte.ts` | `authorStore` | Author CRUD; cached after first load |
 | `series.svelte.ts` | `seriesStore` | Series CRUD; cached after first load |
 | `reading-lists.svelte.ts` | `readingListStore` | Reading list CRUD and book membership; cached after first load |
+| `groups.svelte.ts` | `groupStore` | Reading group CRUD; cached after first load |
 | `onboarding.svelte.ts` | `onboardingStore` | Tracks whether the first-library setup wizard has been dismissed per user; persisted to `localStorage` |
 
 ### `libraryStore` — scanning state API
@@ -396,6 +403,9 @@ Views that need their own internal navigation use `routerStore.subPath`. The con
 | `libraries` | `edit/{id}` | Edit-library form |
 | `reading-lists` | *(empty)* | List all reading lists + create form |
 | `reading-lists` | `{id}` | Detail / edit / delete view for a single list |
+| `groups` | *(empty)* | Group list + inline create form |
+| `groups` | `new` | Scroll to / open the inline create form |
+| `groups` | `{id}` | Detail view for a specific group |
 | `settings` | `account` | Account settings tab |
 | `settings` | `oidc` | OIDC / SSO settings tab |
 | `settings` | `smtp` | SMTP mail configuration tab (admin) |
@@ -1481,6 +1491,133 @@ Detail page for a single reading list. Receives the `listId` prop from `ReadingL
 - Paginated book list rendered via `BookList`, using `listReadingListBooks` for data fetching.
 
 **Dependencies:** `readingListStore`, `routerStore`, `listReadingListBooks`, `AlertBanner`, `Button`, `TextInput`, `BookList`.
+
+---
+
+## Reading Groups components
+
+The reading groups feature lets users create collaborative groups, manage members, and share reading lists for group-level visibility. The feature is composed of a top-level entry component, a `GroupDetail.svelte` detail shell, and three focused sub-components that together form the group detail view.
+
+### `Groups.svelte`
+
+**Location:** `frontend/src/components/Groups.svelte`
+
+Top-level page component rendered when the router's `currentView` is `"groups"`. It displays the list of groups the authenticated user belongs to and handles group creation.
+
+| Sub-path | Behaviour |
+|----------|-----------|
+| `(empty)` | Shows the group list plus a **New Group** button; clicking the button reveals an inline creation form |
+| `new` | Navigates directly to the inline creation form |
+| `{id}` | Renders `GroupDetail` for the group with that ID |
+
+**Behaviour:**
+
+- On mount calls `groupStore.load()` (idempotent — safe to call on every render).
+- Displays an error banner when `groupStore.loadError` is set.
+- Empty state with a **Create Your First Group** CTA when the user belongs to no groups.
+- On successful creation, navigates to `groups/{newId}` via `routerStore.navigate`.
+
+**Dependencies:** `groupStore`, `routerStore`, `AlertBanner`, `Button`, `TextInput`, `GroupDetail`.
+
+---
+
+### `GroupDetail.svelte`
+
+**Location:** `frontend/src/components/groups/GroupDetail.svelte`
+
+Detail view shell for a single reading group. Receives the `groupId` prop from `Groups.svelte`.
+
+**Props:**
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `groupId` | `string` | ✓ | ID of the reading group to display |
+
+**Behaviour:**
+
+- Derives the `ReadingGroup` object from `groupStore.groups` — no separate API fetch.
+- Derives `isOwner` by comparing `authStore.user.id` with `group.owner_id`.
+- Shows an error banner when the group is not found after the store has loaded.
+- Composes `GroupEditHeader`, `GroupMembers`, and `GroupSharedLists` as focused sub-components.
+
+**Dependencies:** `groupStore`, `authStore`, `AlertBanner`, `GroupEditHeader`, `GroupMembers`, `GroupSharedLists`.
+
+---
+
+### `GroupEditHeader.svelte`
+
+**Location:** `frontend/src/components/groups/GroupEditHeader.svelte`
+
+Renders the group title, description, and — for group owners — inline edit and delete controls.
+
+**Props:**
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `group` | `ReadingGroup` | ✓ | The group object to display |
+| `groupId` | `string` | ✓ | Current group ID (used to guard stale async operations after navigation) |
+| `isOwner` | `boolean` | ✓ | Whether the authenticated user owns the group |
+| `onDeleteError` | `(message: string) => void` | | Callback invoked when a delete operation fails; allows the parent to surface the error |
+
+**Behaviour:**
+
+- In view mode shows the group name, member count, description, and (owners only) **Edit** and **Delete** buttons.
+- **Edit** toggles an inline form pre-filled with the current name and description; **Save** calls `groupStore.update`; **Cancel** discards changes.
+- **Delete** requires a two-step inline confirmation. On success navigates to `#groups`; on failure calls `onDeleteError` so the parent can show a banner.
+- A `$effect` resets all local state whenever `groupId` changes, preventing stale UI when navigating between groups.
+
+**Dependencies:** `groupStore`, `routerStore`, `AlertBanner`, `Button`, `TextInput`.
+
+---
+
+### `GroupMembers.svelte`
+
+**Location:** `frontend/src/components/groups/GroupMembers.svelte`
+
+Member list with add and remove controls.
+
+**Props:**
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `groupId` | `string` | ✓ | ID of the group whose members to display |
+| `isOwner` | `boolean` | ✓ | Whether the authenticated user owns the group |
+| `currentUserId` | `string` | ✓ | The authenticated user's ID (used to prevent owners from removing themselves) |
+
+**Behaviour:**
+
+- Fetches members via `listGroupMembers(groupId)` on mount; re-fetches after every successful add or remove.
+- Owners see an **Add Member** form that accepts a user ID and calls `addGroupMember`.
+- Only owners can remove members (via `removeGroupMember`); non-owner members cannot leave themselves.
+- Each remove action uses a two-step inline confirmation before calling the API.
+- A `$effect` resets all local state and re-fetches when `groupId` changes.
+
+**Dependencies:** `groupStore`, `listGroupMembers`, `addGroupMember`, `removeGroupMember`, `AlertBanner`, `Button`, `TextInput`.
+
+---
+
+### `GroupSharedLists.svelte`
+
+**Location:** `frontend/src/components/groups/GroupSharedLists.svelte`
+
+Displays the reading lists shared with the group, allows members to share their own lists, allows group owners to unshare any shared list, and allows any member to unshare a list they personally shared.
+
+**Props:**
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `groupId` | `string` | ✓ | ID of the group |
+| `isOwner` | `boolean` | ✓ | Whether the authenticated user owns the group; grants owners permission to unshare any shared list (members can only unshare their own shared lists) |
+
+**Behaviour:**
+
+- Fetches shared lists via `listGroupReadingLists(groupId)` on mount.
+- Loads the user's own reading lists from `readingListStore` (calls `readingListStore.load()` if not yet loaded) to populate the share dropdown.
+- Sharing a list calls `shareListWithGroup(groupId, listId)` and re-fetches shared lists on success.
+- Unsharing uses a two-step inline confirmation before calling `unshareListFromGroup`. The unshare button is visible to group owners (for any list) and to any member who personally shared the list.
+- A `$effect` resets all local state and re-fetches when `groupId` changes.
+
+**Dependencies:** `readingListStore`, `listGroupReadingLists`, `shareListWithGroup`, `unshareListFromGroup`, `AlertBanner`, `Button`.
 
 ---
 
