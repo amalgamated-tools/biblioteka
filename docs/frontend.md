@@ -1505,9 +1505,9 @@ The reading groups feature lets users create collaborative groups, manage member
 Top-level page component rendered when the router's `currentView` is `"groups"`. It displays the list of groups the authenticated user belongs to and handles group creation.
 
 | Sub-path | Behaviour |
-|----------|-----------| 
+|----------|-----------|
 | `(empty)` | Shows the group list plus a **New Group** button; clicking the button reveals an inline creation form |
-| `new` | Navigates directly to the inline creation form |
+| `new` | Scrolls to / opens the inline creation form |
 | `{id}` | Renders `GroupDetail` for the group with that ID |
 
 **Behaviour:**
@@ -1588,7 +1588,7 @@ Member list with add and remove controls.
 
 - Fetches members via `listGroupMembers(groupId)` on mount; re-fetches after every successful add or remove.
 - Owners see an **Add Member** form that accepts a user ID and calls `addGroupMember`.
-- Only owners can remove members (via `removeGroupMember`); non-owner members cannot leave themselves.
+- Only owners can remove members (via `removeGroupMember`); non-owner members cannot leave themselves. To leave a group, a non-owner member must ask the group owner to remove them.
 - Each remove action uses a two-step inline confirmation before calling the API.
 - A `$effect` resets all local state and re-fetches when `groupId` changes.
 
