@@ -1496,7 +1496,7 @@ Detail page for a single reading list. Receives the `listId` prop from `ReadingL
 
 ## Reading Groups components
 
-The reading groups feature lets users create collaborative groups, manage members, and share reading lists for group-level visibility. The feature is composed of a top-level entry component and three focused sub-components that together form the group detail view.
+The reading groups feature lets users create collaborative groups, manage members, and share reading lists for group-level visibility. The feature is composed of a top-level entry component, a `GroupDetail.svelte` detail shell, and three focused sub-components that together form the group detail view.
 
 ### `Groups.svelte`
 
