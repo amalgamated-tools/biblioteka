@@ -251,7 +251,7 @@ Goodreads ID: kca://book/amzn1.gr.book.v1.xyz
 
 ## AI enrichment
 
-Biblioteka can enrich book metadata using a locally-hosted large language model (LLM). When configured, the **AI Enrich** action on a book's edit page enqueues a background job that sends the book's title, authors, and existing description to the LLM. The model returns suggested tags (which can include genres, themes, or mood-related labels), a reading level, and a generated catalog description. Results are stored as a **pending enrichment record** that you review before any changes are committed to the book.
+Biblioteka can enrich book metadata using a locally-hosted large language model (LLM). When configured, AI enrichment is triggered through the metadata API and enqueues a background job that sends the book's title, authors, and existing description to the LLM. The model returns suggested tags (which can include genres, themes, or mood-related labels), a reading level, and a generated catalog description. Results are stored as a **pending enrichment record** that you review before any changes are committed to the book.
 
 > **Requires Redis and an LLM provider.** AI enrichment runs as a background job; a Redis worker must be running and an LLM provider must be configured by an administrator. See [Administration — LLM Configuration](administration.md#llm-configuration-runtime) for setup instructions and [Background Jobs — enrich:ai](background-jobs.md#enrichai) for job internals.
 
@@ -274,7 +274,7 @@ Biblioteka can enrich book metadata using a locally-hosted large language model 
 | `provider` | string | LLM provider that generated the enrichment (e.g. `"ollama"`) |
 | `model` | string | Model name used (e.g. `"llama3"`) |
 | `suggested_tags` | string[] | AI-suggested tag names |
-| `reading_level` | string\|null | Suggested reading level. Allowed values: `"children"`, `"young_adult"`, `"adult"`, `"academic"` |
+| `reading_level` | string\|null | Suggested reading level. Expected values: `"children"`, `"young_adult"`, `"adult"`, `"academic"` |
 | `generated_description` | string\|null | AI-generated catalog description |
 | `created_at` | string | ISO 8601 creation timestamp |
 | `updated_at` | string | ISO 8601 last-updated timestamp |
