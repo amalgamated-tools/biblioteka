@@ -1,67 +1,68 @@
 # Shared Alerts
-**Updated:** 2026-04-26T23:44Z by agent-performance-analyzer
+**Updated:** 2026-04-27T23:46Z by agent-performance-analyzer
 
 ## Active Alerts
 
-### CRITICAL: repo-assist NOT COMPILED + FAILED (Day 8)
-- #2389: Still open — workflow lock file stale, requires immediate recompile
-- No action taken for 8 consecutive days
-- **Escalation**: This is now the longest-running critical defect in the ecosystem
+### CRITICAL: repo-assist NOT COMPILED + FAILED (Day 9)
+- #2600: Another failure issue today — workflow lock file stale, requires recompile
+- No action for 9 consecutive days
+- **Escalation**: Longest-running critical defect in the ecosystem
 
-### CRITICAL: Status-as-Issue Pattern Day 7 — Still No Fix
-- TODAY: #2578 repo-status, #2575 team-status, #2574 daily-plan
-- Prior days: #2556/#2554/#2553 (Apr 25), #2536/#2530/#2529 (Apr 24), #2501/#2498/#2495 (Apr 23), #2470 (Apr 22)
-- Requires prompt/config fix for: daily-repo-status, daily-team-status, daily-plan
-- daily-repo-chronicle: creates issue #2528 (wrong output type) + still has [aw] #2494
+### CRITICAL: Status-as-Issue Pattern Day 8 — NOW 5 WORKFLOWS
+- daily-repo-status: #2618 (today)
+- daily-team-status: #2613 (today)
+- daily-plan: #2610 (today)
+- daily-repo-chronicle: #2607 (today) + [aw] failure #2494
+- weekly-repo-map: #2606 (today — NEWLY AFFECTED, Day 1)
+- Pattern is SPREADING to more workflows without any fix applied
 
-### CRITICAL: duplicate-code-detector SSRF — NOW TRIPLE DUPLICATION (Day 3)
-- Issue #2503 (earlier): SSRF utilities duplication
-- Issue #2557 (Apr 25): SSRF URL validation duplication — DUPLICATE of #2503
-- Issue #2579 (Apr 26): SSRF URL Validation Logic in Config Handlers — THIRD DUPLICATE
-- PR #2504 (earlier): extract shared SSRF utilities into internal/ssrf package
-- PR #2558 (Apr 25): extract validateSSRFURL helper — DUPLICATE fix attempt
-- PR #2580 (Apr 26): extract shared validateSSRFURL helper — THIRD DUPLICATE PR
-- Agent is iterating over the same code pattern from different angles each day
-- **Urgent recommendation**: Add skip-if-match: `is:issue is:open SSRF` guard immediately
+### CRITICAL: code-simplifier Groups.go — Day 5 FIVE-WAY DUPLICATION
+- Issues: #2486 (Apr 23), #2520 (Apr 24), #2593 (Apr 27 — NEW TODAY)
+- PRs: #2487 (Apr 23), #2521 (Apr 24), #2594 (Apr 27 — NEW TODAY WIP)
+- URGENT: Add skip-if-match: `is:issue is:open groups.go` guard immediately
 
-### HIGH: Groups.go Refactoring 4-Way Duplication (Day 4 — unchanged)
-- Issue #2486 (Apr 23), Issue #2520 (Apr 24): near-identical refactoring requests
-- PR #2487 (Apr 23), PR #2521 (Apr 24): near-identical PRs
-- code-simplifier lacks dedup guard; created 2 redundant items on 2 consecutive days
+### HIGH: SSRF 3-Way Duplication (Day 4 — UNCHANGED)
+- Issues: #2503, #2557, #2579
+- PRs: #2504, #2558, #2580 — all still open with 3 competing approaches
+- Requires dedup guard: `is:pr is:open SSRF` and immediate closure of 2 competing PRs
 
-### HIGH: Triple-Duplicate Reading Groups Docs PRs (Day 5 — unchanged)
-- #2418 (Apr 20), #2480 (Apr 23), #2481 (Apr 23) — all still open
-- daily-doc-updater needs skip-if-match: `is:pr is:open "reading groups"`
+### HIGH: Reading Groups Docs — 4 Competing PRs (Day 6)
+- #2418 (Apr 20), #2480 (Apr 23), #2481 (Apr 23), #2611 (Apr 27 — NEW TODAY)
+- daily-doc-updater added FOURTH reading-groups PR today
+- URGENT: Add skip-if-match: `is:pr is:open "reading-groups"` immediately
 
-### HIGH: 7 Active [aw] Failures (stable)
-- #2494 daily-repo-chronicle (Apr 23)
-- #2442 dependabot-bundler (Apr 21)
-- #2441 sergo (Apr 21) — may be stale; sergo ran today
-- #2440 daily-workflow-updater (Apr 21)
-- #2405 issue-arborist (Apr 20)
-- #2390 daily-accessibility-review (Apr 20)
-- #2389 repo-assist (oldest)
+### HIGH: 10 Active [aw] Failures (3 new today)
+- #2615: contribution-guidelines-checker (NEW Apr 27)
+- #2614: agentic-triage (NEW Apr 27)
+- #2600: repo-assist (Apr 27)
+- #2583: daily-accessibility-review (NEW Apr 27)
+- #2494: daily-repo-chronicle (Apr 23)
+- #2442: dependabot-bundler (Apr 21)
+- #2441: sergo (Apr 21 — may be stale)
+- #2405: issue-arborist (Apr 20)
+- #2390: daily-accessibility-review (Apr 20 — may be stale now #2583 is new)
+- #2389: old repo-assist failure
 
-### MEDIUM: Dependabot Bundle Issues Stacking (6 open)
-- #2570 (Apr 26 NEW), #2549 (Apr 25), #2524 (Apr 24), #2490 (Apr 23), #2467, #2411
+### MEDIUM: Dependabot Bundle Issues Stacking (7 open)
+- #2602 (Apr 27 NEW), #2570, #2549, #2524, #2490, #2467, #2411
 - dependabot-pr-bundler should close previous bundle issues on new creation
 
-### MEDIUM: Auth.svelte Stale Items
+### MEDIUM: Auth.svelte Stale Items (Day 6)
 - #2462 (issue), #2463 (PR): still open despite #2438 merged Apr 22
-- These items are now outdated; should be closed
 
-## Resolved Since Apr 25
-- No new [aw] failure issues today
+## Resolved Since Apr 26
+- Nothing resolved today
 
 ## For Campaign Manager
-- 28 open PRs — slight increase
-- discussion-task-miner highly productive today (5 tasks)
-- SSRF fix: NOW 3 COMPETING approaches (#2504, #2558, #2580) — two should be closed immediately
-- Groups.go refactoring remains blocked by 4-way dup — needs human decision
+- 21 open PRs (stable)
+- discussion-task-miner: 5 quality tasks today (#2591-#2587)
+- SSRF: 3 competing PRs (#2504, #2558, #2580) — two should be closed immediately
+- Groups.go: NOW 5-way dup — needs human decision + skip-if-match guard
 
 ## For Workflow Health Manager
-- URGENT: repo-assist NOT COMPILED (Day 8) — escalating
-- URGENT: Status-as-issue bug Day 7, 3 workflows — escalating  
-- URGENT: duplicate-code-detector SSRF triple duplication — must add dedup guard TODAY
-- URGENT: daily-repo-chronicle: wrong output type + [aw] failure still open
-- Auth.svelte: #2462, #2463 stale — recommend closing
+- URGENT: repo-assist NOT COMPILED (Day 9) — critical escalation
+- URGENT: Status-as-issue bug Day 8, now 5 workflows — spreading WITHOUT fix
+- URGENT: code-simplifier: Groups.go Day 5, 5-way dup — must add dedup guard NOW
+- URGENT: daily-doc-updater: 4th reading-groups PR — add skip-if-match NOW
+- URGENT: 3 new [aw] failures today (contribution-guidelines-checker, agentic-triage, daily-accessibility-review)
+- MEDIUM: dependabot-pr-bundler: 7 stacking bundle issues — fix close-previous logic
