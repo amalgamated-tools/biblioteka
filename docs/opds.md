@@ -14,9 +14,10 @@ Each Biblioteka user can set exactly one OPDS credential. The credential is stor
 
 OPDS credentials are managed through the [JSON API](#managing-opds-credentials-via-the-api), which requires a valid Biblioteka JWT.
 
-### Security note: timing-safe authentication
+### Security notes
 
-When a username is not found, the server performs a dummy bcrypt comparison before returning `401 Unauthorized`. This prevents an attacker from enumerating valid usernames via response-time differences.
+- **HTTPS required**: HTTP Basic Authentication transmits credentials as a Base64-encoded string in the `Authorization` header on every request. An attacker who can observe or intercept HTTP traffic can decode that string and recover the username and password. **You must terminate TLS at a reverse proxy and only access OPDS endpoints over HTTPS in production.** See [Deployment → Reverse Proxy Setup](deployment.md#reverse-proxy-setup) for TLS termination guidance.
+- **Timing-safe authentication**: When a username is not found, the server performs a dummy bcrypt comparison before returning `401 Unauthorized`. This prevents an attacker from enumerating valid usernames via response-time differences.
 
 ---
 
