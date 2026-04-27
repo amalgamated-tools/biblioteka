@@ -1,6 +1,6 @@
 # KOReader Reading Progress Sync
 
-Biblioteka exposes a [kosync](https://github.com/koreader/koreader-sync-server)-compatible API so that [KOReader](https://koreader.rocks/) can synchronise reading positions across devices and back them up to your self-hosted server—no third-party cloud service required.
+Biblioteka exposes a [kosync](https://github.com/koreader/koreader-sync-server)-compatible API so that [KOReader](https://koreader.rocks/) can synchronize reading positions across devices and back them up to your self-hosted server—no third-party cloud service required.
 
 ## How it works
 
@@ -44,6 +44,7 @@ Once configured, KOReader automatically syncs progress when you open and close b
 
 - **Separate credentials**: KOSync username and password are stored independently of your Biblioteka login, so compromising one does not affect the other.
 - **bcrypt storage**: The server stores `bcrypt(md5_hex(password))`. KOReader sends the hex-encoded MD5 digest of the password as the `x-auth-key` header (this is the kosync wire protocol). Biblioteka never stores the raw password or the MD5 value—only the bcrypt hash.
+- **HTTPS required**: The kosync protocol transmits the hex-encoded MD5 of your password as the `x-auth-key` authentication header on every request. The MD5 value itself is the effective credential — an attacker who can observe or intercept HTTP traffic can replay it to authenticate as you. **You must terminate TLS at a reverse proxy and only access the kosync protocol endpoints over HTTPS in production.** Accessing the sync endpoints over plain HTTP exposes your KOSync credential to interception. See [Deployment → Reverse Proxy Setup](deployment.md#reverse-proxy-setup) for TLS termination guidance.
 - **User data isolation**: All reading progress queries are scoped to the authenticated user. One user cannot read or overwrite another user's progress.
 - **Rate limiting**: The `/api/user/auth`, `/api/user/create`, and `/api/syncs/progress` endpoints share the same per-IP token-bucket rate limiter used for login (5 requests/second, burst of 10) to mitigate brute-force attacks.
 - **Timing-safe auth**: When a username is not found, the server still performs a dummy bcrypt comparison to prevent timing-based username enumeration.
