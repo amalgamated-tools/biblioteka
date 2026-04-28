@@ -4,7 +4,7 @@ go 1.26.2
 
 require (
 	github.com/Khan/genqlient v0.8.1
-	github.com/amalgamated-tools/goauth v0.3.0
+	github.com/amalgamated-tools/goauth v0.3.1
 	github.com/buger/jsonparser v1.1.2
 	github.com/coreos/go-oidc/v3 v3.18.0
 	github.com/go-webauthn/webauthn v0.17.0
@@ -22,7 +22,7 @@ require (
 	golang.org/x/crypto v0.50.0
 	golang.org/x/sync v0.20.0
 	golang.org/x/tools v0.44.0
-	modernc.org/sqlite v1.49.1
+	modernc.org/sqlite v1.50.0
 )
 
 require (
@@ -65,7 +65,7 @@ require (
 	github.com/sergi/go-diff v1.4.0 // indirect
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/sv-tools/openapi v0.4.0 // indirect
-	github.com/swaggo/files/v2 v2.0.0 // indirect
+	github.com/swaggo/files/v2 v2.0.2 // indirect
 	github.com/swaggo/swag v1.8.1 // indirect
 	github.com/tdewolff/parse/v2 v2.8.11 // indirect
 	github.com/tinylib/msgp v1.6.4 // indirect
@@ -83,7 +83,6 @@ require (
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
@@ -93,7 +92,7 @@ require (
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/ncruces/go-strftime v1.0.0 // indirect
-	github.com/redis/go-redis/v9 v9.18.0
+	github.com/redis/go-redis/v9 v9.19.0
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
