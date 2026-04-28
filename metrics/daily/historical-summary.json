@@ -1,0 +1,56 @@
+[
+  {
+    "date": "2026-03-22",
+    "workflows": 31,
+    "active": 0,
+    "outputs": 0,
+    "success_rate": 0,
+    "prs_merged": 0,
+    "pr_merge_rate": 0
+  },
+  {
+    "date": "2026-03-23",
+    "workflows": 24,
+    "active": null,
+    "outputs": 0,
+    "success_rate": null,
+    "prs_merged": 0,
+    "pr_merge_rate": 0
+  },
+  {
+    "date": "2026-03-31",
+    "workflows": 0,
+    "active": 0,
+    "outputs": 0,
+    "success_rate": 0,
+    "prs_merged": 0,
+    "pr_merge_rate": 0
+  },
+  {
+    "date": "2026-04-02",
+    "workflows": 0,
+    "active": 0,
+    "outputs": 0,
+    "success_rate": 0,
+    "prs_merged": 0,
+    "pr_merge_rate": 0
+  },
+  {
+    "date": "2026-04-03",
+    "workflows": 0,
+    "active": 0,
+    "outputs": 0,
+    "success_rate": 0,
+    "prs_merged": 0,
+    "pr_merge_rate": 0
+  },
+  {
+    "date": "2026-04-04",
+    "workflows": 24,
+    "active": 13,
+    "outputs": 18,
+    "success_rate": 1.0,
+    "prs_merged": 42,
+    "pr_merge_rate": 0.84
+  }
+]
