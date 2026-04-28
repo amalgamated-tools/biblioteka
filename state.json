@@ -1,8 +1,8 @@
 {
-  "last_run": "2026-04-27T20:37:52Z",
+  "last_run": "2026-04-28T20:52:00Z",
   "tasks_run": [
+    "task3",
     "task4",
-    "task6",
     "task7"
   ],
   "commands": {
@@ -104,7 +104,7 @@
     {
       "id": "reading-list-books-added-at-index",
       "status": "pr_created",
-      "description": "Add idx_reading_list_books_list_added_at(reading_list_id, added_at) - eliminates temp B-tree in ListReadingListBooks ORDER BY filesort",
+      "description": "Add idx_reading_list_books_list_added_at(reading_list_id, added_at, book_id) - eliminates temp B-tree in ListReadingListBooks ORDER BY filesort; updated with 3-column index (added book_id per review feedback), fixed British spelling",
       "pr_number": 2499
     },
     {
@@ -133,8 +133,16 @@
       "title": "Benchmarks for ListReadingLists and ListReadingListBooks",
       "description": "Added BenchmarkListReadingLists_10 (232K ns/op) and BenchmarkListReadingListBooks_50 (678K ns/op) - measurement infra for PRs #2499 and #2533",
       "status": "pr_created",
-      "branch": "perf-assist/bench-reading-list-queries-20260427",
+      "pr_number": 2616,
       "priority": "low"
+    },
+    {
+      "id": "books-created-at-id-index",
+      "title": "Extend books created_at index to include id tiebreaker",
+      "description": "Replace idx_books_created_at(created_at DESC) with idx_books_created_at_id(created_at DESC, id DESC); update ListRecentBooks to use ORDER BY created_at DESC, id DESC - eliminates USE TEMP B-TREE FOR RIGHT PART OF ORDER BY",
+      "status": "pr_created",
+      "branch": "perf-assist/books-created-at-id-index-20260428",
+      "priority": "medium"
     },
     {
       "id": "group-lists-reading-lists-temp-btree",
@@ -153,11 +161,11 @@
   "checked_off_items": [],
   "tasks_last_run": {
     "task1_commands": "2026-04-14T20:32:00Z",
-    "task2_opportunities": "2026-04-26T20:24:00Z",
-    "task3_implement": "2026-04-26T20:24:00Z",
-    "task4_pr_maintenance": "2026-04-27T20:37:00Z",
+    "task2_opportunities": "2026-04-28T20:52:00Z",
+    "task3_implement": "2026-04-28T20:52:00Z",
+    "task4_pr_maintenance": "2026-04-28T20:52:00Z",
     "task5_comments": "2026-04-24T20:28:00Z",
     "task6_infrastructure": "2026-04-27T20:37:00Z",
-    "task7_monthly_summary": "2026-04-27T20:37:00Z"
+    "task7_monthly_summary": "2026-04-28T20:52:00Z"
   }
 }
