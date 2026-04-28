@@ -44,9 +44,8 @@ func (d *DB) ListRecentBooks(ctx context.Context, limit, offset int) ([]Book, in
 		slog.Int(otelkeys.Offset, offset),
 	)
 
-	orderBy := d.dialectOrderBy("created_at", "DESC")
 	rows, err := d.QueryContext(ctx,
-		`SELECT `+bookColumns+`, COUNT(*) OVER() FROM books `+orderBy+` LIMIT $1 OFFSET $2`,
+		`SELECT `+bookColumns+`, COUNT(*) OVER() FROM books ORDER BY created_at DESC, id DESC LIMIT $1 OFFSET $2`,
 		limit, offset,
 	)
 	if err != nil {
