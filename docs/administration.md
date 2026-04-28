@@ -399,7 +399,7 @@ curl -X PUT http://localhost:8080/api/config/watch-folder \
 
 Every minute, the `scan:watch-folder` background job reads the configured path and library ID, then runs the same `ScanDirectory` pipeline used by the regular library scanner. Each supported file (`.epub`, `.mobi`, `.azw3`, `.pdf`) is enqueued as a `process:file` job. Already-indexed file paths are skipped — the scan is safe to run repeatedly.
 
-If the library has a `book_per_folder` or `book_per_file` organization type, newly imported files are moved into the library's canonical directory structure. Otherwise they remain in the watch folder path.
+Watch-folder imports always remain in the watch folder path — files are **not** reorganized, regardless of the library's `organization_type`. The `scan:watch-folder` job omits the `library_root` field from its `process:file` payloads, and file reorganization only runs when `library_root` is set. To reorganize files into the library's canonical directory structure (`book_per_folder` or `book_per_file`), use the regular library scan instead.
 
 > **Audit trail:** Changes to the watch folder configuration are recorded in the audit log as `watch_folder.config_updated`.
 
