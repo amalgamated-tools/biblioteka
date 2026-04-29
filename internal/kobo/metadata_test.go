@@ -201,7 +201,7 @@ func TestBookMetadata_PubDate(t *testing.T) {
 			want:    "spring 2022",
 		},
 		{
-			name:    "empty returns zero time",
+			name:    "nil publication date returns zero time",
 			pubDate: "",
 			want:    time.Time{}.UTC().Format(time.RFC3339),
 		},
