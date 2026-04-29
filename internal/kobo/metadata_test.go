@@ -124,3 +124,148 @@ func TestReadingStateResponse_WithProgress(t *testing.T) {
 	require.NotNil(t, resp.CurrentBookmark.ProgressPercent)
 	require.Equal(t, 42.5, *resp.CurrentBookmark.ProgressPercent)
 }
+
+func TestReadingStateResponse_WithLocation(t *testing.T) {
+	locValue := "epubcfi(/6/4!/4/2/4:0)"
+	locType := "CFI"
+	locSource := "ContentGuid"
+	state := &db.KoboReadingState{
+		BookID:         "bk1",
+		Status:         "Reading",
+		LocationValue:  &locValue,
+		LocationType:   &locType,
+		LocationSource: &locSource,
+	}
+	resp := ReadingStateResponse(state)
+	require.NotNil(t, resp.CurrentBookmark.Location)
+	require.Equal(t, locValue, resp.CurrentBookmark.Location.Value)
+	require.Equal(t, locType, resp.CurrentBookmark.Location.Type)
+	require.Equal(t, locSource, resp.CurrentBookmark.Location.Source)
+}
+
+func TestReadingStateResponse_LocationRequiresAllFields(t *testing.T) {
+	// Location bookmark is only set when all three fields are non-nil.
+	locValue := "epubcfi(/6/4!/4)"
+	locType := "CFI"
+	state := &db.KoboReadingState{
+		BookID:        "bk1",
+		Status:        "Reading",
+		LocationValue: &locValue,
+		LocationType:  &locType,
+		// LocationSource intentionally nil
+	}
+	resp := ReadingStateResponse(state)
+	require.Nil(t, resp.CurrentBookmark.Location)
+}
+
+func TestReadingStateResponse_WithTimestamps(t *testing.T) {
+	created := time.Date(2024, 1, 15, 10, 30, 0, 0, time.UTC)
+	updated := time.Date(2024, 6, 20, 14, 0, 0, 0, time.UTC)
+	state := &db.KoboReadingState{
+		BookID:    "bk1",
+		Status:    "Finished",
+		CreatedAt: db.Timestamp{Time: created},
+		UpdatedAt: db.Timestamp{Time: updated},
+	}
+	resp := ReadingStateResponse(state)
+	require.Equal(t, updated.Format(time.RFC3339), resp.LastModified)
+	require.Equal(t, created.Format(time.RFC3339), resp.Created)
+}
+
+func TestBookMetadata_PubDate(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		pubDate string
+		want    string
+	}{
+		{
+			name:    "RFC3339 format",
+			pubDate: "2020-03-15T00:00:00Z",
+			want:    "2020-03-15T00:00:00Z",
+		},
+		{
+			name:    "YYYY-MM-DD format",
+			pubDate: "2021-07-04",
+			want:    "2021-07-04T00:00:00Z",
+		},
+		{
+			name:    "year only",
+			pubDate: "1984",
+			want:    "1984-01-01T00:00:00Z",
+		},
+		{
+			name:    "unparseable passes through as-is",
+			pubDate: "spring 2022",
+			want:    "spring 2022",
+		},
+		{
+			name:    "nil publication date returns zero time",
+			pubDate: "",
+			want:    time.Time{}.UTC().Format(time.RFC3339),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			var pubDatePtr *string
+			if tt.pubDate != "" {
+				v := tt.pubDate
+				pubDatePtr = &v
+			}
+			book := &db.Book{ID: "bk1", Title: "Test", PublicationDate: pubDatePtr}
+			meta := BookMetadata(book, nil, nil, nil)
+			require.Equal(t, tt.want, meta.PublicationDate)
+		})
+	}
+}
+
+func TestBookMetadata_SeriesNumber(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		pos    *float64
+		wantFn func(t *testing.T, got any)
+	}{
+		{
+			name: "nil position defaults to 1",
+			pos:  nil,
+			wantFn: func(t *testing.T, got any) {
+				t.Helper()
+				require.Equal(t, 1, got)
+			},
+		},
+		{
+			name: "fractional position preserved as float64",
+			pos:  func() *float64 { v := 1.5; return &v }(),
+			wantFn: func(t *testing.T, got any) {
+				t.Helper()
+				require.Equal(t, 1.5, got)
+			},
+		},
+		{
+			name: "whole number returned as int",
+			pos:  func() *float64 { v := 5.0; return &v }(),
+			wantFn: func(t *testing.T, got any) {
+				t.Helper()
+				require.Equal(t, 5, got)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			book := &db.Book{ID: "bk1", Title: "Series Book"}
+			series := []db.BookSeriesEntry{
+				{Series: db.Series{ID: "s1", Name: "My Series"}, Position: tt.pos},
+			}
+			meta := BookMetadata(book, nil, series, nil)
+			require.NotNil(t, meta.Series)
+			tt.wantFn(t, meta.Series.Number)
+		})
+	}
+}
