@@ -466,3 +466,76 @@ func BenchmarkListAnnotationsForBook_10(b *testing.B) {
 		}
 	}
 }
+
+// ---- ListReadingLists ----
+
+// BenchmarkListReadingLists_10 measures the reading-list listing query for a
+// user who owns 10 reading lists, each containing 5 books. This exercises the
+// book_count aggregation in the SELECT, which previously used a GROUP BY +
+// LEFT JOIN and will use a correlated subquery once PR #2533 is merged.
+func BenchmarkListReadingLists_10(b *testing.B) {
+	d := newBenchDB(b)
+	ctx := b.Context()
+
+	user, err := d.CreateUser(ctx, "bench-rl-user", "rl@example.com", "hashedpw")
+	require.NoError(b, err, "CreateUser")
+
+	books := make([]string, 5)
+	for i := range 5 {
+		bk, err := d.CreateBook(ctx, BookInput{Title: fmt.Sprintf("RL Book %02d", i+1)})
+		require.NoError(b, err, "CreateBook")
+		books[i] = bk.ID
+	}
+
+	for i := range 10 {
+		rl, err := d.CreateReadingList(ctx, user.ID, fmt.Sprintf("Reading List %02d", i+1), nil)
+		require.NoError(b, err, "CreateReadingList")
+		for _, bookID := range books {
+			_, err := d.AddBookToReadingList(ctx, rl.ID, user.ID, bookID)
+			require.NoError(b, err, "AddBookToReadingList")
+		}
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for range b.N {
+		_, err := d.ListReadingLists(ctx, user.ID)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+// ---- ListReadingListBooks ----
+
+// BenchmarkListReadingListBooks_50 measures the paginated book-list query for a
+// reading list containing 50 books. This exercises the ORDER BY
+// rlb.added_at ASC, b.id ASC sort, which previously required a full filesort
+// and will use a composite ordering index on
+// (reading_list_id, added_at, book_id) once PR #2499 is merged.
+func BenchmarkListReadingListBooks_50(b *testing.B) {
+	d := newBenchDB(b)
+	ctx := b.Context()
+
+	user, err := d.CreateUser(ctx, "bench-rlb-user", "rlb@example.com", "hashedpw")
+	require.NoError(b, err, "CreateUser")
+
+	rl, err := d.CreateReadingList(ctx, user.ID, "Bench List", nil)
+	require.NoError(b, err, "CreateReadingList")
+
+	for i := range 50 {
+		bk, err := d.CreateBook(ctx, BookInput{Title: fmt.Sprintf("RLB Book %05d", i+1)})
+		require.NoError(b, err, "CreateBook")
+		_, err = d.AddBookToReadingList(ctx, rl.ID, user.ID, bk.ID)
+		require.NoError(b, err, "AddBookToReadingList")
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for range b.N {
+		_, _, err := d.ListReadingListBooks(ctx, rl.ID, user.ID, 25, 0)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}

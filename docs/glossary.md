@@ -4,6 +4,10 @@ Project-specific terminology used across Biblioteka's codebase and documentation
 
 ---
 
+## `$bindable`
+
+A Svelte 5 rune that marks a component prop as two-way bindable, allowing a parent component to sync state with the child via the `bind:` directive (e.g., `bind:email={emailValue}`). Declared by wrapping the prop's default value: `let { email = $bindable("") } = $props()`. Used in input-focused components such as `LoginForm.svelte`, `SignupForm.svelte`, `BookEditForm.svelte`, and `TextInput.svelte` so parent components can read the current field values and validation state without explicit event handlers. Plain (non-bindable) props — such as `hidden` in the auth forms — are still regular props that parents can pass and update via one-way data flow, but they are declared without `$bindable()`, so `bind:hidden` will not work and the child cannot push changes back to the parent through binding. See also [`$props`](#props), [runes](#runes).
+
 ## `$derived`
 
 A Svelte 5 rune that declares a computed value recalculated whenever its reactive dependencies change. Used throughout the frontend for values derived from store state (e.g. `let scanning = $derived(libraryStore.scanningIds.has(libraryId))`). Replaces Svelte 4's `$: derivedValue = ...` reactive statements. See also [`$state`](#state), [runes](#runes).
@@ -77,6 +81,10 @@ The base class in `frontend/src/stores/` from which entity-list stores inherit. 
 ## dbmate
 
 The database migration tool used by Biblioteka. Migration files live in `db/migrations/sqlite/` and `db/migrations/postgres/` and run automatically on server startup. Files follow the naming convention `YYYYMMDDHHMMSS_description.sql` and use the `-- migrate:up` / `-- migrate:down` format. See [Database Schema](database-schema.md).
+
+## Dead Queue
+
+The **Dead** tab in the [Asynqmon](#asynq) monitoring dashboard (`/asynqmon/`) that holds background jobs which have exhausted all retry attempts (`DefaultMaxRetry = 5`). Unlike the Retrying/Failed view, jobs in the Dead tab will never retry automatically — they require explicit operator action: open the Dead tab and either **retry** the job (after resolving the root cause) or **delete** it. Common causes include `enrich:goodreads` jobs that cannot reach Goodreads and `enrich:ai` jobs where the LLM provider is unreachable. For those enrichment jobs, existing book records are unaffected; only enrichment metadata remains missing. See [Background Jobs](background-jobs.md).
 
 ## ExifTool
 
