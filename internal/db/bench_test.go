@@ -472,7 +472,7 @@ func BenchmarkListAnnotationsForBook_10(b *testing.B) {
 // BenchmarkListReadingLists_10 measures the reading-list listing query for a
 // user who owns 10 reading lists, each containing 5 books. This exercises the
 // book_count aggregation in the SELECT, which previously used a GROUP BY +
-// LEFT JOIN and now uses a correlated subquery (PR #2533).
+// LEFT JOIN and will use a correlated subquery once PR #2533 is merged.
 func BenchmarkListReadingLists_10(b *testing.B) {
 	d := newBenchDB(b)
 	ctx := b.Context()
@@ -509,9 +509,10 @@ func BenchmarkListReadingLists_10(b *testing.B) {
 // ---- ListReadingListBooks ----
 
 // BenchmarkListReadingListBooks_50 measures the paginated book-list query for a
-// reading list containing 50 books. This exercises the ORDER BY rlb.added_at
-// sort, which previously required a full filesort and now uses a covering index
-// on (reading_list_id, added_at) (PR #2499).
+// reading list containing 50 books. This exercises the ORDER BY
+// rlb.added_at ASC, b.id ASC sort, which previously required a full filesort
+// and will use a composite ordering index on
+// (reading_list_id, added_at, book_id) once PR #2499 is merged.
 func BenchmarkListReadingListBooks_50(b *testing.B) {
 	d := newBenchDB(b)
 	ctx := b.Context()
