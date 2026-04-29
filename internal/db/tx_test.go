@@ -69,6 +69,7 @@ func TestWithTx_PropagatesFnError(t *testing.T) {
 		return sentinel
 	})
 	require.ErrorIs(t, err, sentinel, "WithTx must propagate the exact fn error")
+	require.Same(t, sentinel, err, "WithTx must not wrap the fn error")
 }
 
 // TestWithTx_NilFnError verifies that a fn that performs no writes and
