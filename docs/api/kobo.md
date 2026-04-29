@@ -92,7 +92,7 @@ Delete a Kobo sync token. The device using this token will receive `401` on its 
 
 ## KOReader / KOSync
 
-Biblioteka implements the [kosync](https://github.com/koreader/koreader-sync-server) protocol so that [KOReader](https://koreader.rocks/) can back up and synchronise reading positions to your self-hosted server. See the [KOReader Sync guide](../koreader.md) for setup instructions.
+Biblioteka implements the [kosync](https://github.com/koreader/koreader-sync-server) protocol so that [KOReader](https://koreader.rocks/) can back up and synchronize reading positions to your self-hosted server. See the [KOReader Sync guide](../koreader.md) for setup instructions.
 
 ### Credential management (JWT-protected)
 
