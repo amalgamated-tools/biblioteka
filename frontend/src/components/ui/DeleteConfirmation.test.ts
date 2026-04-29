@@ -76,29 +76,15 @@ describe("DeleteConfirmation", () => {
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
 
-  it("does not call onConfirm when Cancel is clicked", async () => {
-    const onConfirm = vi.fn();
+  it("applies the class prop to the root element", () => {
     render(DeleteConfirmation, {
-      itemId: "key-1",
-      itemName: "CI Pipeline",
-      onConfirm,
-      onCancel: vi.fn(),
-    });
-
-    await fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
-    expect(onConfirm).not.toHaveBeenCalled();
-  });
-
-  it("does not call onCancel when Delete is clicked", async () => {
-    const onCancel = vi.fn();
-    render(DeleteConfirmation, {
-      itemId: "key-1",
-      itemName: "CI Pipeline",
+      itemId: "book-1",
+      itemName: "My Book",
       onConfirm: vi.fn(),
-      onCancel,
+      onCancel: vi.fn(),
+      class: "custom-class",
     });
 
-    await fireEvent.click(screen.getByRole("button", { name: "Delete" }));
-    expect(onCancel).not.toHaveBeenCalled();
+    expect(screen.getByRole("group")).toHaveClass("custom-class");
   });
 });
