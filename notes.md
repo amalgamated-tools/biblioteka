@@ -1,7 +1,7 @@
 # Test Improver Memory — biblioteka
 
 ## Last Updated
-2026-04-27
+2026-04-29
 
 ## Build/Test/Coverage Commands
 
@@ -83,7 +83,8 @@ Frontend components: all covered as of 2026-04-27
 - 2026-04-25: Tasks 2, 3, 4, 7 (no open PR issues; enrich_ai error-path tests PR; monthly issue updated)
 - 2026-04-26: Tasks 2, 3, 7 (DeleteConfirmation component direct tests PR; monthly issue updated)
 - 2026-04-27: Tasks 1, 4, 5, 6, 7 (no open PR issues/conflicts; kobo metadata branch coverage PR; monthly issue updated)
-- Next run: Tasks 2, 3, 7
+- 2026-04-29: Tasks 2, 3, 7 (WithTx/deferRollback DB tests PR; monthly issue updated)
+- Next run: Tasks 4, 5, 6, 7
 
 ## Testing Backlog (prioritized)
 
@@ -92,9 +93,10 @@ Frontend components: all covered as of 2026-04-27
 3. **authRequiredErrors + authFeatureFlags** — PR #2519 open
 4. **enrich_ai.go error paths** — PR #2546 open
 5. **DeleteConfirmation component** — PR #2567 open
-6. **kobo metadata branch coverage** — PR submitted 2026-04-27 (branch test-assist/kobo-metadata-coverage)
-7. **organize path-escape defense-in-depth test** — the filepath.Rel escape guard in organize.go has no test. Likely unreachable in practice. Low value.
-8. **SSRF dialer Class B (172.16.x.x)** — ollama/client_test.go tests Class A, C, loopback, AWS metadata but not Class B. Very low value.
+6. **kobo metadata branch coverage** — PR #2592 open
+7. **WithTx and deferRollback** — PR submitted 2026-04-29 (branch test-assist/db-with-tx-tests)
+8. **organize path-escape defense-in-depth test** — the filepath.Rel escape guard in organize.go has no test. Likely unreachable in practice. Low value.
+9. **SSRF dialer Class B (172.16.x.x)** — ollama/client_test.go tests Class A, C, loopback, AWS metadata but not Class B. Very low value.
 
 ## Maintainer Priorities
 - All previous monthly issues closed by veverkap as "completed"
@@ -103,7 +105,11 @@ Frontend components: all covered as of 2026-04-27
 
 ## Completed Work
 
-### 2026-04-27
+### 2026-04-29
+- Tasks: 2 (scanned for opportunities; found WithTx/deferRollback at 0% direct coverage), 3 (new PR), 7 (monthly issue updated)
+- Created PR on branch `test-assist/db-with-tx-tests`:
+  - 6 new tests: WithTx commit path, rollback path, error propagation, no-op fn, deferRollback ErrTxDone, deferRollback double rollback
+  - All DB tests pass (19.9s)
 - Tasks: 1 (commands validated, no changes needed), 4 (all 3 open PRs #2519, #2546, #2567 have no conflicts or review comments), 5 (no open testing issues), 6 (kobo metadata PR), 7 (monthly issue updated)
 - Created PR on branch `test-assist/kobo-metadata-coverage`:
   - 12 new tests: ReadingStateResponse (location, partial-location guard, timestamps), BookMetadata PubDate (RFC3339/YYYY-MM-DD/year/unparseable/empty), SeriesNumber (nil/fractional/whole)
