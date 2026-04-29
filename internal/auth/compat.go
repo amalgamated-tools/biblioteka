@@ -72,4 +72,6 @@ func HashPassword(password string) ([]byte, error) {
 
 // CompareHashAndPassword compares a bcrypt hashed password with its plaintext
 // equivalent. Returns nil on success, or an error on failure.
-var CompareHashAndPassword = bcrypt.CompareHashAndPassword
+func CompareHashAndPassword(hashedPassword, password []byte) error {
+	return bcrypt.CompareHashAndPassword(hashedPassword, password)
+}
