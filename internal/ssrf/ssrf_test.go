@@ -55,13 +55,21 @@ func TestIsPrivateIP_PublicIPv6(t *testing.T) {
 // --- ValidateURL ---
 
 func TestValidateURL_ValidHTTPS(t *testing.T) {
-	err := ssrf.ValidateURL(t.Context(), "https://auth.example.com", "issuer_url", []string{"https"})
+	// Use a public literal IP to avoid DNS resolution in CI environments.
+	err := ssrf.ValidateURL(t.Context(), "https://8.8.8.8", "issuer_url", []string{"https"})
 	require.NoError(t, err)
 }
 
 func TestValidateURL_ValidHTTP(t *testing.T) {
-	err := ssrf.ValidateURL(t.Context(), "http://ollama.example.com:11434", "endpoint", []string{"http", "https"})
+	// Use a public literal IP to avoid DNS resolution in CI environments.
+	err := ssrf.ValidateURL(t.Context(), "http://8.8.8.8:11434", "endpoint", []string{"http", "https"})
 	require.NoError(t, err)
+}
+
+func TestValidateURL_EmptySchemesRejected(t *testing.T) {
+	err := ssrf.ValidateURL(t.Context(), "https://example.com", "issuer_url", nil)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "scheme")
 }
 
 func TestValidateURL_SchemeRejectedSingleAllowed(t *testing.T) {
@@ -135,6 +143,11 @@ func TestValidateURL_IPv6LinkLocalRejected(t *testing.T) {
 }
 
 func TestValidateURL_LocalhostRejectedViaDNS(t *testing.T) {
+	// ValidateURL is intentionally fail-open on DNS errors. Skip when localhost
+	// does not resolve in this environment to avoid a spurious test failure.
+	if _, err := net.LookupHost("localhost"); err != nil {
+		t.Skip("localhost does not resolve via DNS in this environment")
+	}
 	err := ssrf.ValidateURL(t.Context(), "https://localhost", "issuer_url", []string{"https"})
 	require.Error(t, err)
 }
@@ -167,9 +180,9 @@ func TestSafeHTTPClient_TransportSet(t *testing.T) {
 
 func TestSafeHTTPClient_BlocksPrivateIP(t *testing.T) {
 	c := ssrf.SafeHTTPClient(5 * time.Second)
-	req, err := c.Get("http://127.0.0.1:11434/")
+	resp, err := c.Get("http://127.0.0.1:11434/")
 	if err == nil {
-		req.Body.Close()
+		resp.Body.Close()
 	}
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "private")
@@ -177,9 +190,9 @@ func TestSafeHTTPClient_BlocksPrivateIP(t *testing.T) {
 
 func TestSafeHTTPClient_BlocksAWSMetadata(t *testing.T) {
 	c := ssrf.SafeHTTPClient(5 * time.Second)
-	req, err := c.Get("http://169.254.169.254/")
+	resp, err := c.Get("http://169.254.169.254/")
 	if err == nil {
-		req.Body.Close()
+		resp.Body.Close()
 	}
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "private")

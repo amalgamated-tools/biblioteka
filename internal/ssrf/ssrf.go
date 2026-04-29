@@ -17,10 +17,10 @@ import (
 // validation.
 const dnsLookupTimeout = 2 * time.Second
 
-// PrivateIPNets lists IP networks that must never be targeted by an outbound
+// privateIPNets lists IP networks that must never be targeted by an outbound
 // request (SSRF protection). This is the single authoritative list shared
-// across all packages.
-var PrivateIPNets = func() []*net.IPNet {
+// across all packages; callers use IsPrivateIP instead of accessing it directly.
+var privateIPNets = func() []*net.IPNet {
 	var nets []*net.IPNet
 	for _, cidr := range []string{
 		"10.0.0.0/8",     // RFC-1918 class A private
@@ -44,10 +44,10 @@ var PrivateIPNets = func() []*net.IPNet {
 	return nets
 }()
 
-// IsPrivateIP reports whether ip falls within any of the ranges in
-// PrivateIPNets (loopback, link-local, RFC-1918, etc.).
+// IsPrivateIP reports whether ip falls within any private, loopback, or
+// link-local range (RFC-1918, RFC-6598, and similar).
 func IsPrivateIP(ip net.IP) bool {
-	for _, n := range PrivateIPNets {
+	for _, n := range privateIPNets {
 		if n.Contains(ip) {
 			return true
 		}
@@ -116,6 +116,9 @@ func SafeHTTPClient(timeout time.Duration) *http.Client {
 // DNS errors are intentionally swallowed (fail-open): the SSRF-safe dialer in
 // SafeHTTPClient provides a second layer of defense at connect time.
 func ValidateURL(ctx context.Context, rawURL, fieldName string, schemes []string) error {
+	if len(schemes) == 0 {
+		return fmt.Errorf("%s: at least one permitted scheme must be specified", fieldName)
+	}
 	u, err := url.Parse(rawURL)
 	if err != nil {
 		return fmt.Errorf("invalid %s: %w", fieldName, err)
