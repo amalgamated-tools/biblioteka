@@ -105,11 +105,17 @@ func setupSQLite(ctx context.Context) (*DB, error) {
 
 	slog.DebugContext(ctx, "db: Database connection established", slog.String(otelkeys.Path, dbFilePath))
 
-	// Set PRAGMAs for better performance and integrity
+	// Set PRAGMAs for better performance and integrity.
+	//   temp_store = MEMORY: keep sort buffers (temp B-trees) in RAM instead of
+	//     writing them to disk temp files. All sort-heavy queries benefit.
+	//   cache_size = -16384: 16 MB shared page cache (default is ~8 MB). More
+	//     cached pages means fewer disk reads for hot working sets.
 	if _, err := sqlDB.Exec(`
 		PRAGMA journal_mode = WAL;
 		PRAGMA synchronous = NORMAL;
 		PRAGMA foreign_keys = ON;
+		PRAGMA temp_store = MEMORY;
+		PRAGMA cache_size = -16384;
 	`); err != nil {
 		slog.ErrorContext(ctx, "Failed to set PRAGMAs",
 			slog.String(otelkeys.Path, dbFilePath),
