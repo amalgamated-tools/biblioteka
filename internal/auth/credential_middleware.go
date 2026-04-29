@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
-	"golang.org/x/crypto/bcrypt"
 )
 
 // ProtocolCredentialResult holds the common credential fields returned by
@@ -122,7 +121,7 @@ func bcryptCredMiddleware(cfg bcryptCredConfig) func(http.Handler) http.Handler 
 				} else {
 					// Perform a dummy bcrypt comparison to prevent timing-based
 					// username enumeration.
-					_ = bcrypt.CompareHashAndPassword(cfg.dummyHash, []byte(secret))
+					_ = CompareHashAndPassword(cfg.dummyHash, []byte(secret))
 					slog.InfoContext(r.Context(), "protocol: unknown username",
 						slog.String(otelkeys.Protocol, cfg.protocolName),
 						cfg.usernameAttr(normUsername),
@@ -132,7 +131,7 @@ func bcryptCredMiddleware(cfg bcryptCredConfig) func(http.Handler) http.Handler 
 				return
 			}
 
-			if err := bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(secret)); err != nil {
+			if err := CompareHashAndPassword([]byte(passwordHash), []byte(secret)); err != nil {
 				slog.InfoContext(r.Context(), "protocol: invalid credential",
 					slog.String(otelkeys.Protocol, cfg.protocolName),
 					cfg.usernameAttr(normUsername),

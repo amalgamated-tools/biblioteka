@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
+	goauth "github.com/amalgamated-tools/goauth/auth"
 )
 
 const (
@@ -25,7 +26,7 @@ type KOSyncCredentialChecker interface {
 // dummyKOSyncBcryptHash is a precomputed valid bcrypt hash used for timing-safe
 // comparisons when a username is not found, to mitigate username enumeration
 // via timing attacks.
-var dummyKOSyncBcryptHash = mustGenerateDummyBcryptHash("dummy-kosync-key", "KOSync")
+var dummyKOSyncBcryptHash = goauth.MustGenerateDummyBcryptHash("dummy-kosync-key")
 
 // KOSyncHeaderAuthMiddleware returns an HTTP middleware that validates KOSync
 // credentials using the x-auth-user and x-auth-key request headers and injects

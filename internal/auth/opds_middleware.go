@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
+	goauth "github.com/amalgamated-tools/goauth/auth"
 )
 
 // OPDSCredentialChecker is implemented by types that can look up OPDS credentials by username.
@@ -18,7 +19,7 @@ type OPDSCredentialChecker interface {
 // dummyOPDSBcryptHash is a precomputed valid bcrypt hash used for timing-safe
 // comparisons when a username is not found, to mitigate username enumeration
 // via timing attacks.
-var dummyOPDSBcryptHash = mustGenerateDummyBcryptHash("dummy-opds-password", "OPDS")
+var dummyOPDSBcryptHash = goauth.MustGenerateDummyBcryptHash("dummy-opds-password")
 
 // writeOPDSError writes an OPDS-compatible XML error response for authentication failures.
 func writeOPDSError(_ context.Context, w http.ResponseWriter, status int, message string) {
