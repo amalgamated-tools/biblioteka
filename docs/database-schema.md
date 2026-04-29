@@ -650,7 +650,7 @@ Associates books with reading lists and tracks insertion time.
 
 **Indexes:**
 - `idx_reading_list_books_book` — fast lookup of which lists contain a given book
-- `idx_reading_list_books_list_added_at` on `(reading_list_id, added_at ASC, book_id ASC)` — covers the default `ORDER BY added_at ASC, book_id ASC` sort used by `ListReadingListBooks`, avoiding a temp B-tree sort pass
+- `idx_reading_list_books_list_added_at` on `(reading_list_id, added_at ASC, book_id ASC)` — supports the default `ORDER BY rlb.added_at ASC, b.id ASC` used by `ListReadingListBooks`; in SQLite this can avoid a temp B-tree sort, while in PostgreSQL it can help avoid or reduce an explicit sort step
 
 **Notes:**
 - `ADD` is idempotent: inserting a duplicate `(reading_list_id, book_id)` pair is silently ignored (`ON CONFLICT DO NOTHING`).
