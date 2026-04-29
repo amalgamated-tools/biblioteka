@@ -433,7 +433,7 @@ Before attempting provider discovery, the server validates the issuer URL agains
 - Non-`https` schemes (only `https://` is accepted)
 - URLs containing userinfo (e.g. `https://user:pass@issuer.example.com`)
 - Literal private, loopback, link-local, or unique-local IP addresses (RFC 1918, `127.0.0.0/8`, `169.254.0.0/16`, `100.64.0.0/10` per RFC 6598, IPv6 loopback `::1`, link-local `fe80::/10`, and unique-local `fc00::/7`)
-- Hostnames that resolve via DNS to any of the above address ranges (DNS failures are treated as pass — the OIDC discovery request itself will fail and the `ssrfSafeHTTPClient` provides a second check at connection time)
+- Hostnames that resolve via DNS to any of the above address ranges (DNS failures are treated as pass — the OIDC discovery request itself will fail and the SSRF-safe HTTP client provides a second check at connection time)
 - IPv6 zone identifiers in the host (e.g. `[fe80::1%lo0]`)
 
 If validation passes, the server performs OIDC discovery. If discovery fails, the config is rejected with a `400` error.
@@ -535,7 +535,7 @@ Before saving, the server validates the `endpoint` URL against the following rul
 
 - Only the `http` and `https` schemes are accepted.
 - URLs containing userinfo (e.g. `http://user:pass@ollama.internal`) are rejected to prevent credential leakage.
-- Literal private, loopback, or link-local IP addresses are blocked (RFC 1918, `127.0.0.0/8`, `169.254.0.0/16`, IPv6 loopback `::1`, link-local `fe80::/10`).
+- Literal private, loopback, link-local, or unique-local IP addresses are blocked (RFC 1918, `127.0.0.0/8`, `169.254.0.0/16`, `100.64.0.0/10` per RFC 6598, IPv6 loopback `::1`, link-local `fe80::/10`, and unique-local `fc00::/7`).
 - IPv6 literals with zone identifiers (e.g. `http://[fe80::1%lo0]:11434`) are rejected.
 - If the host is a DNS name, it is resolved (with a short timeout) and any private or loopback result is also blocked. DNS failures are treated as a pass — the enrichment job will fail when it actually connects, and a second SSRF-safe dialer in the Ollama client provides an additional layer of defense.
 
