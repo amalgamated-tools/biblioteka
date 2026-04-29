@@ -466,11 +466,11 @@ All HTTP calls go through `frontend/src/lib/api.ts`, which is a barrel re-export
 | `api/tokens.ts` | API key and Kobo token management |
 | `api/reading-lists.ts` | Reading list CRUD, book membership, and per-book list lookup |
 | `api/reading-progress.ts` | Reading progress statistics (streak, in-progress documents) |
-| `api/annotations.ts` | Book annotation CRUD (`listBookAnnotations`, `createAnnotation`, `updateAnnotation`, `deleteAnnotation`) |
+| `api/annotations.ts` | Book annotation CRUD (`listBookAnnotations`, `getAnnotation`, `createAnnotation`, `updateAnnotation`, `deleteAnnotation`) |
 | `api/calibre.ts` | Calibre `metadata.db` import — file-upload (`previewCalibreImport`, `confirmCalibreImport`) and server-path (`previewCalibreImportFromPath`, `confirmCalibreImportFromPath`) variants |
 | `api/groups.ts` | Reading group CRUD, member management, shared-list operations, and per-member progress |
 | `api/metadata.ts` | Goodreads metadata fetch/apply/reject (`fetchMetadata`, `getMetadata`, `applyMetadata`, `rejectMetadata`) and AI enrichment fetch/apply/reject (`fetchAIEnrichment`, `getPendingAIEnrichment`, `applyAIEnrichment`, `rejectAIEnrichment`); also exposes `subscribeToMetadataEvents` to open the SSE progress stream |
-| `api/passkeys.ts` | WebAuthn passkey registration and login flows (`beginPasskeyRegistration`, `finishPasskeyRegistration`, `beginPasskeyLogin`, `finishPasskeyLogin`), credential list/delete, and base64url ↔ `ArrayBuffer` conversion helpers used by the browser WebAuthn API |
+| `api/passkeys.ts` | WebAuthn passkey registration and login flows (`beginPasskeyRegistration`, `finishPasskeyRegistration`, `beginPasskeyLogin`, `finishPasskeyLogin`), credential list/delete, and base64url decoding / WebAuthn option-preparation helpers used by the browser WebAuthn API |
 | `api/recommendations.ts` | `getRecommendations(limit, signal)` — scored book suggestions ranked by author overlap, series continuation, publisher match, and download popularity |
 | `api/stats.ts` | `getDownloadsPerMonth(months)` and `getYearInBooks(year)` — per-user download histogram and annual reading statistics |
 | `api/tags.ts` | Tag CRUD (`listTags`, `getTag`, `createTag`, `updateTag`, `deleteTag`) |
@@ -3276,7 +3276,7 @@ The following test suites cover reactive stores and the API client. Unlike the a
 
 ### `api.test.ts`
 
-`frontend/src/lib/api.test.ts` exercises the centralised API client. Because `api.ts` is now a barrel re-export of `frontend/src/lib/api/` sub-modules, the tests import from the barrel and cover the core, auth, config, admin, credentials, and SMTP sub-modules. `fetch` is replaced with a Vitest stub so no real HTTP requests are made. Tests are grouped into eleven `describe` blocks:
+`frontend/src/lib/api.test.ts` exercises the centralized API client. Because `api.ts` is now a barrel re-export of `frontend/src/lib/api/` sub-modules, the tests import from the barrel and cover the core, auth, config, admin, credentials, and SMTP sub-modules. `fetch` is replaced with a Vitest stub so no real HTTP requests are made. Tests are grouped into eleven `describe` blocks:
 
 **`Token management` (five tests):** covers `setToken`, `clearToken`, `hasToken` — verifying in-memory token read/write semantics, including the edge case of an empty string being treated as "no token".
 
@@ -3302,6 +3302,10 @@ The following test suites cover reactive stores and the API client. Unlike the a
 **`OPDS Credentials API` (three tests):** covers `getOpdsCredential` (GET), `setOpdsCredential` (PUT with request body), and `deleteOpdsCredential` (DELETE resolves `void` on `204 No Content`).
 
 **`KOSync Credentials API` (three tests):** covers `getKosyncCredential` (GET), `setKosyncCredential` (PUT with request body), and `deleteKosyncCredential` (DELETE resolves `void` on `204 No Content`).
+
+**`Auth extended API` (three tests):** covers `updateProfile` (PUT `/api/auth/me`), `logout` (POST `/api/auth/logout`), and a network-failure case asserting that `logout` resolves `void` even when the request rejects.
+
+**`SMTP Config API` (three tests):** covers `getSmtpConfig` (GET `/api/config/smtp`), `setSmtpConfig` (PUT with config body), and `testSmtpConfig` (POST `/api/config/smtp/test`).
 
 ### `books.test.ts`
 
