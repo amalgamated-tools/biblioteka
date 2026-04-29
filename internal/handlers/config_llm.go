@@ -2,12 +2,9 @@ package handlers
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
-	"net"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 
@@ -15,65 +12,13 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/llm"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
+	"github.com/amalgamated-tools/biblioteka/internal/ssrf"
 )
 
-// validateLLMEndpointURL rejects LLM endpoint URLs that could be exploited for
-// Server-Side Request Forgery (SSRF):
-//   - only the http and https schemes are permitted
-//   - userinfo (user:password) in the URL is rejected to prevent credential leakage
-//   - literal private/loopback/link-local IP addresses in the host are blocked
-//   - IPv6 literals with zone identifiers are rejected
-//   - if the host is a DNS name, it is resolved (with a bounded timeout) and any
-//     private/loopback/link-local address in the result is also blocked
+// validateLLMEndpointURL validates the LLM endpoint URL against SSRF; only
+// http and https are permitted. See ssrf.ValidateURL for the full set of checks.
 func validateLLMEndpointURL(ctx context.Context, rawURL string) error {
-	u, err := url.Parse(rawURL)
-	if err != nil {
-		return fmt.Errorf("invalid endpoint: %w", err)
-	}
-	if u.Scheme != "http" && u.Scheme != "https" {
-		return errors.New("endpoint must use the http or https scheme")
-	}
-	if u.User != nil {
-		return errors.New("endpoint must not contain userinfo (credentials)")
-	}
-	host := u.Hostname()
-	if host == "" {
-		return errors.New("endpoint must include a host")
-	}
-
-	// Reject IPv6 literals with zone identifiers (e.g. "fe80::1%lo0") which
-	// can bypass net.ParseIP and fall through to DNS resolution.
-	if strings.Contains(host, "%") {
-		return errors.New("endpoint must not contain an IPv6 zone identifier")
-	}
-
-	// Block literal private/loopback/link-local IP addresses directly in the URL.
-	if ip := net.ParseIP(host); ip != nil {
-		if isPrivateIP(ip) {
-			return errors.New("endpoint must not point to a private, loopback, or link-local address")
-		}
-		return nil // a routable literal IP is accepted; no DNS lookup needed
-	}
-
-	// Resolve the hostname and block any private/loopback/link-local result.
-	// Use a short timeout so a slow/hanging DNS server cannot block the
-	// request indefinitely.
-	//
-	// DNS errors (timeout, NXDOMAIN, etc.) are intentionally swallowed here
-	// (fail-open). This preserves availability: a connectivity problem will be
-	// surfaced when the enrichment job actually attempts to connect, and the
-	// SSRF-safe dialer in the Ollama client provides a second layer of defense.
-	dnsCtx, cancel := context.WithTimeout(ctx, dnsLookupTimeout)
-	defer cancel()
-	addrs, err := net.DefaultResolver.LookupHost(dnsCtx, host)
-	if err == nil {
-		for _, addr := range addrs {
-			if ip := net.ParseIP(addr); ip != nil && isPrivateIP(ip) {
-				return errors.New("endpoint must not resolve to a private, loopback, or link-local address")
-			}
-		}
-	}
-	return nil
+	return ssrf.ValidateURL(ctx, rawURL, "endpoint", []string{"http", "https"})
 }
 
 // LLMConfig is the response/request body for the LLM configuration endpoint.

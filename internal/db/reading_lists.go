@@ -32,8 +32,8 @@ type ReadingList struct {
 }
 
 const (
-	readingListColumns  = `rl.id, rl.user_id, rl.name, rl.description, COUNT(rlb.book_id), rl.created_at, rl.updated_at`
-	readingListBaseFrom = `FROM reading_lists rl LEFT JOIN reading_list_books rlb ON rlb.reading_list_id = rl.id`
+	readingListColumns  = `rl.id, rl.user_id, rl.name, rl.description, (SELECT COUNT(*) FROM reading_list_books WHERE reading_list_id = rl.id), rl.created_at, rl.updated_at`
+	readingListBaseFrom = `FROM reading_lists rl`
 )
 
 // scanReadingList scans a reading list row into a ReadingList struct.
@@ -68,8 +68,7 @@ func (d *DB) GetReadingList(ctx context.Context, id, userID string) (*ReadingLis
 	)
 	return scanReadingList(d.QueryRowContext(ctx,
 		`SELECT `+readingListColumns+` `+readingListBaseFrom+`
-         WHERE rl.id = $1 AND rl.user_id = $2
-         GROUP BY rl.id, rl.user_id, rl.name, rl.description, rl.created_at, rl.updated_at`,
+         WHERE rl.id = $1 AND rl.user_id = $2`,
 		id, userID,
 	))
 }
@@ -81,7 +80,6 @@ func (d *DB) ListReadingLists(ctx context.Context, userID string) ([]ReadingList
 	rows, err := d.QueryContext(ctx,
 		`SELECT `+readingListColumns+` `+readingListBaseFrom+`
          WHERE rl.user_id = $1
-         GROUP BY rl.id, rl.user_id, rl.name, rl.description, rl.created_at, rl.updated_at
          ORDER BY rl.name ASC, rl.id ASC`,
 		userID,
 	)
