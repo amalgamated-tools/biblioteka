@@ -1,10 +1,7 @@
 -- migrate:up
--- Extend idx_books_created_at to include the id tiebreaker column so
--- ListRecentBooks (ORDER BY created_at DESC, id DESC) is fully covered
--- by the index and eliminates the sort.
-DROP INDEX IF EXISTS idx_books_created_at;
-CREATE INDEX IF NOT EXISTS idx_books_created_at_id ON books (created_at DESC, id DESC);
+-- Postgres already has idx_books_created_at defined as (created_at DESC, id DESC)
+-- from migration 20260411222140. Rename for naming consistency with SQLite.
+ALTER INDEX idx_books_created_at RENAME TO idx_books_created_at_id;
 
 -- migrate:down
-DROP INDEX IF EXISTS idx_books_created_at_id;
-CREATE INDEX IF NOT EXISTS idx_books_created_at ON books (created_at DESC);
+ALTER INDEX idx_books_created_at_id RENAME TO idx_books_created_at;

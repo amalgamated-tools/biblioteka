@@ -122,6 +122,33 @@ func TestListRecentBooks_OffsetBeyondTotal(t *testing.T) {
 	require.Len(t, books, 0)
 }
 
+func TestListRecentBooks_TiebreakerByID(t *testing.T) {
+	d := newTestDB(t)
+
+	b1, err := d.CreateBook(t.Context(), BookInput{Title: "Alpha"})
+	require.NoError(t, err, "CreateBook(Alpha)")
+	b2, err := d.CreateBook(t.Context(), BookInput{Title: "Beta"})
+	require.NoError(t, err, "CreateBook(Beta)")
+
+	// Force identical created_at so the secondary ORDER BY id DESC is exercised.
+	_, err = d.ExecContext(t.Context(), `UPDATE books SET created_at = '2024-01-01 00:00:00'`)
+	require.NoError(t, err, "UPDATE created_at")
+
+	books, _, err := d.ListRecentBooks(t.Context(), 10, 0)
+	require.NoError(t, err, "ListRecentBooks()")
+	require.Len(t, books, 2)
+
+	// With equal created_at, ORDER BY id DESC means the lexicographically
+	// larger ID comes first. Verify the order is deterministic and stable.
+	if b1.ID > b2.ID {
+		require.Equal(t, b1.ID, books[0].ID, "b1 has larger id, expected first")
+		require.Equal(t, b2.ID, books[1].ID)
+	} else {
+		require.Equal(t, b2.ID, books[0].ID, "b2 has larger id, expected first")
+		require.Equal(t, b1.ID, books[1].ID)
+	}
+}
+
 // ---- ListBooksByAuthor ----
 
 func TestListBooksByAuthor_Empty(t *testing.T) {
