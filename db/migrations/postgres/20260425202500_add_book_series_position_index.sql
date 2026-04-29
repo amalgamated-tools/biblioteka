@@ -1,11 +1,13 @@
 -- migrate:up
 -- Add composite (series_id, position ASC NULLS LAST) index on book_series.
 -- ListBooksBySeries and ListBooksBySeriesPaginated filter on series_id and sort
--- by position ASC NULLS LAST. The existing idx_book_series_series_id covers the
--- filter but leaves the position sort to a full filesort. This composite index
--- lets PostgreSQL walk rows already in position order, reducing the sort to only
--- the title tiebreaker (partial sort on tied positions).
+-- by position ASC NULLS LAST. This composite index subsumes the old single-column
+-- idx_book_series_series_id: PostgreSQL can satisfy any equality filter on series_id
+-- alone via the leading column, so the old index is dropped to avoid redundant
+-- write overhead and wasted disk space.
 CREATE INDEX IF NOT EXISTS idx_book_series_series_position ON book_series (series_id, position ASC NULLS LAST);
+DROP INDEX IF EXISTS idx_book_series_series_id;
 
 -- migrate:down
+CREATE INDEX IF NOT EXISTS idx_book_series_series_id ON book_series (series_id);
 DROP INDEX IF EXISTS idx_book_series_series_position;
