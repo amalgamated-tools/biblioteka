@@ -109,7 +109,7 @@ Authorization: Bearer <jwt>
 
 ## Comparing reading progress
 
-Use the progress endpoint to see how far each group member has read a specific book. Progress values are sourced from each member's **Kobo reading data** (recorded by a synced Kobo device or the KOReader Kobo plugin).
+Use the progress endpoint to see how far each group member has read a specific book. Progress values are sourced from each member's **Kobo sync data** — the same per-book reading state recorded when a Kobo device syncs with Biblioteka's native Kobo sync endpoint (`PUT /kobo/<token>/v1/library/{bookID}/state`).
 
 ```http
 GET /api/groups/{id}/progress?book_id=<book-id>
@@ -144,7 +144,7 @@ Authorization: Bearer <jwt>
 
 All group members appear in the response. Members with no recorded Kobo reading progress have `percentage: 0` and `updated_at: null`.
 
-> **Kobo requirement:** Progress is only recorded for books synced via a Kobo device. See the [Kobo Sync guide](kobo.md) for setup instructions.
+> **Kobo sync endpoint only:** Reading progress shown here comes exclusively from the Kobo sync endpoint (`/kobo/<token>/...`). Progress synced via the KOSync protocol (used by [KOReader's Progress sync plugin](koreader.md)) is stored in a separate table and is **not** included in group progress comparisons. Members who rely solely on KOReader sync will always appear as `percentage: 0` with `updated_at: null`, even if they are actively reading the book. See the [Kobo Sync guide](kobo.md) for Kobo setup instructions.
 
 ---
 
