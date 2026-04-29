@@ -1,51 +1,46 @@
 ---
-name: Daily Workflow Updater
-description: Automatically updates GitHub Actions versions and creates a PR if changes are detected
 on:
   schedule:
-    # Every day at 3am UTC
-    - cron: daily
-  workflow_dispatch:
-
+  - cron: daily
+  workflow_dispatch: null
 permissions:
   contents: read
-  pull-requests: read
   issues: read
-
-tracker-id: daily-workflow-updater
-engine: copilot
-strict: true
-
+  pull-requests: read
 network:
   allowed:
-    - defaults
-    - github
-    - go
-
+  - defaults
+  - github
+  - go
+imports:
+- shared/observability-otlp.md
 safe-outputs:
   create-pull-request:
-    expires: 1d
-    title-prefix: "perf: "
-    labels: [dependencies, automation]
     draft: false
+    expires: 1d
+    labels:
+    - dependencies
+    - automation
     protected-files: allowed
+    title-prefix: "perf: "
   noop:
     report-as-issue: false
-
-tools:
-  github:
-    toolsets: [default]
-  bash: true
-
-timeout-minutes: 15
-
+description: Automatically updates GitHub Actions versions and creates a PR if changes are detected
+engine: copilot
 features:
   copilot-requests: true
-imports:
-  - shared/observability-otlp.md
-source: github/gh-aw/.github/workflows/daily-workflow-updater.md@525b5b77a444146979ba1759b2a23d72934bc6fc
+name: Daily Workflow Updater
+source: github/gh-aw/.github/workflows/daily-workflow-updater.md@7f977f17bd6948b45209fab4719566b435f8ecc5
+strict: true
+timeout-minutes: 15
+tools:
+  bash: true
+  cli-proxy: true
+  github:
+    toolsets:
+    - default
+tracker-id: daily-workflow-updater
 ---
-
 {{#runtime-import? .github/shared-instructions.md}}
 
 # Daily Workflow Updater
@@ -292,8 +287,4 @@ The updated actions will be automatically used in workflow compilations. No manu
 5. **Semantic versioning**: Only update within the same major version
 6. **Never call `report_incomplete`** for the case where `gh aw` is not installed — this is a known environment constraint, not an unexpected failure
 
-**Important**: If no action is needed after completing your analysis, you **MUST** call the `noop` safe-output tool with a brief explanation. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
-
-```json
-{"noop": {"message": "No action needed: [brief explanation of what was analyzed and why]"}}
-```
+{{#import github/gh-aw/.github/workflows/shared/noop-reminder.md@7f977f17bd6948b45209fab4719566b435f8ecc5}}

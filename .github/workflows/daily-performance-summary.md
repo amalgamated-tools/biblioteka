@@ -15,25 +15,34 @@ tracker-id: daily-performance-summary
 features:
   dangerous-permissions-write: true
 tools:
+  cli-proxy: true
   github:
     lockdown: false
     toolsets: [default, discussions]
 safe-outputs:
+<<<<<<< current (local changes)
   upload-artifact:
     retention-days: 30
     skip-archive: true
   noop:
     report-as-issue: false
+||||||| base (original)
+  upload-artifact:
+    retention-days: 30
+    skip-archive: true
+=======
+  upload-asset:
+    max: 3
+    allowed-exts: [.png, .jpg, .jpeg, .svg]
+>>>>>>> new (upstream)
 timeout-minutes: 30
 imports:
-  - uses: shared/daily-audit-discussion.md
+  - uses: shared/daily-audit-charts.md
     with:
       title-prefix: "[daily performance] "
   - shared/github-queries-mcp-script.md
-  - shared/trending-charts-simple.md
-  - shared/reporting.md
-  - shared/observability-otlp.md
-source: github/gh-aw/.github/workflows/daily-performance-summary.md@525b5b77a444146979ba1759b2a23d72934bc6fc
+
+source: github/gh-aw/.github/workflows/daily-performance-summary.md@7f977f17bd6948b45209fab4719566b435f8ecc5
 ---
 
 {{#runtime-import? .github/shared-instructions.md}}
@@ -67,7 +76,7 @@ Generate a daily performance summary analyzing the last 90 days of project activ
 
 The following tools are available for querying GitHub data:
 - **github-pr-query** - Query pull requests with jq filtering
-- **github-issue-query** - Query issues with jq filtering  
+- **github-issue-query** - Query issues with jq filtering
 - **github-discussion-query** - Query discussions with jq filtering
 
 ### 1.1 Query Pull Requests
@@ -171,11 +180,11 @@ pr_df = pd.DataFrame(prs) if prs else pd.DataFrame()
 if not pr_df.empty:
     pr_df['createdAt'] = pd.to_datetime(pr_df['createdAt'])
     pr_df['mergedAt'] = pd.to_datetime(pr_df['mergedAt'])
-    
+
     merged_prs = pr_df[pr_df['mergedAt'].notna()]
     merged_prs['time_to_merge'] = merged_prs['mergedAt'] - merged_prs['createdAt']
     avg_merge_time = merged_prs['time_to_merge'].mean() if len(merged_prs) > 0 else timedelta(0)
-    
+
     pr_metrics = {
         'total': len(pr_df),
         'merged': len(merged_prs),
@@ -191,11 +200,11 @@ issue_df = pd.DataFrame(issues) if issues else pd.DataFrame()
 if not issue_df.empty:
     issue_df['createdAt'] = pd.to_datetime(issue_df['createdAt'])
     issue_df['closedAt'] = pd.to_datetime(issue_df['closedAt'])
-    
+
     closed_issues = issue_df[issue_df['closedAt'].notna()]
     closed_issues['time_to_close'] = closed_issues['closedAt'] - closed_issues['createdAt']
     avg_close_time = closed_issues['time_to_close'].mean() if len(closed_issues) > 0 else timedelta(0)
-    
+
     issue_metrics = {
         'total': len(issue_df),
         'open': len(issue_df[issue_df['state'] == 'OPEN']),
@@ -371,15 +380,12 @@ print("Velocity metrics chart saved!")
 
 ## Phase 4: Upload Charts
 
-Stage and upload all three charts as artifacts with 30-day retention:
-1. Copy charts to the upload staging directory:
-   ```bash
-   cp /tmp/gh-aw/python/charts/activity_overview.png /tmp/gh-aw/safeoutputs/upload-artifacts/
-   cp /tmp/gh-aw/python/charts/resolution_metrics.png /tmp/gh-aw/safeoutputs/upload-artifacts/
-   cp /tmp/gh-aw/python/charts/velocity_metrics.png /tmp/gh-aw/safeoutputs/upload-artifacts/
-   ```
-2. Call the `upload_artifact` safe-output tool for each chart
-3. Record the returned `aw_*` IDs for each chart
+Upload all three charts as assets:
+1. Call the `upload_asset` safe-output tool for each chart using its absolute path:
+   - `/tmp/gh-aw/python/charts/activity_overview.png`
+   - `/tmp/gh-aw/python/charts/resolution_metrics.png`
+   - `/tmp/gh-aw/python/charts/velocity_metrics.png`
+2. Record the returned asset URLs for each chart
 
 ## Phase 5: Close Previous Discussions
 
@@ -409,7 +415,7 @@ Create a new discussion with the comprehensive performance report.
 ### Key Highlights
 
 - ✅ **[NUMBER]** PRs merged in the last 90 days
-- 📊 **[NUMBER]** issues resolved  
+- 📊 **[NUMBER]** issues resolved
 - 💬 **[NUMBER]** discussions answered
 - ⏱️ Average merge time: **[HOURS]** hours
 - 👥 **[NUMBER]** unique contributors
@@ -420,7 +426,7 @@ Create a new discussion with the comprehensive performance report.
 
 ### 📈 Activity Overview
 
-📎 **Chart: Activity Overview** — artifact `<aw_ID_1>` available in the [workflow run artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+![Activity Overview](URL_FROM_UPLOAD_ASSET_1)
 
 [Brief 2-3 sentence analysis of activity distribution across PRs, issues, and discussions]
 
@@ -429,13 +435,13 @@ Create a new discussion with the comprehensive performance report.
 
 #### 🎯 Resolution Metrics
 
-📎 **Chart: Resolution Metrics** — artifact `<aw_ID_2>` available in the [workflow run artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+![Resolution Metrics](URL_FROM_UPLOAD_ASSET_2)
 
 [Analysis of PR merge rates and issue resolution rates]
 
 #### ⚡ Velocity Metrics
 
-📎 **Chart: Velocity Metrics** — artifact `<aw_ID_3>` available in the [workflow run artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+![Velocity Metrics](URL_FROM_UPLOAD_ASSET_3)
 
 [Analysis of response times, contributor activity, and discussion engagement]
 
@@ -503,8 +509,18 @@ This workflow uses mcp-script tools imported from `shared/github-queries-mcp-scr
 
 Begin your analysis now. **Use the mcp-script tools** to gather data, run Python analysis, generate charts, and create the discussion report.
 
+<<<<<<< current (local changes)
 **Important**: After completing your analysis, you **MUST** call the `create-discussion` safe-output tool (via the imported `daily-audit-discussion` shared workflow) to publish your report. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
 
 ```json
 {"create-discussion": {"title": "Daily Performance Summary", "body": "[Your analysis, charts, and findings here]"}}
 ```
+||||||| base (original)
+**Important**: If no action is needed after completing your analysis, you **MUST** call the `noop` safe-output tool with a brief explanation. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
+
+```json
+{"noop": {"message": "No action needed: [brief explanation of what was analyzed and why]"}}
+```
+=======
+{{#import shared/noop-reminder.md}}
+>>>>>>> new (upstream)

@@ -16,15 +16,21 @@ permissions:
 safe-outputs:
   create-code-scanning-alert:
     driver: "Semgrep Security Scanner"
+<<<<<<< current (local changes)
   noop:
     report-as-issue: false
 source: github/gh-aw/.github/workflows/daily-semgrep-scan.md@525b5b77a444146979ba1759b2a23d72934bc6fc
+||||||| base (original)
+source: github/gh-aw/.github/workflows/daily-semgrep-scan.md@525b5b77a444146979ba1759b2a23d72934bc6fc
+=======
+
+tools:
+  cli-proxy: true
+
+source: github/gh-aw/.github/workflows/daily-semgrep-scan.md@7f977f17bd6948b45209fab4719566b435f8ecc5
+>>>>>>> new (upstream)
 ---
 
 Scan the repository for SQL injection vulnerabilities using Semgrep.
 
-**Important**: If no action is needed after completing your analysis, you **MUST** call the `noop` safe-output tool with a brief explanation. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
-
-```json
-{"noop": {"message": "No action needed: [brief explanation of what was analyzed and why]"}}
-```
+{{#import shared/noop-reminder.md}}

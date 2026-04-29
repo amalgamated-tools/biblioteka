@@ -1,31 +1,35 @@
 ---
-name: Duplicate Code Detector
-description: Identifies duplicate code patterns across the codebase and suggests refactoring opportunities
 on:
-  workflow_dispatch:
   schedule: daily
+  workflow_dispatch: null
 permissions:
   contents: read
   issues: read
   pull-requests: read
-engine: copilot
 imports:
-  - shared/go-source-analysis.md
+- shared/go-source-analysis.md
 safe-outputs:
   create-issue:
-    expires: 2d
-    title-prefix: "refactor(duplicate-code): "
-    labels: [code-quality, automated-analysis, cookie]
     assignees: copilot
+    expires: 2d
     group: true
+    labels:
+    - code-quality
+    - automated-analysis
+    - cookie
     max: 8
+    title-prefix: "refactor(duplicate-code): "
   noop:
     report-as-issue: false
-timeout-minutes: 15
+description: Identifies duplicate code patterns across the codebase and suggests refactoring opportunities
+engine: copilot
+name: Duplicate Code Detector
+source: github/gh-aw/.github/workflows/duplicate-code-detector.md@7f977f17bd6948b45209fab4719566b435f8ecc5
 strict: true
-source: github/gh-aw/.github/workflows/duplicate-code-detector.md@525b5b77a444146979ba1759b2a23d72934bc6fc
+timeout-minutes: 15
+tools:
+  cli-proxy: true
 ---
-
 # Duplicate Code Detection
 
 Analyze code to identify duplicated patterns using Serena's semantic code analysis capabilities. Report significant findings that require refactoring.
@@ -270,4 +274,3 @@ Example noop output:
 ```json
 {"noop": {"message": "No action needed: all non-test source files are below the 500-line threshold after checking the largest files."}}
 ```
-

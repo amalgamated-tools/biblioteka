@@ -15,6 +15,7 @@ network:
 sandbox:
   agent: awf  # Firewall enabled (migrated from network.firewall)
 tools:
+  cli-proxy: true
   edit:
   bash: true
   github:
@@ -34,7 +35,7 @@ imports:
   - shared/safe-output-app.md
 features:
   copilot-requests: true
-source: github/gh-aw/.github/workflows/artifacts-summary.md@936d8cefa32536db14d3a74d7ae2af4af1840fde
+source: github/gh-aw/.github/workflows/artifacts-summary.md@7f977f17bd6948b45209fab4719566b435f8ecc5
 ---
 
 # Artifacts Summary
@@ -94,8 +95,18 @@ Create an issue with a markdown table like this:
 - Consider artifact retention policies in your analysis
 - Include both successful and failed runs in the analysis, ignore cancelled runs
 
+<<<<<<< current (local changes)
 **Important**: After completing your analysis, you **MUST** call the `create-discussion` safe-output tool to publish your report. If there are no notable findings, include a brief explanation in the discussion body. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
 
 ```json
 {"create-discussion": {"title": "Artifacts Summary", "body": "[Your analysis and findings here]"}}
 ```
+||||||| base (original)
+**Important**: If no action is needed after completing your analysis, you **MUST** call the `noop` safe-output tool with a brief explanation. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
+
+```json
+{"noop": {"message": "No action needed: [brief explanation of what was analyzed and why]"}}
+```
+=======
+{{#import shared/noop-reminder.md}}
+>>>>>>> new (upstream)

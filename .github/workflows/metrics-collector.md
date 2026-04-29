@@ -11,6 +11,7 @@ permissions:
   actions: read
 engine: copilot
 tools:
+  cli-proxy: true
   agentic-workflows:
   github:
     toolsets: [default]
@@ -18,7 +19,7 @@ tools:
     branch-name: memory/meta-orchestrators
     file-glob: "metrics/**"
 timeout-minutes: 15
-source: github/gh-aw/.github/workflows/metrics-collector.md@525b5b77a444146979ba1759b2a23d72934bc6fc
+source: github/gh-aw/.github/workflows/metrics-collector.md@7f977f17bd6948b45209fab4719566b435f8ecc5
 ---
 
 {{#runtime-import? .github/shared-instructions.md}}
@@ -75,7 +76,7 @@ As an infrastructure agent, you collect and persist performance data that enable
   - Engagement metrics: reactions on issues created by workflows
   - Comment counts on PRs created by workflows
   - Discussion reply counts
-  
+
 **Quality Indicators**:
 - For merged PRs: Calculate merge time (created_at to merged_at)
 - For closed issues: Calculate close time (created_at to closed_at)
@@ -245,14 +246,14 @@ At the end of collection:
 1. **Summary Log**:
    ```
    ✅ Metrics collection completed
-   
+
    📊 Collection Summary:
    - Workflows analyzed: 120
    - Active workflows: 85
    - Total safe outputs: 45
    - Overall success rate: 89.2%
    - Storage: /tmp/gh-aw/repo-memory/default/metrics/daily/2024-12-24.json
-   
+
    ⏱️  Collection took: 45 seconds
    ```
 
@@ -261,7 +262,7 @@ At the end of collection:
    📝 Files written:
    - metrics/daily/2024-12-24.json
    - metrics/latest.json
-   
+
    🗑️  Cleanup:
    - Removed 1 old daily file(s)
    ```

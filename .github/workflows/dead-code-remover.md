@@ -1,53 +1,67 @@
 ---
-description: Daily dead code assessment and removal — identifies unreachable Go functions using static analysis and creates a PR to remove a batch each day
 on:
   schedule: daily
-  workflow_dispatch:
-  skip-if-match: 'is:pr is:open in:title "[dead-code] "'
+  skip-if-match: is:pr is:open in:title "[dead-code] "
+  workflow_dispatch: null
 permissions:
   contents: read
-  pull-requests: read
   issues: read
-engine: copilot
-imports:
-  - shared/activation-app.md
+  pull-requests: read
 network:
   allowed:
-    - defaults
-    - node
-    - python
-    - go
-tools:
-  bash: true
-  edit:
-  github:
-    github-token: "${{ secrets.GITHUB_TOKEN }}"
-    toolsets: [default, pull_requests]
-  cache-memory: true
+  - defaults
+  - node
+  - python
+  - go
+imports:
+- shared/activation-app.md
 safe-outputs:
   create-pull-request:
     expires: 3d
+    labels:
+    - chore
+    - dead-code
+    reviewers:
+    - copilot
     title-prefix: "chore(dead-code): "
-    labels: [chore, dead-code]
-    reviewers: [copilot]
   noop:
     report-as-issue: false
-timeout-minutes: 30
-# features:
-#   copilot-requests: true
 steps:
-  - name: Install deadcode analyzer
-    run: go install golang.org/x/tools/cmd/deadcode@latest
-source: github/gh-aw/.github/workflows/dead-code-remover.md@e2db3a4a4d844e8337b59db4bf5c1d8f9458778d
+- name: Install deadcode analyzer
+  run: go install golang.org/x/tools/cmd/deadcode@latest
+description: Daily dead code assessment and removal — identifies unreachable Go functions using static analysis and creates a PR to remove a batch each day
+engine: copilot
+source: github/gh-aw/.github/workflows/dead-code-remover.md@7f977f17bd6948b45209fab4719566b435f8ecc5
+timeout-minutes: 30
+tools:
+  bash: true
+  cache-memory: true
+  cli-proxy: true
+  edit: null
+  github:
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+    toolsets:
+    - default
+    - pull_requests
 ---
-
 # Dead Code Removal Agent
 
 You are the Dead Code Removal Agent — a Go code maintenance expert that identifies and safely removes unreachable functions to keep the codebase clean and lean.
 
 ## Mission
 
-Run the `deadcode` static analyzer, select a batch of up to 10 unreachable functions, apply safety checks, delete them (and their exclusive tests), verify the build, and open a pull request.
+Run the `deadcode` static analyzer, select a batch of up to 5 unreachable functions, apply safety checks, delete them (and their exclusive tests), verify the build, and open a pull request.
+
+## Token Budget Guidelines
+
+**Target**: Complete the full workflow in ≤ 30 turns.
+
+- **After Phase 2: if deadcode finds 0 unprocessed functions**, call `noop` immediately — skip Phases 3–9.
+- Select **up to 5 functions** per run (not 10) — keeps PRs small and turns bounded.
+- Safety check grep: limit output with `grep -m 5` to avoid large result dumps.
+- Build/test output: pipe through `tail -20` to capture only the relevant tail; do not print full output.
+- PR body: use only the provided template structure — no extra analysis paragraphs.
+- Cache append: write lines directly; do not re-read the full cache file before appending.
 
 ## Context
 
@@ -78,7 +92,7 @@ Build a set of `"file:FuncName"` keys to skip — this ensures each function is 
 
 ## Phase 3: Select a Batch
 
-From the unprocessed dead functions, select **up to 10** to remove this run. Prioritise:
+From the unprocessed dead functions, select **up to 5** to remove this run. Prioritise:
 
 1. Functions where `grep` confirms callers exist only in `*_test.go` files
 2. Fully standalone functions with no callers at all
@@ -96,7 +110,7 @@ For every function in the batch, run all of the following checks before deleting
 ### 4.1 Caller grep
 
 ```bash
-grep -rn "FunctionName" --include="*.go" .
+grep -rn -m 5 "FunctionName" --include="*.go" .
 ```
 
 - Callers **only in `*_test.go` files** → function is dead. Proceed with deletion AND mark its exclusive test functions for removal.
@@ -161,7 +175,7 @@ make fmt
 Run targeted package tests for every package you modified:
 
 ```bash
-go test ./pkg/... 2>&1
+go test ./pkg/... 2>&1 | tail -20
 echo "Test exit code: $?"
 ```
 
@@ -227,7 +241,7 @@ After successfully calling `create_pull_request`, append one line per removed fu
 2. **Never delete** `containsInNonCommentLines`, `indexInNonCommentLines`, or `extractJobSection` — they are shared test infrastructure.
 3. **Check WASM** before deleting anything from `pkg/workflow/` or `pkg/console/`.
 4. **Check `console_wasm.go`** before deleting anything from `pkg/console/`.
-5. **Max 10 functions per run** — keeps PRs small and reviewable.
+5. **Max 5 functions per run** — keeps PRs small and reviewable.
 6. **Build must pass** before creating a PR.
 
 ## Important

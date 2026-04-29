@@ -9,6 +9,7 @@ permissions:
   actions: read
 engine: copilot
 tools:
+  cli-proxy: true
   agentic-workflows:
   github:
     toolsets: [default, actions, repos]
@@ -36,7 +37,7 @@ safe-outputs:
 timeout-minutes: 30
 features:
   copilot-requests: true
-source: github/gh-aw/.github/workflows/agent-performance-analyzer.md@66fb0c5877c118a3b1ee7e120edac1161b1df4ee
+source: github/gh-aw/.github/workflows/agent-performance-analyzer.md@7f977f17bd6948b45209fab4719566b435f8ecc5
 ---
 
 {{#runtime-import? .github/shared-instructions.md}}
@@ -642,8 +643,18 @@ Your effectiveness is measured by:
 
 Execute all phases systematically and maintain an objective, data-driven approach to agent performance analysis.
 
+<<<<<<< current (local changes)
 **Important**: After completing your analysis, you **MUST** call one of the configured safe-output tools (`create-issue`, `create-discussion`, or `add-comment`) to publish your findings. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
 
 ```json
 {"create-discussion": {"title": "Agent Performance Analysis", "body": "[Your analysis and findings here]"}}
 ```
+||||||| base (original)
+**Important**: If no action is needed after completing your analysis, you **MUST** call the `noop` safe-output tool with a brief explanation. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
+
+```json
+{"noop": {"message": "No action needed: [brief explanation of what was analyzed and why]"}}
+```
+=======
+{{#import shared/noop-reminder.md}}
+>>>>>>> new (upstream)

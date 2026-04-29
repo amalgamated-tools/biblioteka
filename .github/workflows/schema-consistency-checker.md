@@ -8,7 +8,15 @@ permissions:
   discussions: read
   issues: read
   pull-requests: read
+<<<<<<< current (local changes)
 engine: copilot
+||||||| base (original)
+engine: claude
+=======
+engine:
+  id: claude
+  max-turns: 60
+>>>>>>> new (upstream)
 tools:
   edit:
   bash: ["*"]
@@ -18,13 +26,117 @@ tools:
   cache-memory:
     key: schema-consistency-cache-${{ github.workflow }}
 timeout-minutes: 30
+checkout:
+  - fetch-depth: 1
+    current: true
 imports:
-  - uses: shared/daily-audit-discussion.md
+  - uses: shared/daily-audit-base.md
     with:
       title-prefix: "[Schema Consistency] "
       expires: 1d
-  - shared/reporting.md
-source: github/gh-aw/.github/workflows/schema-consistency-checker.md@525b5b77a444146979ba1759b2a23d72934bc6fc
+pre-agent-steps:
+  - name: Pre-compute schema analysis data
+    run: |
+      set -e
+      mkdir -p /tmp/gh-aw/agent
+
+      echo "=== Extracting schema fields ==="
+
+      # 1. All top-level fields in the main JSON schema
+      SCHEMA_FIELDS=$(jq -r '.properties | keys[]' pkg/parser/schemas/main_workflow_schema.json 2>/dev/null | sort -u || echo "")
+
+      # 2. yaml-tagged struct fields in pkg/parser/*.go
+      PARSER_YAML_FIELDS=$(grep -rh 'yaml:"' pkg/parser/*.go 2>/dev/null \
+        | grep -o 'yaml:"[^"]*"' \
+        | sed 's/yaml:"//;s/"//' \
+        | sed 's/,omitempty//' \
+        | sed 's/,.*$//' \
+        | grep -v '^-$' \
+        | grep -v '^$' \
+        | sort -u || echo "")
+
+      # 3. yaml-tagged struct fields in pkg/workflow/*.go
+      WORKFLOW_YAML_FIELDS=$(grep -rh 'yaml:"' pkg/workflow/*.go 2>/dev/null \
+        | grep -o 'yaml:"[^"]*"' \
+        | sed 's/yaml:"//;s/"//' \
+        | sed 's/,omitempty//' \
+        | sed 's/,.*$//' \
+        | grep -v '^-$' \
+        | grep -v '^$' \
+        | sort -u || echo "")
+
+      # 4. Top-level frontmatter keys actually used in workflow .md files
+      USED_FIELDS=$(grep -rh '^[a-z][a-z0-9_-]*:' .github/workflows/*.md 2>/dev/null \
+        | sed 's/:.*//' \
+        | grep -v '^#' \
+        | sort -u || echo "")
+
+      # 5. Schema field types for all top-level fields
+      FIELD_TYPES=$(jq -r '.properties | to_entries[] |
+        "\(.key): \(.value.type // (.value.anyOf // .value.oneOf // [] | map(.type // "complex") | unique | join("|")) // "complex")"' \
+        pkg/parser/schemas/main_workflow_schema.json 2>/dev/null | sort || echo "")
+
+      # 6. Fields in schema but absent as yaml tags in parser structs
+      IN_SCHEMA_NOT_PARSER=$(comm -23 \
+        <(echo "$SCHEMA_FIELDS") \
+        <(echo "$PARSER_YAML_FIELDS" | sort -u) 2>/dev/null || echo "")
+
+      # 7. yaml tags in parser structs absent from schema
+      IN_PARSER_NOT_SCHEMA=$(comm -23 \
+        <(echo "$PARSER_YAML_FIELDS" | sort -u) \
+        <(echo "$SCHEMA_FIELDS") 2>/dev/null || echo "")
+
+      # 8. Fields in schema but absent from workflow compiler structs
+      IN_SCHEMA_NOT_WORKFLOW=$(comm -23 \
+        <(echo "$SCHEMA_FIELDS") \
+        <(echo "$WORKFLOW_YAML_FIELDS" | sort -u) 2>/dev/null || echo "")
+
+      # 9. Fields used in actual workflow .md files but not in schema
+      IN_USED_NOT_SCHEMA=$(comm -23 \
+        <(echo "$USED_FIELDS" | sort -u) \
+        <(echo "$SCHEMA_FIELDS") 2>/dev/null || echo "")
+
+      # Write JSON output
+      jq -n \
+        --arg generated_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        --arg schema_fields "$SCHEMA_FIELDS" \
+        --arg parser_yaml_fields "$PARSER_YAML_FIELDS" \
+        --arg workflow_yaml_fields "$WORKFLOW_YAML_FIELDS" \
+        --arg used_in_workflows "$USED_FIELDS" \
+        --arg field_types "$FIELD_TYPES" \
+        --arg in_schema_not_parser "$IN_SCHEMA_NOT_PARSER" \
+        --arg in_parser_not_schema "$IN_PARSER_NOT_SCHEMA" \
+        --arg in_schema_not_workflow "$IN_SCHEMA_NOT_WORKFLOW" \
+        --arg in_used_not_schema "$IN_USED_NOT_SCHEMA" \
+        '{
+          generated_at: $generated_at,
+          schema_fields: ($schema_fields | split("\n") | map(select(. != ""))),
+          parser_yaml_fields: ($parser_yaml_fields | split("\n") | map(select(. != ""))),
+          workflow_yaml_fields: ($workflow_yaml_fields | split("\n") | map(select(. != ""))),
+          used_in_workflows: ($used_in_workflows | split("\n") | map(select(. != ""))),
+          field_types: ($field_types | split("\n") | map(select(. != ""))),
+          field_gaps: {
+            in_schema_not_parser: ($in_schema_not_parser | split("\n") | map(select(. != ""))),
+            in_parser_not_schema: ($in_parser_not_schema | split("\n") | map(select(. != ""))),
+            in_schema_not_workflow: ($in_schema_not_workflow | split("\n") | map(select(. != ""))),
+            in_used_not_schema: ($in_used_not_schema | split("\n") | map(select(. != "")))
+          }
+        }' > /tmp/gh-aw/agent/schema-diff.json
+
+      echo "✓ Schema diff written to /tmp/gh-aw/agent/schema-diff.json"
+      echo "Summary:"
+      jq '{
+        schema_field_count: (.schema_fields | length),
+        parser_yaml_field_count: (.parser_yaml_fields | length),
+        workflow_yaml_field_count: (.workflow_yaml_fields | length),
+        gaps: {
+          in_schema_not_parser: (.field_gaps.in_schema_not_parser | length),
+          in_parser_not_schema: (.field_gaps.in_parser_not_schema | length),
+          in_schema_not_workflow: (.field_gaps.in_schema_not_workflow | length),
+          in_used_not_schema: (.field_gaps.in_used_not_schema | length)
+        }
+      }' /tmp/gh-aw/agent/schema-diff.json
+source: github/gh-aw/.github/workflows/schema-consistency-checker.md@7f977f17bd6948b45209fab4719566b435f8ecc5
 ---
 
 # Schema Consistency Checker
@@ -45,7 +157,7 @@ Analyze the Biblioteka repository to find inconsistencies across these key areas
 Use the cache memory folder at `/tmp/gh-aw/cache-memory/` to store and reuse successful analysis strategies:
 
 1. **Read Previous Strategies**: Check `/tmp/gh-aw/cache-memory/strategies.json` for previously successful detection methods
-2. **Strategy Selection**: 
+2. **Strategy Selection**:
    - 70% of the time: Use a proven strategy from the cache
    - 30% of the time: Try a radically different approach to discover new inconsistencies
    - Implementation: Use the day of year (e.g., `date +%j`) modulo 10 to determine selection: values 0-6 use proven strategies, 7-9 try new approaches
@@ -260,6 +372,7 @@ Here are proven strategies you can use or build upon:
 
 ## Implementation Steps
 
+<<<<<<< current (local changes)
 ### Step 0: Detect Changed Schema Files (Scope Detection)
 
 Run the scope detection from the [Scope Detection](#scope-detection) section above:
@@ -268,6 +381,30 @@ Run the scope detection from the [Scope Detection](#scope-detection) section abo
 3. Exit gracefully if no schema layers changed
 4. Record which layers are active for this run — only active layers are analyzed in Steps 3–4
 
+||||||| base (original)
+=======
+### Step 0: Read Pre-Computed Data (Start Here)
+
+Before doing anything else, read the schema diff that was computed before your session began:
+
+```bash
+cat /tmp/gh-aw/agent/schema-diff.json
+```
+
+This file contains:
+- `schema_fields`: All top-level field names in the main JSON schema
+- `parser_yaml_fields`: All yaml-tagged struct fields in `pkg/parser/*.go`
+- `workflow_yaml_fields`: All yaml-tagged struct fields in `pkg/workflow/*.go`
+- `used_in_workflows`: All top-level frontmatter keys used in `.github/workflows/*.md`
+- `field_types`: Schema field types for all top-level fields
+- `field_gaps.in_schema_not_parser`: Fields in schema absent from parser yaml tags
+- `field_gaps.in_parser_not_schema`: Fields as parser yaml tags absent from schema
+- `field_gaps.in_schema_not_workflow`: Fields in schema absent from workflow compiler yaml tags
+- `field_gaps.in_used_not_schema`: Fields used in workflow files but not in schema
+
+**Use this pre-computed data as your primary starting point.** Do NOT re-run the field enumeration commands from scratch — instead, refine and supplement the pre-computed data with targeted follow-up queries (e.g., checking a specific file for a specific field).
+
+>>>>>>> new (upstream)
 ### Step 1: Load Previous Strategies
 ```bash
 # Check if strategies file exists
@@ -276,35 +413,107 @@ if [ -f /tmp/gh-aw/cache-memory/strategies.json ]; then
 fi
 ```
 
-### Step 2: Choose Strategy
-- If cache exists and has strategies, use proven strategy 70% of time
-- Otherwise or 30% of time, try new/different approach
+### Step 2: Choose Analysis Focus
 
+<<<<<<< current (local changes)
 ### Step 3: Execute Analysis
+||||||| base (original)
+### Step 3: Execute Analysis
+Use chosen strategy to find inconsistencies. Examples:
+=======
+Using the pre-computed `field_gaps` from Step 0 plus the strategy cache from Step 1:
+- If `field_gaps` show promising leads, start there (they are likely high-signal)
+- If cache has strategies, use a proven strategy 70% of the time; try a new approach 30% of the time
+>>>>>>> new (upstream)
 
+<<<<<<< current (local changes)
 **Only analyze the layers flagged as active in Step 0.** Skip any analysis area whose layer flag is `false`.
 
 Use the chosen strategy to find inconsistencies within the active layers. Example for DTO field enumeration (run only when `LAYER_HANDLERS` or `LAYER_FRONTEND` is active):
 
+||||||| base (original)
+**Example: Field enumeration**
+=======
+>>>>>>> new (upstream)
 ```bash
+<<<<<<< current (local changes)
 # Step 1: List all Go DTO types and their json fields in handlers
 echo "=== Go Handler DTOs ==="
 grep -rn 'json:"' internal/handlers/*.go | grep -v '_test.go' | grep 'type\|json:' | head -60
+||||||| base (original)
+# Extract schema fields using jq for robust JSON parsing
+jq -r '.properties | keys[]' pkg/parser/schemas/main_workflow_schema.json 2>/dev/null | sort -u
+=======
+# Determine selection mode (0-6 = proven strategy, 7-9 = new approach)
+day_mod=$(( $(date +%j) % 10 ))
+if [ "$day_mod" -le 6 ]; then
+  echo "Use proven strategy from cache"
+else
+  echo "Try new approach"
+fi
+```
+>>>>>>> new (upstream)
 
+<<<<<<< current (local changes)
 # Step 2: List TypeScript types
 echo "=== TypeScript Types ==="
 cat frontend/src/types.ts
+||||||| base (original)
+# Extract parser fields from pkg/parser (look for yaml tags)
+grep -r "yaml:\"" pkg/parser/*.go | grep -o 'yaml:"[^"]*"' | sort -u
+=======
+### Step 3: Execute Targeted Analysis
+>>>>>>> new (upstream)
 
+<<<<<<< current (local changes)
 # Step 3: Find DB entity structs
 echo "=== DB Entity Structs ==="
 grep -A 30 'type Book struct' internal/db/books.go
+||||||| base (original)
+# Extract workflow compiler fields from pkg/workflow (look for yaml tags and frontmatter access)
+grep -r "yaml:\"" pkg/workflow/*.go | grep -o 'yaml:"[^"]*"' | sort -u
+grep -r 'frontmatter\["[^"]*"\]' pkg/workflow/*.go | grep -o '\["[^"]*"\]' | sort -u
+=======
+Use the pre-computed data as context and run **targeted** follow-up commands only when
+deeper inspection is needed (e.g., checking how a specific field is actually processed in code).
+>>>>>>> new (upstream)
 
+<<<<<<< current (local changes)
 # Step 4: Find toBookDTO mapping
 echo "=== toBookDTO mapping ==="
 grep -A 30 'func toBookDTO' internal/handlers/books.go
+||||||| base (original)
+# Extract documented fields
+grep -r "^###\? " docs/src/content/docs/reference/frontmatter.md
+=======
+**Example: Verify a gap from pre-computed data**
+```bash
+# Verify a specific field gap by searching implementation files
+grep -r "fieldName" pkg/parser/ pkg/workflow/ 2>/dev/null | grep -v "_test.go"
+>>>>>>> new (upstream)
 ```
 
+<<<<<<< current (local changes)
 When `LAYER_MIGRATIONS` or `LAYER_DB` is active, also run migration drift checks. When `LAYER_ROUTES` is active, also run route coverage analysis. Skip commands for inactive layers to keep the run fast.
+||||||| base (original)
+**Example: Type checking**
+```bash
+# Find schema field types (handles different JSON Schema patterns)
+jq -r '
+  (.properties // {}) | to_entries[] |
+  "\(.key): \(.value.type // .value.oneOf // .value.anyOf // .value.allOf // "complex")"
+' pkg/parser/schemas/main_workflow_schema.json 2>/dev/null || echo "Failed to parse schema"
+```
+=======
+**Example: Type checking for a specific field**
+```bash
+# Find schema field types (handles different JSON Schema patterns)
+jq -r '
+  (.properties // {}) | to_entries[] |
+  "\(.key): \(.value.type // .value.oneOf // .value.anyOf // .value.allOf // "complex")"
+' pkg/parser/schemas/main_workflow_schema.json 2>/dev/null || echo "Failed to parse schema"
+```
+>>>>>>> new (upstream)
 
 ### Step 4: Record Findings
 Create a structured list of inconsistencies found:
@@ -313,12 +522,12 @@ Create a structured list of inconsistencies found:
 ## Inconsistencies Found
 
 ### DB Migration ↔ Go Struct Mismatches
-1. **Table `books`, column `publication_date`**: 
+1. **Table `books`, column `publication_date`**:
    - Migration: `TEXT`
    - Go struct: field present as `*string`
    - Scan: verified present in row.Scan call
 
-### Go DTO ↔ TypeScript Mismatches  
+### Go DTO ↔ TypeScript Mismatches
 1. **`bookDTO.google_books_id`**:
    - Go: `GoogleBooksID *string \`json:"google_books_id"\``
    - TypeScript: field missing from `Book` interface
@@ -438,13 +647,26 @@ Create a well-structured discussion report:
 - Include code snippets to illustrate issues
 - Suggest concrete fixes referencing actual field names
 
-### Efficiency  
+### Efficiency
+<<<<<<< current (local changes)
 - **Run scope detection first** (Step 0) — exit early when no schema files changed
 - Analyze only active layers; skip inactive layers entirely
 - Use bash tools efficiently (grep, find, etc.)
+||||||| base (original)
+- Use bash tools efficiently (grep, jq, etc.)
+=======
+- **Always start from `/tmp/gh-aw/agent/schema-diff.json`** — this pre-computed diff eliminates the need to re-read all source files
+- Use targeted bash commands to verify specific leads from the pre-computed data
+>>>>>>> new (upstream)
 - Cache results when re-analyzing same data
 - Don't re-check things found in previous runs (check cache first)
+<<<<<<< current (local changes)
 - Focus on high-impact areas (books, authors, series are core entities)
+||||||| base (original)
+- Focus on high-impact areas
+=======
+- Focus on high-impact areas (field gaps with parser mismatches are usually most critical)
+>>>>>>> new (upstream)
 
 ### Strategy Evolution
 - Try genuinely different approaches when not using cached strategies
@@ -472,6 +694,7 @@ A successful run:
 
 **Important**: You **MUST** call exactly one terminal safe-output (`noop` or `create-discussion`) before finishing. Ancillary calls like `upload-asset` or `close-discussion` are allowed alongside the terminal output. If no schema-related files changed in the last 24 hours, or if analysis finds zero inconsistencies, call `noop` with a descriptive status message. Otherwise, create a discussion report.
 
+<<<<<<< current (local changes)
 Example noop output:
 
 ```json
@@ -479,3 +702,12 @@ Example noop output:
 ```
 
 Begin your analysis now. Check the cache, choose a strategy, execute it, and either create a discussion report with your findings or call `noop` with a descriptive status message when there are no relevant changes or no inconsistencies.
+||||||| base (original)
+**Important**: If no action is needed after completing your analysis, you **MUST** call the `noop` safe-output tool with a brief explanation. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
+
+```json
+{"noop": {"message": "No action needed: [brief explanation of what was analyzed and why]"}}
+```
+=======
+{{#import shared/noop-reminder.md}}
+>>>>>>> new (upstream)

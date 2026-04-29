@@ -10,6 +10,7 @@ permissions:
 tracker-id: daily-code-metrics
 engine: copilot
 tools:
+  cli-proxy: true
   repo-memory:
     branch-prefix: daily
     description: "Historical code quality and health metrics"
@@ -20,14 +21,13 @@ tools:
 timeout-minutes: 30
 strict: true
 imports:
-  - uses: shared/daily-audit-discussion.md
+  - uses: shared/daily-audit-base.md
     with:
       title-prefix: "[daily-code-metrics] "
-  - shared/reporting.md
   - shared/python-dataviz.md
   - shared/trends.md
-  - shared/observability-otlp.md
-source: github/gh-aw/.github/workflows/daily-code-metrics.md@525b5b77a444146979ba1759b2a23d72934bc6fc
+
+source: github/gh-aw/.github/workflows/daily-code-metrics.md@7f977f17bd6948b45209fab4719566b435f8ecc5
 ---
 
 {{#runtime-import? .github/shared-instructions.md}}
@@ -66,12 +66,12 @@ All metrics use standardized names from scratchpad/metrics-glossary.md:
 Store as JSON Lines in `/tmp/gh-aw/repo-memory/default/history.jsonl`:
 ```json
 {
-  "date": "2024-01-15", 
-  "timestamp": 1705334400, 
+  "date": "2024-01-15",
+  "timestamp": 1705334400,
   "metrics": {
-    "size": {...}, 
-    "quality": {...}, 
-    "tests": {...}, 
+    "size": {...},
+    "quality": {...},
+    "tests": {...},
     "churn": {
       "source": {
         "files_modified": 123,
@@ -86,8 +86,8 @@ Store as JSON Lines in `/tmp/gh-aw/repo-memory/default/history.jsonl`:
         "lines_deleted": 4321,
         "net_change": 1357
       }
-    }, 
-    "workflows": {...}, 
+    },
+    "workflows": {...},
     "docs": {...}
   }
 }
@@ -211,7 +211,7 @@ current_metrics = json.load(open('/tmp/gh-aw/python/data/current_metrics.json'))
 # Chart 1: LOC by Language
 # ... implementation ...
 
-# Chart 2: Top Directories  
+# Chart 2: Top Directories
 # ... implementation ...
 
 # Chart 3: Quality Score Breakdown
@@ -240,22 +240,22 @@ After generating charts:
 2. **Embed in discussion report**:
    ```markdown
    ## 📊 Visualizations
-   
+
    ### LOC Distribution by Language
    ![LOC by Language](URL_FROM_UPLOAD_ASSET_1)
-   
+
    ### Top Directories by LOC
    ![Top Directories](URL_FROM_UPLOAD_ASSET_2)
-   
+
    ### Quality Score Breakdown
    ![Quality Score](URL_FROM_UPLOAD_ASSET_3)
-   
+
    ### Test Coverage Analysis
    ![Test Coverage](URL_FROM_UPLOAD_ASSET_4)
-   
+
    ### Code Churn (7 Days)
    ![Code Churn](URL_FROM_UPLOAD_ASSET_5)
-   
+
    ### Historical Trends (30 Days)
    ![Historical Trends](URL_FROM_UPLOAD_ASSET_6)
    ```
@@ -340,7 +340,7 @@ Brief 2-3 paragraph executive summary highlighting key findings, quality score, 
 
 - **Test Files**: XX files
 - **Test LOC** (`test_lines_of_code`): X,XXX lines
-- **Source LOC**: X,XXX lines  
+- **Source LOC**: X,XXX lines
 - **Test-to-Source Ratio** (`test_to_source_ratio`): X.XX
 - **Trend (7d)**: ⬆️ +X%
 - **Trend (30d)**: ⬆️ +X%
@@ -446,8 +446,18 @@ This ensures the quality score reflects actionable source code volatility, not n
 - Embed charts in discussion report with analysis
 - Store metrics to repo memory, create discussion report with visualizations
 
+<<<<<<< current (local changes)
 **Important**: After completing your analysis, you **MUST** call the `create-discussion` safe-output tool to publish the report, including a brief explanation if there are no notable changes or actions needed. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
 
 ```json
 {"create-discussion": {"title": "Daily Code Metrics Report", "body": "[summary of metrics, charts, analysis, and note if no action is needed]"}}
 ```
+||||||| base (original)
+**Important**: If no action is needed after completing your analysis, you **MUST** call the `noop` safe-output tool with a brief explanation. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
+
+```json
+{"noop": {"message": "No action needed: [brief explanation of what was analyzed and why]"}}
+```
+=======
+{{#import shared/noop-reminder.md}}
+>>>>>>> new (upstream)
