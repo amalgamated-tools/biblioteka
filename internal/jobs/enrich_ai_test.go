@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"testing"
@@ -118,15 +119,14 @@ func TestEnrichAI_ProviderError(t *testing.T) {
 }
 
 func TestEnrichAI_InvalidPayload(t *testing.T) {
-	d := newTestDB(t)
 	publisher := &mockPublisher{}
 
-	handler := NewEnrichAIHandler(d, &mockLLMProvider{}, "ollama", "llama3", publisher)
+	handler := NewEnrichAIHandler(nil, &mockLLMProvider{}, "ollama", "llama3", publisher)
 	err := handler(t.Context(), []byte("not valid json"))
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "unmarshal")
 	// Invalid payload is a permanent failure — no event is published.
-	require.False(t, publisher.hasEvent(EventError))
+	require.Len(t, publisher.messages, 0)
 }
 
 func TestEnrichAI_BookNotFound(t *testing.T) {
@@ -140,6 +140,7 @@ func TestEnrichAI_BookNotFound(t *testing.T) {
 	err = handler(t.Context(), payload)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "fetch book")
+	require.True(t, errors.Is(err, sql.ErrNoRows))
 
 	require.True(t, publisher.hasEvent(EventError))
 }
