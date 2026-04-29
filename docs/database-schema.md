@@ -211,7 +211,7 @@ Core book metadata. All fields except `title` are optional.
 
 **Indexes:**
 - `idx_books_title` — index on `(title)` (SQLite) / composite index on `(title, id)` (PostgreSQL), covering `ORDER BY title ASC, rowid ASC` on SQLite and `ORDER BY title ASC, id ASC` on PostgreSQL in paginated list and search queries; used by `ListBooksPaginated`, `ListBooksByAuthorPaginated`, `ListBooksBySeriesPaginated`, and `SearchBooks`.
-- `idx_books_created_at` — index on `(created_at DESC)` (SQLite) / composite index on `(created_at DESC, id DESC)` (PostgreSQL), covering `ORDER BY created_at DESC, rowid DESC` on SQLite and `ORDER BY created_at DESC, id DESC` on PostgreSQL; used by `ListRecentBooks`.
+- `idx_books_created_at_id` — composite index on `(created_at DESC, id DESC)` (SQLite and PostgreSQL), covering `ORDER BY created_at DESC, id DESC` used by `ListRecentBooks`; the `id` tiebreaker eliminates the temp B-tree sort step on both dialects (migration `20260428205224`).
 - `idx_books_updated_at_id` — composite index on `(updated_at, id)` for efficient cursor-based pagination; used by the Kobo library sync endpoint to order and page through books by modification time.
 
 **Full-text / trigram search indexes (added in migration `20260412000000`):**
@@ -650,6 +650,7 @@ Associates books with reading lists and tracks insertion time.
 
 **Indexes:**
 - `idx_reading_list_books_book` — fast lookup of which lists contain a given book
+- `idx_reading_list_books_list_added_at` on `(reading_list_id, added_at ASC, book_id ASC)` — supports the default `ORDER BY rlb.added_at ASC, b.id ASC` used by `ListReadingListBooks`; in SQLite this can avoid a temp B-tree sort, while in PostgreSQL it can help avoid or reduce an explicit sort step
 
 **Notes:**
 - `ADD` is idempotent: inserting a duplicate `(reading_list_id, book_id)` pair is silently ignored (`ON CONFLICT DO NOTHING`).
