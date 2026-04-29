@@ -6,10 +6,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
-	"golang.org/x/crypto/bcrypt"
-
-	goauth "github.com/amalgamated-tools/goauth/auth"
 )
 
 // seedInitialAdmin reads the INITIAL_ADMIN_EMAIL, INITIAL_ADMIN_PASSWORD, and
@@ -41,7 +39,7 @@ func (s *Server) seedInitialAdmin(ctx context.Context) error {
 		return nil
 	}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), goauth.BcryptCost)
+	hash, err := auth.HashPassword(password)
 	if err != nil {
 		return err
 	}

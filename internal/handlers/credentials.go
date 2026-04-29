@@ -10,7 +10,6 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
-	"golang.org/x/crypto/bcrypt"
 )
 
 // maxUsernameLen is the maximum allowed length for a credential username.
@@ -187,7 +186,7 @@ func upsertCredential(ops credentialOps, w http.ResponseWriter, r *http.Request)
 		toHash = ops.deriveKey(req.Password)
 	}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(toHash), auth.BcryptCost)
+	hash, err := auth.HashPassword(toHash)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to hash protocol password",
 			slog.String(otelkeys.Protocol, ops.protocol),

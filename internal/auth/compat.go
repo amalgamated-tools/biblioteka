@@ -8,7 +8,6 @@ package auth
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	goauth "github.com/amalgamated-tools/goauth/auth"
@@ -66,11 +65,11 @@ func jsonError(w http.ResponseWriter, status int, message string) {
 	_ = json.NewEncoder(w).Encode(map[string]string{"error": message})
 }
 
-// mustGenerateDummyBcryptHash generates a bcrypt hash for timing-safe comparisons.
-func mustGenerateDummyBcryptHash(secret string, name string) []byte {
-	hash, err := bcrypt.GenerateFromPassword([]byte(secret), goauth.BcryptCost)
-	if err != nil {
-		panic(fmt.Errorf("generate dummy %s bcrypt hash: %w", name, err))
-	}
-	return hash
+// HashPassword hashes a plaintext password using bcrypt at the standard cost.
+func HashPassword(password string) ([]byte, error) {
+	return bcrypt.GenerateFromPassword([]byte(password), goauth.BcryptCost)
 }
+
+// CompareHashAndPassword compares a bcrypt hashed password with its plaintext
+// equivalent. Returns nil on success, or an error on failure.
+var CompareHashAndPassword = bcrypt.CompareHashAndPassword
