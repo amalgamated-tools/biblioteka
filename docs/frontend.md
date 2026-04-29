@@ -413,7 +413,7 @@ Views that need their own internal navigation use `routerStore.subPath`. The con
 | `reading-lists` | *(empty)* | List all reading lists + create form |
 | `reading-lists` | `{id}` | Detail / edit / delete view for a single list |
 | `groups` | *(empty)* | Group list + inline create form |
-| `groups` | `new` | Scroll to / open the inline create form |
+| `groups` | `new` | Opens the inline creation form |
 | `groups` | `{id}` | Detail view for a specific group |
 | `settings` | `account` | Account settings tab |
 | `settings` | `oidc` | OIDC / SSO settings tab |
@@ -1473,12 +1473,12 @@ The reading lists feature lets users create and manage named collections of book
 
 Top-level page component rendered when the router's `currentView` is `"reading-lists"`. It displays all reading lists owned by the authenticated user and handles list creation.
 
-| Sub-path | Behaviour |
+| Sub-path | Behavior |
 |----------|-----------|
 | `(empty)` | Shows the list of reading lists plus an inline creation form |
 | `{id}` | Renders `ReadingListDetail` for the list with that ID |
 
-**Behaviour:**
+**Behavior:**
 
 - On mount calls `readingListStore.load()` (idempotent — safe to call on every render).
 - Displays an error banner when `readingListStore.loadError` is set.
@@ -1522,13 +1522,13 @@ The reading groups feature lets users create collaborative groups, manage member
 
 Top-level page component rendered when the router's `currentView` is `"groups"`. It displays the list of groups the authenticated user belongs to and handles group creation.
 
-| Sub-path | Behaviour |
+| Sub-path | Behavior |
 |----------|-----------|
 | `(empty)` | Shows the group list plus a **New Group** button; clicking the button reveals an inline creation form |
-| `new` | Navigates directly to the inline creation form |
+| `new` | Opens the inline creation form |
 | `{id}` | Renders `GroupDetail` for the group with that ID |
 
-**Behaviour:**
+**Behavior:**
 
 - On mount calls `groupStore.load()` (idempotent — safe to call on every render).
 - Displays an error banner when `groupStore.loadError` is set.
@@ -1551,7 +1551,7 @@ Detail view shell for a single reading group. Receives the `groupId` prop from `
 |------|------|----------|-------------|
 | `groupId` | `string` | ✓ | ID of the reading group to display |
 
-**Behaviour:**
+**Behavior:**
 
 - Derives the `ReadingGroup` object from `groupStore.groups` — no separate API fetch.
 - Derives `isOwner` by comparing `authStore.user.id` with `group.owner_id`.
@@ -1577,7 +1577,7 @@ Renders the group title, description, and — for group owners — inline edit a
 | `isOwner` | `boolean` | ✓ | Whether the authenticated user owns the group |
 | `onDeleteError` | `(message: string) => void` | | Callback invoked when a delete operation fails; allows the parent to surface the error |
 
-**Behaviour:**
+**Behavior:**
 
 - In view mode shows the group name, member count, description, and (owners only) **Edit** and **Delete** buttons.
 - **Edit** toggles an inline form pre-filled with the current name and description; **Save** calls `groupStore.update`; **Cancel** discards changes.
@@ -1602,11 +1602,11 @@ Member list with add and remove controls.
 | `isOwner` | `boolean` | ✓ | Whether the authenticated user owns the group |
 | `currentUserId` | `string` | ✓ | The authenticated user's ID (used to prevent owners from removing themselves) |
 
-**Behaviour:**
+**Behavior:**
 
 - Fetches members via `listGroupMembers(groupId)` on mount; re-fetches after every successful add or remove.
 - Owners see an **Add Member** form that accepts a user ID and calls `addGroupMember`.
-- Only owners can remove members (via `removeGroupMember`); non-owner members cannot leave themselves.
+- Only owners can remove members (via `removeGroupMember`); non-owner members cannot leave themselves. To leave a group, a non-owner member must ask the group owner to remove them.
 - Each remove action uses a two-step inline confirmation before calling the API.
 - A `$effect` resets all local state and re-fetches when `groupId` changes.
 
@@ -1627,7 +1627,7 @@ Displays the reading lists shared with the group, allows members to share their 
 | `groupId` | `string` | ✓ | ID of the group |
 | `isOwner` | `boolean` | ✓ | Whether the authenticated user owns the group; grants owners permission to unshare any shared list (members can only unshare their own shared lists) |
 
-**Behaviour:**
+**Behavior:**
 
 - Fetches shared lists via `listGroupReadingLists(groupId)` on mount.
 - Loads the user's own reading lists from `readingListStore` (calls `readingListStore.load()` if not yet loaded) to populate the share dropdown.

@@ -262,19 +262,19 @@ Biblioteka can enrich book metadata using a locally-hosted large language model 
 3. **Review** — fetch the pending result with `GET /api/books/{id}/metadata/ai`. The response includes suggested tags, a reading level, and an AI-generated description (all pending, not yet applied).
 4. **Apply or reject** — choose one of:
    - `POST /api/books/{id}/metadata/ai-apply` — merges the AI-suggested tags into the book's existing tag set (union, no duplicates) and sets the description if the book has no description yet.
-   - `POST /api/books/{id}/metadata/ai-reject` — discards the pending record without modifying the book.
+   - `POST /api/books/{id}/metadata/ai-reject` — marks the pending record as rejected without modifying the book.
 
 ### `AIEnrichment` object fields
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | string | Opaque enrichment record ID |
-| `book_id` | string\|null | ID of the associated book |
+| `book_id` | string\|null | ID of the associated book; `null` if the book has been deleted (the foreign-key constraint sets this to `null` on book deletion) |
 | `status` | `"pending"` \| `"applied"` \| `"rejected"` | Current review state |
 | `provider` | string | LLM provider that generated the enrichment (e.g. `"ollama"`) |
 | `model` | string | Model name used (e.g. `"llama3"`) |
 | `suggested_tags` | string[] | AI-suggested tag names |
-| `reading_level` | string\|null | Suggested reading level. Expected values: `"children"`, `"young_adult"`, `"adult"`, `"academic"` |
+| `reading_level` | string\|null | Suggested reading level. Expected values: `"children"`, `"young_adult"`, `"adult"`, `"academic"` (stored as free-form text; not server-validated) |
 | `generated_description` | string\|null | AI-generated catalog description |
 | `created_at` | string | ISO 8601 creation timestamp |
 | `updated_at` | string | ISO 8601 last-updated timestamp |
