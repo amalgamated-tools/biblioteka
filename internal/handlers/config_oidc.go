@@ -15,14 +15,8 @@ import (
 	"github.com/coreos/go-oidc/v3/oidc"
 )
 
-// validateOIDCIssuerURL rejects issuer URLs that could be exploited for
-// Server-Side Request Forgery (SSRF):
-//   - only the https scheme is permitted
-//   - userinfo (user:password) in the URL is rejected to prevent credential leakage
-//   - literal private/loopback/link-local IP addresses in the host are blocked
-//   - IPv6 literals with zone identifiers are rejected
-//   - if the host is a DNS name, it is resolved (with a bounded timeout) and any
-//     private/loopback/link-local address in the result is also blocked
+// validateOIDCIssuerURL validates the OIDC issuer URL against SSRF; only
+// https is permitted. See ssrf.ValidateURL for the full set of checks.
 func validateOIDCIssuerURL(ctx context.Context, rawURL string) error {
 	return ssrf.ValidateURL(ctx, rawURL, "issuer_url", []string{"https"})
 }

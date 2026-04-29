@@ -77,7 +77,6 @@ func (d *DB) ListGroupReadingLists(ctx context.Context, groupID, requesterID str
 		`SELECT `+readingListColumns+` `+readingListBaseFrom+`
 		 INNER JOIN reading_group_lists rgl ON rgl.list_id = rl.id
 		 WHERE rgl.group_id = $1
-		 GROUP BY rl.id, rl.user_id, rl.name, rl.description, rl.created_at, rl.updated_at
 		 ORDER BY rl.name ASC, rl.id ASC`,
 		groupID,
 	)

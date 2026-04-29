@@ -15,14 +15,8 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/ssrf"
 )
 
-// validateLLMEndpointURL rejects LLM endpoint URLs that could be exploited for
-// Server-Side Request Forgery (SSRF):
-//   - only the http and https schemes are permitted
-//   - userinfo (user:password) in the URL is rejected to prevent credential leakage
-//   - literal private/loopback/link-local IP addresses in the host are blocked
-//   - IPv6 literals with zone identifiers are rejected
-//   - if the host is a DNS name, it is resolved (with a bounded timeout) and any
-//     private/loopback/link-local address in the result is also blocked
+// validateLLMEndpointURL validates the LLM endpoint URL against SSRF; only
+// http and https are permitted. See ssrf.ValidateURL for the full set of checks.
 func validateLLMEndpointURL(ctx context.Context, rawURL string) error {
 	return ssrf.ValidateURL(ctx, rawURL, "endpoint", []string{"http", "https"})
 }
