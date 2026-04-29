@@ -285,6 +285,7 @@ func (h *OPDSHandler) bookEntries(ctx context.Context, books []db.Book, baseURL 
 			slog.ErrorContext(ctx, "OPDS: failed to batch-load book authors",
 				slog.Any(otelkeys.Error, err),
 			)
+			authorsByBook = nil
 		}
 	}()
 
@@ -296,6 +297,7 @@ func (h *OPDSHandler) bookEntries(ctx context.Context, books []db.Book, baseURL 
 			slog.ErrorContext(ctx, "OPDS: failed to batch-load book files",
 				slog.Any(otelkeys.Error, err),
 			)
+			filesByBook = nil
 		}
 	}()
 
