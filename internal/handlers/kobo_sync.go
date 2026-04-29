@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"time"
 
+	"golang.org/x/sync/errgroup"
+
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/kobo"
@@ -33,32 +35,62 @@ func (h *KoboHandler) HandleSync(w http.ResponseWriter, r *http.Request) {
 		books = books[:kobo.SyncPageSize]
 	}
 
-	// Batch-load authors, files, and series for the returned books.
+	// Batch-load authors, files, series, and reading states concurrently.
 	bookIDs := make([]string, len(books))
 	for i, b := range books {
 		bookIDs[i] = b.ID
 	}
 
-	authorsByBook, err := h.DB.GetAuthorsForBooks(ctx, bookIDs)
-	if err != nil {
-		slog.WarnContext(ctx, "failed to batch-load authors for kobo sync", slog.Any(otelkeys.Error, err))
-	}
-	filesByBook, err := h.DB.GetFilesForBooks(ctx, bookIDs)
-	if err != nil {
-		slog.ErrorContext(ctx, "failed to batch-load files for kobo sync", slog.Any(otelkeys.Error, err))
+	var (
+		authorsByBook       map[string][]db.Author
+		filesByBook         map[string][]db.BookFile
+		seriesByBook        map[string][]db.BookSeriesEntry
+		readingStatesByBook map[string]*db.KoboReadingState
+	)
+
+	g, gCtx := errgroup.WithContext(ctx)
+
+	g.Go(func() error {
+		var err error
+		authorsByBook, err = h.DB.GetAuthorsForBooks(gCtx, bookIDs)
+		if err != nil {
+			slog.WarnContext(gCtx, "failed to batch-load authors for kobo sync", slog.Any(otelkeys.Error, err))
+		}
+		return nil
+	})
+
+	g.Go(func() error {
+		var err error
+		filesByBook, err = h.DB.GetFilesForBooks(gCtx, bookIDs)
+		if err != nil {
+			slog.ErrorContext(gCtx, "failed to batch-load files for kobo sync", slog.Any(otelkeys.Error, err))
+		}
+		return err
+	})
+
+	g.Go(func() error {
+		var err error
+		seriesByBook, err = h.DB.GetSeriesForBooks(gCtx, bookIDs)
+		if err != nil {
+			slog.WarnContext(gCtx, "failed to batch-load series for kobo sync", slog.Any(otelkeys.Error, err))
+		}
+		return nil
+	})
+
+	g.Go(func() error {
+		var err error
+		readingStatesByBook, err = h.DB.GetReadingStatesForBooks(gCtx, userID, bookIDs, syncToken.ReadingStateLastModified)
+		if err != nil {
+			slog.WarnContext(gCtx, "failed to batch-load reading states for kobo sync", slog.Any(otelkeys.Error, err))
+		}
+		return nil
+	})
+
+	if err := g.Wait(); err != nil {
 		writeKoboJSON(ctx, w, http.StatusInternalServerError, []any{})
 		return
 	}
-	seriesByBook, err := h.DB.GetSeriesForBooks(ctx, bookIDs)
-	if err != nil {
-		slog.WarnContext(ctx, "failed to batch-load series for kobo sync", slog.Any(otelkeys.Error, err))
-	}
 
-	// Batch-load reading states for the current page's books.
-	readingStatesByBook, err := h.DB.GetReadingStatesForBooks(ctx, userID, bookIDs, syncToken.ReadingStateLastModified)
-	if err != nil {
-		slog.WarnContext(ctx, "failed to batch-load reading states for kobo sync", slog.Any(otelkeys.Error, err))
-	}
 	if readingStatesByBook == nil {
 		readingStatesByBook = make(map[string]*db.KoboReadingState)
 	}
