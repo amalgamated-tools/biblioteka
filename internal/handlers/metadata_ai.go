@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"log/slog"
@@ -44,6 +45,23 @@ func toAIEnrichmentDTO(e *db.AIEnrichment) aiEnrichmentDTO {
 		CreatedAt:            e.CreatedAt,
 		UpdatedAt:            e.UpdatedAt,
 	}
+}
+
+func getPendingAIEnrichmentOrErr(ctx context.Context, d *db.DB, w http.ResponseWriter, userID, bookID string) (*db.AIEnrichment, bool) {
+	enrichment, err := d.GetPendingAIEnrichmentByBook(ctx, userID, bookID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			writeError(ctx, w, http.StatusNotFound, "no pending AI enrichment found")
+			return nil, false
+		}
+		slog.ErrorContext(ctx, "failed to get pending AI enrichment",
+			slog.String(otelkeys.BookID, bookID),
+			slog.Any(otelkeys.Error, err),
+		)
+		writeError(ctx, w, http.StatusInternalServerError, "failed to get pending AI enrichment")
+		return nil, false
+	}
+	return enrichment, true
 }
 
 // fetchAIEnrichment enqueues an AI enrichment job for the given book.
@@ -134,17 +152,8 @@ func (h *MetadataHandler) fetchAIEnrichment(w http.ResponseWriter, r *http.Reque
 func (h *MetadataHandler) getPendingAIEnrichment(w http.ResponseWriter, r *http.Request, bookID string) {
 	userID := auth.UserIDFromContext(r.Context())
 
-	enrichment, err := h.DB.GetPendingAIEnrichmentByBook(r.Context(), userID, bookID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			writeError(r.Context(), w, http.StatusNotFound, "no pending AI enrichment found")
-			return
-		}
-		slog.ErrorContext(r.Context(), "failed to get pending AI enrichment",
-			slog.String(otelkeys.BookID, bookID),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to get pending AI enrichment")
+	enrichment, ok := getPendingAIEnrichmentOrErr(r.Context(), h.DB, w, userID, bookID)
+	if !ok {
 		return
 	}
 
@@ -170,17 +179,8 @@ func (h *MetadataHandler) getPendingAIEnrichment(w http.ResponseWriter, r *http.
 func (h *MetadataHandler) applyAIEnrichment(w http.ResponseWriter, r *http.Request, bookID string) {
 	userID := auth.UserIDFromContext(r.Context())
 
-	enrichment, err := h.DB.GetPendingAIEnrichmentByBook(r.Context(), userID, bookID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			writeError(r.Context(), w, http.StatusNotFound, "no pending AI enrichment found")
-			return
-		}
-		slog.ErrorContext(r.Context(), "failed to get pending AI enrichment",
-			slog.String(otelkeys.BookID, bookID),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to get pending AI enrichment")
+	enrichment, ok := getPendingAIEnrichmentOrErr(r.Context(), h.DB, w, userID, bookID)
+	if !ok {
 		return
 	}
 
@@ -256,17 +256,8 @@ func (h *MetadataHandler) applyAIEnrichment(w http.ResponseWriter, r *http.Reque
 func (h *MetadataHandler) rejectAIEnrichment(w http.ResponseWriter, r *http.Request, bookID string) {
 	userID := auth.UserIDFromContext(r.Context())
 
-	enrichment, err := h.DB.GetPendingAIEnrichmentByBook(r.Context(), userID, bookID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			writeError(r.Context(), w, http.StatusNotFound, "no pending AI enrichment found")
-			return
-		}
-		slog.ErrorContext(r.Context(), "failed to get pending AI enrichment",
-			slog.String(otelkeys.BookID, bookID),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to get pending AI enrichment")
+	enrichment, ok := getPendingAIEnrichmentOrErr(r.Context(), h.DB, w, userID, bookID)
+	if !ok {
 		return
 	}
 
