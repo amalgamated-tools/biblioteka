@@ -79,9 +79,9 @@ frontend/
       authFormValidation.test.ts  Unit tests for `authFormValidation.ts`
       authRequiredErrors.ts   Human-readable required-field error generators; `getLoginRequiredFieldError` and `getSignupRequiredFieldError` produce accessible error strings for missing fields, used by `authFormValidation.ts`
       api.ts                  Barrel re-export; re-exports every symbol from `api/` sub-modules
-      api.test.ts             API client unit tests; imports from the barrel and covers core, auth, config, admin, and credentials sub-modules
+      api.test.ts             API client unit tests; imports from the barrel and covers core, auth, config, admin, credentials, and SMTP sub-modules
       api/                    Domain-specific API sub-modules
-        core.ts               Token storage, `ApiError`, `request`, `getVersion`
+        core.ts               Token storage, `ApiError`, `request`, `requestFormData`, `getVersion`
         auth.ts               `signup`, `login`, `logout`, `getMe`, OIDC helpers, `changePassword`
         config.ts             OIDC + SMTP server configuration
         admin.ts              User management and audit logs
@@ -448,13 +448,13 @@ When a view component renders, it reads `routerStore.subPath` as a `$derived` va
 
 ## API client
 
-All HTTP calls go through `frontend/src/lib/api.ts`, which is a barrel re-export of ten domain-specific sub-modules under `frontend/src/lib/api/`. The barrel preserves all existing import paths so no call-site changes are required when the internal structure evolves.
+All HTTP calls go through `frontend/src/lib/api.ts`, which is a barrel re-export of domain-specific sub-modules under `frontend/src/lib/api/`. The barrel preserves all existing import paths so no call-site changes are required when the internal structure evolves.
 
 ### Module overview
 
 | Sub-module | Contents |
 |------------|----------|
-| `api/core.ts` | Token storage (`setToken`, `clearToken`, `hasToken`, `getToken`), `ApiError`, the `request` helper, `getVersion` |
+| `api/core.ts` | Token storage (`setToken`, `clearToken`, `hasToken`, `getToken`), `ApiError`, the `request` and `requestFormData` helpers, `getVersion` |
 | `api/auth.ts` | `signup`, `login`, `logout`, `getMe`, OIDC helpers, `changePassword` |
 | `api/config.ts` | OIDC + SMTP server configuration |
 | `api/admin.ts` | User management (`listUsers`, `setUserAdmin`) and audit logs (`getAuditLogs`) |
@@ -466,6 +466,15 @@ All HTTP calls go through `frontend/src/lib/api.ts`, which is a barrel re-export
 | `api/tokens.ts` | API key and Kobo token management |
 | `api/reading-lists.ts` | Reading list CRUD, book membership, and per-book list lookup |
 | `api/reading-progress.ts` | Reading progress statistics (streak, in-progress documents) |
+| `api/annotations.ts` | Book annotation CRUD (`listBookAnnotations`, `createAnnotation`, `updateAnnotation`, `deleteAnnotation`) |
+| `api/calibre.ts` | Calibre `metadata.db` import — file-upload (`previewCalibreImport`, `confirmCalibreImport`) and server-path (`previewCalibreImportFromPath`, `confirmCalibreImportFromPath`) variants |
+| `api/groups.ts` | Reading group CRUD, member management, shared-list operations, and per-member progress |
+| `api/metadata.ts` | Goodreads metadata fetch/apply/reject (`fetchMetadata`, `getMetadata`, `applyMetadata`, `rejectMetadata`) and AI enrichment fetch/apply/reject (`fetchAIEnrichment`, `getPendingAIEnrichment`, `applyAIEnrichment`, `rejectAIEnrichment`); also exposes `subscribeToMetadataEvents` to open the SSE progress stream |
+| `api/passkeys.ts` | WebAuthn passkey registration and login flows (`beginPasskeyRegistration`, `finishPasskeyRegistration`, `beginPasskeyLogin`, `finishPasskeyLogin`), credential list/delete, and base64url ↔ `ArrayBuffer` conversion helpers used by the browser WebAuthn API |
+| `api/recommendations.ts` | `getRecommendations(limit, signal)` — scored book suggestions ranked by author overlap, series continuation, publisher match, and download popularity |
+| `api/stats.ts` | `getDownloadsPerMonth(months)` and `getYearInBooks(year)` — per-user download histogram and annual reading statistics |
+| `api/tags.ts` | Tag CRUD (`listTags`, `getTag`, `createTag`, `updateTag`, `deleteTag`) |
+| `api/pagination.ts` | `listEntityBooks(entityPath, limit, offset)` — shared paginated-book helper used by author and series sub-resource views |
 
 Each sub-module imports `request` (and `setToken` where needed) from `./core`; there are no circular dependencies.
 
@@ -3267,7 +3276,7 @@ The following test suites cover reactive stores and the API client. Unlike the a
 
 ### `api.test.ts`
 
-`frontend/src/lib/api.test.ts` exercises the centralised API client. Because `api.ts` is now a barrel re-export of `frontend/src/lib/api/` sub-modules, the tests import from the barrel and cover the core, auth, config, admin, and credentials sub-modules. `fetch` is replaced with a Vitest stub so no real HTTP requests are made. Tests are grouped into nine `describe` blocks:
+`frontend/src/lib/api.test.ts` exercises the centralized API client. Because `api.ts` is now a barrel re-export of `frontend/src/lib/api/` sub-modules, the tests import from the barrel and cover the core, auth, config, admin, credentials, and SMTP sub-modules. `fetch` is replaced with a Vitest stub so no real HTTP requests are made. Tests are grouped into eleven `describe` blocks:
 
 **`Token management` (five tests):** covers `setToken`, `clearToken`, `hasToken` — verifying in-memory token read/write semantics, including the edge case of an empty string being treated as "no token".
 
@@ -3293,6 +3302,10 @@ The following test suites cover reactive stores and the API client. Unlike the a
 **`OPDS Credentials API` (three tests):** covers `getOpdsCredential` (GET), `setOpdsCredential` (PUT with request body), and `deleteOpdsCredential` (DELETE resolves `void` on `204 No Content`).
 
 **`KOSync Credentials API` (three tests):** covers `getKosyncCredential` (GET), `setKosyncCredential` (PUT with request body), and `deleteKosyncCredential` (DELETE resolves `void` on `204 No Content`).
+
+**`Auth extended API` (three tests):** covers `updateProfile` (PUT `/api/auth/me`) — verifying the name field is sent in the request body and the updated user profile is returned; `logout` (POST `/api/auth/logout`) — verifying the correct URL is called; and a network-failure case asserting that `logout` resolves `void` even when the underlying request rejects.
+
+**`SMTP Config API` (three tests):** covers `getSmtpConfig` (GET `/api/config/smtp`) — verifying the SMTP configuration object is returned; `setSmtpConfig` (PUT `/api/config/smtp` with config body) — verifying the full config is serialized and sent; and `testSmtpConfig` (POST `/api/config/smtp/test`) — verifying the test-send endpoint is called and the result is returned.
 
 ### `books.test.ts`
 
