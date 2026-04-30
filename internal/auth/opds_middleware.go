@@ -48,7 +48,7 @@ func writeOPDSError(_ context.Context, w http.ResponseWriter, status int, messag
 func OPDSBasicAuthMiddleware(checker OPDSCredentialChecker) func(http.Handler) http.Handler {
 	return bcryptCredMiddleware(bcryptCredConfig{
 		protocolName: "OPDS",
-		dummyHash:    dummyOPDSBcryptHash,
+		dummyHash:    string(dummyOPDSBcryptHash),
 		usernameAttr: func(v string) slog.Attr { return slog.String(otelkeys.OPDSUsername, v) },
 		extractCreds: func(r *http.Request) (username, secret string, ok bool) {
 			username, secret, ok = r.BasicAuth()

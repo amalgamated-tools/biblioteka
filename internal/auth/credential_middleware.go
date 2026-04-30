@@ -60,8 +60,9 @@ type bcryptCredConfig struct {
 	protocolName string
 
 	// dummyHash is a pre-computed bcrypt hash used for timing-safe comparisons
-	// when a username is not found.
-	dummyHash []byte
+	// when a username is not found. Stored as string to avoid per-request
+	// allocations from []byte → string conversion.
+	dummyHash string
 
 	// usernameAttr builds a slog attribute for the username value. Each
 	// protocol provides its own constant key (e.g. otelkeys.KOSyncUsername)
@@ -121,7 +122,7 @@ func bcryptCredMiddleware(cfg bcryptCredConfig) func(http.Handler) http.Handler 
 				} else {
 					// Perform a dummy bcrypt comparison to prevent timing-based
 					// username enumeration.
-					_ = CompareHashAndPassword(string(cfg.dummyHash), secret)
+					_ = CompareHashAndPassword(cfg.dummyHash, secret)
 					slog.InfoContext(r.Context(), "protocol: unknown username",
 						slog.String(otelkeys.Protocol, cfg.protocolName),
 						cfg.usernameAttr(normUsername),
