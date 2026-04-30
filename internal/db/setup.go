@@ -105,11 +105,18 @@ func setupSQLite(ctx context.Context) (*DB, error) {
 
 	slog.DebugContext(ctx, "db: Database connection established", slog.String(otelkeys.Path, dbFilePath))
 
+	// Pin the pool to a single connection so that all connection-scoped PRAGMAs
+	// (foreign_keys, synchronous, temp_store, cache_size) are consistently
+	// applied to every query. SQLite serializes writers regardless of pool size,
+	// so this adds no meaningful write-latency penalty.
+	sqlDB.SetMaxOpenConns(1)
+	sqlDB.SetMaxIdleConns(1)
+
 	// Set PRAGMAs for better performance and integrity.
 	//   temp_store = MEMORY: keep sort buffers (temp B-trees) in RAM instead of
 	//     writing them to disk temp files. All sort-heavy queries benefit.
-	//   cache_size = -16384: 16 MB shared page cache (default is ~8 MB). More
-	//     cached pages means fewer disk reads for hot working sets.
+	//   cache_size = -16384: 16 MB page cache per connection (default is ~8 MB).
+	//     More cached pages means fewer disk reads for hot working sets.
 	if _, err := sqlDB.Exec(`
 		PRAGMA journal_mode = WAL;
 		PRAGMA synchronous = NORMAL;
