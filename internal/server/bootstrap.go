@@ -46,7 +46,7 @@ func (s *Server) seedInitialAdmin(ctx context.Context) error {
 
 	// CreateUser automatically promotes the first user to admin (isAdmin = true
 	// when the users table is empty), so no separate SetAdmin call is needed.
-	user, err := s.DB.CreateUser(ctx, name, email, string(hash))
+	user, err := s.DB.CreateUser(ctx, name, email, hash)
 	if err != nil {
 		// A concurrent instance may have seeded the admin between our CountUsers
 		// check and this insert. Re-check: if a user now exists, treat as no-op.

@@ -66,12 +66,17 @@ func jsonError(w http.ResponseWriter, status int, message string) {
 }
 
 // HashPassword hashes a plaintext password using bcrypt at the standard cost.
-func HashPassword(password string) ([]byte, error) {
-	return bcrypt.GenerateFromPassword([]byte(password), goauth.BcryptCost)
+// The returned hash is a printable ASCII string suitable for direct database storage.
+func HashPassword(password string) (string, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), goauth.BcryptCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hash), nil
 }
 
 // CompareHashAndPassword compares a bcrypt hashed password with its plaintext
 // equivalent. Returns nil on success, or an error on failure.
-func CompareHashAndPassword(hashedPassword, password []byte) error {
-	return bcrypt.CompareHashAndPassword(hashedPassword, password)
+func CompareHashAndPassword(hashedPassword, password string) error {
+	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 }
