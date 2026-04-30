@@ -23,7 +23,7 @@ func TestSeedInitialAdmin_SeedsWhenEmpty(t *testing.T) {
 	require.True(t, user.IsAdmin, "seeded user should be admin")
 
 	// Password should be stored as a valid bcrypt hash.
-	require.NoError(t, auth.CompareHashAndPassword([]byte(user.PasswordHash), []byte("supersecret")))
+	require.NoError(t, auth.CompareHashAndPassword(user.PasswordHash, "supersecret"))
 }
 
 func TestSeedInitialAdmin_UsesCustomName(t *testing.T) {

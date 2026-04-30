@@ -38,7 +38,7 @@ var dummyKOSyncBcryptHash = goauth.MustGenerateDummyBcryptHash("dummy-kosync-key
 func KOSyncHeaderAuthMiddleware(checker KOSyncCredentialChecker) func(http.Handler) http.Handler {
 	return bcryptCredMiddleware(bcryptCredConfig{
 		protocolName: "KOSync",
-		dummyHash:    dummyKOSyncBcryptHash,
+		dummyHash:    string(dummyKOSyncBcryptHash),
 		usernameAttr: func(v string) slog.Attr { return slog.String(otelkeys.KOSyncUsername, v) },
 		extractCreds: func(r *http.Request) (username, secret string, ok bool) {
 			username = strings.TrimSpace(r.Header.Get(kosyncAuthUserHeader))
