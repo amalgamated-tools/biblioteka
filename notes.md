@@ -1,7 +1,7 @@
 # Test Improver Memory — biblioteka
 
 ## Last Updated
-2026-04-29
+2026-04-30
 
 ## Build/Test/Coverage Commands
 
@@ -83,20 +83,21 @@ Frontend components: all covered as of 2026-04-27
 - 2026-04-25: Tasks 2, 3, 4, 7 (no open PR issues; enrich_ai error-path tests PR; monthly issue updated)
 - 2026-04-26: Tasks 2, 3, 7 (DeleteConfirmation component direct tests PR; monthly issue updated)
 - 2026-04-27: Tasks 1, 4, 5, 6, 7 (no open PR issues/conflicts; kobo metadata branch coverage PR; monthly issue updated)
-- 2026-04-29: Tasks 2, 3, 7 (WithTx/deferRollback DB tests PR; monthly issue updated)
-- Next run: Tasks 4, 5, 6, 7
+- 2026-04-30: Tasks 4, 5, 6, 3, 7 (no open PRs; added kobo sync pagination tests PR; monthly issue updated)
+- Next run: Tasks 1, 2, 7
 
 ## Testing Backlog (prioritized)
 
 1. ~~**pathparser internal helpers**~~ — PR #2439 merged 2026-04-23 ✅
 2. ~~**library handler 409 conflict**~~ — PR #2464 merged 2026-04-23 ✅
-3. **authRequiredErrors + authFeatureFlags** — PR #2519 open
-4. **enrich_ai.go error paths** — PR #2546 open
-5. **DeleteConfirmation component** — PR #2567 open
-6. **kobo metadata branch coverage** — PR #2592 open
-7. **WithTx and deferRollback** — PR submitted 2026-04-29 (branch test-assist/db-with-tx-tests)
-8. **organize path-escape defense-in-depth test** — the filepath.Rel escape guard in organize.go has no test. Likely unreachable in practice. Low value.
-9. **SSRF dialer Class B (172.16.x.x)** — ollama/client_test.go tests Class A, C, loopback, AWS metadata but not Class B. Very low value.
+3. **authRequiredErrors + authFeatureFlags** — PR #2519 merged ✅
+4. **enrich_ai.go error paths** — PR #2546 merged ✅
+5. **DeleteConfirmation component** — PR #2567 merged ✅
+6. **kobo metadata branch coverage** — PR #2592 merged ✅
+7. **WithTx and deferRollback** — PR #2654 merged ✅
+8. **kobo sync pagination (x-kobo-sync: continue)** — PR submitted 2026-04-30 (branch test-assist/kobo-sync-pagination-tests)
+9. **organize path-escape defense-in-depth test** — the filepath.Rel escape guard in organize.go has no test. Likely unreachable in practice. Low value.
+10. **SSRF dialer Class B (172.16.x.x)** — ollama/client_test.go tests Class A, C, loopback, AWS metadata but not Class B. Very low value.
 
 ## Maintainer Priorities
 - All previous monthly issues closed by veverkap as "completed"
@@ -105,7 +106,13 @@ Frontend components: all covered as of 2026-04-27
 
 ## Completed Work
 
-### 2026-04-29
+### 2026-04-30
+- Tasks: 4 (no open Test Improver PRs, all merged), 5 (no open testing issues), 6 (no infra gaps), 3 (kobo sync pagination tests), 7 (monthly issue updated)
+- Created PR on branch `test-assist/kobo-sync-pagination-tests`:
+  - 3 new tests: ContinueHeaderWhenHasMore, NoContinueHeaderWhenFitsOnePage, SyncTokenAdvancesForFilelessBooks
+  - All 6 TestHandleSync_* tests pass
+
+
 - Tasks: 2 (scanned for opportunities; found WithTx/deferRollback at 0% direct coverage), 3 (new PR), 7 (monthly issue updated)
 - Created PR on branch `test-assist/db-with-tx-tests`:
   - 6 new tests: WithTx commit path, rollback path, error propagation, no-op fn, deferRollback ErrTxDone, deferRollback double rollback
