@@ -84,3 +84,115 @@ func TestHandleSync_NonGETMethodReturnsEmpty(t *testing.T) {
 	var results []any
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&results), "decode response")
 }
+
+// TestHandleSync_ContinueHeaderWhenHasMore verifies that the x-kobo-sync:
+// continue header is set when the library has more books than SyncPageSize.
+// Without this header, Kobo devices stop fetching and miss books beyond the
+// first page.
+func TestHandleSync_ContinueHeaderWhenHasMore(t *testing.T) {
+	t.Parallel()
+
+	h, userID := setupKoboHandler(t)
+	handler := koboDeviceHandler(h)
+	tokenValue := createTestKoboToken(t, h, userID)
+
+	// Create one more book than the page size, each with a downloadable file.
+	dir := t.TempDir()
+	for i := range kobo.SyncPageSize + 1 {
+		book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Book"})
+		require.NoError(t, err, "create book %d", i)
+		_, err = h.DB.CreateBookFile(
+			t.Context(), book.ID, "epub", "book.epub", 512, nil,
+			filepath.Join(dir, "book-"+book.ID+".epub"),
+		)
+		require.NoError(t, err, "create book file %d", i)
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/kobo/"+tokenValue+"/v1/library/sync", nil)
+	r.Host = "localhost:8080"
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var results []any
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&results), "decode")
+	// Page is capped at SyncPageSize.
+	require.Equal(t, kobo.SyncPageSize, len(results), "expected exactly SyncPageSize results")
+	// Kobo devices rely on this header to know there are more pages to fetch.
+	require.Equal(t, "continue", w.Header().Get("x-kobo-sync"),
+		"expected x-kobo-sync: continue when library exceeds page size")
+}
+
+// TestHandleSync_NoContinueHeaderWhenFitsOnePage verifies that the
+// x-kobo-sync header is absent when all books fit within a single page.
+func TestHandleSync_NoContinueHeaderWhenFitsOnePage(t *testing.T) {
+	t.Parallel()
+
+	h, userID := setupKoboHandler(t)
+	handler := koboDeviceHandler(h)
+	tokenValue := createTestKoboToken(t, h, userID)
+
+	// Create fewer books than the page limit.
+	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Single Book"})
+	require.NoError(t, err)
+	_, err = h.DB.CreateBookFile(
+		t.Context(), book.ID, "epub", "book.epub", 512, nil,
+		filepath.Join(t.TempDir(), "single.epub"),
+	)
+	require.NoError(t, err)
+
+	r := httptest.NewRequest(http.MethodGet, "/kobo/"+tokenValue+"/v1/library/sync", nil)
+	r.Host = "localhost:8080"
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var results []any
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&results), "decode")
+	require.Len(t, results, 1, "exactly one book must be returned when one book fits on one page")
+
+	_, hasContinueHeader := w.Header()["X-Kobo-Sync"]
+	require.False(t, hasContinueHeader,
+		"x-kobo-sync header must be absent when all books fit on one page")
+}
+
+// TestHandleSync_SyncTokenAdvancesForFilelessBooks verifies that the sync
+// token's BooksLastModified watermark advances even for books that have no
+// downloadable files (and are therefore omitted from the response). Without
+// this, the next sync would re-fetch the same fileless books indefinitely.
+func TestHandleSync_SyncTokenAdvancesForFilelessBooks(t *testing.T) {
+	t.Parallel()
+
+	h, userID := setupKoboHandler(t)
+	handler := koboDeviceHandler(h)
+	tokenValue := createTestKoboToken(t, h, userID)
+
+	// Create a book with NO files. It should be skipped in the response
+	// but still advance the high-water mark.
+	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Fileless Book"})
+	require.NoError(t, err)
+
+	r := httptest.NewRequest(http.MethodGet, "/kobo/"+tokenValue+"/v1/library/sync", nil)
+	r.Host = "localhost:8080"
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// Fileless book is omitted from the payload.
+	var results []any
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&results), "decode")
+	require.Empty(t, results, "fileless books must not appear in sync payload")
+
+	// But the sync token watermark must be non-zero so the next sync does not
+	// return the same fileless book again.
+	rawToken := w.Header().Get("x-kobo-synctoken")
+	require.NotEmpty(t, rawToken)
+	tok := kobo.ParseSyncToken(rawToken)
+	require.False(t, tok.BooksLastModified.IsZero(),
+		"BooksLastModified must advance even when the synced book has no files")
+	require.Equal(t, book.ID, tok.BooksLastID,
+		"BooksLastID must match the fileless book's ID to prevent re-fetching it")
+}
