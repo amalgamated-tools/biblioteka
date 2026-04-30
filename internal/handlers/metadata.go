@@ -149,25 +149,48 @@ func toMetadataDTO(gm *db.GoodreadsMetadata) metadataDTO {
 	}
 }
 
-// getPendingMetadataOrErr fetches the pending metadata for a book and writes
-// the appropriate error response if missing or unavailable. Returns the
-// metadata and true on success; returns nil and false when it wrote an error
-// response (caller should return).
-func getPendingMetadataOrErr(ctx context.Context, d *db.DB, w http.ResponseWriter, userID, bookID string) (*db.GoodreadsMetadata, bool) {
-	gm, err := d.GetPendingGoodreadsMetadataByBook(ctx, userID, bookID)
+// getPendingOrErr is a generic helper that fetches a pending enrichment record
+// for a book and writes the appropriate error response if missing or
+// unavailable. Returns the record and true on success; returns nil and false
+// when it wrote an error response (caller should return).
+func getPendingOrErr[T any](
+	ctx context.Context,
+	w http.ResponseWriter,
+	fetch func(context.Context) (*T, error),
+	notFoundMsg, internalErrMsg string,
+	logAttrs ...slog.Attr,
+) (*T, bool) {
+	record, err := fetch(ctx)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			writeError(ctx, w, http.StatusNotFound, "no pending metadata found")
+			writeError(ctx, w, http.StatusNotFound, notFoundMsg)
 			return nil, false
 		}
-		slog.ErrorContext(ctx, "failed to get pending metadata",
-			slog.String(otelkeys.BookID, bookID),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(ctx, w, http.StatusInternalServerError, "failed to get pending metadata")
+		args := make([]any, len(logAttrs)+1)
+		for i, a := range logAttrs {
+			args[i] = a
+		}
+		args[len(logAttrs)] = slog.Any(otelkeys.Error, err)
+		slog.ErrorContext(ctx, internalErrMsg, args...)
+		writeError(ctx, w, http.StatusInternalServerError, internalErrMsg)
 		return nil, false
 	}
-	return gm, true
+	return record, true
+}
+
+// getPendingMetadataOrErr fetches the pending Goodreads metadata for a book
+// and writes the appropriate error response if missing or unavailable. Returns
+// the metadata and true on success; returns nil and false when it wrote an
+// error response (caller should return).
+func getPendingMetadataOrErr(ctx context.Context, d *db.DB, w http.ResponseWriter, userID, bookID string) (*db.GoodreadsMetadata, bool) {
+	return getPendingOrErr(ctx, w,
+		func(ctx context.Context) (*db.GoodreadsMetadata, error) {
+			return d.GetPendingGoodreadsMetadataByBook(ctx, userID, bookID)
+		},
+		"no pending metadata found",
+		"failed to get pending metadata",
+		slog.String(otelkeys.BookID, bookID),
+	)
 }
 
 // getPendingMetadata returns the most recent pending metadata for a book.
@@ -199,6 +222,70 @@ type fetchMetadataResponse struct {
 	Status string `json:"status"`
 }
 
+// enrichmentEnqueueConfig configures the shared enqueue flow used by both the
+// Goodreads metadata and AI enrichment fetch endpoints.
+type enrichmentEnqueueConfig struct {
+	jobType       string
+	buildPayload  func(bookID, userID string) any
+	getPendingID  func(ctx context.Context, userID, bookID string) (string, error)
+	auditAction   string
+	resourceLabel string // e.g. "metadata", "AI enrichment"
+	idLogKey      string // otel key for the existing record ID in the debug log
+}
+
+// enqueueEnrichmentJob encapsulates the shared check-existing → enqueue →
+// handle-duplicate flow for metadata and AI enrichment fetch endpoints.
+// The caller is responsible for any pre-checks (e.g. Enqueuer or LLMProvider
+// availability) before calling this helper.
+func (h *MetadataHandler) enqueueEnrichmentJob(w http.ResponseWriter, r *http.Request, bookID string, cfg enrichmentEnqueueConfig) {
+	ctx := r.Context()
+	userID := auth.UserIDFromContext(ctx)
+
+	// Verify the book exists.
+	if _, err := h.DB.GetBook(ctx, bookID); handleDBErr(ctx, w, err, "book") {
+		return
+	}
+
+	// If a pending record already exists, short-circuit with 202 so the client
+	// can listen on SSE or poll without triggering a duplicate job.
+	existingID, lookupErr := cfg.getPendingID(ctx, userID, bookID)
+	if lookupErr == nil {
+		slog.DebugContext(ctx, "pending "+cfg.resourceLabel+" already exists, skipping enqueue",
+			slog.String(otelkeys.BookID, bookID),
+			slog.String(cfg.idLogKey, existingID),
+		)
+		writeJSON(ctx, w, http.StatusAccepted, fetchMetadataResponse{Status: "already_exists"})
+		return
+	} else if !errors.Is(lookupErr, sql.ErrNoRows) {
+		slog.ErrorContext(ctx, "failed to check pending "+cfg.resourceLabel,
+			slog.String(otelkeys.BookID, bookID),
+			slog.Any(otelkeys.Error, lookupErr),
+		)
+		writeError(ctx, w, http.StatusInternalServerError, "failed to check pending "+cfg.resourceLabel)
+		return
+	}
+
+	taskID, err := h.Enqueuer.Enqueue(ctx, cfg.jobType, cfg.buildPayload(bookID, userID))
+	if err != nil {
+		// asynq returns ErrDuplicateTask when a unique task is already enqueued —
+		// treat as a successful 202 since the job is in-flight.
+		if errors.Is(err, asynq.ErrDuplicateTask) {
+			writeJSON(ctx, w, http.StatusAccepted, fetchMetadataResponse{Status: "already_running"})
+			return
+		}
+		slog.ErrorContext(ctx, "failed to enqueue "+cfg.resourceLabel+" fetch",
+			slog.String(otelkeys.BookID, bookID),
+			slog.Any(otelkeys.Error, err),
+		)
+		writeError(ctx, w, http.StatusInternalServerError, "failed to enqueue "+cfg.resourceLabel+" fetch")
+		return
+	}
+
+	logAudit(ctx, h.DB, userID, cfg.auditAction, "book", bookID, map[string]any{"task_id": taskID})
+
+	writeJSON(ctx, w, http.StatusAccepted, fetchMetadataResponse{TaskID: taskID, Status: "enqueued"})
+}
+
 // fetchMetadata enqueues a metadata enrichment job for the given book.
 //
 //	@Summary		Fetch book metadata
@@ -214,60 +301,27 @@ type fetchMetadataResponse struct {
 //	@Failure		503	{object}	errorResponse
 //	@Router			/books/{id}/metadata/fetch [post]
 func (h *MetadataHandler) fetchMetadata(w http.ResponseWriter, r *http.Request, bookID string) {
-	userID := auth.UserIDFromContext(r.Context())
-
 	if h.Enqueuer == nil {
 		writeError(r.Context(), w, http.StatusServiceUnavailable, "background worker not available")
 		return
 	}
 
-	// Verify the book exists.
-	_, err := h.DB.GetBook(r.Context(), bookID)
-	if handleDBErr(r.Context(), w, err, "book") {
-		return
-	}
-
-	// If a pending metadata record already exists, short-circuit with 202 so
-	// the client can listen on SSE or poll without triggering a duplicate job.
-	existing, lookupErr := h.DB.GetPendingGoodreadsMetadataByBook(r.Context(), userID, bookID)
-	if lookupErr == nil {
-		slog.DebugContext(r.Context(), "pending metadata already exists, skipping enqueue",
-			slog.String(otelkeys.BookID, bookID),
-			slog.String(otelkeys.GoodreadsMetadataID, existing.ID),
-		)
-		writeJSON(r.Context(), w, http.StatusAccepted, fetchMetadataResponse{TaskID: "", Status: "already_exists"})
-		return
-	} else if !errors.Is(lookupErr, sql.ErrNoRows) {
-		slog.ErrorContext(r.Context(), "failed to check pending metadata",
-			slog.String(otelkeys.BookID, bookID),
-			slog.Any(otelkeys.Error, lookupErr),
-		)
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to check pending metadata")
-		return
-	}
-
-	taskID, err := h.Enqueuer.Enqueue(r.Context(), jobs.JobEnrichGoodreads, jobs.EnrichGoodreadsPayload{
-		BookID: bookID,
-		UserID: userID,
+	h.enqueueEnrichmentJob(w, r, bookID, enrichmentEnqueueConfig{
+		jobType: jobs.JobEnrichGoodreads,
+		buildPayload: func(bookID, userID string) any {
+			return jobs.EnrichGoodreadsPayload{BookID: bookID, UserID: userID}
+		},
+		getPendingID: func(ctx context.Context, userID, bookID string) (string, error) {
+			gm, err := h.DB.GetPendingGoodreadsMetadataByBook(ctx, userID, bookID)
+			if err != nil {
+				return "", err
+			}
+			return gm.ID, nil
+		},
+		auditAction:   db.AuditActionMetadataFetchRequested,
+		resourceLabel: "metadata",
+		idLogKey:      otelkeys.GoodreadsMetadataID,
 	})
-	if err != nil {
-		// asynq returns ErrDuplicateTask when a unique task is already enqueued —
-		// treat as a successful 202 since the job is in-flight.
-		if errors.Is(err, asynq.ErrDuplicateTask) {
-			writeJSON(r.Context(), w, http.StatusAccepted, fetchMetadataResponse{TaskID: "", Status: "already_running"})
-			return
-		}
-		slog.ErrorContext(r.Context(), "failed to enqueue metadata fetch",
-			slog.String(otelkeys.BookID, bookID),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to enqueue metadata fetch")
-		return
-	}
-
-	logAudit(r.Context(), h.DB, userID, db.AuditActionMetadataFetchRequested, "book", bookID, map[string]any{"task_id": taskID})
-
-	writeJSON(r.Context(), w, http.StatusAccepted, fetchMetadataResponse{TaskID: taskID, Status: "enqueued"})
 }
 
 // sseWriteTimeout is the maximum time an SSE connection stays open.
