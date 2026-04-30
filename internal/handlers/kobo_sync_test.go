@@ -148,7 +148,13 @@ func TestHandleSync_NoContinueHeaderWhenFitsOnePage(t *testing.T) {
 	handler.ServeHTTP(w, r)
 
 	require.Equal(t, http.StatusOK, w.Code)
-	require.Empty(t, w.Header().Get("x-kobo-sync"),
+
+	var results []any
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&results), "decode")
+	require.Len(t, results, 1, "exactly one book must be returned when one book fits on one page")
+
+	_, hasContinueHeader := w.Header()["X-Kobo-Sync"]
+	require.False(t, hasContinueHeader,
 		"x-kobo-sync header must be absent when all books fit on one page")
 }
 
@@ -165,7 +171,7 @@ func TestHandleSync_SyncTokenAdvancesForFilelessBooks(t *testing.T) {
 
 	// Create a book with NO files. It should be skipped in the response
 	// but still advance the high-water mark.
-	_, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Fileless Book"})
+	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Fileless Book"})
 	require.NoError(t, err)
 
 	r := httptest.NewRequest(http.MethodGet, "/kobo/"+tokenValue+"/v1/library/sync", nil)
@@ -187,4 +193,6 @@ func TestHandleSync_SyncTokenAdvancesForFilelessBooks(t *testing.T) {
 	tok := kobo.ParseSyncToken(rawToken)
 	require.False(t, tok.BooksLastModified.IsZero(),
 		"BooksLastModified must advance even when the synced book has no files")
+	require.Equal(t, book.ID, tok.BooksLastID,
+		"BooksLastID must match the fileless book's ID to prevent re-fetching it")
 }
