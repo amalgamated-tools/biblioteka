@@ -81,7 +81,7 @@ frontend/
       api.ts                  Barrel re-export; re-exports every symbol from `api/` sub-modules
       api.test.ts             API client unit tests; imports from the barrel and covers core, auth, config, admin, credentials, and SMTP sub-modules
       api/                    Domain-specific API sub-modules
-        core.ts               Token storage, `ApiError`, `request`, `getVersion`
+        core.ts               Token storage, `ApiError`, `request`, `requestFormData`, `getVersion`
         auth.ts               `signup`, `login`, `logout`, `getMe`, OIDC helpers, `changePassword`
         config.ts             OIDC + SMTP server configuration
         admin.ts              User management and audit logs
@@ -3276,7 +3276,7 @@ The following test suites cover reactive stores and the API client. Unlike the a
 
 ### `api.test.ts`
 
-`frontend/src/lib/api.test.ts` exercises the centralised API client. Because `api.ts` is now a barrel re-export of `frontend/src/lib/api/` sub-modules, the tests import from the barrel and cover the core, auth, config, admin, credentials, and SMTP sub-modules. `fetch` is replaced with a Vitest stub so no real HTTP requests are made. Tests are grouped into eleven `describe` blocks:
+`frontend/src/lib/api.test.ts` exercises the centralized API client. Because `api.ts` is now a barrel re-export of `frontend/src/lib/api/` sub-modules, the tests import from the barrel and cover the core, auth, config, admin, credentials, and SMTP sub-modules. `fetch` is replaced with a Vitest stub so no real HTTP requests are made. Tests are grouped into eleven `describe` blocks:
 
 **`Token management` (five tests):** covers `setToken`, `clearToken`, `hasToken` — verifying in-memory token read/write semantics, including the edge case of an empty string being treated as "no token".
 
