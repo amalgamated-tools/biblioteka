@@ -88,7 +88,7 @@ Map changed files to schema layers using these rules:
 | `db/migrations/sqlite/*.sql` or `db/migrations/postgres/*.sql` | **LAYER_MIGRATIONS** |
 | `internal/db/*.go` (not `*_test.go`) | **LAYER_DB** |
 | `internal/handlers/*.go` (not `*_test.go`) | **LAYER_HANDLERS** |
-| `frontend/src/types.ts` or `frontend/src/lib/api.ts` | **LAYER_FRONTEND** |
+| `frontend/src/types.ts` or `frontend/src/types/*.ts` or `frontend/src/lib/api.ts` | **LAYER_FRONTEND** |
 | `internal/server/routes.go` | **LAYER_ROUTES** |
 
 Set a boolean flag for each layer (`true` = changed, `false` = unchanged).
@@ -152,21 +152,22 @@ grep -n 'json:"' internal/db/*.go | head -40
 
 **Key files to analyze:**
 - `internal/handlers/*.go` — Go DTO structs (look for `json:"..."` struct tags)
-- `frontend/src/types.ts` — TypeScript interface and type definitions
+- `frontend/src/types.ts` — Barrel re-export (backward-compat shim)
+- `frontend/src/types/*.ts` — Domain-scoped TypeScript interface and type definitions
 
 **Example bash analysis:**
 ```bash
 # Extract all Go DTO struct field json tags from handlers
 grep -rn 'json:"' internal/handlers/*.go | grep -v '_test.go' | sort
 
-# Extract all TypeScript interface field names from types.ts
-grep -n '^[[:space:]]\+[[:alnum:]_]\+[?]\?:' frontend/src/types.ts | head -60
+# Extract all TypeScript interface field names from types modules
+grep -rn '^[[:space:]]\+[[:alnum:]_]\+[?]\?:' frontend/src/types/*.ts | head -60
 
 # Find all DTO struct definitions in handlers
 grep -n 'type.*DTO struct' internal/handlers/*.go
 
 # Find TypeScript export interfaces/types
-grep -n '^export \(interface\|type\)' frontend/src/types.ts
+grep -rn '^export \(interface\|type\)' frontend/src/types/*.ts
 ```
 
 ### 3. API Routes vs Frontend API Client
@@ -293,7 +294,7 @@ grep -rn 'json:"' internal/handlers/*.go | grep -v '_test.go' | grep 'type\|json
 
 # Step 2: List TypeScript types
 echo "=== TypeScript Types ==="
-cat frontend/src/types.ts
+cat frontend/src/types/*.ts
 
 # Step 3: Find DB entity structs
 echo "=== DB Entity Structs ==="

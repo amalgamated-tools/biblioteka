@@ -19,7 +19,8 @@ frontend/
     App.svelte          Root component: auth gate + shell layout + routing; includes skip-to-main-content link (WCAG 2.4.1) and dynamic document title updates (WCAG 2.4.2)
     main.ts             Entry point; mounts App and initialises the theme
     index.css           Tailwind CSS directives
-    types.ts            Shared TypeScript interfaces for API entities
+    types.ts            Backward-compat barrel that re-exports from types/
+    types/              Domain-scoped TypeScript type modules
     components/         Page-level Svelte components (PascalCase)
       Auth.svelte         Login and signup page shell; owns tab-switching state and delegates form rendering to `LoginForm.svelte` and `SignupForm.svelte`; wraps all form content in a `<main>` landmark (WCAG 1.3.6); the Login/Sign Up toggle uses the ARIA tablist/tab/tabpanel pattern with roving tabindex and keyboard navigation (WCAG 4.1.2); calls `fetchAuthFeatureFlags` on mount to enable or disable OIDC, signup, and passkey flows
       auth/               Sub-components for the login and signup page forms
@@ -823,9 +824,9 @@ Do **not** use `TimeoutState` directly in components. Extend it in a new subclas
 
 ## TypeScript types
 
-Shared TypeScript interfaces for API entities live in `frontend/src/types.ts`. This includes domain model types (e.g. `Library`, `Author`, `Book`, `ReadingList`) and shared API request/response shapes (e.g. `ConfigStatus`, `OIDCConfig`, `APIKeyCreateResponse`, `PaginatedAuditLogs`, `ReadingProgressStats`). Keeping shared/exported types in one file gives every component, store, and the API modules a single import path, while individual sub-modules under `frontend/src/lib/api/` may still define small module-local helper types for their own internal use.
+Shared TypeScript interfaces for API entities live in `frontend/src/types/` as domain-scoped modules (e.g. `types/book.ts`, `types/auth.ts`, `types/reading.ts`). A barrel re-export at `frontend/src/types.ts` provides a single import path for consumers that prefer `import type { ... } from "../types"`. Individual sub-modules under `frontend/src/lib/api/` may still define small module-local helper types for their own internal use.
 
-Never inline types directly in `.svelte` component files or `*.svelte.ts` store files. Add any new shared or reusable type to `types.ts`.
+Never inline types directly in `.svelte` component files or `*.svelte.ts` store files. Add any new shared or reusable type to the appropriate domain module under `src/types/`.
 
 **Reading list types:**
 
@@ -1074,7 +1075,7 @@ Renders a single book as a card tile: cover art if available, falling back to a 
 
 | Prop | Type | Required | Description |
 |------|------|----------|-------------|
-| `book` | `BookSummary` | ✓ | The book object to display (imported from `src/types.ts`) |
+| `book` | `BookSummary` | ✓ | The book object to display (imported from `src/types/book.ts`) |
 
 **Usage:**
 

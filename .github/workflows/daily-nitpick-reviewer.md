@@ -212,7 +212,7 @@ Read source files using bash (`cat`, `grep`, `head`) and look for **non-linter**
 #### TypeScript
 - `any` type usage where a specific type could be used
 - Missing type annotations on function parameters or return values
-- Types not placed in `src/types.ts` when they're shared across components
+- Types not placed in `src/types/` when they're shared across components
 - Implicit `any` via untyped API responses
 
 #### API Calls
