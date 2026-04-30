@@ -211,7 +211,7 @@ Core book metadata. All fields except `title` are optional.
 
 **Indexes:**
 - `idx_books_title` — index on `(title)` (SQLite) / composite index on `(title, id)` (PostgreSQL), covering `ORDER BY title ASC, rowid ASC` on SQLite and `ORDER BY title ASC, id ASC` on PostgreSQL in paginated list and search queries; used by `ListBooksPaginated`, `ListBooksByAuthorPaginated`, `ListBooksBySeriesPaginated`, and `SearchBooks`.
-- `idx_books_created_at_id` — composite index on `(created_at DESC, id DESC)` (SQLite and PostgreSQL), covering `ORDER BY created_at DESC, id DESC` used by `ListRecentBooks`; the `id` tiebreaker eliminates the temp B-tree sort step on both dialects (migration `20260428205224`).
+- `idx_books_created_at_id` — composite index on `(created_at DESC, id DESC)` (SQLite and PostgreSQL), covering `ORDER BY created_at DESC, id DESC` used by `ListRecentBooks`; on SQLite, the `id` tiebreaker avoids the temp B-tree sort step, and on PostgreSQL the same `ORDER BY` is already matched by the composite index without an extra sort (migration `20260428205224`).
 - `idx_books_updated_at_id` — composite index on `(updated_at, id)` for efficient cursor-based pagination; used by the Kobo library sync endpoint to order and page through books by modification time.
 
 **Full-text / trigram search indexes (added in migration `20260412000000`):**
