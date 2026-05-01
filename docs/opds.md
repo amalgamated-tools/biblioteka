@@ -231,7 +231,7 @@ All OPDS-compatible apps follow the same setup: find the catalog or OPDS section
 | App | Where to add a catalog |
 |-----|------------------------|
 | **KOReader** | *Search → OPDS catalog → tap +* |
-| **Calibre** | *Add books → OPDS catalog* importer (or *Connect/Share → Browse by cover*) |
+| **Calibre** | *Add books → OPDS catalog* importer, or via *Preferences → Sharing → Content Server* (also *Connect/Share → Browse by cover*) |
 | **Moon+ Reader (Android)** | *Library → Network → OPDS Catalog → Add* |
 
 ---
