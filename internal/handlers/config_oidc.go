@@ -103,6 +103,8 @@ func (h *ConfigHandler) HandleSetOIDCConfig(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	userID := auth.UserIDFromContext(r.Context())
+
 	var req setOIDCConfigRequest
 	if !decodeJSON(r, w, &req) {
 		return
@@ -205,6 +207,8 @@ func (h *ConfigHandler) HandleSetOIDCConfig(w http.ResponseWriter, r *http.Reque
 			return
 		}
 	}
+
+	logAudit(r.Context(), h.DB, userID, db.AuditActionOIDCConfigUpdated, "config", "oidc", nil)
 
 	msg := "OIDC configuration saved successfully"
 	if os.Getenv("OIDC_ISSUER_URL") != "" {

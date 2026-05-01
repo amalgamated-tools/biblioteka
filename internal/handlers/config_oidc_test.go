@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/stretchr/testify/require"
 )
 
@@ -526,4 +527,43 @@ func TestHandleSetOIDCConfig_PreservesExistingEncryptedSecret(t *testing.T) {
 
 	// The callback must receive the plaintext secret (not the encrypted form).
 	require.Equal(t, "original-secret", callbackSecret)
+}
+
+func TestHandleSetOIDCConfig_CreatesAuditLog(t *testing.T) {
+	h, adminID, _ := setupConfigHandler(t)
+	h.IssuerURLValidator = noopIssuerURLValidator
+	h.OIDCHTTPClient = http.DefaultClient
+
+	oidcServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/.well-known/openid-configuration" {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{
+				"issuer": "` + "http://" + r.Host + `",
+				"authorization_endpoint": "http://` + r.Host + `/authorize",
+				"token_endpoint": "http://` + r.Host + `/token",
+				"jwks_uri": "http://` + r.Host + `/jwks"
+			}`))
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer oidcServer.Close()
+
+	body := `{"issuer_url":"` + oidcServer.URL + `","client_id":"my-client","client_secret":"my-secret","redirect_uri":"https://app.example.com/callback"}`
+	r := httptest.NewRequest(http.MethodPut, "/api/config/oidc", bytes.NewBufferString(body))
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleSetOIDCConfig(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+
+	logs, _, err := h.DB.ListAuditLogs(t.Context(), 10, 0)
+	require.NoError(t, err, "list audit logs")
+	require.Len(t, logs, 1)
+	require.Equal(t, db.AuditActionOIDCConfigUpdated, logs[0].Action)
+	require.Equal(t, "config", logs[0].EntityType)
+	require.Equal(t, "oidc", logs[0].EntityID)
+	require.NotNil(t, logs[0].UserID)
+	require.Equal(t, adminID, *logs[0].UserID)
 }
