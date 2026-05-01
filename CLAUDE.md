@@ -42,7 +42,7 @@ frontend/src/
   components/      # Svelte page components (PascalCase .svelte files)
   stores/          # Svelte reactive stores (lowercase .ts files)
   lib/api.ts       # Centralised API client
-  types.ts         # Shared TypeScript types
+  types/           # Shared TypeScript types (domain-scoped modules)
 db/migrations/
   sqlite/          # SQLite migrations (dbmate format)
   postgres/        # PostgreSQL migrations (dbmate format)
@@ -500,7 +500,7 @@ func (d *DB) DeleteMyProtocolCredential(ctx context.Context, userID string) erro
 
 ## Frontend Conventions
 
-- Use TypeScript strict mode; put shared types in `src/types.ts`.
+- Use TypeScript strict mode; put shared types in domain-scoped modules under `frontend/src/types/` (e.g. `book.ts`, `auth.ts`); re-export everything via `frontend/src/types/index.ts`.
 - All API calls go through `src/lib/api.ts`.
 - Manage reactive state in Svelte stores under `src/stores/`.
 - Style with Tailwind CSS utility classes — no component library.
