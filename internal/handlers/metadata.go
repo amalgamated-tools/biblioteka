@@ -230,7 +230,7 @@ type enrichmentEnqueueConfig struct {
 	getPendingID  func(ctx context.Context, userID, bookID string) (string, error)
 	auditAction   string
 	resourceLabel string // e.g. "metadata", "AI enrichment"
-	idLogKey      string // otel key for the existing record ID in the debug log
+	idLogAttr     func(id string) slog.Attr
 }
 
 // enqueueEnrichmentJob encapsulates the shared check-existing → enqueue →
@@ -252,7 +252,7 @@ func (h *MetadataHandler) enqueueEnrichmentJob(w http.ResponseWriter, r *http.Re
 	if lookupErr == nil {
 		slog.DebugContext(ctx, "pending "+cfg.resourceLabel+" already exists, skipping enqueue",
 			slog.String(otelkeys.BookID, bookID),
-			slog.String(cfg.idLogKey, existingID),
+			cfg.idLogAttr(existingID),
 		)
 		writeJSON(ctx, w, http.StatusAccepted, fetchMetadataResponse{Status: "already_exists"})
 		return
@@ -320,7 +320,9 @@ func (h *MetadataHandler) fetchMetadata(w http.ResponseWriter, r *http.Request, 
 		},
 		auditAction:   db.AuditActionMetadataFetchRequested,
 		resourceLabel: "metadata",
-		idLogKey:      otelkeys.GoodreadsMetadataID,
+		idLogAttr: func(id string) slog.Attr {
+			return slog.String(otelkeys.GoodreadsMetadataID, id)
+		},
 	})
 }
 

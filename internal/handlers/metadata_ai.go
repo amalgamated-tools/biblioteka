@@ -95,7 +95,9 @@ func (h *MetadataHandler) fetchAIEnrichment(w http.ResponseWriter, r *http.Reque
 		},
 		auditAction:   db.AuditActionAIEnrichmentFetchRequested,
 		resourceLabel: "AI enrichment",
-		idLogKey:      otelkeys.AIEnrichmentID,
+		idLogAttr: func(id string) slog.Attr {
+			return slog.String(otelkeys.AIEnrichmentID, id)
+		},
 	})
 }
 
