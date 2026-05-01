@@ -157,22 +157,10 @@ func getPendingOrErr[T any](
 	ctx context.Context,
 	w http.ResponseWriter,
 	fetch func(context.Context) (*T, error),
-	notFoundMsg, internalErrMsg string,
-	logAttrs ...slog.Attr,
+	resourceName string,
 ) (*T, bool) {
 	record, err := fetch(ctx)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			writeError(ctx, w, http.StatusNotFound, notFoundMsg)
-			return nil, false
-		}
-		args := make([]any, len(logAttrs)+1)
-		for i, a := range logAttrs {
-			args[i] = a
-		}
-		args[len(logAttrs)] = slog.Any(otelkeys.Error, err)
-		slog.ErrorContext(ctx, internalErrMsg, args...)
-		writeError(ctx, w, http.StatusInternalServerError, internalErrMsg)
+	if handleDBErr(ctx, w, err, resourceName) {
 		return nil, false
 	}
 	return record, true
@@ -187,9 +175,7 @@ func getPendingMetadataOrErr(ctx context.Context, d *db.DB, w http.ResponseWrite
 		func(ctx context.Context) (*db.GoodreadsMetadata, error) {
 			return d.GetPendingGoodreadsMetadataByBook(ctx, userID, bookID)
 		},
-		"no pending metadata found",
-		"failed to get pending metadata",
-		slog.String(otelkeys.BookID, bookID),
+		"pending Goodreads metadata",
 	)
 }
 

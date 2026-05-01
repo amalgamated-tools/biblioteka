@@ -50,9 +50,7 @@ func getPendingAIEnrichmentOrErr(ctx context.Context, d *db.DB, w http.ResponseW
 		func(ctx context.Context) (*db.AIEnrichment, error) {
 			return d.GetPendingAIEnrichmentByBook(ctx, userID, bookID)
 		},
-		"no pending AI enrichment found",
-		"failed to get pending AI enrichment",
-		slog.String(otelkeys.BookID, bookID),
+		"pending AI enrichment",
 	)
 }
 
