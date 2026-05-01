@@ -848,7 +848,7 @@ Shared TypeScript interfaces for API entities live in `frontend/src/types/`, org
 | `reading.ts` | Reading progress, reading list, and reading group types |
 | `index.ts` | Barrel re-export — `export * from` every module above |
 
-All public types are re-exported through `src/types/index.ts`, so every component, store, and API module imports from the same path:
+All public types are re-exported through `frontend/src/types/index.ts`, so every component, store, and API module imports from the same path:
 
 ```ts
 import type { BookSummary, Library, ReadingList } from "../types";
@@ -856,7 +856,7 @@ import type { BookSummary, Library, ReadingList } from "../types";
 
 Individual sub-modules under `frontend/src/lib/api/` may still define small module-local helper types for their own internal use.
 
-Never inline types directly in `.svelte` component files or `*.svelte.ts` store files. Add any new shared or reusable type to the appropriate domain module under `src/types/`.
+Never inline types directly in `.svelte` component files or `*.svelte.ts` store files. Add any new shared or reusable type to the appropriate domain module under `frontend/src/types/`.
 
 **Reading list types:**
 
