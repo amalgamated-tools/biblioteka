@@ -136,6 +136,24 @@ func TestListAuthors(t *testing.T) {
 	require.Equal(t, "Brandon Sanderson", authors[0].Name)
 }
 
+func TestListAuthors_CaseInsensitiveOrder(t *testing.T) {
+	d := newTestDB(t)
+
+	_, err := d.CreateAuthor(t.Context(), "zelda fitzgerald", nil, nil, nil, nil)
+	require.NoError(t, err, "CreateAuthor() error")
+	_, err = d.CreateAuthor(t.Context(), "Alice Walker", nil, nil, nil, nil)
+	require.NoError(t, err, "CreateAuthor() error")
+	_, err = d.CreateAuthor(t.Context(), "bob dylan", nil, nil, nil, nil)
+	require.NoError(t, err, "CreateAuthor() error")
+
+	authors, err := d.ListAuthors(t.Context())
+	require.NoError(t, err, "ListAuthors() error")
+	require.Len(t, authors, 3)
+	require.Equal(t, "Alice Walker", authors[0].Name)
+	require.Equal(t, "bob dylan", authors[1].Name)
+	require.Equal(t, "zelda fitzgerald", authors[2].Name)
+}
+
 func TestListAuthorsEmptyTable(t *testing.T) {
 	d := newTestDB(t)
 

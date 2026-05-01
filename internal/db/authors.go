@@ -51,7 +51,7 @@ type authorListQuery struct{}
 func (authorListQuery) table() string   { return "authors" }
 func (authorListQuery) columns() string { return authorColumns }
 func (authorListQuery) orderBy(d *DB) string {
-	return d.dialectOrderBy("name", "ASC")
+	return d.dialectOrderBy("LOWER(name)", "ASC")
 }
 
 // scanAuthor scans an author row into an Author struct.

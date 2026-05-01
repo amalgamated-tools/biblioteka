@@ -36,7 +36,7 @@ type seriesListQuery struct{}
 func (seriesListQuery) table() string   { return "series" }
 func (seriesListQuery) columns() string { return seriesColumns }
 func (seriesListQuery) orderBy(d *DB) string {
-	return d.dialectOrderBy("name", "ASC")
+	return d.dialectOrderBy("LOWER(name)", "ASC")
 }
 
 // scanSeries scans a series row into a Series struct.

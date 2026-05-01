@@ -539,3 +539,53 @@ func BenchmarkListReadingListBooks_50(b *testing.B) {
 		}
 	}
 }
+
+// ---- ListAuthors ----
+
+// BenchmarkListAuthors_100 measures the full (non-paginated) author-list query
+// against a table with 100 rows. The ORDER BY LOWER(name) clause leverages the
+// existing idx_authors_name_ci functional index instead of triggering a temp
+// B-tree sort.
+func BenchmarkListAuthors_100(b *testing.B) {
+	d := newBenchDB(b)
+	ctx := b.Context()
+
+	for i := range 100 {
+		_, err := d.CreateAuthor(ctx, fmt.Sprintf("Author %03d", i+1), nil, nil, nil, nil)
+		require.NoError(b, err, "CreateAuthor")
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for range b.N {
+		_, err := d.ListAuthors(ctx)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+// ---- ListSeries ----
+
+// BenchmarkListSeries_100 measures the full (non-paginated) series-list query
+// against a table with 100 rows. The ORDER BY LOWER(name) clause leverages the
+// existing idx_series_name_ci functional index instead of triggering a temp
+// B-tree sort.
+func BenchmarkListSeries_100(b *testing.B) {
+	d := newBenchDB(b)
+	ctx := b.Context()
+
+	for i := range 100 {
+		_, err := d.CreateSeries(ctx, fmt.Sprintf("Series %03d", i+1), nil, nil, nil)
+		require.NoError(b, err, "CreateSeries")
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for range b.N {
+		_, err := d.ListSeries(ctx)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}

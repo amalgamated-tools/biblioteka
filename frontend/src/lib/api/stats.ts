@@ -20,13 +20,6 @@ export async function getDownloadsPerMonth(
  * @param year - Calendar year (default: current year).
  */
 export async function getYearInBooks(year?: number): Promise<YearInBooks> {
-  const params = new URLSearchParams();
-  if (year !== undefined) {
-    params.set("year", String(year));
-  }
-  const query = params.toString();
-  return request<YearInBooks>(
-    "GET",
-    `/api/stats/year-in-books${query ? `?${query}` : ""}`,
-  );
+  const suffix = year !== undefined ? `?year=${year}` : "";
+  return request<YearInBooks>("GET", `/api/stats/year-in-books${suffix}`);
 }

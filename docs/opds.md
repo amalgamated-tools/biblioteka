@@ -99,17 +99,10 @@ When a book has a cover image set, each acquisition feed entry includes a `rel="
 
 For non-EPUB formats (PDF, MOBI, AZW3), cover art is not yet extracted automatically. To add cover art manually, set the `cover_image_url` field to a publicly reachable image URL via the API. The `PUT /api/books/{id}` endpoint performs a **full update**: include the book's `title` and all other fields you want to keep, not just `cover_image_url`. The URL should end with a recognised image extension for correct MIME-type detection when serving it to OPDS clients.
 
-The `Content-Type` of the cover link is inferred differently depending on how the URL is stored:
+The `Content-Type` of the cover link is inferred depending on how the URL is stored:
 
-- **`data:` URLs** (set automatically for EPUBs): the MIME type is read directly from the `data:` header (e.g. `image/jpeg`, `image/png`). Content-sniffing is then applied: the sniffed type is used whenever it identifies the bytes as an image, taking precedence over the declared type; if sniffing does not identify the bytes as an image but the declared type is an image (e.g. SVG detected as `text/xml`), the declared type is used instead.
-- **Plain HTTPS URLs**: the MIME type is inferred from the URL's path component using `url.Parse` + `path.Ext`. Query parameters and fragments do **not** interfere with detection because the parser strips them before extracting the extension.
-
-| URL example | Detected MIME type |
-|-------------|-------------------|
-| `https://example.com/covers/1234.png` | `image/png` |
-| `https://example.com/covers/1234.png?size=200` | `image/png` (query string stripped before extension detection) |
-| `https://example.com/covers/1234.jpg` | `image/jpeg` |
-| `https://example.com/covers/1234` | `image/jpeg` (falls back — no extension) |
+- **`data:` URLs** (set automatically for EPUBs): the MIME type is read directly from the `data:` header (e.g. `image/jpeg`, `image/png`). Content-sniffing is then applied: the sniffed type takes precedence when it identifies the bytes as an image; if sniffing does not identify them as an image but the declared type is (e.g. SVG detected as `text/xml`), the declared type is used instead.
+- **Plain HTTPS URLs**: the MIME type is inferred from the file extension via `url.Parse` + `path.Ext`. Query parameters and fragments are stripped before extension detection.
 
 If the extension is unknown or missing, the type falls back to `image/jpeg`.
 
@@ -233,25 +226,13 @@ Authentication errors also include a `WWW-Authenticate: Basic realm="Biblioteka 
 
 ## OPDS client examples
 
-### KOReader
+All OPDS-compatible apps follow the same setup: find the catalog or OPDS section in the app, add a new catalog entry, enter `https://<your-host>/opds`, and supply your OPDS username and password when prompted.
 
-1. Open the **OPDS catalog** plugin (*Search → OPDS catalog*).
-2. Tap **+** to add a new catalog.
-3. Enter the catalog URL: `https://<your-host>/opds`
-4. Enter your OPDS username and password.
-
-### Calibre
-
-1. Open *Preferences → Sharing → Content Server* and enable the **Add catalog** button in the Download Books dialog (or use *Connect/Share → Browse by cover*).
-2. Alternatively, use Calibre's *Add books → OPDS catalog* importer and enter `https://<your-host>/opds`.
-3. Provide your OPDS credentials when prompted.
-
-### Moon+ Reader (Android)
-
-1. Open the app → *Library → Network → OPDS Catalog → Add*.
-2. Set the URL to `https://<your-host>/opds`.
-3. Enter your OPDS username and password.
-
+| App | Where to add a catalog |
+|-----|------------------------|
+| **KOReader** | *Search → OPDS catalog → tap +* |
+| **Calibre** | *Add books → OPDS catalog* importer, or via *Preferences → Sharing → Content Server* (also *Connect/Share → Browse by cover*) |
+| **Moon+ Reader (Android)** | *Library → Network → OPDS Catalog → Add* |
 
 ---
 
