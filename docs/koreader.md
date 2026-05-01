@@ -62,6 +62,8 @@ Once configured, KOReader automatically syncs progress when you open and close b
 | Bookmarks and annotations | ❌ (not part of the kosync protocol) |
 | Book files | ❌ (use [OPDS](opds.md) or direct download for that) |
 
+> **Reading Groups note:** Reading progress synced via KOSync is stored in the `reading_progress` table and is **not** included in [Reading Group](reading-groups.md) progress comparisons. Reading Group progress is sourced exclusively from Kobo native sync data (`kobo_reading_states`). A KOReader user who has synced their position via KOSync but has **no** Kobo-native reading state will appear as `0%` progress in any group progress view, regardless of how far they have read. (A member who also has Kobo-native sync data for the same book will display their Kobo progress instead.) If your reading circle includes members who use KOReader without a Kobo device, they will always show as unstarted in group comparisons. See [Reading Groups](reading-groups.md) for details on how group progress is calculated.
+
 ---
 
 ## KOSync Credentials API
