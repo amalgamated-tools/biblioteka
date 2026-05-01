@@ -56,24 +56,3 @@ type fetchMetadataResponse struct {
 	TaskID string `json:"task_id,omitempty"`
 	Status string `json:"status"`
 }
-
-// coalesceStr returns the pointed-to string if non-nil and non-empty,
-// otherwise falls back to the default value. An empty string is treated as
-// absent so that metadata fields explicitly cleared by the provider do not
-// overwrite existing book data with blanks.
-func coalesceStr(ptr *string, fallback string) string {
-	if ptr != nil && *ptr != "" {
-		return *ptr
-	}
-	return fallback
-}
-
-// coalescePtr returns ptr if non-nil and points to a non-empty string,
-// otherwise returns fallback. Like coalesceStr, empty strings are treated as
-// absent to prevent blank metadata values from overwriting existing book data.
-func coalescePtr(ptr, fallback *string) *string {
-	if ptr != nil && *ptr != "" {
-		return ptr
-	}
-	return fallback
-}

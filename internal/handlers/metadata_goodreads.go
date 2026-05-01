@@ -2,8 +2,6 @@ package handlers
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"log/slog"
 	"net/http"
 
@@ -11,7 +9,6 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/jobs"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
-	"github.com/hibiken/asynq"
 )
 
 // getPendingMetadataOrErr fetches the pending metadata for a book and writes
@@ -66,60 +63,29 @@ func (h *MetadataHandler) getPendingMetadata(w http.ResponseWriter, r *http.Requ
 //	@Failure		503	{object}	errorResponse
 //	@Router			/books/{id}/metadata/fetch [post]
 func (h *MetadataHandler) fetchMetadata(w http.ResponseWriter, r *http.Request, bookID string) {
-	userID := auth.UserIDFromContext(r.Context())
-
 	if h.Enqueuer == nil {
 		writeError(r.Context(), w, http.StatusServiceUnavailable, "background worker not available")
 		return
 	}
 
-	// Verify the book exists.
-	_, err := h.DB.GetBook(r.Context(), bookID)
-	if handleDBErr(r.Context(), w, err, "book") {
-		return
-	}
-
-	// If a pending metadata record already exists, short-circuit with 202 so
-	// the client can listen on SSE or poll without triggering a duplicate job.
-	existing, lookupErr := h.DB.GetPendingGoodreadsMetadataByBook(r.Context(), userID, bookID)
-	if lookupErr == nil {
-		slog.DebugContext(r.Context(), "pending metadata already exists, skipping enqueue",
-			slog.String(otelkeys.BookID, bookID),
-			slog.String(otelkeys.GoodreadsMetadataID, existing.ID),
-		)
-		writeJSON(r.Context(), w, http.StatusAccepted, fetchMetadataResponse{TaskID: "", Status: "already_exists"})
-		return
-	} else if !errors.Is(lookupErr, sql.ErrNoRows) {
-		slog.ErrorContext(r.Context(), "failed to check pending metadata",
-			slog.String(otelkeys.BookID, bookID),
-			slog.Any(otelkeys.Error, lookupErr),
-		)
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to check pending metadata")
-		return
-	}
-
-	taskID, err := h.Enqueuer.Enqueue(r.Context(), jobs.JobEnrichGoodreads, jobs.EnrichGoodreadsPayload{
-		BookID: bookID,
-		UserID: userID,
+	h.enqueueEnrichmentJob(w, r, bookID, enrichmentEnqueueConfig{
+		jobType: jobs.JobEnrichGoodreads,
+		buildPayload: func(bookID, userID string) any {
+			return jobs.EnrichGoodreadsPayload{BookID: bookID, UserID: userID}
+		},
+		getPendingID: func(ctx context.Context, userID, bookID string) (string, error) {
+			gm, err := h.DB.GetPendingGoodreadsMetadataByBook(ctx, userID, bookID)
+			if err != nil {
+				return "", err
+			}
+			return gm.ID, nil
+		},
+		auditAction:   db.AuditActionMetadataFetchRequested,
+		resourceLabel: "metadata",
+		idLogAttr: func(id string) slog.Attr {
+			return slog.String(otelkeys.GoodreadsMetadataID, id)
+		},
 	})
-	if err != nil {
-		// asynq returns ErrDuplicateTask when a unique task is already enqueued —
-		// treat as a successful 202 since the job is in-flight.
-		if errors.Is(err, asynq.ErrDuplicateTask) {
-			writeJSON(r.Context(), w, http.StatusAccepted, fetchMetadataResponse{TaskID: "", Status: "already_running"})
-			return
-		}
-		slog.ErrorContext(r.Context(), "failed to enqueue metadata fetch",
-			slog.String(otelkeys.BookID, bookID),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to enqueue metadata fetch")
-		return
-	}
-
-	logAudit(r.Context(), h.DB, userID, db.AuditActionMetadataFetchRequested, "book", bookID, map[string]any{"task_id": taskID})
-
-	writeJSON(r.Context(), w, http.StatusAccepted, fetchMetadataResponse{TaskID: taskID, Status: "enqueued"})
 }
 
 // applyMetadata applies the pending metadata to the book and marks it as applied.
@@ -195,6 +161,27 @@ func (h *MetadataHandler) applyMetadata(w http.ResponseWriter, r *http.Request, 
 		map[string]any{"metadata_id": gm.ID, "source": db.MetadataSourceGoodreads})
 
 	writeJSON(r.Context(), w, http.StatusOK, toBookSummaryDTO(updated))
+}
+
+// coalesceStr returns the pointed-to string if non-nil and non-empty,
+// otherwise falls back to the default value. An empty string is treated as
+// absent so that metadata fields explicitly cleared by the provider do not
+// overwrite existing book data with blanks.
+func coalesceStr(ptr *string, fallback string) string {
+	if ptr != nil && *ptr != "" {
+		return *ptr
+	}
+	return fallback
+}
+
+// coalescePtr returns ptr if non-nil and points to a non-empty string,
+// otherwise returns fallback. Like coalesceStr, empty strings are treated as
+// absent to prevent blank metadata values from overwriting existing book data.
+func coalescePtr(ptr, fallback *string) *string {
+	if ptr != nil && *ptr != "" {
+		return ptr
+	}
+	return fallback
 }
 
 // rejectMetadata marks the pending metadata as rejected.
