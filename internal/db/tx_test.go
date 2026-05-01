@@ -83,6 +83,27 @@ func TestWithTx_NilFnError(t *testing.T) {
 	require.NoError(t, err, "WithTx with a no-op fn should succeed")
 }
 
+// TestWithTx_WrapsCommitError verifies that a commit error is wrapped with
+// "commit tx:" context so callers get useful error messages.
+// We trigger a commit failure by rolling back the transaction inside fn and
+// returning nil — WithTx will then attempt to Commit the already-done tx,
+// which returns sql.ErrTxDone and must be wrapped with "commit tx:".
+func TestWithTx_WrapsCommitError(t *testing.T) {
+	d := newTestDB(t)
+
+	err := d.WithTx(t.Context(), func(tx *sql.Tx) error {
+		// Roll back the transaction inside fn so that WithTx proceeds to call
+		// tx.Commit() on an already-done transaction. Return nil explicitly so
+		// WithTx always reaches the commit path.
+		_ = tx.Rollback()
+		return nil
+	})
+
+	require.Error(t, err, "WithTx should propagate the commit error")
+	require.ErrorIs(t, err, sql.ErrTxDone, "commit error should wrap sql.ErrTxDone")
+	require.ErrorContains(t, err, "commit tx:", "commit error must carry 'commit tx:' prefix")
+}
+
 // TestDeferRollback_IgnoresErrTxDone verifies that deferRollback does not
 // panic or return an error when the transaction has already been committed
 // (which causes Rollback to return sql.ErrTxDone).
