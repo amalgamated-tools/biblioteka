@@ -20,16 +20,7 @@ import (
 // response (caller should return).
 func getPendingMetadataOrErr(ctx context.Context, d *db.DB, w http.ResponseWriter, userID, bookID string) (*db.GoodreadsMetadata, bool) {
 	gm, err := d.GetPendingGoodreadsMetadataByBook(ctx, userID, bookID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			writeError(ctx, w, http.StatusNotFound, "no pending metadata found")
-			return nil, false
-		}
-		slog.ErrorContext(ctx, "failed to get pending metadata",
-			slog.String(otelkeys.BookID, bookID),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(ctx, w, http.StatusInternalServerError, "failed to get pending metadata")
+	if handleDBErr(ctx, w, err, "pending Goodreads metadata") {
 		return nil, false
 	}
 	return gm, true

@@ -23,7 +23,7 @@ const sseHeartbeatInterval = 15 * time.Second
 // events from Redis pub/sub.
 //
 //	@Summary		Stream metadata fetch events
-//	@Description	Opens a Server-Sent Events (SSE) stream for metadata fetch progress. Events are JSON objects with an "event" field (e.g. "complete", "error", "not_found"). The connection closes automatically on a terminal event or after 2 minutes.
+//	@Description	Opens a Server-Sent Events (SSE) stream for metadata fetch progress. Events are JSON objects with an "event" field (e.g. "complete", "error", "not_found"). The connection closes automatically on a terminal event or on client disconnect. A per-write deadline of 2 minutes is enforced and reset on each heartbeat or event write.
 //	@Tags			Book Metadata
 //	@Produce		text/event-stream
 //	@Security		BearerAuth
