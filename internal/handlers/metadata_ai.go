@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -12,7 +11,6 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/jobs"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
-	"github.com/hibiken/asynq"
 )
 
 type aiEnrichmentDTO struct {
@@ -48,20 +46,12 @@ func toAIEnrichmentDTO(e *db.AIEnrichment) aiEnrichmentDTO {
 }
 
 func getPendingAIEnrichmentOrErr(ctx context.Context, d *db.DB, w http.ResponseWriter, userID, bookID string) (*db.AIEnrichment, bool) {
-	enrichment, err := d.GetPendingAIEnrichmentByBook(ctx, userID, bookID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			writeError(ctx, w, http.StatusNotFound, "no pending AI enrichment found")
-			return nil, false
-		}
-		slog.ErrorContext(ctx, "failed to get pending AI enrichment",
-			slog.String(otelkeys.BookID, bookID),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(ctx, w, http.StatusInternalServerError, "failed to get pending AI enrichment")
-		return nil, false
-	}
-	return enrichment, true
+	return getPendingOrErr(ctx, w,
+		func(ctx context.Context) (*db.AIEnrichment, error) {
+			return d.GetPendingAIEnrichmentByBook(ctx, userID, bookID)
+		},
+		"pending AI enrichment",
+	)
 }
 
 // fetchAIEnrichment enqueues an AI enrichment job for the given book.
@@ -79,8 +69,6 @@ func getPendingAIEnrichmentOrErr(ctx context.Context, d *db.DB, w http.ResponseW
 //	@Failure		503	{object}	errorResponse
 //	@Router			/books/{id}/metadata/ai-fetch [post]
 func (h *MetadataHandler) fetchAIEnrichment(w http.ResponseWriter, r *http.Request, bookID string) {
-	userID := auth.UserIDFromContext(r.Context())
-
 	if h.LLMProvider == nil {
 		writeError(r.Context(), w, http.StatusServiceUnavailable, "LLM provider not configured")
 		return
@@ -91,49 +79,24 @@ func (h *MetadataHandler) fetchAIEnrichment(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Verify the book exists.
-	if _, err := h.DB.GetBook(r.Context(), bookID); handleDBErr(r.Context(), w, err, "book") {
-		return
-	}
-
-	// If a pending AI enrichment already exists, short-circuit.
-	existing, lookupErr := h.DB.GetPendingAIEnrichmentByBook(r.Context(), userID, bookID)
-	if lookupErr == nil {
-		slog.DebugContext(r.Context(), "pending AI enrichment already exists, skipping enqueue",
-			slog.String(otelkeys.BookID, bookID),
-			slog.String(otelkeys.AIEnrichmentID, existing.ID),
-		)
-		writeJSON(r.Context(), w, http.StatusAccepted, fetchMetadataResponse{Status: "already_exists"})
-		return
-	} else if !errors.Is(lookupErr, sql.ErrNoRows) {
-		slog.ErrorContext(r.Context(), "failed to check pending AI enrichment",
-			slog.String(otelkeys.BookID, bookID),
-			slog.Any(otelkeys.Error, lookupErr),
-		)
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to check pending AI enrichment")
-		return
-	}
-
-	taskID, err := h.Enqueuer.Enqueue(r.Context(), jobs.JobEnrichAI, jobs.EnrichAIPayload{
-		BookID: bookID,
-		UserID: userID,
+	h.enqueueEnrichmentJob(w, r, bookID, enrichmentEnqueueConfig{
+		jobType: jobs.JobEnrichAI,
+		buildPayload: func(bookID, userID string) any {
+			return jobs.EnrichAIPayload{BookID: bookID, UserID: userID}
+		},
+		getPendingID: func(ctx context.Context, userID, bookID string) (string, error) {
+			e, err := h.DB.GetPendingAIEnrichmentByBook(ctx, userID, bookID)
+			if err != nil {
+				return "", err
+			}
+			return e.ID, nil
+		},
+		auditAction:   db.AuditActionAIEnrichmentFetchRequested,
+		resourceLabel: "AI enrichment",
+		idLogAttr: func(id string) slog.Attr {
+			return slog.String(otelkeys.AIEnrichmentID, id)
+		},
 	})
-	if err != nil {
-		if errors.Is(err, asynq.ErrDuplicateTask) {
-			writeJSON(r.Context(), w, http.StatusAccepted, fetchMetadataResponse{Status: "already_running"})
-			return
-		}
-		slog.ErrorContext(r.Context(), "failed to enqueue AI enrichment fetch",
-			slog.String(otelkeys.BookID, bookID),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to enqueue AI enrichment fetch")
-		return
-	}
-
-	logAudit(r.Context(), h.DB, userID, db.AuditActionAIEnrichmentFetchRequested, "book", bookID, map[string]any{"task_id": taskID})
-
-	writeJSON(r.Context(), w, http.StatusAccepted, fetchMetadataResponse{TaskID: taskID, Status: "enqueued"})
 }
 
 // getPendingAIEnrichment returns the most recent pending AI enrichment for a book.
