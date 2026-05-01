@@ -7,8 +7,10 @@ import (
 	"log/slog"
 	"net/http"
 	"slices"
+	"strconv"
 	"strings"
 
+	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/handlers"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 
@@ -53,6 +55,7 @@ func (s *Server) setupRoutes(ctx context.Context) {
 	s.mux.Handle("/api/config/status", s.requireJWTAuth(http.HandlerFunc(s.configHandler.HandleConfigStatus)))
 	s.mux.Handle("/api/config/llm", s.requireJWTAuth(http.HandlerFunc(s.configHandler.HandleLLMConfig)))
 	s.mux.Handle("/api/config/oidc", s.requireJWTAuth(http.HandlerFunc(s.configHandler.HandleOIDCConfig)))
+	s.mux.Handle("/api/config/registration", s.requireJWTAuth(http.HandlerFunc(s.configHandler.HandleRegistrationConfig)))
 	s.mux.Handle("/api/config/smtp", s.requireJWTAuth(http.HandlerFunc(s.configHandler.HandleSMTPConfig)))
 	s.mux.Handle("/api/config/smtp/test", s.requireJWTAuth(s.authLimiter.Wrap(s.configHandler.HandleSMTPTest)))
 	s.mux.Handle("/api/config/watch-folder", s.requireJWTAuth(http.HandlerFunc(s.configHandler.HandleWatchFolderConfig)))
@@ -253,8 +256,15 @@ func (s *Server) handleSignupEnabled(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	registrationDisabled := false
+	if s.DB != nil {
+		if val, err := s.DB.GetSetting(r.Context(), db.SettingRegistrationDisabled); err == nil {
+			registrationDisabled, _ = strconv.ParseBool(val)
+		}
+	}
+
 	writeSystemJSON(r.Context(), w, http.StatusOK, enabledResponse{
-		Enabled: !s.authHandler.DisableSignup,
+		Enabled: !s.authHandler.DisableSignup && !registrationDisabled,
 	})
 }
 

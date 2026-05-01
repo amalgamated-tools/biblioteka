@@ -10,10 +10,13 @@ vi.mock("../../stores/auth.svelte", () => ({
 vi.mock("../../lib/api", () => ({
   listUsers: vi.fn().mockResolvedValue([]),
   setUserAdmin: vi.fn(),
+  getRegistrationConfig: vi.fn().mockResolvedValue({ registration_disabled: false }),
+  setRegistrationConfig: vi.fn(),
 }));
 
 vi.mock("lucide-svelte", () => ({
   Users: () => {},
+  UserX: () => {},
 }));
 
 import UsersTab from "./UsersTab.svelte";

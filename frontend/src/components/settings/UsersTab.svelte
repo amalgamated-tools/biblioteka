@@ -1,9 +1,15 @@
 <script lang="ts">
   import { authStore } from "../../stores/auth.svelte";
-  import { listUsers, setUserAdmin } from "../../lib/api";
+  import {
+    listUsers,
+    setUserAdmin,
+    getRegistrationConfig,
+    setRegistrationConfig,
+  } from "../../lib/api";
   import type { AdminUser } from "../../types";
-  import { Users } from "lucide-svelte";
+  import { Users, UserX } from "lucide-svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
+  import Button from "../ui/Button.svelte";
 
   interface Props {
     cachedUsers: AdminUser[];
@@ -18,6 +24,12 @@
   let togglingId: string | null = $state(null);
   let hasFetchedUsers = false;
 
+  // Registration config state
+  let registrationDisabled = $state(false);
+  let registrationLoading = $state(false);
+  let registrationError: string | null = $state(null);
+  let registrationSuccess: string | null = $state(null);
+
   $effect(() => {
     if (hasFetchedUsers) return;
     if (cachedUsers.length > 0) {
@@ -26,6 +38,17 @@
     } else if (!usersLoading) {
       void loadUsers();
     }
+  });
+
+  $effect(() => {
+    void (async () => {
+      try {
+        const config = await getRegistrationConfig();
+        registrationDisabled = config.registration_disabled;
+      } catch {
+        // ignore — admin-only; non-admins won't reach this tab
+      }
+    })();
   });
 
   async function loadUsers() {
@@ -56,6 +79,28 @@
       usersError = err instanceof Error ? err.message : "Failed to update user";
     } finally {
       togglingId = null;
+    }
+  }
+
+  async function toggleRegistration() {
+    registrationLoading = true;
+    registrationError = null;
+    registrationSuccess = null;
+    try {
+      const updated = await setRegistrationConfig({
+        registration_disabled: !registrationDisabled,
+      });
+      registrationDisabled = updated.registration_disabled;
+      registrationSuccess = registrationDisabled
+        ? "Public registration disabled."
+        : "Public registration enabled.";
+    } catch (err) {
+      registrationError =
+        err instanceof Error
+          ? err.message
+          : "Failed to update registration setting";
+    } finally {
+      registrationLoading = false;
     }
   }
 </script>
@@ -140,5 +185,52 @@
         </table>
       </div>
     {/if}
+  </div>
+
+  <div
+    class="border-t border-ink-100 dark:border-ink-800 pt-6"
+    aria-labelledby="registration-heading"
+  >
+    <h3
+      id="registration-heading"
+      class="text-base font-semibold text-ink-900 dark:text-cream-100 mb-1 flex items-center gap-2"
+    >
+      <UserX class="w-4 h-4 text-accent-600" aria-hidden="true" />
+      Public Registration
+    </h3>
+    <p class="text-sm text-ink-500 dark:text-ink-300 mb-4">
+      When disabled, new users cannot sign up through the public registration
+      form. Admins can still create accounts via the admin panel.
+    </p>
+
+    {#if registrationError}
+      <AlertBanner variant="error">{registrationError}</AlertBanner>
+    {/if}
+    {#if registrationSuccess}
+      <AlertBanner variant="success">{registrationSuccess}</AlertBanner>
+    {/if}
+
+    <div class="flex items-center gap-4">
+      <Button
+        variant={registrationDisabled ? "primary" : "secondary"}
+        disabled={registrationLoading}
+        onclick={toggleRegistration}
+      >
+        {registrationLoading
+          ? "Saving..."
+          : registrationDisabled
+            ? "Enable Registration"
+            : "Disable Registration"}
+      </Button>
+      <span
+        class="text-sm {registrationDisabled
+          ? 'text-danger-600 dark:text-red-400'
+          : 'text-success-700 dark:text-green-400'}"
+      >
+        {registrationDisabled
+          ? "Registration is disabled"
+          : "Registration is enabled"}
+      </span>
+    </div>
   </div>
 </div>

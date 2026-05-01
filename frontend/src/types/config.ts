@@ -63,3 +63,7 @@ export interface SetLLMConfigInput {
   model: string;
   enabled: boolean;
 }
+
+export interface RegistrationConfig {
+  registration_disabled: boolean;
+}

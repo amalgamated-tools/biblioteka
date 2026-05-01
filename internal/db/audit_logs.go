@@ -59,6 +59,7 @@ const (
 	AuditActionReadingListCreated         = "reading_list.created"
 	AuditActionReadingListDeleted         = "reading_list.deleted"
 	AuditActionReadingListUpdated         = "reading_list.updated"
+	AuditActionRegistrationConfigUpdated  = "registration.config_updated"
 	AuditActionSeriesCreated              = "series.created"
 	AuditActionSeriesDeleted              = "series.deleted"
 	AuditActionSeriesUpdated              = "series.updated"

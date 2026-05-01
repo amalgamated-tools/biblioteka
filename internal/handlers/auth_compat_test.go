@@ -12,6 +12,9 @@ import (
 	"github.com/amalgamated-tools/goauth/auth"
 	goauthhandler "github.com/amalgamated-tools/goauth/handler"
 	"github.com/stretchr/testify/require"
+
+	"github.com/amalgamated-tools/biblioteka/internal/authstore"
+	internaldb "github.com/amalgamated-tools/biblioteka/internal/db"
 )
 
 // stubAPIKeyStore is a minimal implementation of auth.APIKeyStore for testing
@@ -166,4 +169,41 @@ func TestAPIKeyHandler_Create_EmptyIDProducesNoAudit(t *testing.T) {
 	logs, _, err := d.ListAuditLogs(t.Context(), 10, 0)
 	require.NoError(t, err)
 	require.Empty(t, logs, "expected no audit entry when goauth returns empty ID")
+}
+
+func TestAuthHandler_Signup_BlockedByDBSetting(t *testing.T) {
+	d := newTestDB(t)
+	require.NoError(t, d.SetSetting(t.Context(), internaldb.SettingRegistrationDisabled, "true"))
+
+	h := &AuthHandler{DB: d}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/auth/signup", strings.NewReader(`{"name":"Alice","email":"alice@example.com","password":"password1"}`))
+	rec := httptest.NewRecorder()
+
+	h.Signup(rec, req)
+
+	require.Equal(t, http.StatusForbidden, rec.Code)
+}
+
+func TestAuthHandler_Signup_NotBlockedWhenSettingFalse(t *testing.T) {
+	d := newTestDB(t)
+	require.NoError(t, d.SetSetting(t.Context(), internaldb.SettingRegistrationDisabled, "false"))
+
+	// Wire up a real Users store so the signup can proceed past the DB check.
+	h := &AuthHandler{
+		AuthHandler: goauthhandler.AuthHandler{
+			Users: &authstore.UserAdapter{DB: d},
+			JWT:   newTestJWT(t),
+		},
+		DB: d,
+	}
+
+	body := `{"name":"Alice","email":"alice@example.com","password":"password1"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/auth/signup", strings.NewReader(body))
+	rec := httptest.NewRecorder()
+
+	h.Signup(rec, req)
+
+	// Should pass the DB check; goauth handles the actual signup.
+	require.NotEqual(t, http.StatusForbidden, rec.Code, "signup should not be blocked when registration_disabled=false")
 }

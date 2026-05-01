@@ -182,7 +182,16 @@ func clearAuthCookie(w http.ResponseWriter, secure bool) {
 }
 
 // Signup wraps goauth's Signup to emit an audit log entry on success.
+// If the registration_disabled setting is true, it returns 403 Forbidden
+// before delegating to the underlying handler.
 func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
+	if h.DB != nil {
+		disabled, _ := h.DB.GetSetting(r.Context(), db.SettingRegistrationDisabled)
+		if disabled == "true" {
+			writeError(r.Context(), w, http.StatusForbidden, "signup is disabled")
+			return
+		}
+	}
 	rc := newResponseCapture(w)
 	h.AuthHandler.Signup(rc, r)
 	if rc.status == http.StatusCreated && h.DB != nil {
