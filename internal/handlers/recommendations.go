@@ -41,7 +41,7 @@ func (h *RecommendationHandler) HandleRecommendations(w http.ResponseWriter, r *
 		return
 	}
 
-	limit, _ := parseLimitOffset(r, defaultRecommendationLimit, maxRecommendationLimit)
+	limit := parseLimit(r, defaultRecommendationLimit, maxRecommendationLimit)
 
 	ctx := r.Context()
 	userID := auth.UserIDFromContext(ctx)

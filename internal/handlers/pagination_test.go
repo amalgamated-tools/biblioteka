@@ -180,3 +180,92 @@ func TestParseLimitOffset(t *testing.T) {
 		})
 	}
 }
+
+func TestParseLimit(t *testing.T) {
+	tests := []struct {
+		name         string
+		url          string
+		defaultLimit int
+		maxLimit     int
+		wantLimit    int
+	}{
+		{
+			name:         "no params uses default limit",
+			url:          "/",
+			defaultLimit: 10,
+			maxLimit:     50,
+			wantLimit:    10,
+		},
+		{
+			name:         "valid limit",
+			url:          "/?limit=5",
+			defaultLimit: 10,
+			maxLimit:     50,
+			wantLimit:    5,
+		},
+		{
+			name:         "limit exceeds max is clamped",
+			url:          "/?limit=999",
+			defaultLimit: 10,
+			maxLimit:     50,
+			wantLimit:    50,
+		},
+		{
+			name:         "limit=0 uses default",
+			url:          "/?limit=0",
+			defaultLimit: 10,
+			maxLimit:     50,
+			wantLimit:    10,
+		},
+		{
+			name:         "negative limit uses default",
+			url:          "/?limit=-1",
+			defaultLimit: 10,
+			maxLimit:     50,
+			wantLimit:    10,
+		},
+		{
+			name:         "non-integer limit uses default",
+			url:          "/?limit=abc",
+			defaultLimit: 10,
+			maxLimit:     50,
+			wantLimit:    10,
+		},
+		{
+			name:         "offset param is ignored",
+			url:          "/?limit=5&offset=100",
+			defaultLimit: 10,
+			maxLimit:     50,
+			wantLimit:    5,
+		},
+		{
+			name:         "empty limit param uses default",
+			url:          "/?limit=",
+			defaultLimit: 10,
+			maxLimit:     50,
+			wantLimit:    10,
+		},
+		{
+			name:         "limit equals max is accepted",
+			url:          "/?limit=50",
+			defaultLimit: 10,
+			maxLimit:     50,
+			wantLimit:    50,
+		},
+		{
+			name:         "limit overflow uses default",
+			url:          "/?limit=99999999999999999999",
+			defaultLimit: 10,
+			maxLimit:     50,
+			wantLimit:    10,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := httptest.NewRequest(http.MethodGet, tt.url, nil)
+			gotLimit := parseLimit(r, tt.defaultLimit, tt.maxLimit)
+			require.Equal(t, tt.wantLimit, gotLimit)
+		})
+	}
+}
