@@ -1,9 +1,10 @@
 // Package llm provides interfaces and types for LLM-based book metadata enrichment.
 package llm
 
-import "slices"
-
-import "context"
+import (
+	"context"
+	"slices"
+)
 
 // ProviderOllama is the provider name for Ollama.
 const ProviderOllama = "ollama"
