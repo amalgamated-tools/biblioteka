@@ -145,6 +145,24 @@ func TestListSeries(t *testing.T) {
 	require.Equal(t, "Discworld", list[0].Name)
 }
 
+func TestListSeries_CaseInsensitiveOrder(t *testing.T) {
+	d := newTestDB(t)
+
+	_, err := d.CreateSeries(t.Context(), "zelda chronicles", nil, nil, nil)
+	require.NoError(t, err, "CreateSeries() error")
+	_, err = d.CreateSeries(t.Context(), "Adventures in Space", nil, nil, nil)
+	require.NoError(t, err, "CreateSeries() error")
+	_, err = d.CreateSeries(t.Context(), "battle royale", nil, nil, nil)
+	require.NoError(t, err, "CreateSeries() error")
+
+	list, err := d.ListSeries(t.Context())
+	require.NoError(t, err, "ListSeries() error")
+	require.Len(t, list, 3)
+	require.Equal(t, "Adventures in Space", list[0].Name)
+	require.Equal(t, "battle royale", list[1].Name)
+	require.Equal(t, "zelda chronicles", list[2].Name)
+}
+
 func TestUpdateSeries(t *testing.T) {
 	d := newTestDB(t)
 
