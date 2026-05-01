@@ -36,7 +36,9 @@ func findLink(links []opdspkg.Link, rel string) *opdspkg.Link {
 }
 
 // ptr returns a pointer to the given value; used by table-driven tests.
-func ptr[T any](v T) *T { return &v }
+//
+//go:fix inline
+func ptr[T any](v T) *T { return new(v) }
 
 // --- Routing / method dispatch ---
 

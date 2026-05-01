@@ -1,6 +1,8 @@
 // Package llm provides interfaces and types for LLM-based book metadata enrichment.
 package llm
 
+import "slices"
+
 import "context"
 
 // ProviderOllama is the provider name for Ollama.
@@ -11,12 +13,7 @@ var SupportedProviders = []string{ProviderOllama}
 
 // IsSupported reports whether the given provider name is supported.
 func IsSupported(provider string) bool {
-	for _, p := range SupportedProviders {
-		if p == provider {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(SupportedProviders, provider)
 }
 
 // Provider generates LLM completions from a prompt.
