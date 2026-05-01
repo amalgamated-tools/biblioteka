@@ -26,6 +26,8 @@ vi.mock("../../lib/api", () => ({
   bookFileDownloadUrl: (...args: [string]) => mockBookFileDownloadUrl(...args),
 }));
 
+vi.mock("./AIEnrichmentPanel.svelte", () => ({ default: () => {} }));
+
 import BookDetail from "./BookDetail.svelte";
 
 const fakeBook: Book = {

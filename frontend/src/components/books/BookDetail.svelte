@@ -14,6 +14,7 @@
   } from "lucide-svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
   import Button from "../ui/Button.svelte";
+  import AIEnrichmentPanel from "./AIEnrichmentPanel.svelte";
 
   interface Props {
     bookId: string;
@@ -134,6 +135,7 @@
 
       <!-- Details -->
       <div class="md:col-span-2 space-y-6">
+        <AIEnrichmentPanel {bookId} onApplied={() => loadBook(bookId)} />
         <div
           class="bg-white dark:bg-ink-900 rounded-2xl shadow-sm border border-ink-100 dark:border-ink-800 p-6"
         >
