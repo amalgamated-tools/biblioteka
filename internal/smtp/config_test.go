@@ -32,8 +32,15 @@ func TestValidateHost(t *testing.T) {
 		wantErr bool
 	}{
 		{"smtp.example.com", false},
-		{"127.0.0.1", false},
-		{"::1", false},
+		// Private/loopback/link-local addresses must be rejected (SSRF protection).
+		{"127.0.0.1", true},
+		{"::1", true},
+		{"10.0.0.1", true},
+		{"172.16.0.1", true},
+		{"192.168.1.1", true},
+		{"169.254.169.254", true},
+		{"localhost", true},
+		{"LOCALHOST", true},
 		{"", true},
 		{"host with space", true},
 		{"[::1]", true},
@@ -93,15 +100,16 @@ func TestValidateForSend_PlaintextAuthOnRemote(t *testing.T) {
 }
 
 func TestValidateForSend_PlaintextAuthOnLoopback(t *testing.T) {
-	params, err := ValidateForSend(Config{
+	// localhost is now rejected by SSRF validation, so plaintext auth on
+	// loopback is no longer a supported configuration.
+	_, err := ValidateForSend(Config{
 		Host:     "localhost",
 		From:     "from@example.com",
 		Username: "user",
 		Password: "pass",
 		TLS:      "none",
 	})
-	require.NoError(t, err)
-	require.NotNil(t, params.Auth, "expected non-nil Auth for username+password")
+	require.Error(t, err, "expected error: localhost is a private address")
 }
 
 func TestValidateForSend_Valid(t *testing.T) {
@@ -151,6 +159,13 @@ func TestValidateForSend_ErrorsAreValidationError(t *testing.T) {
 		{"username without password", Config{Host: "smtp.example.com", From: "from@example.com", Username: "u", TLS: "starttls"}},
 		{"invalid host characters", Config{Host: "host with space", From: "from@example.com"}},
 		{"host with brackets", Config{Host: "[::1]", From: "from@example.com"}},
+		{"RFC-1918 class A", Config{Host: "10.0.0.1", From: "from@example.com"}},
+		{"RFC-1918 class B", Config{Host: "172.16.0.1", From: "from@example.com"}},
+		{"RFC-1918 class C", Config{Host: "192.168.1.1", From: "from@example.com"}},
+		{"link-local (AWS IMDS)", Config{Host: "169.254.169.254", From: "from@example.com"}},
+		{"loopback IPv4", Config{Host: "127.0.0.1", From: "from@example.com"}},
+		{"loopback IPv6", Config{Host: "::1", From: "from@example.com"}},
+		{"localhost hostname", Config{Host: "localhost", From: "from@example.com"}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
