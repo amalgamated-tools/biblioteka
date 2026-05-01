@@ -46,25 +46,25 @@ const docTemplate = `{
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "405": {
                         "description": "Method Not Allowed",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -91,26 +91,26 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/handlers.adminUserDTO"
+                                "$ref": "#/definitions/internal_handlers.adminUserDTO"
                             }
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -148,7 +148,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.setAdminRequest"
+                            "$ref": "#/definitions/internal_handlers.setAdminRequest"
                         }
                     }
                 ],
@@ -167,126 +167,31 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api-keys": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Returns all API keys for the authenticated user.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "api-keys"
-                ],
-                "summary": "List API keys",
-                "responses": {
-                    "200": {
-                        "description": "List of API keys",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/handlers.apiKeyDTO"
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Creates a new API key. The raw key is returned only in this response and is never retrievable again.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "api-keys"
-                ],
-                "summary": "Create an API key",
-                "parameters": [
-                    {
-                        "description": "API key name",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.apiKeyCreateRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "API key created",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.apiKeyCreateResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad request",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -323,31 +228,31 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "API key not found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "405": {
                         "description": "Method not allowed",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -386,25 +291,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.auditLogListDTO"
+                            "$ref": "#/definitions/internal_handlers.auditLogListDTO"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -435,7 +340,47 @@ const docTemplate = `{
                     "405": {
                         "description": "Method Not Allowed",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/oidc/enabled": {
+            "get": {
+                "description": "Returns whether OIDC authentication is configured on this server",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "System"
+                ],
+                "summary": "Check if OIDC is enabled",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_server.enabledResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/signup/enabled": {
+            "get": {
+                "description": "Returns whether new user signup is permitted on this server",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "System"
+                ],
+                "summary": "Check if signup is enabled",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_server.enabledResponse"
                         }
                     }
                 }
@@ -462,20 +407,20 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/handlers.authorDTO"
+                                "$ref": "#/definitions/internal_handlers.authorDTO"
                             }
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -504,7 +449,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.authorRequest"
+                            "$ref": "#/definitions/internal_handlers.authorRequest"
                         }
                     }
                 ],
@@ -512,31 +457,31 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/handlers.authorDTO"
+                            "$ref": "#/definitions/internal_handlers.authorDTO"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -570,31 +515,31 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.authorDTO"
+                            "$ref": "#/definitions/internal_handlers.authorDTO"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -630,7 +575,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.authorRequest"
+                            "$ref": "#/definitions/internal_handlers.authorRequest"
                         }
                     }
                 ],
@@ -638,37 +583,37 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.authorDTO"
+                            "$ref": "#/definitions/internal_handlers.authorDTO"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -700,25 +645,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -764,31 +709,31 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.bookListDTO"
+                            "$ref": "#/definitions/internal_handlers.bookListDTO"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -822,31 +767,31 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.bookFileDTO"
+                            "$ref": "#/definitions/internal_handlers.bookFileDTO"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -878,25 +823,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -933,31 +878,31 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -995,7 +940,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.emailBookFileRequest"
+                            "$ref": "#/definitions/internal_handlers.emailBookFileRequest"
                         }
                     }
                 ],
@@ -1014,31 +959,31 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "413": {
                         "description": "Request Entity Too Large",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "502": {
                         "description": "Bad Gateway",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -1083,19 +1028,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.bookListDTO"
+                            "$ref": "#/definitions/internal_handlers.bookListDTO"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -1124,7 +1069,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.bookRequest"
+                            "$ref": "#/definitions/internal_handlers.bookRequest"
                         }
                     }
                 ],
@@ -1132,25 +1077,25 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/handlers.bookDTO"
+                            "$ref": "#/definitions/internal_handlers.bookDTO"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -1163,7 +1108,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Upload a book file (.epub, .mobi, .azw3, .pdf) to a library. The file is staged and processed asynchronously.",
+                "description": "Upload a supported book file to a library. The file is staged and processed asynchronously.",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -1177,7 +1122,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "file",
-                        "description": "Book file (.epub, .mobi, .azw3, .pdf)",
+                        "description": "Book file in a supported format",
                         "name": "file",
                         "in": "formData",
                         "required": true
@@ -1230,37 +1175,37 @@ const docTemplate = `{
                     "202": {
                         "description": "Accepted",
                         "schema": {
-                            "$ref": "#/definitions/handlers.uploadAcceptedResponse"
+                            "$ref": "#/definitions/internal_handlers.uploadAcceptedResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "413": {
                         "description": "Request Entity Too Large",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "503": {
                         "description": "Service Unavailable",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -1273,7 +1218,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns a single book with authors, series, and files",
+                "description": "Returns a single book with authors, series, tags, and files",
                 "produces": [
                     "application/json"
                 ],
@@ -1294,31 +1239,31 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.bookDTO"
+                            "$ref": "#/definitions/internal_handlers.bookDTO"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -1354,7 +1299,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.bookRequest"
+                            "$ref": "#/definitions/internal_handlers.bookRequest"
                         }
                     }
                 ],
@@ -1362,31 +1307,31 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.bookDTO"
+                            "$ref": "#/definitions/internal_handlers.bookDTO"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -1418,25 +1363,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -1472,26 +1417,26 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/handlers.authorDTO"
+                                "$ref": "#/definitions/internal_handlers.authorDTO"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -1527,7 +1472,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.setBookAuthorsRequest"
+                            "$ref": "#/definitions/internal_handlers.setBookAuthorsRequest"
                         }
                     }
                 ],
@@ -1537,26 +1482,26 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/handlers.authorDTO"
+                                "$ref": "#/definitions/internal_handlers.authorDTO"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -1592,26 +1537,26 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/handlers.bookFileDTO"
+                                "$ref": "#/definitions/internal_handlers.bookFileDTO"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -1647,7 +1592,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.createBookFileRequest"
+                            "$ref": "#/definitions/internal_handlers.createBookFileRequest"
                         }
                     }
                 ],
@@ -1655,25 +1600,25 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/handlers.bookFileDTO"
+                            "$ref": "#/definitions/internal_handlers.bookFileDTO"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -1707,25 +1652,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.metadataDTO"
+                            "$ref": "#/definitions/internal_handlers.metadataDTO"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -1759,25 +1704,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.aiEnrichmentDTO"
+                            "$ref": "#/definitions/internal_handlers.aiEnrichmentDTO"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -1811,31 +1756,31 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.aiEnrichmentDTO"
+                            "$ref": "#/definitions/internal_handlers.aiEnrichmentDTO"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -1869,31 +1814,31 @@ const docTemplate = `{
                     "202": {
                         "description": "Accepted",
                         "schema": {
-                            "$ref": "#/definitions/handlers.fetchMetadataResponse"
+                            "$ref": "#/definitions/internal_handlers.fetchMetadataResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "503": {
                         "description": "Service Unavailable",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -1927,25 +1872,25 @@ const docTemplate = `{
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -1979,25 +1924,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.bookSummaryDTO"
+                            "$ref": "#/definitions/internal_handlers.bookSummaryDTO"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -2010,7 +1955,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Opens a Server-Sent Events (SSE) stream for metadata fetch progress. Events are JSON objects with an \"event\" field (e.g. \"complete\", \"error\", \"not_found\"). The connection closes automatically on a terminal event or after 2 minutes.",
+                "description": "Opens a Server-Sent Events (SSE) stream for metadata fetch progress. Events are JSON objects with an \"event\" field (e.g. \"complete\", \"error\", \"not_found\"). The connection closes automatically on a terminal event or on client disconnect. A per-write deadline of 2 minutes is enforced and reset on each heartbeat or event write.",
                 "produces": [
                     "text/event-stream"
                 ],
@@ -2037,25 +1982,25 @@ const docTemplate = `{
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "503": {
                         "description": "Service Unavailable",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -2089,31 +2034,31 @@ const docTemplate = `{
                     "202": {
                         "description": "Accepted",
                         "schema": {
-                            "$ref": "#/definitions/handlers.fetchMetadataResponse"
+                            "$ref": "#/definitions/internal_handlers.fetchMetadataResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "503": {
                         "description": "Service Unavailable",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -2147,19 +2092,19 @@ const docTemplate = `{
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -2195,26 +2140,26 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/handlers.readingListDTO"
+                                "$ref": "#/definitions/internal_handlers.readingListDTO"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -2250,26 +2195,26 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/handlers.bookSeriesEntryDTO"
+                                "$ref": "#/definitions/internal_handlers.bookSeriesEntryDTO"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -2305,7 +2250,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.setBookSeriesRequest"
+                            "$ref": "#/definitions/internal_handlers.setBookSeriesRequest"
                         }
                     }
                 ],
@@ -2315,26 +2260,26 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/handlers.bookSeriesEntryDTO"
+                                "$ref": "#/definitions/internal_handlers.bookSeriesEntryDTO"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -2370,26 +2315,26 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/handlers.tagDTO"
+                                "$ref": "#/definitions/internal_handlers.tagDTO"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -2425,7 +2370,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.setBookTagsRequest"
+                            "$ref": "#/definitions/internal_handlers.setBookTagsRequest"
                         }
                     }
                 ],
@@ -2435,26 +2380,26 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/handlers.tagDTO"
+                                "$ref": "#/definitions/internal_handlers.tagDTO"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -2497,43 +2442,43 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/calibre.ImportResult"
+                            "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_calibre.ImportResult"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "413": {
                         "description": "Request Entity Too Large",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "415": {
                         "description": "Unsupported Media Type",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -2576,43 +2521,43 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/calibre.Preview"
+                            "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_calibre.Preview"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "413": {
                         "description": "Request Entity Too Large",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "415": {
                         "description": "Unsupported Media Type",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -2640,31 +2585,31 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.LLMConfig"
+                            "$ref": "#/definitions/internal_handlers.LLMConfig"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -2690,31 +2635,31 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.LLMConfig"
+                            "$ref": "#/definitions/internal_handlers.LLMConfig"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -2739,25 +2684,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.oidcConfigResponse"
+                            "$ref": "#/definitions/internal_handlers.oidcConfigResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -2786,7 +2731,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.setOIDCConfigRequest"
+                            "$ref": "#/definitions/internal_handlers.setOIDCConfigRequest"
                         }
                     }
                 ],
@@ -2805,25 +2750,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -2851,31 +2796,31 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.smtpConfigResponse"
+                            "$ref": "#/definitions/internal_handlers.smtpConfigResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -2901,31 +2846,31 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.smtpConfigResponse"
+                            "$ref": "#/definitions/internal_handlers.smtpConfigResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -2961,25 +2906,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "502": {
                         "description": "Bad Gateway",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -3004,13 +2949,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.configStatusResponse"
+                            "$ref": "#/definitions/internal_handlers.configStatusResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -3038,31 +2983,31 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.watchFolderConfigResponse"
+                            "$ref": "#/definitions/internal_handlers.watchFolderConfigResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -3088,31 +3033,31 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.watchFolderConfigResponse"
+                            "$ref": "#/definitions/internal_handlers.watchFolderConfigResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -3139,20 +3084,20 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/handlers.groupDTO"
+                                "$ref": "#/definitions/internal_handlers.groupDTO"
                             }
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -3181,7 +3126,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.groupRequest"
+                            "$ref": "#/definitions/internal_handlers.groupRequest"
                         }
                     }
                 ],
@@ -3189,31 +3134,31 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/handlers.groupDTO"
+                            "$ref": "#/definitions/internal_handlers.groupDTO"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -3247,31 +3192,31 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.groupDTO"
+                            "$ref": "#/definitions/internal_handlers.groupDTO"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -3307,7 +3252,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.groupRequest"
+                            "$ref": "#/definitions/internal_handlers.groupRequest"
                         }
                     }
                 ],
@@ -3315,37 +3260,37 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.groupDTO"
+                            "$ref": "#/definitions/internal_handlers.groupDTO"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -3377,25 +3322,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -3431,32 +3376,32 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/handlers.readingListDTO"
+                                "$ref": "#/definitions/internal_handlers.readingListDTO"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -3489,7 +3434,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.shareListRequest"
+                            "$ref": "#/definitions/internal_handlers.shareListRequest"
                         }
                     }
                 ],
@@ -3500,25 +3445,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -3559,25 +3504,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -3613,32 +3558,32 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/handlers.groupMemberDTO"
+                                "$ref": "#/definitions/internal_handlers.groupMemberDTO"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -3671,7 +3616,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.addGroupMemberRequest"
+                            "$ref": "#/definitions/internal_handlers.addGroupMemberRequest"
                         }
                     }
                 ],
@@ -3682,25 +3627,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -3741,25 +3686,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -3802,32 +3747,52 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/handlers.groupMemberProgressDTO"
+                                "$ref": "#/definitions/internal_handlers.groupMemberProgressDTO"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/health": {
+            "get": {
+                "description": "Returns server health status",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "System"
+                ],
+                "summary": "Health check",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_server.healthResponse"
                         }
                     }
                 }
@@ -3857,38 +3822,38 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/handlers.koboTokenDTO"
+                                "$ref": "#/definitions/internal_handlers.koboTokenDTO"
                             }
                         }
                     },
                     "201": {
                         "description": "Kobo token created",
                         "schema": {
-                            "$ref": "#/definitions/handlers.koboTokenCreateResponse"
+                            "$ref": "#/definitions/internal_handlers.koboTokenCreateResponse"
                         }
                     },
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "405": {
                         "description": "Method not allowed",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -3916,38 +3881,38 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/handlers.koboTokenDTO"
+                                "$ref": "#/definitions/internal_handlers.koboTokenDTO"
                             }
                         }
                     },
                     "201": {
                         "description": "Kobo token created",
                         "schema": {
-                            "$ref": "#/definitions/handlers.koboTokenCreateResponse"
+                            "$ref": "#/definitions/internal_handlers.koboTokenCreateResponse"
                         }
                     },
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "405": {
                         "description": "Method not allowed",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -3984,31 +3949,31 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Token not found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "405": {
                         "description": "Method not allowed",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -4036,7 +4001,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Credential returned or updated",
                         "schema": {
-                            "$ref": "#/definitions/handlers.credentialResponse"
+                            "$ref": "#/definitions/internal_handlers.credentialResponse"
                         }
                     },
                     "204": {
@@ -4045,37 +4010,37 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "No KOSync credentials configured",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "405": {
                         "description": "Method not allowed",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "409": {
                         "description": "Username already taken",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -4101,7 +4066,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Credential returned or updated",
                         "schema": {
-                            "$ref": "#/definitions/handlers.credentialResponse"
+                            "$ref": "#/definitions/internal_handlers.credentialResponse"
                         }
                     },
                     "204": {
@@ -4110,37 +4075,37 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "No KOSync credentials configured",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "405": {
                         "description": "Method not allowed",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "409": {
                         "description": "Username already taken",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -4166,7 +4131,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Credential returned or updated",
                         "schema": {
-                            "$ref": "#/definitions/handlers.credentialResponse"
+                            "$ref": "#/definitions/internal_handlers.credentialResponse"
                         }
                     },
                     "204": {
@@ -4175,37 +4140,37 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "No KOSync credentials configured",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "405": {
                         "description": "Method not allowed",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "409": {
                         "description": "Username already taken",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -4232,20 +4197,20 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/handlers.libraryDTO"
+                                "$ref": "#/definitions/internal_handlers.libraryDTO"
                             }
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -4274,7 +4239,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.libraryRequest"
+                            "$ref": "#/definitions/internal_handlers.libraryRequest"
                         }
                     }
                 ],
@@ -4282,37 +4247,37 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/handlers.libraryDTO"
+                            "$ref": "#/definitions/internal_handlers.libraryDTO"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -4346,31 +4311,31 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.libraryDTO"
+                            "$ref": "#/definitions/internal_handlers.libraryDTO"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -4406,7 +4371,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.libraryRequest"
+                            "$ref": "#/definitions/internal_handlers.libraryRequest"
                         }
                     }
                 ],
@@ -4414,43 +4379,43 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.libraryDTO"
+                            "$ref": "#/definitions/internal_handlers.libraryDTO"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -4482,31 +4447,31 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -4552,25 +4517,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.bookListDTO"
+                            "$ref": "#/definitions/internal_handlers.bookListDTO"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -4598,7 +4563,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Credential returned or updated",
                         "schema": {
-                            "$ref": "#/definitions/handlers.credentialResponse"
+                            "$ref": "#/definitions/internal_handlers.credentialResponse"
                         }
                     },
                     "204": {
@@ -4607,37 +4572,37 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "No OPDS credentials configured",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "405": {
                         "description": "Method not allowed",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "409": {
                         "description": "Username already taken",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -4663,7 +4628,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Credential returned or updated",
                         "schema": {
-                            "$ref": "#/definitions/handlers.credentialResponse"
+                            "$ref": "#/definitions/internal_handlers.credentialResponse"
                         }
                     },
                     "204": {
@@ -4672,37 +4637,37 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "No OPDS credentials configured",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "405": {
                         "description": "Method not allowed",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "409": {
                         "description": "Username already taken",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -4728,7 +4693,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Credential returned or updated",
                         "schema": {
-                            "$ref": "#/definitions/handlers.credentialResponse"
+                            "$ref": "#/definitions/internal_handlers.credentialResponse"
                         }
                     },
                     "204": {
@@ -4737,37 +4702,37 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "No OPDS credentials configured",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "405": {
                         "description": "Method not allowed",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "409": {
                         "description": "Username already taken",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -4794,20 +4759,20 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/handlers.readingListDTO"
+                                "$ref": "#/definitions/internal_handlers.readingListDTO"
                             }
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -4836,7 +4801,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.readingListRequest"
+                            "$ref": "#/definitions/internal_handlers.readingListRequest"
                         }
                     }
                 ],
@@ -4844,31 +4809,31 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/handlers.readingListDTO"
+                            "$ref": "#/definitions/internal_handlers.readingListDTO"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -4902,31 +4867,31 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.readingListDTO"
+                            "$ref": "#/definitions/internal_handlers.readingListDTO"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -4962,7 +4927,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.readingListRequest"
+                            "$ref": "#/definitions/internal_handlers.readingListRequest"
                         }
                     }
                 ],
@@ -4970,37 +4935,37 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.readingListDTO"
+                            "$ref": "#/definitions/internal_handlers.readingListDTO"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -5032,25 +4997,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -5096,31 +5061,31 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.bookListDTO"
+                            "$ref": "#/definitions/internal_handlers.bookListDTO"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -5153,7 +5118,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.addBookToReadingListRequest"
+                            "$ref": "#/definitions/internal_handlers.addBookToReadingListRequest"
                         }
                     }
                 ],
@@ -5164,25 +5129,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -5223,25 +5188,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -5266,25 +5231,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.readingProgressStatsResponse"
+                            "$ref": "#/definitions/internal_handlers.readingProgressStatsResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "405": {
                         "description": "Method not allowed",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -5319,26 +5284,26 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/handlers.bookSummaryDTO"
+                                "$ref": "#/definitions/internal_handlers.bookSummaryDTO"
                             }
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "405": {
                         "description": "Method Not Allowed",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -5365,20 +5330,20 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/handlers.seriesDTO"
+                                "$ref": "#/definitions/internal_handlers.seriesDTO"
                             }
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -5407,7 +5372,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.seriesRequest"
+                            "$ref": "#/definitions/internal_handlers.seriesRequest"
                         }
                     }
                 ],
@@ -5415,31 +5380,31 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/handlers.seriesDTO"
+                            "$ref": "#/definitions/internal_handlers.seriesDTO"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -5473,31 +5438,31 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.seriesDTO"
+                            "$ref": "#/definitions/internal_handlers.seriesDTO"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -5533,7 +5498,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.seriesRequest"
+                            "$ref": "#/definitions/internal_handlers.seriesRequest"
                         }
                     }
                 ],
@@ -5541,37 +5506,37 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.seriesDTO"
+                            "$ref": "#/definitions/internal_handlers.seriesDTO"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -5603,25 +5568,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -5667,31 +5632,31 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.bookListDTO"
+                            "$ref": "#/definitions/internal_handlers.bookListDTO"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -5724,31 +5689,31 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/db.YearInBooks"
+                            "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.YearInBooks"
                         }
                     },
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "405": {
                         "description": "Method not allowed",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -5778,38 +5743,38 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/handlers.tagDTO"
+                                "$ref": "#/definitions/internal_handlers.tagDTO"
                             }
                         }
                     },
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/handlers.tagDTO"
+                            "$ref": "#/definitions/internal_handlers.tagDTO"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -5837,38 +5802,38 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/handlers.tagDTO"
+                                "$ref": "#/definitions/internal_handlers.tagDTO"
                             }
                         }
                     },
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/handlers.tagDTO"
+                            "$ref": "#/definitions/internal_handlers.tagDTO"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -5905,7 +5870,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.tagDTO"
+                            "$ref": "#/definitions/internal_handlers.tagDTO"
                         }
                     },
                     "204": {
@@ -5914,31 +5879,31 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -5973,7 +5938,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.tagDTO"
+                            "$ref": "#/definitions/internal_handlers.tagDTO"
                         }
                     },
                     "204": {
@@ -5982,31 +5947,31 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     }
                 }
@@ -6041,7 +6006,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.tagDTO"
+                            "$ref": "#/definitions/internal_handlers.tagDTO"
                         }
                     },
                     "204": {
@@ -6050,31 +6015,51 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/version": {
+            "get": {
+                "description": "Returns the server version",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "System"
+                ],
+                "summary": "Get server version",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_server.versionResponse"
                         }
                     }
                 }
@@ -6082,7 +6067,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "calibre.ImportResult": {
+        "github_com_amalgamated-tools_biblioteka_internal_calibre.ImportResult": {
             "type": "object",
             "properties": {
                 "errors": {
@@ -6103,14 +6088,14 @@ const docTemplate = `{
                 }
             }
         },
-        "calibre.Preview": {
+        "github_com_amalgamated-tools_biblioteka_internal_calibre.Preview": {
             "type": "object",
             "properties": {
                 "books": {
                     "description": "Books contains up to previewLimit books for display. The caller should\nuse Total to inform the user about books beyond the preview window.",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/calibre.PreviewBook"
+                        "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_calibre.PreviewBook"
                     }
                 },
                 "total": {
@@ -6119,7 +6104,7 @@ const docTemplate = `{
                 }
             }
         },
-        "calibre.PreviewBook": {
+        "github_com_amalgamated-tools_biblioteka_internal_calibre.PreviewBook": {
             "type": "object",
             "properties": {
                 "authors": {
@@ -6152,7 +6137,7 @@ const docTemplate = `{
                 "series": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/calibre.PreviewSeriesEntry"
+                        "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_calibre.PreviewSeriesEntry"
                     }
                 },
                 "title": {
@@ -6160,7 +6145,7 @@ const docTemplate = `{
                 }
             }
         },
-        "calibre.PreviewSeriesEntry": {
+        "github_com_amalgamated-tools_biblioteka_internal_calibre.PreviewSeriesEntry": {
             "type": "object",
             "properties": {
                 "name": {
@@ -6171,7 +6156,7 @@ const docTemplate = `{
                 }
             }
         },
-        "db.BookSeriesInput": {
+        "github_com_amalgamated-tools_biblioteka_internal_db.BookSeriesInput": {
             "type": "object",
             "properties": {
                 "position": {
@@ -6182,7 +6167,7 @@ const docTemplate = `{
                 }
             }
         },
-        "db.Timestamp": {
+        "github_com_amalgamated-tools_biblioteka_internal_db.Timestamp": {
             "type": "object",
             "properties": {
                 "time.Time": {
@@ -6190,7 +6175,7 @@ const docTemplate = `{
                 }
             }
         },
-        "db.YearInBooks": {
+        "github_com_amalgamated-tools_biblioteka_internal_db.YearInBooks": {
             "type": "object",
             "properties": {
                 "active_days": {
@@ -6210,7 +6195,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.LLMConfig": {
+        "internal_handlers.LLMConfig": {
             "type": "object",
             "properties": {
                 "enabled": {
@@ -6230,7 +6215,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.addBookToReadingListRequest": {
+        "internal_handlers.addBookToReadingListRequest": {
             "type": "object",
             "properties": {
                 "book_id": {
@@ -6238,7 +6223,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.addGroupMemberRequest": {
+        "internal_handlers.addGroupMemberRequest": {
             "type": "object",
             "properties": {
                 "user_id": {
@@ -6246,11 +6231,11 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.adminUserDTO": {
+        "internal_handlers.adminUserDTO": {
             "type": "object",
             "properties": {
                 "created_at": {
-                    "$ref": "#/definitions/db.Timestamp"
+                    "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp"
                 },
                 "email": {
                     "type": "string"
@@ -6269,14 +6254,14 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.aiEnrichmentDTO": {
+        "internal_handlers.aiEnrichmentDTO": {
             "type": "object",
             "properties": {
                 "book_id": {
                     "type": "string"
                 },
                 "created_at": {
-                    "$ref": "#/definitions/db.Timestamp"
+                    "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp"
                 },
                 "generated_description": {
                     "type": "string"
@@ -6303,69 +6288,18 @@ const docTemplate = `{
                     }
                 },
                 "updated_at": {
-                    "$ref": "#/definitions/db.Timestamp"
+                    "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp"
                 }
             }
         },
-        "handlers.apiKeyCreateRequest": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "handlers.apiKeyCreateResponse": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "key": {
-                    "type": "string"
-                },
-                "key_prefix": {
-                    "type": "string"
-                },
-                "last_used_at": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "handlers.apiKeyDTO": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "key_prefix": {
-                    "type": "string"
-                },
-                "last_used_at": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "handlers.auditLogDTO": {
+        "internal_handlers.auditLogDTO": {
             "type": "object",
             "properties": {
                 "action": {
                     "type": "string"
                 },
                 "created_at": {
-                    "$ref": "#/definitions/db.Timestamp"
+                    "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp"
                 },
                 "entity_id": {
                     "type": "string"
@@ -6384,13 +6318,13 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.auditLogListDTO": {
+        "internal_handlers.auditLogListDTO": {
             "type": "object",
             "properties": {
                 "entries": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/handlers.auditLogDTO"
+                        "$ref": "#/definitions/internal_handlers.auditLogDTO"
                     }
                 },
                 "limit": {
@@ -6404,11 +6338,11 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.authorDTO": {
+        "internal_handlers.authorDTO": {
             "type": "object",
             "properties": {
                 "created_at": {
-                    "$ref": "#/definitions/db.Timestamp"
+                    "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp"
                 },
                 "goodreads_id": {
                     "type": "string"
@@ -6429,11 +6363,11 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updated_at": {
-                    "$ref": "#/definitions/db.Timestamp"
+                    "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp"
                 }
             }
         },
-        "handlers.authorRequest": {
+        "internal_handlers.authorRequest": {
             "type": "object",
             "properties": {
                 "goodreads_id": {
@@ -6453,7 +6387,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.bookDTO": {
+        "internal_handlers.bookDTO": {
             "type": "object",
             "properties": {
                 "asin": {
@@ -6462,14 +6396,14 @@ const docTemplate = `{
                 "authors": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/handlers.authorDTO"
+                        "$ref": "#/definitions/internal_handlers.authorDTO"
                     }
                 },
                 "cover_image_url": {
                     "type": "string"
                 },
                 "created_at": {
-                    "$ref": "#/definitions/db.Timestamp"
+                    "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp"
                 },
                 "description": {
                     "type": "string"
@@ -6477,7 +6411,7 @@ const docTemplate = `{
                 "files": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/handlers.bookFileDTO"
+                        "$ref": "#/definitions/internal_handlers.bookFileDTO"
                     }
                 },
                 "goodreads_id": {
@@ -6510,25 +6444,31 @@ const docTemplate = `{
                 "series": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/handlers.bookSeriesEntryDTO"
+                        "$ref": "#/definitions/internal_handlers.bookSeriesEntryDTO"
+                    }
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_handlers.tagDTO"
                     }
                 },
                 "title": {
                     "type": "string"
                 },
                 "updated_at": {
-                    "$ref": "#/definitions/db.Timestamp"
+                    "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp"
                 }
             }
         },
-        "handlers.bookFileDTO": {
+        "internal_handlers.bookFileDTO": {
             "type": "object",
             "properties": {
                 "book_id": {
                     "type": "string"
                 },
                 "created_at": {
-                    "$ref": "#/definitions/db.Timestamp"
+                    "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp"
                 },
                 "download_count": {
                     "type": "integer"
@@ -6552,17 +6492,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updated_at": {
-                    "$ref": "#/definitions/db.Timestamp"
+                    "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp"
                 }
             }
         },
-        "handlers.bookListDTO": {
+        "internal_handlers.bookListDTO": {
             "type": "object",
             "properties": {
                 "books": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/handlers.bookSummaryDTO"
+                        "$ref": "#/definitions/internal_handlers.bookSummaryDTO"
                     }
                 },
                 "limit": {
@@ -6576,7 +6516,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.bookRequest": {
+        "internal_handlers.bookRequest": {
             "type": "object",
             "properties": {
                 "asin": {
@@ -6617,18 +6557,18 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.bookSeriesEntryDTO": {
+        "internal_handlers.bookSeriesEntryDTO": {
             "type": "object",
             "properties": {
                 "position": {
                     "type": "number"
                 },
                 "series": {
-                    "$ref": "#/definitions/handlers.seriesDTO"
+                    "$ref": "#/definitions/internal_handlers.seriesDTO"
                 }
             }
         },
-        "handlers.bookSummaryDTO": {
+        "internal_handlers.bookSummaryDTO": {
             "type": "object",
             "properties": {
                 "asin": {
@@ -6638,7 +6578,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "created_at": {
-                    "$ref": "#/definitions/db.Timestamp"
+                    "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp"
                 },
                 "description": {
                     "type": "string"
@@ -6674,11 +6614,11 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updated_at": {
-                    "$ref": "#/definitions/db.Timestamp"
+                    "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp"
                 }
             }
         },
-        "handlers.configStatusResponse": {
+        "internal_handlers.configStatusResponse": {
             "type": "object",
             "properties": {
                 "is_admin": {
@@ -6692,7 +6632,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.createBookFileRequest": {
+        "internal_handlers.createBookFileRequest": {
             "type": "object",
             "properties": {
                 "file_hash": {
@@ -6712,21 +6652,21 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.credentialResponse": {
+        "internal_handlers.credentialResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
-                    "$ref": "#/definitions/db.Timestamp"
+                    "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp"
                 },
                 "updated_at": {
-                    "$ref": "#/definitions/db.Timestamp"
+                    "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp"
                 },
                 "username": {
                     "type": "string"
                 }
             }
         },
-        "handlers.emailBookFileRequest": {
+        "internal_handlers.emailBookFileRequest": {
             "type": "object",
             "properties": {
                 "to": {
@@ -6734,7 +6674,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.errorResponse": {
+        "internal_handlers.errorResponse": {
             "type": "object",
             "properties": {
                 "error": {
@@ -6742,7 +6682,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.fetchMetadataResponse": {
+        "internal_handlers.fetchMetadataResponse": {
             "type": "object",
             "properties": {
                 "status": {
@@ -6753,11 +6693,11 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.groupDTO": {
+        "internal_handlers.groupDTO": {
             "type": "object",
             "properties": {
                 "created_at": {
-                    "$ref": "#/definitions/db.Timestamp"
+                    "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp"
                 },
                 "description": {
                     "type": "string"
@@ -6775,18 +6715,18 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updated_at": {
-                    "$ref": "#/definitions/db.Timestamp"
+                    "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp"
                 }
             }
         },
-        "handlers.groupMemberDTO": {
+        "internal_handlers.groupMemberDTO": {
             "type": "object",
             "properties": {
                 "group_id": {
                     "type": "string"
                 },
                 "joined_at": {
-                    "$ref": "#/definitions/db.Timestamp"
+                    "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp"
                 },
                 "role": {
                     "type": "string"
@@ -6799,14 +6739,14 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.groupMemberProgressDTO": {
+        "internal_handlers.groupMemberProgressDTO": {
             "type": "object",
             "properties": {
                 "percentage": {
                     "type": "number"
                 },
                 "updated_at": {
-                    "$ref": "#/definitions/db.Timestamp"
+                    "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp"
                 },
                 "user_id": {
                     "type": "string"
@@ -6816,7 +6756,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.groupRequest": {
+        "internal_handlers.groupRequest": {
             "type": "object",
             "properties": {
                 "description": {
@@ -6827,11 +6767,11 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.koboTokenCreateResponse": {
+        "internal_handlers.koboTokenCreateResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
-                    "$ref": "#/definitions/db.Timestamp"
+                    "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp"
                 },
                 "id": {
                     "type": "string"
@@ -6847,11 +6787,11 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.koboTokenDTO": {
+        "internal_handlers.koboTokenDTO": {
             "type": "object",
             "properties": {
                 "created_at": {
-                    "$ref": "#/definitions/db.Timestamp"
+                    "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp"
                 },
                 "id": {
                     "type": "string"
@@ -6864,11 +6804,11 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.libraryDTO": {
+        "internal_handlers.libraryDTO": {
             "type": "object",
             "properties": {
                 "created_at": {
-                    "$ref": "#/definitions/db.Timestamp"
+                    "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp"
                 },
                 "id": {
                     "type": "string"
@@ -6889,11 +6829,11 @@ const docTemplate = `{
                     }
                 },
                 "updated_at": {
-                    "$ref": "#/definitions/db.Timestamp"
+                    "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp"
                 }
             }
         },
-        "handlers.libraryRequest": {
+        "internal_handlers.libraryRequest": {
             "type": "object",
             "properties": {
                 "monitored": {
@@ -6913,7 +6853,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.metadataDTO": {
+        "internal_handlers.metadataDTO": {
             "type": "object",
             "properties": {
                 "asin": {
@@ -6929,7 +6869,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "created_at": {
-                    "$ref": "#/definitions/db.Timestamp"
+                    "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp"
                 },
                 "description": {
                     "type": "string"
@@ -6971,11 +6911,11 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updated_at": {
-                    "$ref": "#/definitions/db.Timestamp"
+                    "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp"
                 }
             }
         },
-        "handlers.oidcConfigResponse": {
+        "internal_handlers.oidcConfigResponse": {
             "type": "object",
             "properties": {
                 "client_id": {
@@ -6992,14 +6932,14 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.readingListDTO": {
+        "internal_handlers.readingListDTO": {
             "type": "object",
             "properties": {
                 "book_count": {
                     "type": "integer"
                 },
                 "created_at": {
-                    "$ref": "#/definitions/db.Timestamp"
+                    "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp"
                 },
                 "description": {
                     "type": "string"
@@ -7011,11 +6951,11 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updated_at": {
-                    "$ref": "#/definitions/db.Timestamp"
+                    "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp"
                 }
             }
         },
-        "handlers.readingListRequest": {
+        "internal_handlers.readingListRequest": {
             "type": "object",
             "properties": {
                 "description": {
@@ -7026,7 +6966,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.readingProgressItemDTO": {
+        "internal_handlers.readingProgressItemDTO": {
             "type": "object",
             "properties": {
                 "device": {
@@ -7046,7 +6986,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.readingProgressStatsResponse": {
+        "internal_handlers.readingProgressStatsResponse": {
             "type": "object",
             "properties": {
                 "current_streak": {
@@ -7055,7 +6995,7 @@ const docTemplate = `{
                 "in_progress": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/handlers.readingProgressItemDTO"
+                        "$ref": "#/definitions/internal_handlers.readingProgressItemDTO"
                     }
                 },
                 "total_finished": {
@@ -7066,11 +7006,11 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.seriesDTO": {
+        "internal_handlers.seriesDTO": {
             "type": "object",
             "properties": {
                 "created_at": {
-                    "$ref": "#/definitions/db.Timestamp"
+                    "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp"
                 },
                 "goodreads_id": {
                     "type": "string"
@@ -7088,11 +7028,11 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updated_at": {
-                    "$ref": "#/definitions/db.Timestamp"
+                    "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp"
                 }
             }
         },
-        "handlers.seriesRequest": {
+        "internal_handlers.seriesRequest": {
             "type": "object",
             "properties": {
                 "goodreads_id": {
@@ -7109,7 +7049,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.setAdminRequest": {
+        "internal_handlers.setAdminRequest": {
             "type": "object",
             "properties": {
                 "is_admin": {
@@ -7117,7 +7057,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.setBookAuthorsRequest": {
+        "internal_handlers.setBookAuthorsRequest": {
             "type": "object",
             "properties": {
                 "author_ids": {
@@ -7128,18 +7068,18 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.setBookSeriesRequest": {
+        "internal_handlers.setBookSeriesRequest": {
             "type": "object",
             "properties": {
                 "entries": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/db.BookSeriesInput"
+                        "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.BookSeriesInput"
                     }
                 }
             }
         },
-        "handlers.setBookTagsRequest": {
+        "internal_handlers.setBookTagsRequest": {
             "type": "object",
             "properties": {
                 "tag_ids": {
@@ -7150,7 +7090,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.setOIDCConfigRequest": {
+        "internal_handlers.setOIDCConfigRequest": {
             "type": "object",
             "properties": {
                 "client_id": {
@@ -7167,7 +7107,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.shareListRequest": {
+        "internal_handlers.shareListRequest": {
             "type": "object",
             "properties": {
                 "list_id": {
@@ -7175,7 +7115,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.smtpConfigResponse": {
+        "internal_handlers.smtpConfigResponse": {
             "type": "object",
             "properties": {
                 "env_override": {
@@ -7201,11 +7141,11 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.tagDTO": {
+        "internal_handlers.tagDTO": {
             "type": "object",
             "properties": {
                 "created_at": {
-                    "$ref": "#/definitions/db.Timestamp"
+                    "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp"
                 },
                 "id": {
                     "type": "string"
@@ -7214,11 +7154,11 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updated_at": {
-                    "$ref": "#/definitions/db.Timestamp"
+                    "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp"
                 }
             }
         },
-        "handlers.uploadAcceptedResponse": {
+        "internal_handlers.uploadAcceptedResponse": {
             "type": "object",
             "properties": {
                 "file_name": {
@@ -7235,13 +7175,37 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.watchFolderConfigResponse": {
+        "internal_handlers.watchFolderConfigResponse": {
             "type": "object",
             "properties": {
                 "library_id": {
                     "type": "string"
                 },
                 "path": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_server.enabledResponse": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "internal_server.healthResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_server.versionResponse": {
+            "type": "object",
+            "properties": {
+                "version": {
                     "type": "string"
                 }
             }
