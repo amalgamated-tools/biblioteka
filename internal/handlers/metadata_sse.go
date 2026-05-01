@@ -13,7 +13,7 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/pubsub"
 )
 
-// sseWriteTimeout is the maximum time an SSE connection stays open.
+// sseWriteTimeout is the per-write deadline for SSE writes; reset on every heartbeat and message.
 const sseWriteTimeout = 2 * time.Minute
 
 // sseHeartbeatInterval is the interval between SSE keepalive comments.

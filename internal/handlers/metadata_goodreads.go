@@ -20,7 +20,8 @@ import (
 // response (caller should return).
 func getPendingMetadataOrErr(ctx context.Context, d *db.DB, w http.ResponseWriter, userID, bookID string) (*db.GoodreadsMetadata, bool) {
 	gm, err := d.GetPendingGoodreadsMetadataByBook(ctx, userID, bookID)
-	if handleDBErr(ctx, w, err, "pending Goodreads metadata") {
+	if handleOpErr(ctx, w, err, "pending Goodreads metadata", "failed to get pending Goodreads metadata",
+		slog.String(otelkeys.BookID, bookID)) {
 		return nil, false
 	}
 	return gm, true
