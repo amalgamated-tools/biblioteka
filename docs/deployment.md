@@ -121,6 +121,20 @@ docker compose up -d
 
 The application is available at `http://localhost:8080`. Place a reverse proxy in front to handle TLS (see [Reverse Proxy Setup](#reverse-proxy-setup) below).
 
+#### SQLite connection settings
+
+Biblioteka automatically applies the following PRAGMAs to the SQLite connection at startup:
+
+| PRAGMA | Value | Effect |
+|--------|-------|--------|
+| `journal_mode` | `WAL` | Write-ahead logging; readers do not block writers |
+| `synchronous` | `NORMAL` | Fsync only at WAL checkpoint; faster than `FULL` but recent transactions may be lost on OS crash or power loss (acceptable for personal-library use) |
+| `foreign_keys` | `ON` | Enforces referential integrity on every write |
+| `temp_store` | `MEMORY` | Sort buffers (temp B-trees for `ORDER BY`) are held in RAM instead of OS temp files |
+| `cache_size` | `-16384` (16 MB) | Per-connection page cache; reduces disk reads for frequently accessed pages |
+
+The connection pool is capped to a single connection so that the per-connection PRAGMAs (`foreign_keys`, `synchronous`, `temp_store`, `cache_size`) are applied consistently to every query — `journal_mode=WAL` is a persistent, database-level setting and does not need this protection. The trade-off is serialized reads: WAL normally allows multiple concurrent readers, but a single-connection pool eliminates that benefit. For a personal-library workload this is sufficient — requests queue briefly at the database layer rather than competing for connections. SQLite serializes writers regardless of pool size, so this adds no meaningful write-latency penalty.
+
 ### PostgreSQL + Redis
 
 Merge `docker-compose.yml` with the PostgreSQL overlay. This adds a `postgres` service and configures the application to use it.
