@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, afterEach, beforeEach } from "vitest";
 import { cleanup, render, screen, fireEvent } from "@testing-library/svelte";
 import { tick } from "svelte";
+import type { ComponentProps } from "svelte";
 
 vi.mock("../../lib/api", () => ({
   setOidcConfig: vi.fn().mockResolvedValue(undefined),
@@ -11,8 +12,7 @@ vi.mock("lucide-svelte", () => ({ Shield: () => {} }));
 import OidcTab from "./OidcTab.svelte";
 import { setOidcConfig } from "../../lib/api";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let defaultProps: any;
+let defaultProps: ComponentProps<typeof OidcTab>;
 
 describe("OidcTab", () => {
   beforeEach(() => {
