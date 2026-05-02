@@ -15,6 +15,7 @@ const (
 	SettingLLMEndpoint          = "llm_endpoint"
 	SettingLLMModel             = "llm_model"
 	SettingLLMProvider          = "llm_provider"
+	SettingRegistrationDisabled = "registration_disabled"
 	SettingWatchFolderLibraryID = "watch_folder_library_id"
 	SettingWatchFolderPath      = "watch_folder_path"
 )

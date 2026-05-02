@@ -171,7 +171,7 @@ func (s *Server) initHandlers(
 		Secrets:          secretEncrypter,
 		IsOIDCConfigured: func() bool { return s.oidcHandler != nil },
 		OnOIDCConfigSet: func(ctx context.Context, issuerURL, clientID, clientSecret, redirectURI string) error {
-			oidcHandler, err := handlers.NewOIDCHandler(ctx, userAdapter, s.JWT, issuerURL, clientID, clientSecret, redirectURI, auth.TokenCookieName(), s.secureCookies)
+			oidcHandler, err := handlers.NewOIDCHandler(ctx, userAdapter, s.JWT, issuerURL, clientID, clientSecret, redirectURI, auth.TokenCookieName(), s.secureCookies, s.DB)
 			if err != nil {
 				slog.ErrorContext(ctx, "failed to initialize OIDC provider with new settings", slog.Any(otelkeys.Error, err))
 				return fmt.Errorf("failed to initialize OIDC provider with new settings: %w", err)

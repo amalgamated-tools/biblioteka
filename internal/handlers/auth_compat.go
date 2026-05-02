@@ -5,7 +5,9 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
+	"database/sql"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -14,12 +16,14 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
+	goauthlib "github.com/amalgamated-tools/goauth/auth"
 	goauthhandler "github.com/amalgamated-tools/goauth/handler"
 )
 
@@ -55,11 +59,37 @@ type AuthHandler struct {
 	DB *db.DB
 }
 
-// OIDCHandler wraps goauth's OIDCHandler.
-type OIDCHandler = goauthhandler.OIDCHandler
+// OIDCHandler wraps goauth's OIDCHandler with a registration gate on Callback.
+type OIDCHandler struct {
+	*goauthhandler.OIDCHandler
+	DB *db.DB
+}
 
-// NewOIDCHandler delegates to goauth.
-var NewOIDCHandler = goauthhandler.NewOIDCHandler
+// NewOIDCHandler creates a new OIDCHandler wrapping goauth's handler.
+func NewOIDCHandler(ctx context.Context, users goauthlib.UserStore, jwt *goauthlib.JWTManager, issuerURL, clientID, clientSecret, redirectURI, cookieName string, secureCookies bool, database *db.DB) (*OIDCHandler, error) {
+	inner, err := goauthhandler.NewOIDCHandler(ctx, users, jwt, issuerURL, clientID, clientSecret, redirectURI, cookieName, secureCookies)
+	if err != nil {
+		return nil, err
+	}
+	return &OIDCHandler{OIDCHandler: inner, DB: database}, nil
+}
+
+// Callback wraps goauth's Callback, blocking user creation when registration is disabled.
+// Note: this blocks ALL OIDC callbacks (including existing users) when registration_disabled is
+// true, because the OIDC flow cannot distinguish new from returning users before user creation.
+func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
+	if h.DB != nil {
+		disabledStr, err := h.DB.GetSetting(r.Context(), db.SettingRegistrationDisabled)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			slog.WarnContext(r.Context(), "failed to read registration_disabled setting; allowing OIDC callback", slog.Any(otelkeys.Error, err))
+		}
+		if disabled, _ := strconv.ParseBool(disabledStr); disabled {
+			writeError(r.Context(), w, http.StatusForbidden, "signup is disabled")
+			return
+		}
+	}
+	h.OIDCHandler.Callback(w, r)
+}
 
 // PasskeyHandler wraps goauth's PasskeyHandler with audit logging for
 // credential registration and deletion.
@@ -182,7 +212,19 @@ func clearAuthCookie(w http.ResponseWriter, secure bool) {
 }
 
 // Signup wraps goauth's Signup to emit an audit log entry on success.
+// If the registration_disabled setting is true, it returns 403 Forbidden
+// before delegating to the underlying handler.
 func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
+	if h.DB != nil {
+		disabledStr, err := h.DB.GetSetting(r.Context(), db.SettingRegistrationDisabled)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			slog.WarnContext(r.Context(), "failed to read registration_disabled setting; allowing signup", slog.Any(otelkeys.Error, err))
+		}
+		if disabled, _ := strconv.ParseBool(disabledStr); disabled {
+			writeError(r.Context(), w, http.StatusForbidden, "signup is disabled")
+			return
+		}
+	}
 	rc := newResponseCapture(w)
 	h.AuthHandler.Signup(rc, r)
 	if rc.status == http.StatusCreated && h.DB != nil {
