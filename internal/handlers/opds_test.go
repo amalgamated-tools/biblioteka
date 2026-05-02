@@ -35,9 +35,6 @@ func findLink(links []opdspkg.Link, rel string) *opdspkg.Link {
 	return nil
 }
 
-// ptr returns a pointer to the given value; used by table-driven tests.
-func ptr[T any](v T) *T { return &v }
-
 // --- Routing / method dispatch ---
 
 func TestHandleOPDS_MethodNotAllowed(t *testing.T) {
