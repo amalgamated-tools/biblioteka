@@ -207,3 +207,17 @@ func TestAuthHandler_Signup_NotBlockedWhenSettingFalse(t *testing.T) {
 	// Should pass the DB check; goauth handles the actual signup.
 	require.NotEqual(t, http.StatusForbidden, rec.Code, "signup should not be blocked when registration_disabled=false")
 }
+
+func TestOIDCHandler_Callback_BlockedByRegistrationDisabled(t *testing.T) {
+	d := newTestDB(t)
+	require.NoError(t, d.SetSetting(t.Context(), internaldb.SettingRegistrationDisabled, "true"))
+
+	h := &OIDCHandler{DB: d}
+
+	req := httptest.NewRequest(http.MethodGet, "/api/auth/oidc/callback", nil)
+	rec := httptest.NewRecorder()
+
+	h.Callback(rec, req)
+
+	require.Equal(t, http.StatusForbidden, rec.Code)
+}
