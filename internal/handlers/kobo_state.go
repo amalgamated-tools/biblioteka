@@ -122,6 +122,8 @@ func (h *KoboHandler) updateBookState(w http.ResponseWriter, r *http.Request, us
 		}
 	}
 
+	// Reading-state syncs are high-frequency device events; audit logging is
+	// intentionally omitted to avoid unbounded audit log growth.
 	state, err := h.DB.UpsertKoboReadingState(r.Context(), userID, bookID, status, percentRead, locationValue, locationType, locationSource)
 	if err != nil {
 		// Treat missing books (FK violation race) as a 404-style response.

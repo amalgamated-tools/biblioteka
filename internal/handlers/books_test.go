@@ -642,3 +642,87 @@ func TestUpdateBook_EmbedsTags(t *testing.T) {
 	require.Len(t, dto.Tags, 1)
 	require.Equal(t, "mystery", dto.Tags[0].Name)
 }
+
+func TestPutBookAuthors_CreatesAuditLog(t *testing.T) {
+	h, userID := setupBookHandler(t)
+
+	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Dune"})
+	require.NoError(t, err, "create book")
+	a, err := h.DB.CreateAuthor(t.Context(), "Frank Herbert", nil, nil, nil, nil)
+	require.NoError(t, err, "create author")
+
+	body := mustMarshal(t, map[string][]string{"author_ids": {a.ID}})
+	r := httptest.NewRequest(http.MethodPut, "/api/books/"+b.ID+"/authors", bytes.NewReader(body))
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleBookRoutes(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+
+	logs, _, err := h.DB.ListAuditLogs(t.Context(), 10, 0)
+	require.NoError(t, err, "list audit logs")
+	require.Len(t, logs, 1)
+	require.Equal(t, db.AuditActionBookAuthorsUpdated, logs[0].Action)
+	require.Equal(t, "book", logs[0].EntityType)
+	require.Equal(t, b.ID, logs[0].EntityID)
+	require.NotNil(t, logs[0].UserID)
+	require.Equal(t, userID, *logs[0].UserID)
+}
+
+func TestPutBookTags_CreatesAuditLog(t *testing.T) {
+	h, userID := setupBookHandler(t)
+
+	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Dune"})
+	require.NoError(t, err, "create book")
+	tag, err := h.DB.CreateTag(t.Context(), "science-fiction")
+	require.NoError(t, err, "create tag")
+
+	body := mustMarshal(t, map[string][]string{"tag_ids": {tag.ID}})
+	r := httptest.NewRequest(http.MethodPut, "/api/books/"+b.ID+"/tags", bytes.NewReader(body))
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleBookRoutes(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+
+	logs, _, err := h.DB.ListAuditLogs(t.Context(), 10, 0)
+	require.NoError(t, err, "list audit logs")
+	require.Len(t, logs, 1)
+	require.Equal(t, db.AuditActionBookTagsUpdated, logs[0].Action)
+	require.Equal(t, "book", logs[0].EntityType)
+	require.Equal(t, b.ID, logs[0].EntityID)
+	require.NotNil(t, logs[0].UserID)
+	require.Equal(t, userID, *logs[0].UserID)
+}
+
+func TestPutBookSeries_CreatesAuditLog(t *testing.T) {
+	h, userID := setupBookHandler(t)
+
+	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
+	require.NoError(t, err, "create book")
+	s, err := h.DB.CreateSeries(t.Context(), "The Dark Tower", nil, nil, nil)
+	require.NoError(t, err, "create series")
+
+	pos := 1.0
+	body := mustMarshal(t, map[string][]db.BookSeriesInput{
+		"entries": {{SeriesID: s.ID, Position: &pos}},
+	})
+	r := httptest.NewRequest(http.MethodPut, "/api/books/"+b.ID+"/series", bytes.NewReader(body))
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleBookRoutes(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+
+	logs, _, err := h.DB.ListAuditLogs(t.Context(), 10, 0)
+	require.NoError(t, err, "list audit logs")
+	require.Len(t, logs, 1)
+	require.Equal(t, db.AuditActionBookSeriesUpdated, logs[0].Action)
+	require.Equal(t, "book", logs[0].EntityType)
+	require.Equal(t, b.ID, logs[0].EntityID)
+	require.NotNil(t, logs[0].UserID)
+	require.Equal(t, userID, *logs[0].UserID)
+}

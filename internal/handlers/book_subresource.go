@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
@@ -37,6 +38,8 @@ func respondBookSubResource[T any, DTO any](
 // pattern common to PUT handlers for book sub-resources. It decodes the JSON
 // request body into Req, extracts the payload via extractPayload, calls setFn
 // to persist the change, and then re-fetches and writes the updated resource.
+// When d and auditAction are both non-nil/non-empty, an audit log entry is
+// written after a successful set.
 func putBookSubResource[T any, DTO any, Req any, Payload any](
 	w http.ResponseWriter,
 	r *http.Request,
@@ -46,6 +49,8 @@ func putBookSubResource[T any, DTO any, Req any, Payload any](
 	extractPayload func(*Req) Payload,
 	toDTO func(*T) DTO,
 	resourceName string,
+	d *db.DB,
+	auditAction string,
 ) {
 	ctx := r.Context()
 	var req Req
@@ -59,6 +64,10 @@ func putBookSubResource[T any, DTO any, Req any, Payload any](
 		)
 		writeError(ctx, w, http.StatusInternalServerError, "failed to set "+resourceName)
 		return
+	}
+	if d != nil && auditAction != "" {
+		userID := auth.UserIDFromContext(ctx)
+		logAudit(ctx, d, userID, auditAction, "book", bookID, nil)
 	}
 	respondBookSubResource(ctx, w, bookID, getFn, toDTO, resourceName)
 }

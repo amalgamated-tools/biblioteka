@@ -196,11 +196,11 @@ var ErrKeyNotFound = errors.New("key not found")
 // stores extracted fields.
 type FileMetadata struct {
 	File   string
-	Fields map[string]interface{}
+	Fields map[string]any
 	Err    error
 }
 
-func toString(v interface{}) string {
+func toString(v any) string {
 	switch v := v.(type) {
 	case string:
 		return v
@@ -222,7 +222,7 @@ func (fm FileMetadata) GetStrings(k string) ([]string, error) {
 	}
 
 	switch v := v.(type) {
-	case []interface{}:
+	case []any:
 		is := v
 		res := make([]string, len(is))
 
@@ -236,7 +236,7 @@ func (fm FileMetadata) GetStrings(k string) ([]string, error) {
 	}
 }
 
-func (fm *FileMetadata) set(k string, v interface{}) {
+func (fm *FileMetadata) set(k string, v any) {
 	fm.Fields[k] = v
 }
 
@@ -248,6 +248,6 @@ func (fm *FileMetadata) SetString(k string, v string) {
 // EmptyFileMetadata creates an empty FileMetadata struct
 func EmptyFileMetadata() FileMetadata {
 	return FileMetadata{
-		Fields: make(map[string]interface{}),
+		Fields: make(map[string]any),
 	}
 }
