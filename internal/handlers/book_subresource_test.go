@@ -113,6 +113,7 @@ func TestPutBookSubResource(t *testing.T) {
 			func(req *fakeSetRequest) []string { return req.IDs },
 			toFakeItemDTO,
 			"fake items",
+			nil, "",
 		)
 
 		require.Equal(t, http.StatusOK, w.Code)
@@ -132,6 +133,7 @@ func TestPutBookSubResource(t *testing.T) {
 			func(req *fakeSetRequest) []string { return req.IDs },
 			toFakeItemDTO,
 			"fake items",
+			nil, "",
 		)
 
 		require.Equal(t, http.StatusBadRequest, w.Code)
@@ -152,6 +154,7 @@ func TestPutBookSubResource(t *testing.T) {
 			func(req *fakeSetRequest) []string { return req.IDs },
 			toFakeItemDTO,
 			"fake items",
+			nil, "",
 		)
 
 		require.Equal(t, http.StatusInternalServerError, w.Code)
@@ -175,6 +178,7 @@ func TestPutBookSubResource(t *testing.T) {
 			func(req *fakeSetRequest) []string { return req.IDs },
 			toFakeItemDTO,
 			"fake items",
+			nil, "",
 		)
 
 		require.Equal(t, http.StatusInternalServerError, w.Code)
