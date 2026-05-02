@@ -175,7 +175,7 @@ func NewServer(ctx context.Context, opts ...ServerOption) (_ *Server, err error)
 		if clientID == "" || clientSecret == "" || redirectURI == "" {
 			return nil, errors.New("OIDC_ISSUER_URL is set but one or more of OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, or OIDC_REDIRECT_URI is missing")
 		}
-		oidcHandler, err := handlers.NewOIDCHandler(ctx, userAdapter, s.JWT, issuer, clientID, clientSecret, redirectURI, auth.TokenCookieName(), s.secureCookies)
+		oidcHandler, err := handlers.NewOIDCHandler(ctx, userAdapter, s.JWT, issuer, clientID, clientSecret, redirectURI, auth.TokenCookieName(), s.secureCookies, s.DB)
 		if err != nil {
 			return nil, fmt.Errorf("failed to initialize OIDC provider: %w", err)
 		}
@@ -193,7 +193,7 @@ func NewServer(ctx context.Context, opts ...ServerOption) (_ *Server, err error)
 			slog.WarnContext(ctx, "failed to decrypt OIDC client secret from saved settings; skipping OIDC initialization from saved settings", slog.Any(otelkeys.Error, decErr))
 		}
 		if dbClientID != "" && dbClientSecret != "" && dbRedirectURI != "" {
-			oidcHandler, err := handlers.NewOIDCHandler(ctx, userAdapter, s.JWT, dbIssuer, dbClientID, dbClientSecret, dbRedirectURI, auth.TokenCookieName(), s.secureCookies)
+			oidcHandler, err := handlers.NewOIDCHandler(ctx, userAdapter, s.JWT, dbIssuer, dbClientID, dbClientSecret, dbRedirectURI, auth.TokenCookieName(), s.secureCookies, s.DB)
 			if err != nil {
 				slog.WarnContext(ctx, "failed to initialize OIDC from saved settings", slog.Any(otelkeys.Error, err))
 			} else {

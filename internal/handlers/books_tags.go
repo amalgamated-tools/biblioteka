@@ -1,6 +1,10 @@
 package handlers
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/amalgamated-tools/biblioteka/internal/db"
+)
 
 // setBookTagsRequest is the request body for setting book tags.
 type setBookTagsRequest struct {
@@ -42,5 +46,5 @@ func (h *BookHandler) getBookTags(w http.ResponseWriter, r *http.Request, bookID
 func (h *BookHandler) putBookTags(w http.ResponseWriter, r *http.Request, bookID string) {
 	putBookSubResource(w, r, bookID, h.DB.GetBookTags, h.DB.SetBookTags,
 		func(req *setBookTagsRequest) []string { return req.TagIDs },
-		toTagDTO, "book tags")
+		toTagDTO, "book tags", h.DB, db.AuditActionBookTagsUpdated)
 }

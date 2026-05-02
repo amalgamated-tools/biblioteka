@@ -28,7 +28,7 @@ func newPasskeyHandler(ctx context.Context, database *db.DB, jwt *auth.JWTManage
 	if rpOriginsRaw == "" {
 		rpOrigins = []string{"http://localhost:8080"}
 	} else {
-		for _, o := range strings.Split(rpOriginsRaw, ",") {
+		for o := range strings.SplitSeq(rpOriginsRaw, ",") {
 			o = strings.TrimSpace(o)
 			if o != "" {
 				rpOrigins = append(rpOrigins, o)
