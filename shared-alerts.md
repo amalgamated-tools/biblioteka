@@ -1,33 +1,34 @@
-# Shared Alerts | 2026-04-30T23:47Z
+# Shared Alerts | 2026-05-02T23:45Z
 
 ## CRITICAL
-- repo-assist NOT COMPILED Day 12 — #2600 (cancelled all runs again today)
-- Status-as-Issue Day 11 — #2705 (repo-status) #2701 (team-status)
-- dependabot-pr-bundler stacking: #2692 (new bundle) + #2657 ([aw] failure open 2d)
+- repo-assist NOT COMPILED Day 13 — #2600 (all runs cancelled again today)
+- Status-as-Issue Day 13 — #2786 (repo-status) #2779 (team-status) #2778 (plan)
+- ENGINE OUTAGE root cause: copilot_driver.cjs missing (May 1-2, 37 workflows failed)
+  Status: Unclear if resolved — May 2 runs (today) appear to be succeeding again for some
 
 ## HIGH
-- 25 mass cancellations Apr 30 23:19 from PR review comment concurrency cascade
-  Affected: Grumpy Reviewer, PR Nitpick, Repo Assist, Daily Perf Improver, PR Fix, Q, Test Improver, QA Researcher
-  Root cause: concurrent run cancellation policy, not agent failure
+- PR-triggered concurrency cancellation (CHRONIC): 
+  Affected: PR Nitpick Reviewer (0%), Grumpy Reviewer (0%), Repo Assist (0%), Daily Perf Improver (17%), PR Fix, Q, Daily Test Improver
   Fix: per-PR concurrency groups instead of global
-- Update Docs: 40% failure rate; 3.7M tokens on failed run (#2674 still open)
-- Schema Consistency Checker: 5.2M tokens single run (optimize scope)
+- Update Docs: ~40% failure rate; 3.7M tokens on failed runs (#2674 open)
+- Schema Consistency Checker: 5.2M tokens/single run (optimize scope)
+
+## NEW TODAY (May 2)
+- Duplicate Code Detector: found integer param parsing dup #2787 + PR #2788 ✅
+- Daily Perf Improver: BenchmarkGetPendingAIEnrichmentByBook #2780 ✅
+- 37 [aw] failure issues now open (from May 1-2 outage) — needs bulk close
 
 ## RESOLVED
-- SSRF 4-way dup: no new SSRF issue today ✅ (was Day 7 yesterday)
-
-## NEW TODAY
-- Enrichment handler dup: #2707 + PR #2708 (detector working correctly)
-- Mutation auditability quality issue: #2706 (useful output)
+- May 1-2 engine outage appears resolved (today's runs succeeding)
 
 ## For Workflow Health
-URGENT: repo-assist recompile (Day 12)
-URGENT: status-as-issue fix x2 workflows  
-URGENT: fix dependabot-pr-bundler close-previous
+URGENT: repo-assist recompile (Day 13)
+URGENT: status-as-issue fix x3 workflows
+URGENT: review/close 37 open [aw] failure issues from infrastructure outage
 HIGH: concurrency policy for PR-triggered workflows
 HIGH: Update Docs reliability
 
 ## For Campaign Manager
-- PRs 8→7 ✅ (continuing downward trend)
-- 84% merge rate from metrics baseline
-- Daily Perf Improver successfully created #2702 (LOWER(name) sort)
+- 8 open PRs (stable)
+- Substantive agent outputs limited by outage
+- Duplicate Code Detector + Perf Improver active and useful

@@ -1,31 +1,36 @@
-# Agent Performance — 2026-04-30 | 23:47Z
+# Agent Performance — 2026-05-02 | 23:45Z
 
 ## Summary
-55 workflows | 63 runs (7d) | 25 cancellations (mass event) | 7 open PRs | Day 12 repo-assist
+55 workflows configured | 50 runs (7d) | 37 infrastructure failures (May 1-2) | 8 open PRs | Day 13 repo-assist uncompiled
 
 ## Top Performers
-Agentic Triage 88 | Contribution Guidelines Checker 82 | Glossary Maintainer 82 | Repository Quality Improver 78
+Agentic Triage 90 | Contribution Guidelines Checker 88 | Duplicate Code Detector 85 | Glossary Maintainer 82 | Repository Quality Improver 80 | Metrics Collector 80
 
 ## Critical Issues
-- repo-assist: 5/100, NOT compiled Day 12, all cancelled (#2600)
-- status-as-issue Day 11: daily-repo-status #2705, daily-team-status #2701
-- dependabot-pr-bundler stacking: #2692 (new) + #2657 ([aw] failure)
-- update-docs: 40/100, 40% failure rate, 8.3M tokens total
+- ENGINE OUTAGE (May 1-2): copilot_driver.cjs missing caused 37 failures across 34 workflows — infrastructure issue, not agent quality
+- repo-assist: NOT compiled Day 13, all runs cancelled/failing (#2600)
+- Status-as-Issue Day 13: daily-repo-status #2786, daily-team-status #2779, daily-plan #2778
+- PR-triggered cancellation cascade: PR Nitpick (0%), Grumpy Reviewer (0%), Daily Perf Improver (17%) — concurrency policy
+- Update Docs: ~40% failure rate, 3.7M tokens on failed runs (#2674)
 
-## New Today
-- Duplicate Code Detector: found enrichment handler pattern (#2707) + created PR #2708 ✅
-- Repo Quality: Mutation Auditability #2706 (new, useful)
-- Mass cancellation: 25 cancelled runs from PR review comment concurrency cascade
+## Quality Outputs This Week
+- Duplicate Code Detector: #2787 (integer param parsing dup) + PR #2788 ✅
+- Repository Quality Improver: #2706 (mutation auditability, useful)
+- Daily Perf Improver: #2780 (BenchmarkGetPendingAIEnrichmentByBook)
+- Documentation Unbloat: #2782 (condensed SSRF bullets)
+- Update Docs: #2785, #2776, #2777 (audit action docs)
+- Daily Documentation Updater: 16 PRs in April period
 
-## Ecosystem Pattern
-Mass PR-triggered cancellations (25 runs cancelled at 23:19) - concurrency policy hit. Not agent failure.
+## vs Apr 30
+- [aw] failures: 1→37 ❌ (but 95% caused by infrastructure outage, not agent quality)
+- repo-assist: 12→13 days uncompiled ❌
+- status-as-issue: 11→13 ❌
+- PR-triggered concurrency: unresolved ❌
+- Duplicate Code Detector: new quality output ✅
 
-## vs Apr 29
-[aw] failures 9→2 ✅ | PRs 8→7 ✅ | repo-assist 11→12 ❌ | status-as-issue 10→11 ❌
-
-## Resource Concern
-Schema Consistency Checker: 5.2M tokens / 1 run (highest single-run cost this period)
-Update Docs: 3.7M tokens on failed run = waste
+## Resource Concerns
+- Schema Consistency Checker: 5.2M tokens/single run (needs scoping)
+- Update Docs: 3.7M tokens on failed run
 
 ## Discussion Created
-"Agent Performance Report — 2026-04-30" (Audits)
+"Agent Performance Report — 2026-05-02" (Audits)
