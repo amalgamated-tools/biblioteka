@@ -83,7 +83,7 @@ Work through this checklist before issuing the `DELETE` statement:
 
 2. **Check for user-scoped background jobs before deletion.** Review the job queue in Redis or the Asynqmon dashboard (`/asynqmon/`) for any queued or in-progress jobs whose payload includes the user's ID, such as `enrich:ai` or `enrich:goodreads`. Allow those jobs to finish, or cancel them, before proceeding. `scan:library` jobs reference `library_id` and paths rather than `user_id`, so they do not by themselves create an orphaned `user_id` risk when deleting a user.
 
-3. **Confirm audit log retention.** Rows in `audit_logs` that reference the deleted `user_id` are intentionally retained for accountability — there is no foreign key constraint on `audit_logs.user_id`. After deletion those rows will contain an orphaned `user_id` value, which is expected behavior. Ensure your compliance or audit policies accept this before proceeding.
+3. **Confirm audit log retention.** Rows in `audit_logs` referencing the deleted `user_id` are retained as orphaned references (see [What is NOT deleted](#what-is-not-deleted) below). Ensure your compliance or audit policies accept this before proceeding.
 
 **SQLite**
 
@@ -129,12 +129,11 @@ The following rows are deleted along with the user record via `ON DELETE CASCADE
 | `book_downloads` | All download-tracking events for the user |
 | `ai_enrichments` | Any AI metadata enrichment requests |
 
-> **Libraries are not deleted.** Libraries are global resources managed by admins. Deleting a user does not remove any libraries. Existing library–book associations (`library_books`) are also unaffected. **Books themselves are not deleted** — they remain in the catalog and retain their authors, series, and tags.
+> **Libraries and catalog data are not deleted.** Deleting a user does not remove any libraries, library–book associations (`library_books`), books, authors, series, or tags — these are all global resources.
 
 #### What is NOT deleted
 
-- **Books, authors, series, and tags** — catalog records are global and are not removed.
-- **Audit log entries** — `audit_logs` rows referencing the deleted `user_id` are retained for historical accountability. The `user_id` field on those rows becomes an orphaned reference, which is intentional: Biblioteka does not place a foreign key constraint on `audit_logs.user_id` so audit records survive account removal. This preserves the audit event and associated `user_id` even after the account no longer exists.
+- **Audit log entries** — rows in `audit_logs` referencing the deleted `user_id` are retained as orphaned references. This is intentional: `audit_logs.user_id` has no foreign key constraint, so audit records survive account removal for historical accountability.
 
 > **SQLite note:** The cascades above only fire when `PRAGMA foreign_keys = ON` is set for the connection. The application always enables this pragma, but if you connect via a separate client (e.g. `sqlite3` CLI or a GUI tool), you must set it yourself before issuing the `DELETE`.
 
@@ -428,17 +427,11 @@ curl -X PUT http://localhost:8080/api/config/oidc \
   }'
 ```
 
-Before attempting provider discovery, the server validates the issuer URL against a set of SSRF-prevention rules. The following are rejected with `400 Bad Request`:
-
-- Non-`https` schemes (only `https://` is accepted)
-- URLs containing userinfo (e.g. `https://user:pass@issuer.example.com`)
-- Literal IP addresses that fall within the server's SSRF blocklist, including private, loopback, link-local, unique-local, unspecified, and other non-public ranges blocked by the implementation
-- Hostnames that resolve via DNS to any blocked address range in that SSRF blocklist (DNS failures are treated as pass — the OIDC discovery request itself will fail and the SSRF-safe HTTP client provides a second check at connection time)
-- IPv6 zone identifiers in the host (e.g. `[fe80::1%lo0]`)
+Before attempting provider discovery, the server validates the issuer URL for SSRF. Only `https://` URLs are accepted; userinfo (e.g. `https://user:pass@issuer.example.com`), private/loopback IP addresses, and IPv6 zone identifiers are rejected with `400 Bad Request`. DNS names are resolved before acceptance — names resolving to blocked ranges are rejected (DNS failures pass; the SSRF-safe HTTP client provides a second check at connection time).
 
 If validation passes, the server performs OIDC discovery. If discovery fails, the config is rejected with a `400` error.
 
-All four settings (`issuer_url`, `client_id`, `client_secret`, `redirect_uri`) are saved atomically in a single database transaction. If the write fails, none of the settings are changed — the configuration is never left in a partially-updated state.
+All four fields are saved atomically; a failed write leaves the existing configuration unchanged.
 
 **Precedence:** Environment variables (`OIDC_ISSUER_URL`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_REDIRECT_URI`) always override database-stored settings. If environment variables are set, the runtime configuration UI will appear read-only.
 
@@ -473,7 +466,7 @@ curl -X POST http://localhost:8080/api/config/smtp/test \
 
 The test endpoint sends a short verification email to the authenticated admin's registered email address. It returns `200 OK` with a `{"message":"Test email sent to <email>"}` body on success, or a `4xx`/`5xx` error with `{"error":"…"}` on failure.
 
-All six SMTP settings (`host`, `port`, `username`, `password`, `from`, `tls`) are saved atomically in a single database transaction. If the write fails, none are changed — the configuration is never left in a partially-updated state.
+All six SMTP fields are saved atomically; a failed write leaves the existing configuration unchanged.
 
 **TLS modes:** `none` (plaintext), `starttls` (STARTTLS upgrade on port 587, default), or `tls` (implicit TLS on port 465).
 
@@ -531,13 +524,7 @@ curl -X PUT http://localhost:8080/api/config/llm \
 
 #### Endpoint validation (SSRF protection)
 
-Before saving, the server validates the `endpoint` URL against the following rules. Violations are rejected with `400 Bad Request`:
-
-- Only the `http` and `https` schemes are accepted.
-- URLs containing userinfo (e.g. `http://user:pass@ollama.internal`) are rejected to prevent credential leakage.
-- Literal IP addresses that fall within the server's SSRF blocklist are blocked, including private, loopback, link-local, unique-local, unspecified, and other non-public ranges blocked by the implementation.
-- IPv6 literals with zone identifiers (e.g. `http://[fe80::1%lo0]:11434`) are rejected.
-- If the host is a DNS name, it is resolved (with a short timeout) and any private or loopback result is also blocked. DNS failures are treated as a pass — the enrichment job will fail when it actually connects, and a second SSRF-safe dialer in the Ollama client provides an additional layer of defense.
+Before saving, the endpoint URL is validated for SSRF. Only `http://` and `https://` schemes are accepted; userinfo (e.g. `http://user:pass@ollama.internal`), private IP addresses (loopback, link-local, and other non-public ranges), and IPv6 zone identifiers are rejected with `400 Bad Request`. DNS names are resolved before acceptance — names resolving to blocked ranges are also rejected (DNS failures pass; the Ollama client's SSRF-safe dialer provides a second check at connection time).
 
 > **Local Ollama note:** Because private IP addresses are blocked, `http://localhost:11434` and `http://127.0.0.1:11434` are rejected when set via the API or admin UI. For a local Ollama instance on the same host as Biblioteka, point the endpoint at a non-private, publicly routable hostname or address that the Biblioteka process can reach (for example, the host's public IP or a hostname that resolves to it). If Ollama is on a separate private-network host, access it via a reverse proxy reachable from a routable hostname.
 
