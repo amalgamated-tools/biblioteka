@@ -200,6 +200,8 @@ func (h *ConfigHandler) HandleSetOIDCConfig(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	logAudit(r.Context(), h.DB, userID, db.AuditActionOIDCConfigUpdated, "config", "oidc", nil)
+
 	if h.OnOIDCConfigSet != nil {
 		if err := h.OnOIDCConfigSet(r.Context(), issuerURL, clientID, clientSecret, redirectURI); err != nil {
 			slog.ErrorContext(r.Context(), "failed to apply OIDC configuration", slog.Any(otelkeys.Error, err))
@@ -207,8 +209,6 @@ func (h *ConfigHandler) HandleSetOIDCConfig(w http.ResponseWriter, r *http.Reque
 			return
 		}
 	}
-
-	logAudit(r.Context(), h.DB, userID, db.AuditActionOIDCConfigUpdated, "config", "oidc", nil)
 
 	msg := "OIDC configuration saved successfully"
 	if os.Getenv("OIDC_ISSUER_URL") != "" {
