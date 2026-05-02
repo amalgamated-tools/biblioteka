@@ -10,7 +10,9 @@ vi.mock("../../stores/auth.svelte", () => ({
 vi.mock("../../lib/api", () => ({
   listUsers: vi.fn().mockResolvedValue([]),
   setUserAdmin: vi.fn(),
-  getRegistrationConfig: vi.fn().mockResolvedValue({ registration_disabled: false }),
+  getRegistrationConfig: vi
+    .fn()
+    .mockResolvedValue({ registration_disabled: false }),
   setRegistrationConfig: vi.fn(),
 }));
 

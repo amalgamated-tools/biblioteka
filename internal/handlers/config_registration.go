@@ -82,7 +82,5 @@ func (h *ConfigHandler) handleSetRegistrationConfig(w http.ResponseWriter, r *ht
 		"registration_disabled": req.RegistrationDisabled,
 	})
 
-	writeJSON(r.Context(), w, http.StatusOK, registrationConfigResponse{
-		RegistrationDisabled: req.RegistrationDisabled,
-	})
+	writeJSON(r.Context(), w, http.StatusOK, registrationConfigResponse(req))
 }
