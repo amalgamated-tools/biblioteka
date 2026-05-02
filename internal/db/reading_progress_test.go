@@ -474,7 +474,7 @@ func TestGetYearInBooks_LongestStreak(t *testing.T) {
 	thisYear := time.Now().UTC().Year()
 
 	// Three consecutive days: today, yesterday, 2 days ago.
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		day := time.Now().UTC().AddDate(0, 0, -i).Format("2006-01-02 15:04:05")
 		_, err := d.ExecContext(ctx,
 			`INSERT INTO reading_progress (user_id, document, progress, percentage, updated_at)

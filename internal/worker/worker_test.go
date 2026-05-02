@@ -107,7 +107,7 @@ func TestRegister_NilPayload(t *testing.T) {
 	var called bool
 	w.Register(t.Context(), "test:nil-payload", func(_ context.Context, payload []byte) error {
 		called = true
-		require.True(t, payload == nil || len(payload) == 0, "handler received payload %q, want nil or empty", payload)
+		require.True(t, len(payload) == 0, "handler received payload %q, want nil or empty", payload)
 		return nil
 	})
 

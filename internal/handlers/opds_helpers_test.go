@@ -23,10 +23,7 @@ func TestAdaptNavEntities(t *testing.T) {
 			{ID: "2", Name: "Beta", Time: "2024-06-15T12:00:00Z"},
 			{ID: "3", Name: "Gamma", Time: "2024-12-31T23:59:59Z"},
 		}
-		end := offset + limit
-		if end > len(all) {
-			end = len(all)
-		}
+		end := min(offset+limit, len(all))
 		if offset >= len(all) {
 			return nil, len(all), nil
 		}

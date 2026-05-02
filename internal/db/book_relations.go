@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"log/slog"
+	"slices"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
@@ -109,10 +110,10 @@ func (d *DB) SetBookSeries(ctx context.Context, bookID string, entries []BookSer
 	)
 	seen := make(map[string]struct{}, len(entries))
 	unique := make([]BookSeriesInput, 0, len(entries))
-	for i := len(entries) - 1; i >= 0; i-- {
-		if _, ok := seen[entries[i].SeriesID]; !ok {
-			seen[entries[i].SeriesID] = struct{}{}
-			unique = append(unique, entries[i])
+	for _, v := range slices.Backward(entries) {
+		if _, ok := seen[v.SeriesID]; !ok {
+			seen[v.SeriesID] = struct{}{}
+			unique = append(unique, v)
 		}
 	}
 

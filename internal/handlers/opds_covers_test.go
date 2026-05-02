@@ -112,7 +112,7 @@ func TestServeCover_MissingCover(t *testing.T) {
 		cover *string
 	}{
 		{"nil cover", nil},
-		{"empty cover", ptr("")},
+		{"empty cover", new("")},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			h := setupOPDSHandler(t)

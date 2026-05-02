@@ -1,6 +1,6 @@
 basePath: /api
 definitions:
-  calibre.ImportResult:
+  github_com_amalgamated-tools_biblioteka_internal_calibre.ImportResult:
     properties:
       errors:
         description: Errors is the number of books that could not be imported due
@@ -18,20 +18,20 @@ definitions:
         description: Total is the total number of Calibre books examined.
         type: integer
     type: object
-  calibre.Preview:
+  github_com_amalgamated-tools_biblioteka_internal_calibre.Preview:
     properties:
       books:
         description: |-
           Books contains up to previewLimit books for display. The caller should
           use Total to inform the user about books beyond the preview window.
         items:
-          $ref: '#/definitions/calibre.PreviewBook'
+          $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_calibre.PreviewBook'
         type: array
       total:
         description: Total is the total number of books found in the Calibre database.
         type: integer
     type: object
-  calibre.PreviewBook:
+  github_com_amalgamated-tools_biblioteka_internal_calibre.PreviewBook:
     properties:
       authors:
         items:
@@ -53,31 +53,31 @@ definitions:
         type: string
       series:
         items:
-          $ref: '#/definitions/calibre.PreviewSeriesEntry'
+          $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_calibre.PreviewSeriesEntry'
         type: array
       title:
         type: string
     type: object
-  calibre.PreviewSeriesEntry:
+  github_com_amalgamated-tools_biblioteka_internal_calibre.PreviewSeriesEntry:
     properties:
       name:
         type: string
       position:
         type: number
     type: object
-  db.BookSeriesInput:
+  github_com_amalgamated-tools_biblioteka_internal_db.BookSeriesInput:
     properties:
       position:
         type: number
       series_id:
         type: string
     type: object
-  db.Timestamp:
+  github_com_amalgamated-tools_biblioteka_internal_db.Timestamp:
     properties:
       time.Time:
         type: string
     type: object
-  db.YearInBooks:
+  github_com_amalgamated-tools_biblioteka_internal_db.YearInBooks:
     properties:
       active_days:
         type: integer
@@ -90,7 +90,7 @@ definitions:
       year:
         type: integer
     type: object
-  handlers.LLMConfig:
+  internal_handlers.LLMConfig:
     properties:
       enabled:
         type: boolean
@@ -103,20 +103,20 @@ definitions:
       restart_required:
         type: boolean
     type: object
-  handlers.addBookToReadingListRequest:
+  internal_handlers.addBookToReadingListRequest:
     properties:
       book_id:
         type: string
     type: object
-  handlers.addGroupMemberRequest:
+  internal_handlers.addGroupMemberRequest:
     properties:
       user_id:
         type: string
     type: object
-  handlers.adminUserDTO:
+  internal_handlers.adminUserDTO:
     properties:
       created_at:
-        $ref: '#/definitions/db.Timestamp'
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
       email:
         type: string
       id:
@@ -128,12 +128,12 @@ definitions:
       oidc_linked:
         type: boolean
     type: object
-  handlers.aiEnrichmentDTO:
+  internal_handlers.aiEnrichmentDTO:
     properties:
       book_id:
         type: string
       created_at:
-        $ref: '#/definitions/db.Timestamp'
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
       generated_description:
         type: string
       id:
@@ -151,47 +151,14 @@ definitions:
           type: string
         type: array
       updated_at:
-        $ref: '#/definitions/db.Timestamp'
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
     type: object
-  handlers.apiKeyCreateRequest:
-    properties:
-      name:
-        type: string
-    type: object
-  handlers.apiKeyCreateResponse:
-    properties:
-      created_at:
-        type: string
-      id:
-        type: string
-      key:
-        type: string
-      key_prefix:
-        type: string
-      last_used_at:
-        type: string
-      name:
-        type: string
-    type: object
-  handlers.apiKeyDTO:
-    properties:
-      created_at:
-        type: string
-      id:
-        type: string
-      key_prefix:
-        type: string
-      last_used_at:
-        type: string
-      name:
-        type: string
-    type: object
-  handlers.auditLogDTO:
+  internal_handlers.auditLogDTO:
     properties:
       action:
         type: string
       created_at:
-        $ref: '#/definitions/db.Timestamp'
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
       entity_id:
         type: string
       entity_type:
@@ -203,11 +170,11 @@ definitions:
       user_id:
         type: string
     type: object
-  handlers.auditLogListDTO:
+  internal_handlers.auditLogListDTO:
     properties:
       entries:
         items:
-          $ref: '#/definitions/handlers.auditLogDTO'
+          $ref: '#/definitions/internal_handlers.auditLogDTO'
         type: array
       limit:
         type: integer
@@ -216,10 +183,10 @@ definitions:
       total:
         type: integer
     type: object
-  handlers.authorDTO:
+  internal_handlers.authorDTO:
     properties:
       created_at:
-        $ref: '#/definitions/db.Timestamp'
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
       goodreads_id:
         type: string
       google_books_id:
@@ -233,9 +200,9 @@ definitions:
       name:
         type: string
       updated_at:
-        $ref: '#/definitions/db.Timestamp'
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
     type: object
-  handlers.authorRequest:
+  internal_handlers.authorRequest:
     properties:
       goodreads_id:
         type: string
@@ -248,23 +215,23 @@ definitions:
       name:
         type: string
     type: object
-  handlers.bookDTO:
+  internal_handlers.bookDTO:
     properties:
       asin:
         type: string
       authors:
         items:
-          $ref: '#/definitions/handlers.authorDTO'
+          $ref: '#/definitions/internal_handlers.authorDTO'
         type: array
       cover_image_url:
         type: string
       created_at:
-        $ref: '#/definitions/db.Timestamp'
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
       description:
         type: string
       files:
         items:
-          $ref: '#/definitions/handlers.bookFileDTO'
+          $ref: '#/definitions/internal_handlers.bookFileDTO'
         type: array
       goodreads_id:
         type: string
@@ -286,19 +253,23 @@ definitions:
         type: string
       series:
         items:
-          $ref: '#/definitions/handlers.bookSeriesEntryDTO'
+          $ref: '#/definitions/internal_handlers.bookSeriesEntryDTO'
+        type: array
+      tags:
+        items:
+          $ref: '#/definitions/internal_handlers.tagDTO'
         type: array
       title:
         type: string
       updated_at:
-        $ref: '#/definitions/db.Timestamp'
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
     type: object
-  handlers.bookFileDTO:
+  internal_handlers.bookFileDTO:
     properties:
       book_id:
         type: string
       created_at:
-        $ref: '#/definitions/db.Timestamp'
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
       download_count:
         type: integer
       file_hash:
@@ -314,13 +285,13 @@ definitions:
       id:
         type: string
       updated_at:
-        $ref: '#/definitions/db.Timestamp'
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
     type: object
-  handlers.bookListDTO:
+  internal_handlers.bookListDTO:
     properties:
       books:
         items:
-          $ref: '#/definitions/handlers.bookSummaryDTO'
+          $ref: '#/definitions/internal_handlers.bookSummaryDTO'
         type: array
       limit:
         type: integer
@@ -329,7 +300,7 @@ definitions:
       total:
         type: integer
     type: object
-  handlers.bookRequest:
+  internal_handlers.bookRequest:
     properties:
       asin:
         type: string
@@ -356,21 +327,21 @@ definitions:
       title:
         type: string
     type: object
-  handlers.bookSeriesEntryDTO:
+  internal_handlers.bookSeriesEntryDTO:
     properties:
       position:
         type: number
       series:
-        $ref: '#/definitions/handlers.seriesDTO'
+        $ref: '#/definitions/internal_handlers.seriesDTO'
     type: object
-  handlers.bookSummaryDTO:
+  internal_handlers.bookSummaryDTO:
     properties:
       asin:
         type: string
       cover_image_url:
         type: string
       created_at:
-        $ref: '#/definitions/db.Timestamp'
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
       description:
         type: string
       goodreads_id:
@@ -394,9 +365,9 @@ definitions:
       title:
         type: string
       updated_at:
-        $ref: '#/definitions/db.Timestamp'
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
     type: object
-  handlers.configStatusResponse:
+  internal_handlers.configStatusResponse:
     properties:
       is_admin:
         type: boolean
@@ -405,7 +376,7 @@ definitions:
       smtp_configured:
         type: boolean
     type: object
-  handlers.createBookFileRequest:
+  internal_handlers.createBookFileRequest:
     properties:
       file_hash:
         type: string
@@ -418,36 +389,36 @@ definitions:
       file_type:
         type: string
     type: object
-  handlers.credentialResponse:
+  internal_handlers.credentialResponse:
     properties:
       created_at:
-        $ref: '#/definitions/db.Timestamp'
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
       updated_at:
-        $ref: '#/definitions/db.Timestamp'
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
       username:
         type: string
     type: object
-  handlers.emailBookFileRequest:
+  internal_handlers.emailBookFileRequest:
     properties:
       to:
         type: string
     type: object
-  handlers.errorResponse:
+  internal_handlers.errorResponse:
     properties:
       error:
         type: string
     type: object
-  handlers.fetchMetadataResponse:
+  internal_handlers.fetchMetadataResponse:
     properties:
       status:
         type: string
       task_id:
         type: string
     type: object
-  handlers.groupDTO:
+  internal_handlers.groupDTO:
     properties:
       created_at:
-        $ref: '#/definitions/db.Timestamp'
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
       description:
         type: string
       id:
@@ -459,14 +430,14 @@ definitions:
       owner_id:
         type: string
       updated_at:
-        $ref: '#/definitions/db.Timestamp'
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
     type: object
-  handlers.groupMemberDTO:
+  internal_handlers.groupMemberDTO:
     properties:
       group_id:
         type: string
       joined_at:
-        $ref: '#/definitions/db.Timestamp'
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
       role:
         type: string
       user_id:
@@ -474,28 +445,28 @@ definitions:
       user_name:
         type: string
     type: object
-  handlers.groupMemberProgressDTO:
+  internal_handlers.groupMemberProgressDTO:
     properties:
       percentage:
         type: number
       updated_at:
-        $ref: '#/definitions/db.Timestamp'
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
       user_id:
         type: string
       user_name:
         type: string
     type: object
-  handlers.groupRequest:
+  internal_handlers.groupRequest:
     properties:
       description:
         type: string
       name:
         type: string
     type: object
-  handlers.koboTokenCreateResponse:
+  internal_handlers.koboTokenCreateResponse:
     properties:
       created_at:
-        $ref: '#/definitions/db.Timestamp'
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
       id:
         type: string
       name:
@@ -505,10 +476,10 @@ definitions:
       user_id:
         type: string
     type: object
-  handlers.koboTokenDTO:
+  internal_handlers.koboTokenDTO:
     properties:
       created_at:
-        $ref: '#/definitions/db.Timestamp'
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
       id:
         type: string
       name:
@@ -516,10 +487,10 @@ definitions:
       user_id:
         type: string
     type: object
-  handlers.libraryDTO:
+  internal_handlers.libraryDTO:
     properties:
       created_at:
-        $ref: '#/definitions/db.Timestamp'
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
       id:
         type: string
       monitored:
@@ -533,9 +504,9 @@ definitions:
           type: string
         type: array
       updated_at:
-        $ref: '#/definitions/db.Timestamp'
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
     type: object
-  handlers.libraryRequest:
+  internal_handlers.libraryRequest:
     properties:
       monitored:
         type: boolean
@@ -548,7 +519,7 @@ definitions:
           type: string
         type: array
     type: object
-  handlers.metadataDTO:
+  internal_handlers.metadataDTO:
     properties:
       asin:
         type: string
@@ -559,7 +530,7 @@ definitions:
       cover_image_url:
         type: string
       created_at:
-        $ref: '#/definitions/db.Timestamp'
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
       description:
         type: string
       goodreads_id:
@@ -587,9 +558,9 @@ definitions:
       title:
         type: string
       updated_at:
-        $ref: '#/definitions/db.Timestamp'
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
     type: object
-  handlers.oidcConfigResponse:
+  internal_handlers.oidcConfigResponse:
     properties:
       client_id:
         type: string
@@ -600,12 +571,12 @@ definitions:
       redirect_uri:
         type: string
     type: object
-  handlers.readingListDTO:
+  internal_handlers.readingListDTO:
     properties:
       book_count:
         type: integer
       created_at:
-        $ref: '#/definitions/db.Timestamp'
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
       description:
         type: string
       id:
@@ -613,16 +584,16 @@ definitions:
       name:
         type: string
       updated_at:
-        $ref: '#/definitions/db.Timestamp'
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
     type: object
-  handlers.readingListRequest:
+  internal_handlers.readingListRequest:
     properties:
       description:
         type: string
       name:
         type: string
     type: object
-  handlers.readingProgressItemDTO:
+  internal_handlers.readingProgressItemDTO:
     properties:
       device:
         type: string
@@ -635,23 +606,23 @@ definitions:
       percentage:
         type: number
     type: object
-  handlers.readingProgressStatsResponse:
+  internal_handlers.readingProgressStatsResponse:
     properties:
       current_streak:
         type: integer
       in_progress:
         items:
-          $ref: '#/definitions/handlers.readingProgressItemDTO'
+          $ref: '#/definitions/internal_handlers.readingProgressItemDTO'
         type: array
       total_finished:
         type: integer
       total_tracked:
         type: integer
     type: object
-  handlers.seriesDTO:
+  internal_handlers.seriesDTO:
     properties:
       created_at:
-        $ref: '#/definitions/db.Timestamp'
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
       goodreads_id:
         type: string
       google_books_id:
@@ -663,9 +634,9 @@ definitions:
       name:
         type: string
       updated_at:
-        $ref: '#/definitions/db.Timestamp'
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
     type: object
-  handlers.seriesRequest:
+  internal_handlers.seriesRequest:
     properties:
       goodreads_id:
         type: string
@@ -676,33 +647,33 @@ definitions:
       name:
         type: string
     type: object
-  handlers.setAdminRequest:
+  internal_handlers.setAdminRequest:
     properties:
       is_admin:
         type: boolean
     type: object
-  handlers.setBookAuthorsRequest:
+  internal_handlers.setBookAuthorsRequest:
     properties:
       author_ids:
         items:
           type: string
         type: array
     type: object
-  handlers.setBookSeriesRequest:
+  internal_handlers.setBookSeriesRequest:
     properties:
       entries:
         items:
-          $ref: '#/definitions/db.BookSeriesInput'
+          $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.BookSeriesInput'
         type: array
     type: object
-  handlers.setBookTagsRequest:
+  internal_handlers.setBookTagsRequest:
     properties:
       tag_ids:
         items:
           type: string
         type: array
     type: object
-  handlers.setOIDCConfigRequest:
+  internal_handlers.setOIDCConfigRequest:
     properties:
       client_id:
         type: string
@@ -713,12 +684,12 @@ definitions:
       redirect_uri:
         type: string
     type: object
-  handlers.shareListRequest:
+  internal_handlers.shareListRequest:
     properties:
       list_id:
         type: string
     type: object
-  handlers.smtpConfigResponse:
+  internal_handlers.smtpConfigResponse:
     properties:
       env_override:
         type: boolean
@@ -735,18 +706,18 @@ definitions:
       username:
         type: string
     type: object
-  handlers.tagDTO:
+  internal_handlers.tagDTO:
     properties:
       created_at:
-        $ref: '#/definitions/db.Timestamp'
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
       id:
         type: string
       name:
         type: string
       updated_at:
-        $ref: '#/definitions/db.Timestamp'
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
     type: object
-  handlers.uploadAcceptedResponse:
+  internal_handlers.uploadAcceptedResponse:
     properties:
       file_name:
         type: string
@@ -757,11 +728,26 @@ definitions:
       message:
         type: string
     type: object
-  handlers.watchFolderConfigResponse:
+  internal_handlers.watchFolderConfigResponse:
     properties:
       library_id:
         type: string
       path:
+        type: string
+    type: object
+  internal_server.enabledResponse:
+    properties:
+      enabled:
+        type: boolean
+    type: object
+  internal_server.healthResponse:
+    properties:
+      status:
+        type: string
+    type: object
+  internal_server.versionResponse:
+    properties:
+      version:
         type: string
     type: object
 info:
@@ -787,19 +773,19 @@ paths:
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "405":
           description: Method Not Allowed
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Rebuild search index
@@ -815,20 +801,20 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/handlers.adminUserDTO'
+              $ref: '#/definitions/internal_handlers.adminUserDTO'
             type: array
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: List all users
@@ -850,7 +836,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.setAdminRequest'
+          $ref: '#/definitions/internal_handlers.setAdminRequest'
       produces:
       - application/json
       responses:
@@ -864,89 +850,28 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Set user admin status
       tags:
       - Admin
-  /api-keys:
-    get:
-      description: Returns all API keys for the authenticated user.
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of API keys
-          schema:
-            items:
-              $ref: '#/definitions/handlers.apiKeyDTO'
-            type: array
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/handlers.errorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/handlers.errorResponse'
-      security:
-      - BearerAuth: []
-      summary: List API keys
-      tags:
-      - api-keys
-    post:
-      consumes:
-      - application/json
-      description: Creates a new API key. The raw key is returned only in this response
-        and is never retrievable again.
-      parameters:
-      - description: API key name
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.apiKeyCreateRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: API key created
-          schema:
-            $ref: '#/definitions/handlers.apiKeyCreateResponse'
-        "400":
-          description: Bad request
-          schema:
-            $ref: '#/definitions/handlers.errorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/handlers.errorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/handlers.errorResponse'
-      security:
-      - BearerAuth: []
-      summary: Create an API key
-      tags:
-      - api-keys
   /api-keys/{id}:
     delete:
       description: Delete an API key by ID. Requests authenticated with this key will
@@ -965,23 +890,23 @@ paths:
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: API key not found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "405":
           description: Method not allowed
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Delete an API key
@@ -1007,19 +932,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.auditLogListDTO'
+            $ref: '#/definitions/internal_handlers.auditLogListDTO'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: List audit log entries
@@ -1041,10 +966,36 @@ paths:
         "405":
           description: Method Not Allowed
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       summary: Log out
       tags:
       - Auth
+  /auth/oidc/enabled:
+    get:
+      description: Returns whether OIDC authentication is configured on this server
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_server.enabledResponse'
+      summary: Check if OIDC is enabled
+      tags:
+      - System
+  /auth/signup/enabled:
+    get:
+      description: Returns whether new user signup is permitted on this server
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_server.enabledResponse'
+      summary: Check if signup is enabled
+      tags:
+      - System
   /authors:
     get:
       description: Returns all authors
@@ -1055,16 +1006,16 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/handlers.authorDTO'
+              $ref: '#/definitions/internal_handlers.authorDTO'
             type: array
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: List authors
@@ -1080,30 +1031,30 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.authorRequest'
+          $ref: '#/definitions/internal_handlers.authorRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/handlers.authorDTO'
+            $ref: '#/definitions/internal_handlers.authorDTO'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Create an author
@@ -1124,19 +1075,19 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Delete an author
@@ -1156,23 +1107,23 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.authorDTO'
+            $ref: '#/definitions/internal_handlers.authorDTO'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Get an author
@@ -1193,34 +1144,34 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.authorRequest'
+          $ref: '#/definitions/internal_handlers.authorRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.authorDTO'
+            $ref: '#/definitions/internal_handlers.authorDTO'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Update an author
@@ -1249,23 +1200,23 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.bookListDTO'
+            $ref: '#/definitions/internal_handlers.bookListDTO'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: List books by author
@@ -1286,19 +1237,19 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Delete a book file
@@ -1318,23 +1269,23 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.bookFileDTO'
+            $ref: '#/definitions/internal_handlers.bookFileDTO'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Get a book file
@@ -1358,23 +1309,23 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Download a book file
@@ -1396,7 +1347,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.emailBookFileRequest'
+          $ref: '#/definitions/internal_handlers.emailBookFileRequest'
       produces:
       - application/json
       responses:
@@ -1410,23 +1361,23 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "413":
           description: Request Entity Too Large
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "502":
           description: Bad Gateway
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Email a book file
@@ -1456,15 +1407,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.bookListDTO'
+            $ref: '#/definitions/internal_handlers.bookListDTO'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: List books
@@ -1480,26 +1431,26 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.bookRequest'
+          $ref: '#/definitions/internal_handlers.bookRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/handlers.bookDTO'
+            $ref: '#/definitions/internal_handlers.bookDTO'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Create a book
@@ -1520,26 +1471,26 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Delete a book
       tags:
       - Books
     get:
-      description: Returns a single book with authors, series, and files
+      description: Returns a single book with authors, series, tags, and files
       parameters:
       - description: Book ID
         in: path
@@ -1552,23 +1503,23 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.bookDTO'
+            $ref: '#/definitions/internal_handlers.bookDTO'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Get a book
@@ -1589,30 +1540,30 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.bookRequest'
+          $ref: '#/definitions/internal_handlers.bookRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.bookDTO'
+            $ref: '#/definitions/internal_handlers.bookDTO'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Update a book
@@ -1634,20 +1585,20 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/handlers.authorDTO'
+              $ref: '#/definitions/internal_handlers.authorDTO'
             type: array
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: List book authors
@@ -1668,7 +1619,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.setBookAuthorsRequest'
+          $ref: '#/definitions/internal_handlers.setBookAuthorsRequest'
       produces:
       - application/json
       responses:
@@ -1676,20 +1627,20 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/handlers.authorDTO'
+              $ref: '#/definitions/internal_handlers.authorDTO'
             type: array
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Set book authors
@@ -1711,20 +1662,20 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/handlers.bookFileDTO'
+              $ref: '#/definitions/internal_handlers.bookFileDTO'
             type: array
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: List book files
@@ -1745,26 +1696,26 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.createBookFileRequest'
+          $ref: '#/definitions/internal_handlers.createBookFileRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/handlers.bookFileDTO'
+            $ref: '#/definitions/internal_handlers.bookFileDTO'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Add a book file
@@ -1786,19 +1737,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.metadataDTO'
+            $ref: '#/definitions/internal_handlers.metadataDTO'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Get pending book metadata
@@ -1819,19 +1770,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.aiEnrichmentDTO'
+            $ref: '#/definitions/internal_handlers.aiEnrichmentDTO'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Get pending AI enrichment
@@ -1853,23 +1804,23 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.aiEnrichmentDTO'
+            $ref: '#/definitions/internal_handlers.aiEnrichmentDTO'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Apply AI enrichment
@@ -1891,23 +1842,23 @@ paths:
         "202":
           description: Accepted
           schema:
-            $ref: '#/definitions/handlers.fetchMetadataResponse'
+            $ref: '#/definitions/internal_handlers.fetchMetadataResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "503":
           description: Service Unavailable
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Fetch AI enrichment
@@ -1928,19 +1879,19 @@ paths:
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Reject AI enrichment
@@ -1963,19 +1914,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.bookSummaryDTO'
+            $ref: '#/definitions/internal_handlers.bookSummaryDTO'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Apply pending metadata to a book
@@ -1985,7 +1936,9 @@ paths:
     get:
       description: Opens a Server-Sent Events (SSE) stream for metadata fetch progress.
         Events are JSON objects with an "event" field (e.g. "complete", "error", "not_found").
-        The connection closes automatically on a terminal event or after 2 minutes.
+        The connection closes automatically on a terminal event or on client disconnect.
+        A per-write deadline of 2 minutes is enforced and reset on each heartbeat
+        or event write.
       parameters:
       - description: Book ID
         in: path
@@ -2002,19 +1955,19 @@ paths:
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "503":
           description: Service Unavailable
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Stream metadata fetch events
@@ -2036,23 +1989,23 @@ paths:
         "202":
           description: Accepted
           schema:
-            $ref: '#/definitions/handlers.fetchMetadataResponse'
+            $ref: '#/definitions/internal_handlers.fetchMetadataResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "503":
           description: Service Unavailable
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Fetch book metadata
@@ -2073,15 +2026,15 @@ paths:
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Reject pending metadata
@@ -2104,20 +2057,20 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/handlers.readingListDTO'
+              $ref: '#/definitions/internal_handlers.readingListDTO'
             type: array
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: List reading lists containing a book
@@ -2139,20 +2092,20 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/handlers.bookSeriesEntryDTO'
+              $ref: '#/definitions/internal_handlers.bookSeriesEntryDTO'
             type: array
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: List book series
@@ -2173,7 +2126,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.setBookSeriesRequest'
+          $ref: '#/definitions/internal_handlers.setBookSeriesRequest'
       produces:
       - application/json
       responses:
@@ -2181,20 +2134,20 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/handlers.bookSeriesEntryDTO'
+              $ref: '#/definitions/internal_handlers.bookSeriesEntryDTO'
             type: array
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Set book series
@@ -2216,20 +2169,20 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/handlers.tagDTO'
+              $ref: '#/definitions/internal_handlers.tagDTO'
             type: array
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: List book tags
@@ -2250,7 +2203,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.setBookTagsRequest'
+          $ref: '#/definitions/internal_handlers.setBookTagsRequest'
       produces:
       - application/json
       responses:
@@ -2258,20 +2211,20 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/handlers.tagDTO'
+              $ref: '#/definitions/internal_handlers.tagDTO'
             type: array
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Set book tags
@@ -2281,10 +2234,10 @@ paths:
     post:
       consumes:
       - multipart/form-data
-      description: Upload a book file (.epub, .mobi, .azw3, .pdf) to a library. The
-        file is staged and processed asynchronously.
+      description: Upload a supported book file to a library. The file is staged and
+        processed asynchronously.
       parameters:
-      - description: Book file (.epub, .mobi, .azw3, .pdf)
+      - description: Book file in a supported format
         in: formData
         name: file
         required: true
@@ -2324,27 +2277,27 @@ paths:
         "202":
           description: Accepted
           schema:
-            $ref: '#/definitions/handlers.uploadAcceptedResponse'
+            $ref: '#/definitions/internal_handlers.uploadAcceptedResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "413":
           description: Request Entity Too Large
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "503":
           description: Service Unavailable
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Upload a book file
@@ -2374,31 +2327,31 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/calibre.ImportResult'
+            $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_calibre.ImportResult'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "413":
           description: Request Entity Too Large
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "415":
           description: Unsupported Media Type
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Execute Calibre import
@@ -2427,31 +2380,31 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/calibre.Preview'
+            $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_calibre.Preview'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "413":
           description: Request Entity Too Large
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "415":
           description: Unsupported Media Type
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Preview Calibre import
@@ -2469,23 +2422,23 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.LLMConfig'
+            $ref: '#/definitions/internal_handlers.LLMConfig'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Get or update LLM configuration
@@ -2502,23 +2455,23 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.LLMConfig'
+            $ref: '#/definitions/internal_handlers.LLMConfig'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Get or update LLM configuration
@@ -2533,19 +2486,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.oidcConfigResponse'
+            $ref: '#/definitions/internal_handlers.oidcConfigResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Get OIDC configuration
@@ -2561,7 +2514,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.setOIDCConfigRequest'
+          $ref: '#/definitions/internal_handlers.setOIDCConfigRequest'
       produces:
       - application/json
       responses:
@@ -2575,19 +2528,19 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Set OIDC configuration
@@ -2605,23 +2558,23 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.smtpConfigResponse'
+            $ref: '#/definitions/internal_handlers.smtpConfigResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Get or update SMTP configuration
@@ -2638,23 +2591,23 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.smtpConfigResponse'
+            $ref: '#/definitions/internal_handlers.smtpConfigResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Get or update SMTP configuration
@@ -2677,19 +2630,19 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "502":
           description: Bad Gateway
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Send SMTP test email
@@ -2704,11 +2657,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.configStatusResponse'
+            $ref: '#/definitions/internal_handlers.configStatusResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Get configuration status
@@ -2726,23 +2679,23 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.watchFolderConfigResponse'
+            $ref: '#/definitions/internal_handlers.watchFolderConfigResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Get or update watch folder configuration
@@ -2759,23 +2712,23 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.watchFolderConfigResponse'
+            $ref: '#/definitions/internal_handlers.watchFolderConfigResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Get or update watch folder configuration
@@ -2791,16 +2744,16 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/handlers.groupDTO'
+              $ref: '#/definitions/internal_handlers.groupDTO'
             type: array
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: List groups
@@ -2816,30 +2769,30 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.groupRequest'
+          $ref: '#/definitions/internal_handlers.groupRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/handlers.groupDTO'
+            $ref: '#/definitions/internal_handlers.groupDTO'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Create a group
@@ -2860,19 +2813,19 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Delete a group
@@ -2892,23 +2845,23 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.groupDTO'
+            $ref: '#/definitions/internal_handlers.groupDTO'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Get a group
@@ -2929,34 +2882,34 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.groupRequest'
+          $ref: '#/definitions/internal_handlers.groupRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.groupDTO'
+            $ref: '#/definitions/internal_handlers.groupDTO'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Update a group
@@ -2979,24 +2932,24 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/handlers.readingListDTO'
+              $ref: '#/definitions/internal_handlers.readingListDTO'
             type: array
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: List group reading lists
@@ -3018,26 +2971,26 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.shareListRequest'
+          $ref: '#/definitions/internal_handlers.shareListRequest'
       responses:
         "204":
           description: No Content
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Share a reading list with a group
@@ -3064,19 +3017,19 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Unshare a reading list from a group
@@ -3098,24 +3051,24 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/handlers.groupMemberDTO'
+              $ref: '#/definitions/internal_handlers.groupMemberDTO'
             type: array
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: List group members
@@ -3136,26 +3089,26 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.addGroupMemberRequest'
+          $ref: '#/definitions/internal_handlers.addGroupMemberRequest'
       responses:
         "204":
           description: No Content
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Add a group member
@@ -3182,19 +3135,19 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Remove a group member
@@ -3222,29 +3175,42 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/handlers.groupMemberProgressDTO'
+              $ref: '#/definitions/internal_handlers.groupMemberProgressDTO'
             type: array
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Get group reading progress
       tags:
       - Groups
+  /health:
+    get:
+      description: Returns server health status
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_server.healthResponse'
+      summary: Health check
+      tags:
+      - System
   /kobo/tokens:
     get:
       consumes:
@@ -3260,28 +3226,28 @@ paths:
           description: List of Kobo tokens
           schema:
             items:
-              $ref: '#/definitions/handlers.koboTokenDTO'
+              $ref: '#/definitions/internal_handlers.koboTokenDTO'
             type: array
         "201":
           description: Kobo token created
           schema:
-            $ref: '#/definitions/handlers.koboTokenCreateResponse'
+            $ref: '#/definitions/internal_handlers.koboTokenCreateResponse'
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "405":
           description: Method not allowed
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: List and create Kobo sync tokens
@@ -3301,28 +3267,28 @@ paths:
           description: List of Kobo tokens
           schema:
             items:
-              $ref: '#/definitions/handlers.koboTokenDTO'
+              $ref: '#/definitions/internal_handlers.koboTokenDTO'
             type: array
         "201":
           description: Kobo token created
           schema:
-            $ref: '#/definitions/handlers.koboTokenCreateResponse'
+            $ref: '#/definitions/internal_handlers.koboTokenCreateResponse'
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "405":
           description: Method not allowed
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: List and create Kobo sync tokens
@@ -3346,23 +3312,23 @@ paths:
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Token not found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "405":
           description: Method not allowed
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Delete a Kobo sync token
@@ -3382,33 +3348,33 @@ paths:
         "200":
           description: Credential returned or updated
           schema:
-            $ref: '#/definitions/handlers.credentialResponse'
+            $ref: '#/definitions/internal_handlers.credentialResponse'
         "204":
           description: Credential deleted
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: No KOSync credentials configured
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "405":
           description: Method not allowed
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "409":
           description: Username already taken
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Manage KOSync credentials
@@ -3427,33 +3393,33 @@ paths:
         "200":
           description: Credential returned or updated
           schema:
-            $ref: '#/definitions/handlers.credentialResponse'
+            $ref: '#/definitions/internal_handlers.credentialResponse'
         "204":
           description: Credential deleted
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: No KOSync credentials configured
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "405":
           description: Method not allowed
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "409":
           description: Username already taken
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Manage KOSync credentials
@@ -3472,33 +3438,33 @@ paths:
         "200":
           description: Credential returned or updated
           schema:
-            $ref: '#/definitions/handlers.credentialResponse'
+            $ref: '#/definitions/internal_handlers.credentialResponse'
         "204":
           description: Credential deleted
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: No KOSync credentials configured
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "405":
           description: Method not allowed
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "409":
           description: Username already taken
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Manage KOSync credentials
@@ -3514,16 +3480,16 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/handlers.libraryDTO'
+              $ref: '#/definitions/internal_handlers.libraryDTO'
             type: array
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: List libraries
@@ -3539,34 +3505,34 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.libraryRequest'
+          $ref: '#/definitions/internal_handlers.libraryRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/handlers.libraryDTO'
+            $ref: '#/definitions/internal_handlers.libraryDTO'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Create a library
@@ -3587,23 +3553,23 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Delete a library
@@ -3623,23 +3589,23 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.libraryDTO'
+            $ref: '#/definitions/internal_handlers.libraryDTO'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Get a library
@@ -3660,38 +3626,38 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.libraryRequest'
+          $ref: '#/definitions/internal_handlers.libraryRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.libraryDTO'
+            $ref: '#/definitions/internal_handlers.libraryDTO'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Update a library
@@ -3720,19 +3686,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.bookListDTO'
+            $ref: '#/definitions/internal_handlers.bookListDTO'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: List books in a library
@@ -3752,33 +3718,33 @@ paths:
         "200":
           description: Credential returned or updated
           schema:
-            $ref: '#/definitions/handlers.credentialResponse'
+            $ref: '#/definitions/internal_handlers.credentialResponse'
         "204":
           description: Credential deleted
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: No OPDS credentials configured
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "405":
           description: Method not allowed
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "409":
           description: Username already taken
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Manage OPDS credentials
@@ -3797,33 +3763,33 @@ paths:
         "200":
           description: Credential returned or updated
           schema:
-            $ref: '#/definitions/handlers.credentialResponse'
+            $ref: '#/definitions/internal_handlers.credentialResponse'
         "204":
           description: Credential deleted
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: No OPDS credentials configured
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "405":
           description: Method not allowed
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "409":
           description: Username already taken
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Manage OPDS credentials
@@ -3842,33 +3808,33 @@ paths:
         "200":
           description: Credential returned or updated
           schema:
-            $ref: '#/definitions/handlers.credentialResponse'
+            $ref: '#/definitions/internal_handlers.credentialResponse'
         "204":
           description: Credential deleted
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: No OPDS credentials configured
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "405":
           description: Method not allowed
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "409":
           description: Username already taken
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Manage OPDS credentials
@@ -3884,16 +3850,16 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/handlers.readingListDTO'
+              $ref: '#/definitions/internal_handlers.readingListDTO'
             type: array
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: List reading lists
@@ -3909,30 +3875,30 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.readingListRequest'
+          $ref: '#/definitions/internal_handlers.readingListRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/handlers.readingListDTO'
+            $ref: '#/definitions/internal_handlers.readingListDTO'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Create a reading list
@@ -3953,19 +3919,19 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Delete a reading list
@@ -3985,23 +3951,23 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.readingListDTO'
+            $ref: '#/definitions/internal_handlers.readingListDTO'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Get a reading list
@@ -4023,34 +3989,34 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.readingListRequest'
+          $ref: '#/definitions/internal_handlers.readingListRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.readingListDTO'
+            $ref: '#/definitions/internal_handlers.readingListDTO'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Update a reading list
@@ -4080,23 +4046,23 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.bookListDTO'
+            $ref: '#/definitions/internal_handlers.bookListDTO'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: List books in a reading list
@@ -4117,26 +4083,26 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.addBookToReadingListRequest'
+          $ref: '#/definitions/internal_handlers.addBookToReadingListRequest'
       responses:
         "204":
           description: No Content
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Add a book to a reading list
@@ -4162,19 +4128,19 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Remove a book from a reading list
@@ -4190,19 +4156,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.readingProgressStatsResponse'
+            $ref: '#/definitions/internal_handlers.readingProgressStatsResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "405":
           description: Method not allowed
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Get reading progress statistics
@@ -4224,20 +4190,20 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/handlers.bookSummaryDTO'
+              $ref: '#/definitions/internal_handlers.bookSummaryDTO'
             type: array
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "405":
           description: Method Not Allowed
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Get book recommendations
@@ -4253,16 +4219,16 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/handlers.seriesDTO'
+              $ref: '#/definitions/internal_handlers.seriesDTO'
             type: array
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: List series
@@ -4278,30 +4244,30 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.seriesRequest'
+          $ref: '#/definitions/internal_handlers.seriesRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/handlers.seriesDTO'
+            $ref: '#/definitions/internal_handlers.seriesDTO'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Create a series
@@ -4322,19 +4288,19 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Delete a series
@@ -4354,23 +4320,23 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.seriesDTO'
+            $ref: '#/definitions/internal_handlers.seriesDTO'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Get a series
@@ -4391,34 +4357,34 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.seriesRequest'
+          $ref: '#/definitions/internal_handlers.seriesRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.seriesDTO'
+            $ref: '#/definitions/internal_handlers.seriesDTO'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Update a series
@@ -4448,23 +4414,23 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.bookListDTO'
+            $ref: '#/definitions/internal_handlers.bookListDTO'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: List books in a series
@@ -4485,23 +4451,23 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/db.YearInBooks'
+            $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.YearInBooks'
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "405":
           description: Method not allowed
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Get Year in Books statistics
@@ -4519,28 +4485,28 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/handlers.tagDTO'
+              $ref: '#/definitions/internal_handlers.tagDTO'
             type: array
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/handlers.tagDTO'
+            $ref: '#/definitions/internal_handlers.tagDTO'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: List or create tags
@@ -4557,28 +4523,28 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/handlers.tagDTO'
+              $ref: '#/definitions/internal_handlers.tagDTO'
             type: array
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/handlers.tagDTO'
+            $ref: '#/definitions/internal_handlers.tagDTO'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: List or create tags
@@ -4601,29 +4567,29 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.tagDTO'
+            $ref: '#/definitions/internal_handlers.tagDTO'
         "204":
           description: No Content
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Get, update, or delete a tag
@@ -4645,29 +4611,29 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.tagDTO'
+            $ref: '#/definitions/internal_handlers.tagDTO'
         "204":
           description: No Content
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Get, update, or delete a tag
@@ -4689,34 +4655,47 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.tagDTO'
+            $ref: '#/definitions/internal_handlers.tagDTO'
         "204":
           description: No Content
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Get, update, or delete a tag
       tags:
       - Tags
+  /version:
+    get:
+      description: Returns the server version
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_server.versionResponse'
+      summary: Get server version
+      tags:
+      - System
 securityDefinitions:
   BearerAuth:
     description: Enter "Bearer {token}"
