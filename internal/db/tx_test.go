@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -95,13 +96,13 @@ func TestWithTx_WrapsCommitError(t *testing.T) {
 		// Roll back the transaction inside fn so that WithTx proceeds to call
 		// tx.Commit() on an already-done transaction. Return nil explicitly so
 		// WithTx always reaches the commit path.
-		_ = tx.Rollback()
+		require.NoError(t, tx.Rollback(), "manual rollback inside fn should succeed")
 		return nil
 	})
 
 	require.Error(t, err, "WithTx should propagate the commit error")
 	require.ErrorIs(t, err, sql.ErrTxDone, "commit error should wrap sql.ErrTxDone")
-	require.ErrorContains(t, err, "commit tx:", "commit error must carry 'commit tx:' prefix")
+	require.True(t, strings.HasPrefix(err.Error(), "commit tx:"), "commit error must start with 'commit tx:' prefix, got: %s", err.Error())
 }
 
 // TestDeferRollback_IgnoresErrTxDone verifies that deferRollback does not
