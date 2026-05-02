@@ -2,7 +2,9 @@ package server
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -258,7 +260,10 @@ func (s *Server) handleSignupEnabled(w http.ResponseWriter, r *http.Request) {
 
 	registrationDisabled := false
 	if s.DB != nil {
-		if val, err := s.DB.GetSetting(r.Context(), db.SettingRegistrationDisabled); err == nil {
+		val, err := s.DB.GetSetting(r.Context(), db.SettingRegistrationDisabled)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			slog.WarnContext(r.Context(), "failed to read registration_disabled setting; reporting signup as enabled", slog.Any(otelkeys.Error, err))
+		} else {
 			registrationDisabled, _ = strconv.ParseBool(val)
 		}
 	}

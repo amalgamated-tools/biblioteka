@@ -46,7 +46,8 @@
         const config = await getRegistrationConfig();
         registrationDisabled = config.registration_disabled;
       } catch {
-        // ignore — admin-only; non-admins won't reach this tab
+        registrationError =
+          "Failed to load registration config. The status shown below may be stale.";
       }
     })();
   });
@@ -200,7 +201,9 @@
     </h3>
     <p class="text-sm text-ink-500 dark:text-ink-300 mb-4">
       When disabled, new users cannot sign up through the public registration
-      form. Admins can still create accounts via the admin panel.
+      form. Admins can still create accounts via the admin panel. Note: If OIDC
+      login is configured, disabling registration will also prevent existing
+      OIDC users from signing in until re-enabled.
     </p>
 
     {#if registrationError}
