@@ -54,5 +54,5 @@ func (h *BookHandler) getBookSeries(w http.ResponseWriter, r *http.Request, book
 func (h *BookHandler) putBookSeries(w http.ResponseWriter, r *http.Request, bookID string) {
 	putBookSubResource(w, r, bookID, h.DB.GetBookSeries, h.DB.SetBookSeries,
 		func(req *setBookSeriesRequest) []db.BookSeriesInput { return req.Entries },
-		toBookSeriesEntryDTO, "book series")
+		toBookSeriesEntryDTO, "book series", h.DB, db.AuditActionBookSeriesUpdated)
 }

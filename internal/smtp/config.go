@@ -11,6 +11,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/amalgamated-tools/biblioteka/internal/ssrf"
 )
 
 // ValidationError is returned by ValidateForSend when the smtp configuration
@@ -117,7 +119,8 @@ func IsLoopbackHost(host string) bool {
 	return false
 }
 
-// ValidateHost checks that host is a syntactically valid SMTP hostname.
+// ValidateHost checks that host is a syntactically valid SMTP hostname and
+// does not resolve to a private, loopback, or link-local address (SSRF protection).
 func ValidateHost(host string) error {
 	if host == "" {
 		return validationErr("host is required")
@@ -133,6 +136,17 @@ func ValidateHost(host string) error {
 	}
 	if strings.Contains(host, ":") && net.ParseIP(host) == nil {
 		return validationErr("host must not contain a port; specify the port separately")
+	}
+	// Block literal private/loopback/link-local IP addresses.
+	if ip := net.ParseIP(host); ip != nil {
+		if ssrf.IsPrivateIP(ip) {
+			return validationErr("SMTP host must not be a private, loopback, or link-local address")
+		}
+		return nil
+	}
+	// Block well-known loopback hostnames (e.g. "localhost").
+	if IsLoopbackHost(host) {
+		return validationErr("SMTP host must not be a private, loopback, or link-local address")
 	}
 	return nil
 }

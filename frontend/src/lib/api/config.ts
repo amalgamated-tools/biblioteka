@@ -2,6 +2,7 @@ import type {
   ConfigStatus,
   LLMConfig,
   OIDCConfig,
+  RegistrationConfig,
   SetLLMConfigInput,
   SetOIDCConfigInput,
   SMTPConfig,
@@ -61,4 +62,14 @@ export async function setLLMConfig(
   config: SetLLMConfigInput,
 ): Promise<LLMConfig> {
   return request<LLMConfig>("PUT", "/api/config/llm", config);
+}
+
+export async function getRegistrationConfig(): Promise<RegistrationConfig> {
+  return request<RegistrationConfig>("GET", "/api/config/registration");
+}
+
+export async function setRegistrationConfig(
+  config: RegistrationConfig,
+): Promise<RegistrationConfig> {
+  return request<RegistrationConfig>("PUT", "/api/config/registration", config);
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	pathpkg "path"
+	"slices"
 	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
@@ -329,13 +330,7 @@ func parseScalar(ctx context.Context, key, value string, out *ExifToolOutput) {
 				continue
 			}
 			// Avoid adding duplicate subjects if multiple Subject lines contain overlapping values.
-			exists := false
-			for _, existing := range out.Subjects {
-				if existing == subject {
-					exists = true
-					break
-				}
-			}
+			exists := slices.Contains(out.Subjects, subject)
 			if !exists {
 				out.Subjects = append(out.Subjects, subject)
 			}

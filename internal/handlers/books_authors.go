@@ -1,6 +1,10 @@
 package handlers
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/amalgamated-tools/biblioteka/internal/db"
+)
 
 // setBookAuthorsRequest is the request body for setting book authors.
 type setBookAuthorsRequest struct {
@@ -42,5 +46,5 @@ func (h *BookHandler) getBookAuthors(w http.ResponseWriter, r *http.Request, boo
 func (h *BookHandler) putBookAuthors(w http.ResponseWriter, r *http.Request, bookID string) {
 	putBookSubResource(w, r, bookID, h.DB.GetBookAuthors, h.DB.SetBookAuthors,
 		func(req *setBookAuthorsRequest) []string { return req.AuthorIDs },
-		toAuthorDTO, "book authors")
+		toAuthorDTO, "book authors", h.DB, db.AuditActionBookAuthorsUpdated)
 }

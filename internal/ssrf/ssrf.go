@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 	"time"
 )
@@ -124,13 +125,7 @@ func ValidateURL(ctx context.Context, rawURL, fieldName string, schemes []string
 		return fmt.Errorf("invalid %s: %w", fieldName, err)
 	}
 
-	validScheme := false
-	for _, s := range schemes {
-		if u.Scheme == s {
-			validScheme = true
-			break
-		}
-	}
+	validScheme := slices.Contains(schemes, u.Scheme)
 	if !validScheme {
 		schemeList := strings.Join(schemes, " or ")
 		return fmt.Errorf("%s must use the %s scheme", fieldName, schemeList)
