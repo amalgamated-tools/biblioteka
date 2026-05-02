@@ -170,25 +170,25 @@ func MakeTestEPUBWithOptions(t *testing.T, path, title, creator, identifier stri
   </rootfiles>
 </container>`)
 
-	var extraMeta string
+	var extraMeta strings.Builder
 	if opts.Description != "" {
-		extraMeta += "\n    <dc:description>" + xmlEscape(opts.Description) + "</dc:description>"
+		extraMeta.WriteString("\n    <dc:description>" + xmlEscape(opts.Description) + "</dc:description>")
 	}
 	if opts.Publisher != "" {
-		extraMeta += "\n    <dc:publisher>" + xmlEscape(opts.Publisher) + "</dc:publisher>"
+		extraMeta.WriteString("\n    <dc:publisher>" + xmlEscape(opts.Publisher) + "</dc:publisher>")
 	}
 	if opts.PublicationDate != "" {
 		if version == "2.0" {
-			extraMeta += `
-    <dc:date opf:event="publication">` + xmlEscape(opts.PublicationDate) + `</dc:date>`
+			extraMeta.WriteString(`
+    <dc:date opf:event="publication">` + xmlEscape(opts.PublicationDate) + `</dc:date>`)
 		} else {
-			extraMeta += `
-    <dc:date>` + xmlEscape(opts.PublicationDate) + `</dc:date>`
+			extraMeta.WriteString(`
+    <dc:date>` + xmlEscape(opts.PublicationDate) + `</dc:date>`)
 		}
 	}
 
 	for _, subject := range opts.Subjects {
-		extraMeta += "\n    <dc:subject>" + xmlEscape(subject) + "</dc:subject>"
+		extraMeta.WriteString("\n    <dc:subject>" + xmlEscape(subject) + "</dc:subject>")
 	}
 
 	escapedTitle := xmlEscape(title)
@@ -216,8 +216,8 @@ func MakeTestEPUBWithOptions(t *testing.T, path, title, creator, identifier stri
 			}, manifestItems...)
 		} else {
 			// EPUB2 cover: <meta name="cover" content="cover-image"/> referencing manifest item id.
-			extraMeta += `
-    <meta name="cover" content="cover-image"/>`
+			extraMeta.WriteString(`
+    <meta name="cover" content="cover-image"/>`)
 			manifestItems = append([]string{
 				`    <item id="cover-image" href="` + xmlEscape(coverHref) + `" media-type="` + xmlEscape(coverMediaType) + `"/>`,
 			}, manifestItems...)
@@ -231,7 +231,7 @@ func MakeTestEPUBWithOptions(t *testing.T, path, title, creator, identifier stri
     <dc:title>`+escapedTitle+`</dc:title>
     <dc:creator>`+escapedCreator+`</dc:creator>
     <dc:identifier id="uid">`+escapedIdentifier+`</dc:identifier>
-    <dc:language>`+escapedLang+`</dc:language>`+extraMeta+`
+    <dc:language>`+escapedLang+`</dc:language>`+extraMeta.String()+`
   </metadata>
   <manifest>
 `+strings.Join(manifestItems, "\n")+`

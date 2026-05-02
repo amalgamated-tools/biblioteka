@@ -103,6 +103,8 @@ func (h *ConfigHandler) HandleSetOIDCConfig(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	userID := auth.UserIDFromContext(r.Context())
+
 	var req setOIDCConfigRequest
 	if !decodeJSON(r, w, &req) {
 		return
@@ -197,6 +199,8 @@ func (h *ConfigHandler) HandleSetOIDCConfig(w http.ResponseWriter, r *http.Reque
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to save OIDC configuration")
 		return
 	}
+
+	logAudit(r.Context(), h.DB, userID, db.AuditActionOIDCConfigUpdated, "config", "oidc", nil)
 
 	if h.OnOIDCConfigSet != nil {
 		if err := h.OnOIDCConfigSet(r.Context(), issuerURL, clientID, clientSecret, redirectURI); err != nil {

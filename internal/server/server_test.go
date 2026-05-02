@@ -296,6 +296,26 @@ func TestHandleSignupEnabled_Disabled(t *testing.T) {
 	require.False(t, body.Enabled)
 }
 
+func TestHandleSignupEnabled_DisabledByDBSetting(t *testing.T) {
+	d := newTestDB(t)
+	require.NoError(t, d.SetSetting(t.Context(), db.SettingRegistrationDisabled, "true"))
+
+	s := &Server{
+		authHandler: &handlers.AuthHandler{AuthHandler: goauthhandler.AuthHandler{DisableSignup: false}},
+		DB:          d,
+	}
+	req := httptest.NewRequest(http.MethodGet, "/api/auth/signup/enabled", nil)
+	rec := httptest.NewRecorder()
+
+	s.handleSignupEnabled(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+
+	var body enabledResponse
+	require.NoError(t, json.NewDecoder(rec.Body).Decode(&body), "decode body")
+	require.False(t, body.Enabled)
+}
+
 func TestHandleSignupEnabled_MethodNotAllowed(t *testing.T) {
 	s := &Server{
 		authHandler: &handlers.AuthHandler{},

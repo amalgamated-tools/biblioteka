@@ -183,6 +183,8 @@ func (h *KOSyncHandler) putProgress(w http.ResponseWriter, r *http.Request) {
 		deviceID = &req.DeviceID
 	}
 
+	// Reading-progress syncs are high-frequency device events; audit logging is
+	// intentionally omitted to avoid unbounded audit log growth.
 	p, err := h.DB.UpsertReadingProgress(ctx, userID, req.Document, req.Progress, req.Percentage, device, deviceID)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to upsert reading progress",
