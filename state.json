@@ -1,9 +1,7 @@
 {
-  "last_run": "2026-04-30T20:38:17Z",
+  "last_run": "2026-05-02T20:26:04Z",
   "tasks_run": [
-    "task2",
-    "task3",
-    "task4",
+    "task6",
     "task7"
   ],
   "commands": {
@@ -132,9 +130,15 @@
     },
     {
       "id": "authors-series-lower-name-sort",
-      "status": "pr_created",
-      "branch": "perf-assist/authors-series-lower-name-sort-20260430",
+      "status": "merged",
+      "pr_number": 2702,
       "description": "Use LOWER(name) in ORDER BY for ListAuthors* and ListSeries* to use existing CI functional indexes instead of temp B-tree sort"
+    },
+    {
+      "id": "bench-ai-enrichment",
+      "status": "pr_created",
+      "branch": "perf-assist/bench-ai-enrichment-20260502",
+      "description": "BenchmarkGetPendingAIEnrichmentByBook - verifies idx_ai_enrichments_user_book_status covers (user_id, book_id, status, created_at DESC); baseline 58605 ns/op"
     },
     {
       "id": "group-lists-reading-lists-temp-btree",
@@ -149,7 +153,8 @@
       "priority": "low"
     }
   ],
-  "monthly_activity_issue_number": 2424,
+  "monthly_activity_issue_number": null,
+  "monthly_activity_issue_month": "2026-05",
   "checked_off_items": [],
   "tasks_last_run": {
     "task1_commands": "2026-04-29T20:43:38Z",
@@ -157,7 +162,7 @@
     "task3_implement": "2026-04-30T20:38:17Z",
     "task4_pr_maintenance": "2026-04-30T20:38:17Z",
     "task5_comments": "2026-04-24T20:28:00Z",
-    "task6_infrastructure": "2026-04-27T20:37:00Z",
-    "task7_monthly_summary": "2026-04-30T20:38:17Z"
+    "task6_infrastructure": "2026-05-02T20:26:04Z",
+    "task7_monthly_summary": "2026-05-02T20:26:04Z"
   }
 }
