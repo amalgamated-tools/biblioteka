@@ -97,7 +97,7 @@ SELECT b.id, b.title, b.description, b.asin, b.isbn10, b.isbn13,
        b.created_at, b.updated_at
 FROM candidate_scores cs
 INNER JOIN books b ON b.id = cs.id
-ORDER BY cs.score DESC, b.created_at DESC
+ORDER BY cs.score DESC, b.created_at DESC, b.id DESC
 LIMIT $2
 OFFSET $3`, StatusReading, StatusFinished)
 
