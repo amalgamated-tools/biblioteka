@@ -8,6 +8,7 @@ import (
 const (
 	defaultPageLimit = 50
 	maxPageLimit     = 200
+	maxPageOffset    = maxPageLimit * 1000 // 200,000
 )
 
 // parseLimit extracts only the limit pagination parameter from the request query
@@ -36,6 +37,9 @@ func parseLimitOffset(r *http.Request, defaultLimit, maxLimit int) (int, int) {
 	if v := r.URL.Query().Get("offset"); v != "" {
 		n, err := strconv.Atoi(v)
 		if err == nil && n >= 0 {
+			if n > maxPageOffset {
+				n = maxPageOffset
+			}
 			offset = n
 		}
 	}
