@@ -11,9 +11,8 @@ const (
 )
 
 // parseLimit extracts only the limit pagination parameter from the request query
-// string. Use this for endpoints that do not support offset-based pagination
-// (e.g. scored recommendation feeds). Invalid or out-of-range values silently
-// fall back to safe defaults.
+// string. Use this for endpoints that do not support offset-based pagination.
+// Invalid or out-of-range values silently fall back to safe defaults.
 func parseLimit(r *http.Request, defaultLimit, maxLimit int) int {
 	limit := defaultLimit
 	if v := r.URL.Query().Get("limit"); v != "" {
