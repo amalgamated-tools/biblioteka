@@ -1,36 +1,29 @@
-# Agent Performance — 2026-05-02 | 23:45Z
+# Agent Performance — 2026-05-03 | 23:45Z
 
 ## Summary
-55 workflows configured | 50 runs (7d) | 37 infrastructure failures (May 1-2) | 8 open PRs | Day 13 repo-assist uncompiled
+55 workflows | 30 runs (7d) | 18/30 ok | 12 cancelled (concurrency cascade) | #2810 fix merged
 
 ## Top Performers
-Agentic Triage 90 | Contribution Guidelines Checker 88 | Duplicate Code Detector 85 | Glossary Maintainer 82 | Repository Quality Improver 80 | Metrics Collector 80
+Agentic Triage 92 | Contribution Guidelines Checker 88 | Duplicate Code Detector 86 | Schema Consistency Checker 83 | Repo Quality Improver 81 | Metrics Collector 80
 
 ## Critical Issues
-- ENGINE OUTAGE (May 1-2): copilot_driver.cjs missing caused 37 failures across 34 workflows — infrastructure issue, not agent quality
-- repo-assist: NOT compiled Day 13, all runs cancelled/failing (#2600)
-- Status-as-Issue Day 13: daily-repo-status #2786, daily-team-status #2779, daily-plan #2778
-- PR-triggered cancellation cascade: PR Nitpick (0%), Grumpy Reviewer (0%), Daily Perf Improver (17%) — concurrency policy
-- Update Docs: ~40% failure rate, 3.7M tokens on failed runs (#2674)
+- Concurrency cascade (Day 14+): Grumpy 0%, PR Nitpick 0%, Repo Assist 0%, Daily Perf 25%
+- repo-assist/#2810 fix: PENDING VERIFY (was Day 13 uncompiled)
+- Update Docs: ~40% failure rate (#2674 open)
+- Schema Consistency Checker: 5.2M tokens/run
 
-## Quality Outputs This Week
-- Duplicate Code Detector: #2787 (integer param parsing dup) + PR #2788 ✅
-- Repository Quality Improver: #2706 (mutation auditability, useful)
-- Daily Perf Improver: #2780 (BenchmarkGetPendingAIEnrichmentByBook)
-- Documentation Unbloat: #2782 (condensed SSRF bullets)
-- Update Docs: #2785, #2776, #2777 (audit action docs)
-- Daily Documentation Updater: 16 PRs in April period
+## Quality Outputs
+- Duplicate Code Detector: #2821 + PR #2822 (User-Owned Named Entity CRUD dup) ✅
+- Daily Perf Improver: #2818, #2813, #2814 (benchmarks) ✅
+- Update Docs: #2815, #2809, #2785, #2776, #2777 (5 docs PRs merged) ✅
+- Dependabot Bundler: #2800 (actions update) ✅
+- Discussion Task Miner: #2793-2796 ✅
+- Daily QA: #2797 ✅
 
-## vs Apr 30
-- [aw] failures: 1→37 ❌ (but 95% caused by infrastructure outage, not agent quality)
-- repo-assist: 12→13 days uncompiled ❌
-- status-as-issue: 11→13 ❌
-- PR-triggered concurrency: unresolved ❌
-- Duplicate Code Detector: new quality output ✅
+## PRs Merged (7d): 20 total (~15 agent-attributed)
 
-## Resource Concerns
-- Schema Consistency Checker: 5.2M tokens/single run (needs scoping)
-- Update Docs: 3.7M tokens on failed run
+## vs May 2
+Engine outage RESOLVED ✅ | concurrency UNCHANGED ❌ | repo-assist PENDING ✅? | PR merge rate 84% ✅
 
 ## Discussion Created
-"Agent Performance Report — 2026-05-02" (Audits)
+"Agent Performance Report — 2026-05-03" (Audits)
