@@ -1,7 +1,7 @@
 # Test Improver Memory — biblioteka
 
 ## Last Updated
-2026-05-01
+2026-05-03
 
 ## Build/Test/Coverage Commands
 
@@ -88,7 +88,8 @@ Frontend components: all covered
 - 2026-04-27: Tasks 1, 4, 5, 6, 7
 - 2026-04-30: Tasks 4, 5, 6, 3, 7
 - 2026-05-01: Tasks 1, 2, 7 (validate commands, scan opportunities, monthly issue)
-- Next run: Tasks 3, 4, 5, 6, 7
+- 2026-05-03: Tasks 4, 3, 7 (no open PRs; created registration config API test PR)
+- Next run: Tasks 1, 2, 5, 6, 7
 
 ## Testing Backlog (prioritized)
 
@@ -100,8 +101,9 @@ Frontend components: all covered
 6. ~~**kobo metadata branch coverage**~~ — PR #2592 merged ✅
 7. ~~**WithTx and deferRollback**~~ — PR #2654 merged ✅
 8. ~~**kobo sync pagination**~~ — PR #2690 merged ✅
-9. **organize path-escape defense-in-depth** — `filepath.Rel` escape guard has no dedicated test. Unreachable in normal operation. Low value.
-10. **Scan May additions** — scan each run for newly added features lacking test coverage
+9. ~~**registration config API frontend tests**~~ — PR branch test-assist/registration-config-api-tests (pending)
+10. **organize path-escape defense-in-depth** — `filepath.Rel` escape guard has no dedicated test. Unreachable in normal operation. Low value.
+11. **Scan May additions** — scan each run for newly added features lacking test coverage
 
 ## Maintainer Priorities
 - All previous monthly issues closed by veverkap as "completed"
@@ -110,8 +112,14 @@ Frontend components: all covered
 
 ## Completed Work
 
+### 2026-05-03
+- Tasks: 4 (no open PRs), 3 (frontend registration config API tests), 7 (created new May issue)
+- Created PR branch test-assist/registration-config-api-tests: 2 tests for getRegistrationConfig/setRegistrationConfig
+- Config.test.ts: 10 → 12 tests
+- Gap discovered: #2731 added registration config API functions but didn't update config.test.ts
+
 ### 2026-05-01
-- Tasks: 1 (validated commands, all pass), 2 (scanned recent refactors, no high-value gaps), 7 (closed April #2404, created May issue)
+- Tasks: 1 (validated commands, all pass), 2 (scanned recent refactors, no high-value gaps), 7 (closed April #2404, created May issue #2721)
 - Frontend: 1103 tests pass (92 test files)
 - Go: organize, ssrf, auth packages all pass
 - Scanned: types.ts split, bcrypt consolidation, getPendingAIEnrichmentOrErr, validateSSRFURL extraction — all well-covered
