@@ -15,7 +15,6 @@ on:
   workflow_dispatch:
   slash_command:
     name: perf-assist
-  reaction: "eyes"
 
 timeout-minutes: 60
 
