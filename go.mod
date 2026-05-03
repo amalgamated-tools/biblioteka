@@ -7,7 +7,7 @@ require (
 	github.com/amalgamated-tools/goauth v0.4.0
 	github.com/buger/jsonparser v1.2.0
 	github.com/coreos/go-oidc/v3 v3.18.0
-	github.com/go-webauthn/webauthn v0.17.0
+	github.com/go-webauthn/webauthn v0.17.2
 	github.com/google/uuid v1.6.0
 	github.com/hibiken/asynq v0.26.0
 	github.com/hibiken/asynqmon v0.7.2
