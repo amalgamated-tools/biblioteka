@@ -20,9 +20,14 @@
   let rejecting = $state(false);
   let error: string | null = $state(null);
 
+  let abortController: AbortController | null = null;
+
   $effect(() => {
-    loadEnrichment(bookId);
+    abortController?.abort();
+    abortController = new AbortController();
+    loadEnrichment(bookId, abortController.signal);
     return () => {
+      abortController?.abort();
       enrichment = null;
       loading = true;
       applying = false;
@@ -31,22 +36,23 @@
     };
   });
 
-  async function loadEnrichment(id: string) {
+  async function loadEnrichment(id: string, signal: AbortSignal) {
     loading = true;
     error = null;
     try {
-      const result = await api.getPendingAIEnrichment(id);
+      const result = await api.getPendingAIEnrichment(id, signal);
       if (bookId !== id) return;
       enrichment = result;
     } catch (e) {
       if (bookId !== id) return;
+      if (e instanceof Error && e.name === "AbortError") return;
       enrichment = null;
       // 404 means no pending enrichment — that's normal, render nothing
       if (!(e instanceof ApiError && e.status === 404)) {
         error = e instanceof Error ? e.message : "Failed to load AI enrichment";
       }
     } finally {
-      if (bookId === id) loading = false;
+      if (bookId === id && !signal.aborted) loading = false;
     }
   }
 

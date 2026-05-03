@@ -26,7 +26,10 @@ vi.mock("../../lib/api", () => ({
   bookFileDownloadUrl: (...args: [string]) => mockBookFileDownloadUrl(...args),
 }));
 
-vi.mock("./AIEnrichmentPanel.svelte", () => ({ default: () => {} }));
+const MockAIEnrichmentPanel = vi.hoisted(() => vi.fn());
+vi.mock("./AIEnrichmentPanel.svelte", () => ({
+  default: MockAIEnrichmentPanel,
+}));
 
 import BookDetail from "./BookDetail.svelte";
 
@@ -224,5 +227,29 @@ describe("BookDetail", () => {
     });
 
     expect(screen.queryByLabelText("Tags")).not.toBeInTheDocument();
+  });
+
+  it("re-fetches book data when AIEnrichmentPanel calls onApplied", async () => {
+    mockGetBook.mockResolvedValue(fakeBook);
+    render(BookDetail, { bookId: "b1" });
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+        "The Hobbit",
+      );
+    });
+
+    // The mock was called with (anchor, props) — grab onApplied from props
+    const onApplied = MockAIEnrichmentPanel.mock.calls.at(-1)?.[1]
+      ?.onApplied as (() => void) | undefined;
+    expect(onApplied).toBeDefined();
+
+    mockGetBook.mockResolvedValueOnce({ ...fakeBook, title: "Updated Title" });
+    onApplied!();
+
+    await waitFor(() => {
+      expect(mockGetBook).toHaveBeenCalledTimes(2);
+    });
+    expect(mockGetBook).toHaveBeenLastCalledWith("b1");
   });
 });

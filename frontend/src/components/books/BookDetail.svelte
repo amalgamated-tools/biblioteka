@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Book } from "../../types";
+  import { untrack } from "svelte";
   import { routerStore } from "../../stores/router.svelte";
   import * as api from "../../lib/api";
   import {
@@ -33,7 +34,7 @@
 
   async function loadBook(id: string) {
     const seq = ++fetchSeq;
-    book = null;
+    if (untrack(() => book?.id) !== id) book = null;
     loading = true;
     error = null;
     try {

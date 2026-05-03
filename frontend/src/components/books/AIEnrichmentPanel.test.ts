@@ -282,4 +282,33 @@ describe("AIEnrichmentPanel", () => {
     expect(screen.queryByText("Reading Level")).not.toBeInTheDocument();
     expect(screen.queryByText("Generated Description")).not.toBeInTheDocument();
   });
+
+  it("discards enrichment result when bookId changes before the request settles", async () => {
+    let resolveFirst!: (value: AIEnrichment) => void;
+    const firstRequest = new Promise<AIEnrichment>((resolve) => {
+      resolveFirst = resolve;
+    });
+    mockGetPendingAIEnrichment
+      .mockReturnValueOnce(firstRequest)
+      .mockResolvedValue(null);
+
+    const { rerender } = render(AIEnrichmentPanel, { bookId: "b1" });
+
+    // Navigate to a different book before the first request settles
+    await rerender({ bookId: "b2" });
+
+    // Resolve the stale first request with b1's enrichment
+    resolveFirst(fakeEnrichment);
+
+    // Wait for b2's request (which returns null) to finish
+    await waitFor(() => {
+      expect(
+        screen.queryByText("Checking for AI enrichment..."),
+      ).not.toBeInTheDocument();
+    });
+
+    // b1's enrichment must not be displayed
+    expect(screen.queryByTestId("ai-enrichment-panel")).not.toBeInTheDocument();
+    expect(screen.queryByText("AI Enrichment Review")).not.toBeInTheDocument();
+  });
 });
