@@ -589,3 +589,74 @@ func BenchmarkListSeries_100(b *testing.B) {
 		}
 	}
 }
+
+// ---- GetRecommendations ----
+
+// BenchmarkGetRecommendations exercises the full CTE-based recommendation
+// scoring query. The setup creates a realistic scenario:
+//   - 1 user with 5 read books spread across 2 authors and 1 series
+//   - 100 candidate (unread) books, 20 of which share an author and 10 of
+//     which are the next entry in a series the user is reading
+//
+// This covers all four scoring arms (author overlap, series continuation,
+// publisher match, and download popularity tiebreaker) and provides a
+// baseline for future optimisation of the recommendations query.
+func BenchmarkGetRecommendations(b *testing.B) {
+	d := newBenchDB(b)
+	ctx := b.Context()
+
+	user, err := d.CreateUser(ctx, "Bench User", "bench@example.com", "pw")
+	require.NoError(b, err, "CreateUser")
+
+	// Two shared authors.
+	authorA, err := d.CreateAuthor(ctx, "Author Alpha", nil, nil, nil, nil)
+	require.NoError(b, err, "CreateAuthor A")
+	authorB, err := d.CreateAuthor(ctx, "Author Beta", nil, nil, nil, nil)
+	require.NoError(b, err, "CreateAuthor B")
+
+	// One series that the user is partway through.
+	series, err := d.CreateSeries(ctx, "Bench Series", nil, nil, nil)
+	require.NoError(b, err, "CreateSeries")
+
+	pub := "Bench Publisher"
+
+	// Read books: 5 total, sharing the two authors and the series.
+	for i := range 5 {
+		pos := float64(i + 1)
+		bk, err := d.CreateBook(ctx, BookInput{Title: fmt.Sprintf("Read Book %02d", i+1), Publisher: &pub})
+		require.NoError(b, err, "CreateBook read")
+		if i%2 == 0 {
+			require.NoError(b, d.SetBookAuthors(ctx, bk.ID, []string{authorA.ID}), "SetBookAuthors A")
+		} else {
+			require.NoError(b, d.SetBookAuthors(ctx, bk.ID, []string{authorB.ID}), "SetBookAuthors B")
+		}
+		require.NoError(b, d.SetBookSeries(ctx, bk.ID, []BookSeriesInput{{SeriesID: series.ID, Position: &pos}}), "SetBookSeries")
+		_, err = d.UpsertKoboReadingState(ctx, user.ID, bk.ID, StatusFinished, nil, nil, nil, nil)
+		require.NoError(b, err, "UpsertKoboReadingState")
+	}
+
+	// 100 candidate books: 20 share an author, 10 are next-in-series, rest are unrelated.
+	for i := range 100 {
+		bk, err := d.CreateBook(ctx, BookInput{Title: fmt.Sprintf("Candidate Book %03d", i+1)})
+		require.NoError(b, err, "CreateBook candidate")
+		switch {
+		case i < 10:
+			// Next-in-series continuation (positions 6–15).
+			pos := float64(6 + i)
+			require.NoError(b, d.SetBookSeries(ctx, bk.ID, []BookSeriesInput{{SeriesID: series.ID, Position: &pos}}), "SetBookSeries candidate")
+			require.NoError(b, d.SetBookAuthors(ctx, bk.ID, []string{authorA.ID}), "SetBookAuthors candidate A")
+		case i < 30:
+			// Author-overlap-only candidates.
+			require.NoError(b, d.SetBookAuthors(ctx, bk.ID, []string{authorB.ID}), "SetBookAuthors candidate B")
+		}
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for range b.N {
+		_, err := d.GetRecommendations(ctx, user.ID, 20, 0)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
