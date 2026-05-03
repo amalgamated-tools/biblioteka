@@ -123,8 +123,8 @@ func (h *MetadataHandler) getPendingAIEnrichment(w http.ResponseWriter, r *http.
 	writeJSON(r.Context(), w, http.StatusOK, toAIEnrichmentDTO(enrichment))
 }
 
-// applyAIEnrichment applies a pending AI enrichment to the book.
-// It union-merges suggested tags and sets the description if the book has none.
+// applyAIEnrichment applies a pending AI enrichment to the book,
+// union-merging suggested tags and setting the description if the book has none.
 // All mutations (tags, description, status) are applied atomically.
 //
 //	@Summary		Apply AI enrichment

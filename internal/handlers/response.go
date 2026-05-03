@@ -33,7 +33,7 @@ func writeError(ctx context.Context, w http.ResponseWriter, status int, message 
 }
 
 // decodeJSON reads and decodes the JSON request body into v.
-// It returns true on success. On failure it writes a 400 error response and
+// Returns true on success; on failure writes a 400 error response and
 // returns false, so callers can simply return.
 func decodeJSON(r *http.Request, w http.ResponseWriter, v any) bool {
 	r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // 1 MiB cap

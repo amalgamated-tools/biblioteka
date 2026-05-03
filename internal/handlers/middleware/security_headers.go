@@ -18,7 +18,7 @@ const themeBootstrapScriptCSPHash = "sha256-fH8pmaGT8bEGA0OitMqoXdy+W8xbN89w8ghr
 // globalCSP is the Content-Security-Policy header value applied to all responses.
 // Individual route handlers (such as the Swagger UI) may override this with
 // more permissive or restrictive values for their particular use case.
-// It permits the embedded frontend's inline theme bootstrap script (via its
+// Permits the embedded frontend's inline theme bootstrap script (via its
 // SHA-256 hash) and Google Fonts stylesheet/font resources so the SPA continues
 // to render as intended when this middleware is applied globally.
 //

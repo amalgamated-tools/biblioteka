@@ -25,7 +25,7 @@ type annotationDTO struct {
 	Text      string       `json:"text"`
 	CFI       *string      `json:"cfi,omitempty"`
 	GroupID   *string      `json:"group_id,omitempty"`
-	UserName  string       `json:"user_name"`
+	Username  string       `json:"user_name"`
 	CreatedAt db.Timestamp `json:"created_at"`
 	UpdatedAt db.Timestamp `json:"updated_at"`
 }
@@ -52,7 +52,7 @@ func toAnnotationDTO(a *db.BookAnnotation) annotationDTO {
 		Text:      a.Text,
 		CFI:       a.CFI,
 		GroupID:   a.GroupID,
-		UserName:  a.UserName,
+		Username:  a.Username,
 		CreatedAt: a.CreatedAt,
 		UpdatedAt: a.UpdatedAt,
 	}

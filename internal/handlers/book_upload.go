@@ -42,7 +42,7 @@ type uploadAcceptedResponse struct {
 }
 
 // HandleUpload handles POST /api/books/upload.
-// It accepts a multipart/form-data request containing a book file and optional
+// Accepts a multipart/form-data request containing a book file and optional
 // metadata override fields, stages the file inside the target library's root
 // directory, and enqueues a background process:file job that performs metadata
 // extraction, file organisation, and database record creation.

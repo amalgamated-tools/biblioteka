@@ -14,7 +14,7 @@ import (
 )
 
 // mapSlice converts a slice of T to a slice of DTO using the provided converter.
-// It is a low-level slice transformer; for complete list endpoints (fetch → log → respond),
+// A low-level slice transformer; for complete list endpoints (fetch → log → respond),
 // prefer listEntities instead.
 func mapSlice[T any, DTO any](items []T, toDTO func(*T) DTO) []DTO {
 	dtos := make([]DTO, 0, len(items))
@@ -56,8 +56,8 @@ func listEntities[T any, DTO any](
 }
 
 // listUserEntities is like listEntities but filters by the authenticated user ID.
-// It calls list(ctx, userID), converts entities to DTOs, and writes the JSON
-// response. It always writes a JSON array (never null), matching the behavior of
+// Calls list(ctx, userID), converts entities to DTOs, and writes the JSON
+// response (always a JSON array, never null), matching the behavior of
 // listEntities.
 func listUserEntities[T any, DTO any](
 	w http.ResponseWriter,

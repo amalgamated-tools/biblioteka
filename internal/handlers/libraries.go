@@ -361,12 +361,12 @@ func (h *LibraryHandler) listLibraryBooks(w http.ResponseWriter, r *http.Request
 	)
 }
 
-// pathValidationTimeout is the maximum time allowed to stat all library paths.
-// It guards against blocking the HTTP handler goroutine on slow NFS/SMB mounts.
+// pathValidationTimeout is the maximum time allowed to stat all library paths,
+// guarding against blocking the HTTP handler goroutine on slow NFS/SMB mounts.
 const pathValidationTimeout = 5 * time.Second
 
-// validatePaths checks that every path in paths exists and is a directory.
-// It runs the filesystem checks in a background goroutine so that
+// validatePaths checks that every path in paths exists and is a directory,
+// running the filesystem checks in a background goroutine so that
 // pathValidationTimeout (via context) can abort a hung os.Stat call.
 func validatePaths(ctx context.Context, paths []string) error {
 	return validatePathsWith(ctx, paths, os.Stat)

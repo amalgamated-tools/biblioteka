@@ -34,8 +34,8 @@ type readingProgressStatsResponse struct {
 	InProgress    []readingProgressItemDTO `json:"in_progress"`
 }
 
-// HandleReadingProgressStats handles GET /api/reading-progress/stats.
-// It returns the authenticated user's reading streak, overall counts, and
+// HandleReadingProgressStats handles GET /api/reading-progress/stats
+// and returns the authenticated user's reading streak, overall counts, and
 // a list of documents currently in progress (0 < percentage < 0.99).
 //
 //	@Summary		Get reading progress statistics

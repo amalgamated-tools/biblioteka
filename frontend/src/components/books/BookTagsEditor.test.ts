@@ -2,6 +2,7 @@ import { describe, expect, it, vi, afterEach, beforeEach } from "vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/svelte";
 import { userEvent } from "@testing-library/user-event";
 import type { Tag } from "../../types";
+import { tagStore } from "../../stores/tags.svelte";
 
 vi.mock("lucide-svelte", () => ({
   X: () => {},
@@ -50,6 +51,11 @@ const fakeTag3: Tag = {
 describe("BookTagsEditor", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Reset tagStore singleton so load() re-fetches on each test
+    tagStore.loaded = false;
+    tagStore.loading = false;
+    tagStore.items = [];
+    tagStore.error = null;
   });
 
   afterEach(() => cleanup());

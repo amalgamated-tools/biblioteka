@@ -191,7 +191,7 @@ type ApplyAIEnrichmentInput struct {
 // tags, optionally updates the book description, and marks the enrichment as
 // applied within a single transaction. Reading existing tags inside the
 // transaction prevents concurrent tag updates from being silently lost.
-// It returns the updated AIEnrichment record.
+// Returns the updated AIEnrichment record.
 func (d *DB) ApplyAIEnrichment(ctx context.Context, input ApplyAIEnrichmentInput) (*AIEnrichment, error) {
 	slog.DebugContext(ctx, "db: applying AI enrichment",
 		slog.String(otelkeys.AIEnrichmentID, input.EnrichmentID),

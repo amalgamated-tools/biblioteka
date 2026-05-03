@@ -19,8 +19,8 @@ type RecommendationHandler struct {
 	DB *db.DB
 }
 
-// HandleRecommendations handles GET /api/recommendations.
-// It returns a scored list of books the user has not yet read, based on
+// HandleRecommendations handles GET /api/recommendations and returns a scored
+// list of books the user has not yet read, based on
 // author overlap, series continuation, publisher match, and download popularity.
 // Optional query parameter: limit (default 10, max 50).
 //

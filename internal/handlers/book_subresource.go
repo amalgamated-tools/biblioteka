@@ -73,7 +73,7 @@ func putBookSubResource[T any, DTO any, Req any, Payload any](
 }
 
 // listParentBooks is a generic helper for GET /{parent}/{id}/books endpoints.
-// It fetches a paginated list of books belonging to the given parent entity,
+// Fetches a paginated list of books belonging to the given parent entity,
 // handles errors, and writes the JSON response. If no books are found it
 // verifies the parent exists (returning 404 if not) before writing an empty
 // result. idAttr is a slog attribute identifying the parent (e.g.

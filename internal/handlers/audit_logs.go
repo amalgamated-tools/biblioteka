@@ -49,7 +49,7 @@ func toAuditLogDTO(e *db.AuditLog) auditLogDTO {
 }
 
 // HandleAuditLogs handles GET /api/audit-logs (admin only).
-// It accepts optional query parameters:
+// Accepts optional query parameters:
 //
 //	limit  - number of entries per page (default 50, max 200)
 //	offset - number of entries to skip (default 0)

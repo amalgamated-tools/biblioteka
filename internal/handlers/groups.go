@@ -38,14 +38,14 @@ type groupDTO struct {
 type groupMemberDTO struct {
 	GroupID  string       `json:"group_id"`
 	UserID   string       `json:"user_id"`
-	UserName string       `json:"user_name"`
+	Username string       `json:"user_name"`
 	Role     string       `json:"role"`
 	JoinedAt db.Timestamp `json:"joined_at"`
 }
 
 type groupMemberProgressDTO struct {
 	UserID     string        `json:"user_id"`
-	UserName   string        `json:"user_name"`
+	Username   string        `json:"user_name"`
 	Percentage float64       `json:"percentage"`
 	UpdatedAt  *db.Timestamp `json:"updated_at"`
 }
@@ -66,7 +66,7 @@ func toGroupMemberDTO(m *db.ReadingGroupMember) groupMemberDTO {
 	return groupMemberDTO{
 		GroupID:  m.GroupID,
 		UserID:   m.UserID,
-		UserName: m.UserName,
+		Username: m.Username,
 		Role:     m.Role,
 		JoinedAt: m.JoinedAt,
 	}
@@ -75,7 +75,7 @@ func toGroupMemberDTO(m *db.ReadingGroupMember) groupMemberDTO {
 func toGroupMemberProgressDTO(p *db.GroupMemberProgress) groupMemberProgressDTO {
 	return groupMemberProgressDTO{
 		UserID:     p.UserID,
-		UserName:   p.UserName,
+		Username:   p.Username,
 		Percentage: p.Percentage,
 		UpdatedAt:  p.UpdatedAt,
 	}

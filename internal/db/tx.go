@@ -11,7 +11,7 @@ import (
 )
 
 // deferRollback is intended to be used with defer to roll back a transaction.
-// It silently ignores sql.ErrTxDone (which means the transaction was already
+// Silently ignores sql.ErrTxDone (which means the transaction was already
 // committed or rolled back) and logs a warning for any other rollback error.
 func deferRollback(ctx context.Context, tx *sql.Tx) {
 	if err := tx.Rollback(); err != nil && !errors.Is(err, sql.ErrTxDone) {

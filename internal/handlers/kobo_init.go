@@ -9,8 +9,8 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
-// HandleInit handles GET /v1/initialization.
-// It returns the Kobo API resource map pointing back to this server.
+// HandleInit handles GET /v1/initialization
+// and returns the Kobo API resource map pointing back to this server.
 func (h *KoboHandler) HandleInit(w http.ResponseWriter, r *http.Request) {
 	tokenValue := auth.KoboTokenFromContext(r.Context())
 	base := schemeAndHost(r)

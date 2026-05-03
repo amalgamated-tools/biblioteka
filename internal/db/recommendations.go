@@ -8,8 +8,8 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
-// recommendationsQuery is the CTE-based scoring query used by GetRecommendations.
-// It works for both SQLite and PostgreSQL.
+// recommendationsQuery is the CTE-based scoring query used by GetRecommendations,
+// compatible with both SQLite and PostgreSQL.
 //
 // Scoring weights:
 //   - +3 per shared author with a read/reading book

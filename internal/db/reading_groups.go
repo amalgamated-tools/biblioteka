@@ -36,7 +36,7 @@ type ReadingGroup struct {
 type ReadingGroupMember struct {
 	GroupID  string    `json:"group_id"`
 	UserID   string    `json:"user_id"`
-	UserName string    `json:"user_name"`
+	Username string    `json:"user_name"`
 	Role     string    `json:"role"`
 	JoinedAt Timestamp `json:"joined_at"`
 }
@@ -49,12 +49,12 @@ func scanReadingGroup(row interface{ Scan(...any) error }) (*ReadingGroup, error
 
 func scanReadingGroupMember(row interface{ Scan(...any) error }) (*ReadingGroupMember, error) {
 	return scanRow(row, func(m *ReadingGroupMember) []any {
-		return []any{&m.GroupID, &m.UserID, &m.UserName, &m.Role, &m.JoinedAt}
+		return []any{&m.GroupID, &m.UserID, &m.Username, &m.Role, &m.JoinedAt}
 	})
 }
 
 // CreateGroup creates a new reading group and inserts the owner as a member with role="owner".
-// It uses explicit transaction handling rather than namedEntityCreate because this is a
+// Uses explicit transaction handling rather than namedEntityCreate because this is a
 // multi-step create operation that must atomically insert both the group row and the owner's
 // membership row.
 func (d *DB) CreateGroup(ctx context.Context, ownerID, name string, description *string) (*ReadingGroup, error) {
@@ -284,14 +284,14 @@ func (d *DB) IsMember(ctx context.Context, groupID, userID string) (bool, error)
 // GroupMemberProgress holds reading progress info for a group member on a specific book.
 type GroupMemberProgress struct {
 	UserID     string     `json:"user_id"`
-	UserName   string     `json:"user_name"`
+	Username   string     `json:"user_name"`
 	Percentage float64    `json:"percentage"`
 	UpdatedAt  *Timestamp `json:"updated_at"`
 }
 
 func scanGroupMemberProgress(row interface{ Scan(...any) error }) (*GroupMemberProgress, error) {
 	return scanRow(row, func(p *GroupMemberProgress) []any {
-		return []any{&p.UserID, &p.UserName, &p.Percentage, &p.UpdatedAt}
+		return []any{&p.UserID, &p.Username, &p.Percentage, &p.UpdatedAt}
 	})
 }
 

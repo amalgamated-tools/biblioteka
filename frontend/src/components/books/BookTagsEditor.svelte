@@ -13,7 +13,6 @@
   let { bookId, disabled = false }: Props = $props();
 
   let assignedTags: Tag[] = $state.raw([]);
-  let allTags: Tag[] = $state.raw([]);
   let loading = $state(true);
   let saving = $state(false);
   let error: string | null = $state(null);
@@ -38,18 +37,16 @@
     loading = true;
     error = null;
     assignedTags = [];
-    allTags = [];
     searchText = "";
     dropdownOpen = false;
     activeIndex = -1;
     try {
-      const [bookTags, tags] = await Promise.all([
+      const [bookTags] = await Promise.all([
         api.getBookTags(id),
-        api.listTags(),
+        tagStore.load(),
       ]);
       if (seq !== fetchSeq) return;
       assignedTags = bookTags;
-      allTags = tags;
     } catch (e) {
       if (seq !== fetchSeq) return;
       error = e instanceof Error ? e.message : "Failed to load tags";
@@ -61,7 +58,7 @@
   let assignedIds = $derived(new Set(assignedTags.map((t) => t.id)));
 
   let filteredTags = $derived(
-    allTags.filter(
+    tagStore.items.filter(
       (t) =>
         !assignedIds.has(t.id) &&
         t.name.toLowerCase().includes(searchText.toLowerCase().trim()),
@@ -69,7 +66,7 @@
   );
 
   let exactMatch = $derived(
-    allTags.some(
+    tagStore.items.some(
       (t) => t.name.toLowerCase() === searchText.toLowerCase().trim(),
     ),
   );
@@ -127,7 +124,6 @@
     error = null;
     try {
       const created = await tagStore.add({ name });
-      allTags = [...allTags, created];
       await addTag(created);
     } catch (e) {
       error = e instanceof Error ? e.message : "Failed to create tag";

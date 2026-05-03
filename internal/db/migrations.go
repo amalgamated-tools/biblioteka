@@ -15,7 +15,7 @@ import (
 )
 
 // RunMigrations runs all pending database migrations on the given connection.
-// It is exported so that packages outside db (e.g. handler tests) can set up
+// Exported so that packages outside db (e.g. handler tests) can set up
 // a fully-migrated in-memory database without duplicating the schema inline.
 func RunMigrations(ctx context.Context, sqlDB *sql.DB, dialect Dialect) error {
 	d := &DB{DB: sqlDB, Dialect: dialect}

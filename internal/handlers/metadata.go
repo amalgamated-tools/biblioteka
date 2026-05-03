@@ -25,7 +25,7 @@ type MetadataHandler struct {
 }
 
 // HandleBookMetadata dispatches /api/books/{id}/metadata and its sub-paths.
-// It expects the bookID to have already been extracted from the URL path.
+// Expects the bookID to have already been extracted from the URL path.
 func (h *MetadataHandler) HandleBookMetadata(w http.ResponseWriter, r *http.Request, bookID string) {
 	// Extract the action segment after /api/books/{id}/metadata/ using the
 	// shared path helper. For bare /metadata, action will be "" (ok == false).

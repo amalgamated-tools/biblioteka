@@ -15,7 +15,7 @@ type BookAnnotation struct {
 	Text      string    `json:"text"`
 	CFI       *string   `json:"cfi,omitempty"`
 	GroupID   *string   `json:"group_id,omitempty"`
-	UserName  string    `json:"user_name"`
+	Username  string    `json:"user_name"`
 	CreatedAt Timestamp `json:"created_at"`
 	UpdatedAt Timestamp `json:"updated_at"`
 }
@@ -24,7 +24,7 @@ const bookAnnotationColumns = `ba.id, ba.user_id, ba.book_id, ba.text, ba.cfi, b
 
 func scanBookAnnotation(row interface{ Scan(...any) error }) (*BookAnnotation, error) {
 	return scanRow(row, func(a *BookAnnotation) []any {
-		return []any{&a.ID, &a.UserID, &a.BookID, &a.Text, &a.CFI, &a.GroupID, &a.UserName, &a.CreatedAt, &a.UpdatedAt}
+		return []any{&a.ID, &a.UserID, &a.BookID, &a.Text, &a.CFI, &a.GroupID, &a.Username, &a.CreatedAt, &a.UpdatedAt}
 	})
 }
 

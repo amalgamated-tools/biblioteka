@@ -40,7 +40,7 @@ type calibreSource struct {
 }
 
 // HandlePreview handles POST /api/calibre-import/preview.
-// It accepts either a multipart/form-data upload of a Calibre metadata.db or a
+// Accepts either a multipart/form-data upload of a Calibre metadata.db or a
 // JSON body with a server-side filesystem path, parses the database, and returns
 // a summary of the books that would be imported — without writing anything to
 // the Biblioteka database.
@@ -89,7 +89,7 @@ func (h *CalibreImportHandler) HandlePreview(w http.ResponseWriter, r *http.Requ
 }
 
 // HandleImport handles POST /api/calibre-import/confirm.
-// It accepts either a multipart/form-data upload of a Calibre metadata.db (with
+// Accepts either a multipart/form-data upload of a Calibre metadata.db (with
 // an optional library_id field) or a JSON body with a server-side path and
 // optional library_id. It imports book metadata (title, authors, series,
 // identifiers) into Biblioteka without creating file records.
