@@ -594,7 +594,7 @@ func BenchmarkListSeries_100(b *testing.B) {
 
 // BenchmarkGetPendingAIEnrichmentByBook measures the lookup for the most recent
 // pending AI enrichment for a specific book. The query filters on
-// (book_id, user_id, status) and orders by created_at DESC LIMIT 1, which is
+// (user_id, book_id, status) and orders by created_at DESC LIMIT 1, which is
 // fully covered by idx_ai_enrichments_user_book_status
 // (user_id, book_id, status, created_at DESC) — no temp B-tree sort.
 //
