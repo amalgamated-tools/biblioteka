@@ -32,8 +32,14 @@ export async function applyMetadata(bookId: string): Promise<BookSummary> {
  */
 export async function getPendingAIEnrichment(
   bookId: string,
+  signal?: AbortSignal,
 ): Promise<AIEnrichment> {
-  return request<AIEnrichment>("GET", `/api/books/${bookId}/metadata/ai`);
+  return request<AIEnrichment>(
+    "GET",
+    `/api/books/${bookId}/metadata/ai`,
+    undefined,
+    signal,
+  );
 }
 
 /**
