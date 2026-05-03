@@ -45,7 +45,8 @@ frontend/
       Settings.svelte     Settings shell; owns shared admin state; renders one tab at a time
       Sidebar.svelte      Navigation sidebar; fetches and displays the running server version; uses `<a href>` anchor links for all navigation items; the brand name is rendered as `<p>` (not `<h1>`) to avoid duplicate top-level headings (WCAG 1.3.1); icon-only action links (Create library, Library settings) carry `aria-label`, and the Create-library icon explicitly carries `aria-hidden="true"` (WCAG 4.1.2); the Library-settings link aria-label includes the library name (e.g. "Library settings for Fiction") so each link has a unique, descriptive name (WCAG 2.4.6); the Library-settings link uses a contrast-safe resting color (`text-ink-500`) and switches to `text-accent-400` on hover/focus-within to preserve affordance while meeting WCAG 1.4.11; nav link clusters are wrapped in `role="group"` containers labelled by `<h2>` group headings (WCAG 1.3.1)
       books/              Sub-components for book detail and editing
-        BookDetail.svelte    Book detail view; displays cover image, metadata, author/series associations, file attachments, and download links
+        AIEnrichmentPanel.svelte  Review panel for a pending AI enrichment; fetches the pending `ai_enrichments` record via `getPendingAIEnrichment`; renders nothing when no pending enrichment exists (404 is treated as the normal empty state); displays suggested tags, reading level, and generated description when a pending enrichment is present; **Apply** button calls `applyAIEnrichment` and invokes the `onApplied` callback on success; **Reject** button calls `rejectAIEnrichment` and invokes the `onRejected` callback on success; both buttons are disabled while an action is in progress; aborts the in-flight request and resets state when `bookId` changes (prevents stale results from a previous book appearing on the newly selected book)
+        BookDetail.svelte    Book detail view; displays cover image, metadata, author/series associations, file attachments, and download links; renders `AIEnrichmentPanel` when the book has a pending AI enrichment, with callbacks to reload book data on apply or reject
         BookEdit.svelte      Book edit page; fetches book data, manages form state, and coordinates the `BookEditForm` and `MetadataFetchPanel` sub-components
         BookEditForm.svelte  Book metadata edit form; required fields carry `aria-required={true}` and a visible legend ("Fields marked with an asterisk are required") uses `aria-hidden` on the visual `*` and a `sr-only` span for the spoken label (WCAG 3.3.2); when a Cover Image URL is entered, a live preview thumbnail renders below the field — the image is hidden automatically via an `onerror` handler if the URL fails to load
         MetadataComparison.svelte   Side-by-side comparison of current and fetched remote metadata; lets the user selectively apply individual fields
@@ -3504,6 +3505,26 @@ The following test suites cover reactive stores and the API client. Unlike the a
 4. **`does not poll when no pollingInterval is set`** — renders without `pollingInterval`; advances time and asserts `fetchBooks` is called only once (initial load).
 
 > **Mocking note:** `afterEach(cleanup)` prevents DOM leakage between tests. Fake timers (`vi.useFakeTimers()`) are activated per-suite and restored in `afterEach` to avoid contaminating other test files.
+
+### `AIEnrichmentPanel.test.ts`
+
+`frontend/src/components/books/AIEnrichmentPanel.test.ts` verifies the loading, rendering, interaction, error, and race-condition behavior of the AI enrichment review panel. Thirteen tests in one `AIEnrichmentPanel` describe block:
+
+1. **`shows a loading spinner initially`** — mounts with a never-resolving `getPendingAIEnrichment` mock; asserts a `role="status"` element containing "Checking for AI enrichment..." is rendered.
+2. **`renders nothing when no pending enrichment exists (404)`** — mock rejects with `ApiError(404)`; asserts neither the panel container (`data-testid="ai-enrichment-panel"`) nor any `role="alert"` is rendered after loading completes.
+3. **`renders enrichment data when pending enrichment exists`** — mock resolves with a full enrichment fixture; asserts the panel heading "AI Enrichment Review", suggested tag chips, "Reading Level", "Generated Description", and the provider/model attribution line are all rendered.
+4. **`renders Apply and Reject buttons`** — asserts both action buttons are present and enabled once enrichment data has loaded.
+5. **`calls applyAIEnrichment and invokes onApplied callback on success`** — simulates clicking **Apply**; asserts `applyAIEnrichment` is called with the correct book ID, the panel disappears, and the `onApplied` spy is called.
+6. **`calls rejectAIEnrichment and invokes onRejected callback on success`** — simulates clicking **Reject**; asserts `rejectAIEnrichment` is called with the correct book ID, the panel disappears, and the `onRejected` spy is called.
+7. **`shows an error message when initial load fails with a non-404 error`** — mock rejects with a generic error; asserts an error message (`role="alert"`) is rendered and the panel container is absent.
+8. **`shows an error inside the panel when apply fails`** — mock rejects on `applyAIEnrichment`; asserts an inline `AlertBanner` appears while the enrichment data remains visible.
+9. **`shows an error inside the panel when reject fails`** — mock rejects on `rejectAIEnrichment`; asserts an inline `AlertBanner` appears while the enrichment data remains visible.
+10. **`disables both buttons while applying`** — clicks **Apply** against a stalled promise; asserts the Apply button shows "Applying..." and both buttons are `disabled` until the promise resolves.
+11. **`disables both buttons while rejecting`** — clicks **Reject** against a stalled promise; asserts the Reject button shows "Rejecting..." and both buttons are `disabled` until the promise resolves.
+12. **`renders nothing when enrichment has no suggested tags, reading level, or description`** — resolves with a minimal enrichment (empty tags, `null` reading level and description); asserts the panel heading is still shown but none of the three optional sections render.
+13. **`discards enrichment result when bookId changes before the request settles`** — stalls the first request for book `b1`, then re-renders with `bookId="b2"` before resolving; resolves the stale first request; asserts that `b1`'s enrichment does not appear (stale-result guard via `AbortController`).
+
+> **Testing note:** `ApiError` (from `../../lib/api/core`) is manually mocked to expose a typed `status` field so the component's 404 suppression logic can be exercised in JSDOM. The `lucide-svelte` icon components are stubbed to avoid SVG rendering overhead.
 
 ### `BookEditForm.test.ts`
 
