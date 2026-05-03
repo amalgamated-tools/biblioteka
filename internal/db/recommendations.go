@@ -97,20 +97,23 @@ SELECT b.id, b.title, b.description, b.asin, b.isbn10, b.isbn13,
        b.created_at, b.updated_at
 FROM candidate_scores cs
 INNER JOIN books b ON b.id = cs.id
-ORDER BY cs.score DESC, b.created_at DESC
-LIMIT $2`, StatusReading, StatusFinished)
+ORDER BY cs.score DESC, b.created_at DESC, b.id DESC
+LIMIT $2
+OFFSET $3`, StatusReading, StatusFinished)
 
 // GetRecommendations returns up to limit books recommended for the given user,
-// scored by author overlap, series continuation, publisher match, and download
-// popularity. When the user has no reading history every candidate scores 0 and
-// results are ordered newest-first, providing a useful default.
-func (d *DB) GetRecommendations(ctx context.Context, userID string, limit int) ([]Book, error) {
+// starting at offset, scored by author overlap, series continuation, publisher
+// match, and download popularity. When the user has no reading history every
+// candidate scores 0 and results are ordered newest-first, providing a useful
+// default.
+func (d *DB) GetRecommendations(ctx context.Context, userID string, limit, offset int) ([]Book, error) {
 	slog.DebugContext(ctx, "db: fetching recommendations",
 		slog.String(otelkeys.UserID, userID),
 		slog.Int(otelkeys.Limit, limit),
+		slog.Int(otelkeys.Offset, offset),
 	)
 
-	rows, err := d.QueryContext(ctx, recommendationsQuery, userID, limit)
+	rows, err := d.QueryContext(ctx, recommendationsQuery, userID, limit, offset)
 	if err != nil {
 		return nil, err
 	}

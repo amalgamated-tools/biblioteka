@@ -122,6 +122,14 @@ func TestParseLimitOffset(t *testing.T) {
 			wantOffset:   1000,
 		},
 		{
+			name:         "offset exceeding max is clamped",
+			url:          "/?offset=99999999",
+			defaultLimit: 50,
+			maxLimit:     200,
+			wantLimit:    50,
+			wantOffset:   maxPageOffset,
+		},
+		{
 			name:         "custom default and max limits",
 			url:          "/",
 			defaultLimit: 25,
