@@ -259,16 +259,9 @@ Browser (authenticated)    Biblioteka              OIDC Provider
 
 ### Initiating account linking from the UI
 
-1. Sign in with your password.
-2. Navigate to **Settings → Account**.
-3. Click **Link SSO account**.
+Sign in, navigate to **Settings → Account**, and click **Link SSO account**. After the flow completes you can log in via either your password or your SSO provider.
 
-After the flow completes you can log in via either your password or your SSO provider.
-
-**Constraints:**
-- Each OIDC identity (`sub`) can be linked to at most one Biblioteka account.
-- An account can be linked to at most one OIDC identity at a time.
-- The link nonce expires after 5 minutes and can only be used once.
+**Constraints:** Each OIDC identity (`sub`) can be linked to at most one account (and vice versa); the link nonce expires after 5 minutes and is single-use.
 
 ### Automatic linking on first OIDC login
 
@@ -323,8 +316,6 @@ WEBAUTHN_RP_NAME=My Biblioteka
 > **Production requirement:** `WEBAUTHN_RP_ID` must exactly match the effective domain of your Biblioteka instance. For example, if your instance is at `https://books.example.com`, set `WEBAUTHN_RP_ID=books.example.com`. The default `localhost` value makes passkeys non-functional outside of local development — ceremonies will silently fail while the UI still shows passkeys as available. On startup, `WebAuthn passkeys enabled` is logged at `INFO` level confirming the RP ID and name.
 
 The `GET /api/auth/passkey/enabled` endpoint returns `{"enabled": true}` when WebAuthn initializes successfully, including when the server falls back to localhost defaults, and `{"enabled": false}` only when WebAuthn initialization fails. The frontend uses this to conditionally show the passkey login button.
-
-For non-localhost or production deployments, you must set `WEBAUTHN_RP_ID` and `WEBAUTHN_RP_ORIGINS` to the real domain and allowed origins for your Biblioteka instance. If these values are left at localhost defaults or otherwise do not match the deployed site, the endpoint may still report `{"enabled": true}` and the UI may show passkey actions, but passkey registration and login ceremonies will fail in the browser.
 
 ### Registering a passkey
 
@@ -448,13 +439,7 @@ API keys provide a convenient way to authenticate programmatic access to Bibliot
 
 ### When to use API keys
 
-Use API keys when:
-
-- You are calling the Biblioteka API from a script, CI pipeline, or external service.
-- You want long-lived credentials that do not expire on a fixed schedule.
-- You need to avoid storing your password in automation tooling.
-
-Use JWT tokens (from login/signup) for interactive browser sessions.
+Use API keys for scripted or long-lived access (CI pipelines, external services) where you want to avoid managing JWT expiry or storing passwords. Use JWT tokens for interactive browser sessions.
 
 ### Key format
 
