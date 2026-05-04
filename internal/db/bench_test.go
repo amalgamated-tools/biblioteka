@@ -632,7 +632,14 @@ func BenchmarkGetPendingAIEnrichmentByBook(b *testing.B) {
 		}
 	}
 
+	// Add two more pending enrichments for user1 on books[2] so the query must
+	// choose among multiple pending rows using ORDER BY created_at DESC LIMIT 1.
 	targetBook := books[2]
+	for range 2 {
+		bkID := targetBook.ID
+		_, err := d.CreateAIEnrichment(ctx, user1.ID, &bkID, "test-provider", "test-model", nil, nil, nil, "{}")
+		require.NoError(b, err, "CreateAIEnrichment extra pending")
+	}
 
 	b.ResetTimer()
 	b.ReportAllocs()
