@@ -129,7 +129,7 @@ The following rows are deleted along with the user record via `ON DELETE CASCADE
 | `book_downloads` | All download-tracking events for the user |
 | `ai_enrichments` | Any AI metadata enrichment requests |
 
-> **Libraries and catalog data are not deleted.** Deleting a user does not remove any libraries, library–book associations (`library_books`), books, authors, series, or tags — these are all global resources.
+> **Libraries and catalog data are not deleted.** Deleting a user does not remove any libraries, library–book associations (`library_books`), books, authors, series, or tags — these are all global resources managed by admins.
 
 #### What is NOT deleted
 
@@ -427,7 +427,7 @@ curl -X PUT http://localhost:8080/api/config/oidc \
   }'
 ```
 
-Before attempting provider discovery, the server validates the issuer URL for SSRF. Only `https://` URLs are accepted; userinfo (e.g. `https://user:pass@issuer.example.com`), private/loopback IP addresses, and IPv6 zone identifiers are rejected with `400 Bad Request`. DNS names are resolved before acceptance — names resolving to blocked ranges are rejected (DNS failures pass; the SSRF-safe HTTP client provides a second check at connection time).
+Before attempting provider discovery, the server validates the issuer URL for SSRF. Only `https://` URLs are accepted; userinfo (e.g. `https://user:pass@issuer.example.com`), private IP addresses (loopback, link-local, and other non-public ranges), and IPv6 zone identifiers are rejected with `400 Bad Request`. DNS names are resolved before acceptance — names resolving to blocked ranges are rejected (DNS failures pass; the SSRF-safe HTTP client provides a second check at connection time).
 
 If validation passes, the server performs OIDC discovery. If discovery fails, the config is rejected with a `400` error.
 
