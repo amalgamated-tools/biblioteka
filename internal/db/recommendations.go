@@ -117,9 +117,5 @@ func (d *DB) GetRecommendations(ctx context.Context, userID string, limit, offse
 	if err != nil {
 		return nil, err
 	}
-	books, err := collectRows(rows, scanBook)
-	if err != nil {
-		return nil, err
-	}
-	return books, nil
+	return collectRows(rows, scanBook)
 }
