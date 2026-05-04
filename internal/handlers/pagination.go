@@ -10,8 +10,9 @@ const (
 	maxPageLimit     = 200
 )
 
-// parseBoundedQueryInt extracts a single integer query parameter by key,
-// clamps it to [minVal, maxVal], and falls back to defaultVal on any error.
+// parseBoundedQueryInt extracts a single integer query parameter by key.
+// It falls back to defaultVal on parse errors or when the value is below
+// minVal, and caps values above maxVal at maxVal.
 func parseBoundedQueryInt(r *http.Request, key string, defaultVal, minVal, maxVal int) int {
 	v := defaultVal
 	if s := r.URL.Query().Get(key); s != "" {
