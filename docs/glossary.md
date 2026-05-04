@@ -50,6 +50,14 @@ Annotations are managed via `POST /api/books/{id}/annotations` (create), `GET /a
 
 A long-lived authentication token with the `bib_` prefix used for programmatic access to the Biblioteka API. API keys are generated as cryptographically random hex strings, stored by their hash (not in plaintext), and returned only once at creation time. Managed under **Settings → API Keys** or via the REST API. See [Authentication](authentication.md).
 
+## Audit Log
+
+An append-only record of significant user-initiated and system actions in Biblioteka, stored in the `audit_logs` table. Each entry captures who performed the action (`user_id`), what happened (`action`), what resource was affected (`entity_type`, `entity_id`), optional structured metadata (e.g. the book title on `book.created`), and when it occurred (`created_at`). Entries are never modified or deleted.
+
+The audit log is accessible to admins via `GET /api/audit-logs` (paginated, newest-first). Rows that reference a deleted user's `user_id` are intentionally retained — there is no foreign key constraint on `audit_logs.user_id`, so audit records survive account removal.
+
+Common actions include `book.created`, `author.deleted`, `api_key.created`, `opds_credential.updated`, `fts.rebuilt`, and `llm.config_updated`. Background scanner imports do not currently produce audit entries because there is no authenticated actor to attribute them to. See [Administration](administration.md#audit-logs).
+
 ## ASIN
 
 **Amazon Standard Identification Number.** A product identifier assigned by Amazon, present in MOBI and AZW3 files and some Kindle-converted EPUB files. Biblioteka extracts the ASIN from book file metadata but does not automatically write it to the database during import — it must be set explicitly via the API after import if needed. See [Metadata Extraction](metadata.md).
@@ -195,3 +203,7 @@ A user-defined label applied to books for categorization and discovery. Tags are
 ## WAL
 
 **Write-Ahead Logging.** The SQLite journal mode used by Biblioteka (`PRAGMA journal_mode=WAL`). WAL mode allows concurrent readers and a single writer without blocking reads during writes, improving performance for a multi-user web application. Combined with `synchronous=NORMAL` and `foreign_keys=ON` in all SQLite connections. See [Database Schema](database-schema.md).
+
+## Year in Books
+
+A per-user annual reading summary available via `GET /api/stats/year-in-books`. Returns four counts for the requested calendar year (defaulting to the current year): `books_finished` (documents where reading percentage ≥ 99%), `active_days` (distinct dates with reading activity), `longest_streak` (longest run of consecutive reading days), and `total_downloads`. All counts return `0` for years with no activity — the response is never `null`. The dashboard displays these stats as a **"[Year] in Books"** card that is hidden when all counts are zero. Reading progress data is sourced from KOSync (`reading_progress` table); users who do not use KOSync will always see zero counts. See [API Reference — Stats](api/stats.md).
