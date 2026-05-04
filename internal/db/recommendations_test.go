@@ -22,7 +22,7 @@ func TestGetRecommendations_EmptyLibrary(t *testing.T) {
 	d := newTestDB(t)
 	user := createTestUser(t, d)
 
-	books, err := d.GetRecommendations(t.Context(), user.ID, 10)
+	books, err := d.GetRecommendations(t.Context(), user.ID, 10, 0)
 	require.NoError(t, err, "GetRecommendations() error")
 	require.Empty(t, books, "expected no books in empty library")
 }
@@ -37,7 +37,7 @@ func TestGetRecommendations_NoHistory_ReturnsAllBooks(t *testing.T) {
 	require.NoError(t, err)
 
 	// No reading history — all books score 0, both should appear as candidates.
-	books, err := d.GetRecommendations(t.Context(), user.ID, 10)
+	books, err := d.GetRecommendations(t.Context(), user.ID, 10, 0)
 	require.NoError(t, err)
 	require.Len(t, books, 2)
 	ids := map[string]bool{books[0].ID: true, books[1].ID: true}
@@ -57,7 +57,7 @@ func TestGetRecommendations_ExcludesReadBooks(t *testing.T) {
 	_, err = d.UpsertKoboReadingState(t.Context(), user.ID, read.ID, StatusFinished, nil, nil, nil, nil)
 	require.NoError(t, err)
 
-	books, err := d.GetRecommendations(t.Context(), user.ID, 10)
+	books, err := d.GetRecommendations(t.Context(), user.ID, 10, 0)
 	require.NoError(t, err)
 	ids := make([]string, len(books))
 	for i, b := range books {
@@ -90,7 +90,7 @@ func TestGetRecommendations_AuthorOverlapScoresHigher(t *testing.T) {
 	unrelated, err := d.CreateBook(t.Context(), BookInput{Title: "Moby Dick"})
 	require.NoError(t, err)
 
-	books, err := d.GetRecommendations(t.Context(), user.ID, 10)
+	books, err := d.GetRecommendations(t.Context(), user.ID, 10, 0)
 	require.NoError(t, err)
 	require.Len(t, books, 2)
 	require.Equal(t, sameAuthor.ID, books[0].ID, "same-author book should rank first")
@@ -123,7 +123,7 @@ func TestGetRecommendations_SeriesContinuationScoresHighest(t *testing.T) {
 	unrelated, err := d.CreateBook(t.Context(), BookInput{Title: "Dune"})
 	require.NoError(t, err)
 
-	books, err := d.GetRecommendations(t.Context(), user.ID, 10)
+	books, err := d.GetRecommendations(t.Context(), user.ID, 10, 0)
 	require.NoError(t, err)
 	require.Len(t, books, 2)
 	require.Equal(t, b2.ID, books[0].ID, "series continuation should rank first")
@@ -164,7 +164,7 @@ func TestGetRecommendations_SeriesContinuationOnlyNextBook(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, d.SetBookSeries(t.Context(), b5.ID, []BookSeriesInput{{SeriesID: series.ID, Position: &pos5}}))
 
-	books, err := d.GetRecommendations(t.Context(), user.ID, 10)
+	books, err := d.GetRecommendations(t.Context(), user.ID, 10, 0)
 	require.NoError(t, err)
 	require.Len(t, books, 3)
 	// Book 2 should rank first due to series continuation bonus.
@@ -192,7 +192,7 @@ func TestGetRecommendations_PublisherOverlapAddsScore(t *testing.T) {
 	// Make otherPublisher created later so it normally sorts first with no score.
 	_ = otherPublisher
 
-	books, err := d.GetRecommendations(t.Context(), user.ID, 10)
+	books, err := d.GetRecommendations(t.Context(), user.ID, 10, 0)
 	require.NoError(t, err)
 	require.Len(t, books, 2)
 	require.Equal(t, samePublisher.ID, books[0].ID, "same-publisher book should score higher")
@@ -207,7 +207,7 @@ func TestGetRecommendations_LimitRespected(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	books, err := d.GetRecommendations(t.Context(), user.ID, 3)
+	books, err := d.GetRecommendations(t.Context(), user.ID, 3, 0)
 	require.NoError(t, err)
 	require.Len(t, books, 3, "limit should be respected")
 }
@@ -223,11 +223,36 @@ func TestGetRecommendations_ReadyToReadIncluded(t *testing.T) {
 	_, err = d.UpsertKoboReadingState(t.Context(), user.ID, b.ID, StatusReadyToRead, nil, nil, nil, nil)
 	require.NoError(t, err)
 
-	books, err := d.GetRecommendations(t.Context(), user.ID, 10)
+	books, err := d.GetRecommendations(t.Context(), user.ID, 10, 0)
 	require.NoError(t, err)
 	ids := make([]string, len(books))
 	for i, bk := range books {
 		ids[i] = bk.ID
 	}
 	require.Contains(t, ids, b.ID, "ReadyToRead books should appear as candidates")
+}
+
+func TestGetRecommendations_OffsetRespected(t *testing.T) {
+	d := newTestDB(t)
+	user := createTestUser(t, d)
+
+	for i := range 5 {
+		_, err := d.CreateBook(t.Context(), BookInput{Title: "Book " + string(rune('A'+i))})
+		require.NoError(t, err)
+	}
+
+	all, err := d.GetRecommendations(t.Context(), user.ID, 5, 0)
+	require.NoError(t, err)
+	require.Len(t, all, 5)
+
+	// offset=2 should return the last 3 books (indices 2–4 of the full set).
+	paged, err := d.GetRecommendations(t.Context(), user.ID, 5, 2)
+	require.NoError(t, err)
+	require.Len(t, paged, 3, "offset=2 should skip the first 2 results")
+	require.Equal(t, all[2].ID, paged[0].ID, "first paged result should match third overall result")
+
+	// offset beyond total should return empty.
+	beyond, err := d.GetRecommendations(t.Context(), user.ID, 5, 10)
+	require.NoError(t, err)
+	require.Empty(t, beyond, "offset beyond total should return no results")
 }
