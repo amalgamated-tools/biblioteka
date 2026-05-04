@@ -234,14 +234,14 @@ Entries are returned newest-first. `limit` defaults to `50` (maximum `200`); `of
 | `reading_list.updated` | `reading_list` | `name`                                          | `PUT /api/reading-lists/{id}`           |
 | `reading_list.deleted` | `reading_list` | `name`                                          | `DELETE /api/reading-lists/{id}`        |
 | `reading_list.book_added` | `reading_list` | `book_id`                                    | `POST /api/reading-lists/{id}/books`    |
-| `reading_list.book_removed` | `reading_list` | `book_id`                                  | `DELETE /api/reading-lists/{id}/books/{book_id}` |
+| `reading_list.book_removed` | `reading_list` | `book_id`                                  | `DELETE /api/reading-lists/{id}/books/{bookID}` |
 | `group.created`        | `group`       | `name`                                           | `POST /api/groups`                      |
 | `group.updated`        | `group`       | `name`                                           | `PUT /api/groups/{id}`                  |
 | `group.deleted`        | `reading_group` | `name`                                         | `DELETE /api/groups/{id}`               |
 | `group.member_added`   | `group`       | `member_user_id`                                 | `POST /api/groups/{id}/members`         |
-| `group.member_removed` | `group`       | `member_user_id`                                 | `DELETE /api/groups/{id}/members/{user_id}` |
+| `group.member_removed` | `group`       | `member_user_id`                                 | `DELETE /api/groups/{id}/members/{userID}` |
 | `group.list_shared`    | `group`       | `list_id`                                        | `POST /api/groups/{id}/lists`           |
-| `group.list_unshared`  | `group`       | `list_id`                                        | `DELETE /api/groups/{id}/lists/{list_id}` |
+| `group.list_unshared`  | `group`       | `list_id`                                        | `DELETE /api/groups/{id}/lists/{listID}` |
 | `calibre.imported`     | `calibre_import` | `total`, `imported`, `skipped`, `errors`, `library_id` | `POST /api/calibre-import/confirm` |
 | `metadata.fetch_requested` | `book`    | `task_id`                                        | `POST /api/books/{id}/metadata/fetch`   |
 | `metadata.applied`     | `book`        | `metadata_id`, `source`                          | `POST /api/books/{id}/metadata/apply`   |
