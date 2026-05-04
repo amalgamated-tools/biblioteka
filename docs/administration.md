@@ -237,18 +237,18 @@ Entries are returned newest-first. `limit` defaults to `50` (maximum `200`); `of
 | `reading_list.book_removed` | `reading_list` | `book_id`                                  | `DELETE /api/reading-lists/{id}/books/{book_id}` |
 | `group.created`        | `group`       | `name`                                           | `POST /api/groups`                      |
 | `group.updated`        | `group`       | `name`                                           | `PUT /api/groups/{id}`                  |
-| `group.deleted`        | `group`       | `name`                                           | `DELETE /api/groups/{id}`               |
+| `group.deleted`        | `reading_group` | `name`                                         | `DELETE /api/groups/{id}`               |
 | `group.member_added`   | `group`       | `member_user_id`                                 | `POST /api/groups/{id}/members`         |
 | `group.member_removed` | `group`       | `member_user_id`                                 | `DELETE /api/groups/{id}/members/{user_id}` |
 | `group.list_shared`    | `group`       | `list_id`                                        | `POST /api/groups/{id}/lists`           |
 | `group.list_unshared`  | `group`       | `list_id`                                        | `DELETE /api/groups/{id}/lists/{list_id}` |
 | `calibre.imported`     | `calibre_import` | `total`, `imported`, `skipped`, `errors`, `library_id` | `POST /api/calibre-import/confirm` |
 | `metadata.fetch_requested` | `book`    | `task_id`                                        | `POST /api/books/{id}/metadata/fetch`   |
-| `metadata.applied`     | `book`        | `metadata_id`, `source`                          | `POST /api/books/{id}/metadata/{metadata_id}/apply` |
-| `metadata.rejected`    | `book`        | `metadata_id`, `source`                          | `POST /api/books/{id}/metadata/{metadata_id}/reject` |
-| `ai_enrichment.fetch_requested` | `book` | `task_id`                                     | `POST /api/books/{id}/ai-enrichment/fetch` |
-| `ai_enrichment.applied` | `book`       | `enrichment_id`                                  | `POST /api/books/{id}/ai-enrichment/{enrichment_id}/apply` |
-| `ai_enrichment.rejected` | `book`      | `enrichment_id`                                  | `POST /api/books/{id}/ai-enrichment/{enrichment_id}/reject` |
+| `metadata.applied`     | `book`        | `metadata_id`, `source`                          | `POST /api/books/{id}/metadata/apply`   |
+| `metadata.rejected`    | `book`        | `metadata_id`, `source`                          | `POST /api/books/{id}/metadata/reject`  |
+| `ai_enrichment.fetch_requested` | `book` | `task_id`                                     | `POST /api/books/{id}/metadata/ai-fetch` |
+| `ai_enrichment.applied` | `book`       | `enrichment_id`                                  | `POST /api/books/{id}/metadata/ai-apply` |
+| `ai_enrichment.rejected` | `book`      | `enrichment_id`                                  | `POST /api/books/{id}/metadata/ai-reject` |
 | `api_key.created`      | `api_key`     | `name`                                           | `POST /api/api-keys`                    |
 | `api_key.deleted`      | `api_key`     | `name`                                           | `DELETE /api/api-keys/{id}`             |
 | `opds_credential.updated` | `opds_credential` | `username`                               | `PUT /api/opds/credentials`             |
