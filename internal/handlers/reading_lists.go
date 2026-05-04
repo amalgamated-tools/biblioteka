@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -98,6 +99,33 @@ func (h *ReadingListHandler) listReadingLists(w http.ResponseWriter, r *http.Req
 	listUserEntities(w, r, "reading lists", h.DB.ListReadingLists, toReadingListDTO)
 }
 
+// readingListOps returns the userOwnedNamedEntityOps configuration for the
+// ReadingList entity.
+func (h *ReadingListHandler) readingListOps() userOwnedNamedEntityOps[db.ReadingList, readingListDTO, readingListRequest] {
+	return userOwnedNamedEntityOps[db.ReadingList, readingListDTO, readingListRequest]{
+		db:              h.DB,
+		entityLabel:     "reading list",
+		entityArticle:   "a reading list",
+		idKey:           otelkeys.ReadingListID,
+		auditEntityType: "reading_list",
+		errInvalidName:  db.ErrInvalidReadingListName,
+		errNameExists:   db.ErrReadingListNameExists,
+		auditCreate:     db.AuditActionReadingListCreated,
+		auditUpdate:     db.AuditActionReadingListUpdated,
+		get:             h.DB.GetReadingList,
+		create: func(ctx context.Context, userID string, req readingListRequest) (*db.ReadingList, error) {
+			return h.DB.CreateReadingList(ctx, userID, req.Name, req.Description)
+		},
+		update: func(ctx context.Context, id, userID string, req readingListRequest) (*db.ReadingList, error) {
+			return h.DB.UpdateReadingList(ctx, id, userID, req.Name, req.Description)
+		},
+		reqName:    func(req readingListRequest) string { return req.Name },
+		entityName: func(rl *db.ReadingList) string { return rl.Name },
+		entityID:   func(rl *db.ReadingList) string { return rl.ID },
+		toDTO:      toReadingListDTO,
+	}
+}
+
 // createReadingList creates a new reading list for the authenticated user.
 //
 //	@Summary		Create a reading list
@@ -114,36 +142,7 @@ func (h *ReadingListHandler) listReadingLists(w http.ResponseWriter, r *http.Req
 //	@Failure		500		{object}	errorResponse
 //	@Router			/reading-lists [post]
 func (h *ReadingListHandler) createReadingList(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	var req readingListRequest
-	if !decodeJSON(r, w, &req) {
-		return
-	}
-	if !validateName(ctx, w, req.Name) {
-		return
-	}
-
-	userID := auth.UserIDFromContext(ctx)
-	slog.DebugContext(ctx, "creating reading list",
-		slog.String(otelkeys.UserID, userID),
-		slog.String(otelkeys.ReadingListName, req.Name),
-	)
-
-	rl, err := h.DB.CreateReadingList(ctx, userID, req.Name, req.Description)
-	if err != nil {
-		if handleNameErr(ctx, w, err, db.ErrInvalidReadingListName, db.ErrReadingListNameExists, "a reading list") {
-			return
-		}
-		slog.ErrorContext(ctx, "failed to create reading list", slog.Any(otelkeys.Error, err))
-		writeError(ctx, w, http.StatusInternalServerError, "failed to create reading list")
-		return
-	}
-
-	logAudit(ctx, h.DB, userID, db.AuditActionReadingListCreated, "reading_list", rl.ID,
-		map[string]any{"name": rl.Name},
-	)
-
-	writeJSON(ctx, w, http.StatusCreated, toReadingListDTO(rl))
+	createUserOwnedNamedEntity(h.readingListOps(), w, r)
 }
 
 // handleReadingList dispatches GET, PUT, DELETE for /api/reading-lists/{id}.
@@ -175,13 +174,7 @@ func (h *ReadingListHandler) handleReadingList(w http.ResponseWriter, r *http.Re
 //	@Failure		500	{object}	errorResponse
 //	@Router			/reading-lists/{id} [get]
 func (h *ReadingListHandler) getReadingList(w http.ResponseWriter, r *http.Request, id string) {
-	ctx := r.Context()
-	userID := auth.UserIDFromContext(ctx)
-	rl, err := h.DB.GetReadingList(ctx, id, userID)
-	if handleDBErr(ctx, w, err, "reading list") {
-		return
-	}
-	writeJSON(ctx, w, http.StatusOK, toReadingListDTO(rl))
+	getUserOwnedNamedEntity(h.readingListOps(), w, r, id)
 }
 
 // updateReadingList updates the name and description of a reading list.
@@ -202,26 +195,7 @@ func (h *ReadingListHandler) getReadingList(w http.ResponseWriter, r *http.Reque
 //	@Failure		500		{object}	errorResponse
 //	@Router			/reading-lists/{id} [put]
 func (h *ReadingListHandler) updateReadingList(w http.ResponseWriter, r *http.Request, id string) {
-	ctx := r.Context()
-	var req readingListRequest
-	if !decodeJSON(r, w, &req) {
-		return
-	}
-	if !validateName(ctx, w, req.Name) {
-		return
-	}
-
-	userID := auth.UserIDFromContext(ctx)
-	rl, err := h.DB.UpdateReadingList(ctx, id, userID, req.Name, req.Description)
-	if handleUpdateErr(ctx, w, err, db.ErrInvalidReadingListName, db.ErrReadingListNameExists, "a reading list", "reading list", id) {
-		return
-	}
-
-	logAudit(ctx, h.DB, userID, db.AuditActionReadingListUpdated, "reading_list", rl.ID,
-		map[string]any{"name": rl.Name},
-	)
-
-	writeJSON(ctx, w, http.StatusOK, toReadingListDTO(rl))
+	updateUserOwnedNamedEntity(h.readingListOps(), w, r, id)
 }
 
 // deleteReadingList deletes a reading list owned by the authenticated user.
