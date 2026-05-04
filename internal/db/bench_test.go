@@ -598,15 +598,15 @@ func BenchmarkListSeries_100(b *testing.B) {
 // which is fully covered by idx_goodreads_metadata_user_book_status
 // (user_id, book_id, status, created_at DESC, id DESC) — no temp B-tree sort.
 //
-// The fixture seeds 20 metadata rows (a mix of pending/applied/rejected) across
-// 5 books and 2 users to ensure realistic index selectivity.
+// The fixture seeds 40 metadata rows (a mix of pending/applied/rejected) across
+// 5 books and 2 users (4 rows per book per user) to ensure realistic index selectivity.
 func BenchmarkGetPendingGoodreadsMetadataByBook(b *testing.B) {
 	d := newBenchDB(b)
 	ctx := b.Context()
 
-	user1, err := d.CreateUser(ctx, "bench-gm-user1", "gm1@example.com", "pw1")
+	user1, err := d.CreateUser(ctx, "bench-gm-user1", "gm1@example.com", "hashedpw")
 	require.NoError(b, err, "CreateUser user1")
-	user2, err := d.CreateUser(ctx, "bench-gm-user2", "gm2@example.com", "pw2")
+	user2, err := d.CreateUser(ctx, "bench-gm-user2", "gm2@example.com", "hashedpw")
 	require.NoError(b, err, "CreateUser user2")
 
 	books := make([]string, 5)
