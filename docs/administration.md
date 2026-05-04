@@ -158,7 +158,7 @@ This is evaluated at startup and cannot be changed while the server is running. 
 
 #### Option 2 — Runtime API (no restart required)
 
-Admins can toggle registration at runtime via **Settings → Registration** or the API:
+Admins can toggle registration at runtime via **Settings → Users** in the **Public Registration** section, or via the API:
 
 ```bash
 # Check current state
@@ -191,7 +191,7 @@ The change takes effect immediately. A successful update is recorded in the audi
 Regardless of which method is used, when self-registration is disabled:
 
 - `POST /api/auth/signup` returns `403 Forbidden`.
-- `POST /api/auth/oidc/callback` also returns `403 Forbidden` for new accounts (existing users can still log in via OIDC).
+- `POST /api/auth/oidc/callback` also returns `403 Forbidden`, preventing OIDC sign-in while registration is disabled.
 - The **Sign Up** tab is hidden in the web UI.
 - `GET /api/auth/signup/enabled` returns `{"enabled": false}` so third-party clients can adapt their UI accordingly.
 
