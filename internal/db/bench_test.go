@@ -594,18 +594,19 @@ func BenchmarkListSeries_100(b *testing.B) {
 
 // BenchmarkGetRecommendations exercises the full CTE-based recommendation
 // scoring query. The setup creates a realistic scenario:
-//   - 1 user with 5 read books spread across 2 authors and 1 series
-//   - 100 candidate (unread) books, 20 of which share an author and 10 of
-//     which are the next entry in a series the user is reading
+//   - 1 user with 5 read books spread across 2 authors, 1 series, and 1 publisher
+//   - 100 candidate (unread) books: 30 share an author (10 also continue a
+//     distinct series each), 5 match the publisher, rest are unrelated
 //
-// This covers all four scoring arms (author overlap, series continuation,
-// publisher match, and download popularity tiebreaker) and provides a
-// baseline for future optimisation of the recommendations query.
+// Each scoring arm is exercised: author overlap (+3), series continuation (+5,
+// via 10 distinct one-book series so the NOT EXISTS guard fires for each),
+// publisher match (+1), and download-count tiebreaker. Provides a baseline for
+// future optimisation of the recommendations query.
 func BenchmarkGetRecommendations(b *testing.B) {
 	d := newBenchDB(b)
 	ctx := b.Context()
 
-	user, err := d.CreateUser(ctx, "Bench User", "bench@example.com", "pw")
+	user, err := d.CreateUser(ctx, "Bench User", "bench@example.com", "hashedpw")
 	require.NoError(b, err, "CreateUser")
 
 	// Two shared authors.
@@ -614,13 +615,13 @@ func BenchmarkGetRecommendations(b *testing.B) {
 	authorB, err := d.CreateAuthor(ctx, "Author Beta", nil, nil, nil, nil)
 	require.NoError(b, err, "CreateAuthor B")
 
-	// One series that the user is partway through.
+	// One series that the user is partway through (used for the read books only).
 	series, err := d.CreateSeries(ctx, "Bench Series", nil, nil, nil)
 	require.NoError(b, err, "CreateSeries")
 
 	pub := "Bench Publisher"
 
-	// Read books: 5 total, sharing the two authors and the series.
+	// Read books: 5 total, sharing the two authors, the series, and a publisher.
 	for i := range 5 {
 		pos := float64(i + 1)
 		bk, err := d.CreateBook(ctx, BookInput{Title: fmt.Sprintf("Read Book %02d", i+1), Publisher: &pub})
@@ -635,15 +636,29 @@ func BenchmarkGetRecommendations(b *testing.B) {
 		require.NoError(b, err, "UpsertKoboReadingState")
 	}
 
-	// 100 candidate books: 20 share an author, 10 are next-in-series, rest are unrelated.
+	// 100 candidate books: 30 share an author (10 also in a distinct series each),
+	// 5 match publisher, rest unrelated.
 	for i := range 100 {
-		bk, err := d.CreateBook(ctx, BookInput{Title: fmt.Sprintf("Candidate Book %03d", i+1)})
+		var candidatePub *string
+		if i >= 30 && i < 35 {
+			candidatePub = &pub // publisher-match candidates
+		}
+		bk, err := d.CreateBook(ctx, BookInput{Title: fmt.Sprintf("Candidate Book %03d", i+1), Publisher: candidatePub})
 		require.NoError(b, err, "CreateBook candidate")
 		switch {
 		case i < 10:
-			// Next-in-series continuation (positions 6–15).
-			pos := float64(6 + i)
-			require.NoError(b, d.SetBookSeries(ctx, bk.ID, []BookSeriesInput{{SeriesID: series.ID, Position: &pos}}), "SetBookSeries candidate")
+			// Series continuation: each candidate is position 2 in its own one-book
+			// series, so the NOT EXISTS guard in series_pts fires for every book.
+			extraSeries, err := d.CreateSeries(ctx, fmt.Sprintf("Bench Series Extra %d", i), nil, nil, nil)
+			require.NoError(b, err, "CreateSeries extra")
+			seedBk, err := d.CreateBook(ctx, BookInput{Title: fmt.Sprintf("Series Seed Book %03d", i+1)})
+			require.NoError(b, err, "CreateBook series seed")
+			seedPos := 1.0
+			require.NoError(b, d.SetBookSeries(ctx, seedBk.ID, []BookSeriesInput{{SeriesID: extraSeries.ID, Position: &seedPos}}), "SetBookSeries seed")
+			_, err = d.UpsertKoboReadingState(ctx, user.ID, seedBk.ID, StatusFinished, nil, nil, nil, nil)
+			require.NoError(b, err, "UpsertKoboReadingState series seed")
+			nextPos := 2.0
+			require.NoError(b, d.SetBookSeries(ctx, bk.ID, []BookSeriesInput{{SeriesID: extraSeries.ID, Position: &nextPos}}), "SetBookSeries candidate")
 			require.NoError(b, d.SetBookAuthors(ctx, bk.ID, []string{authorA.ID}), "SetBookAuthors candidate A")
 		case i < 30:
 			// Author-overlap-only candidates.
