@@ -6,13 +6,15 @@ import (
 	"database/sql"
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"log/slog"
 	"mime"
 	"net/http"
 	"os"
 	"strings"
-	"sync"
 	"time"
+
+	"golang.org/x/sync/errgroup"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -257,9 +259,11 @@ func (h *OPDSHandler) serveCover(w http.ResponseWriter, r *http.Request, bookID 
 
 // bookEntries converts a slice of books into OPDS entry elements, including
 // authors and download links for each book. Uses batch queries to avoid N+1.
-func (h *OPDSHandler) bookEntries(ctx context.Context, books []db.Book, baseURL string) []opdspkg.Entry {
+// Returns an error if either batch query fails so the caller can surface a
+// proper error response instead of silently serving an incomplete feed.
+func (h *OPDSHandler) bookEntries(ctx context.Context, books []db.Book, baseURL string) ([]opdspkg.Entry, error) {
 	if len(books) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	// Collect book IDs for batch loading.
@@ -274,34 +278,29 @@ func (h *OPDSHandler) bookEntries(ctx context.Context, books []db.Book, baseURL 
 		filesByBook   map[string][]db.BookFile
 	)
 
-	var wg sync.WaitGroup
-	wg.Add(2)
+	g, gCtx := errgroup.WithContext(ctx)
 
-	go func() {
-		defer wg.Done()
+	g.Go(func() error {
 		var err error
-		authorsByBook, err = h.DB.GetAuthorsForBooks(ctx, bookIDs)
+		authorsByBook, err = h.DB.GetAuthorsForBooks(gCtx, bookIDs)
 		if err != nil {
-			slog.ErrorContext(ctx, "OPDS: failed to batch-load book authors",
-				slog.Any(otelkeys.Error, err),
-			)
-			authorsByBook = nil
+			return fmt.Errorf("get book authors: %w", err)
 		}
-	}()
+		return nil
+	})
 
-	go func() {
-		defer wg.Done()
+	g.Go(func() error {
 		var err error
-		filesByBook, err = h.DB.GetFilesForBooks(ctx, bookIDs)
+		filesByBook, err = h.DB.GetFilesForBooks(gCtx, bookIDs)
 		if err != nil {
-			slog.ErrorContext(ctx, "OPDS: failed to batch-load book files",
-				slog.Any(otelkeys.Error, err),
-			)
-			filesByBook = nil
+			return fmt.Errorf("get book files: %w", err)
 		}
-	}()
+		return nil
+	})
 
-	wg.Wait()
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
 
 	entries := make([]opdspkg.Entry, 0, len(books))
 	for _, book := range books {
@@ -316,10 +315,8 @@ func (h *OPDSHandler) bookEntries(ctx context.Context, books []db.Book, baseURL 
 		}
 
 		// Add authors from batch result.
-		if authorsByBook != nil {
-			for _, a := range authorsByBook[book.ID] {
-				entry.Authors = append(entry.Authors, opdspkg.Author{Name: a.Name})
-			}
+		for _, a := range authorsByBook[book.ID] {
+			entry.Authors = append(entry.Authors, opdspkg.Author{Name: a.Name})
 		}
 
 		// Add cover image link
@@ -338,21 +335,19 @@ func (h *OPDSHandler) bookEntries(ctx context.Context, books []db.Book, baseURL 
 		}
 
 		// Add download links from batch result.
-		if filesByBook != nil {
-			for _, f := range filesByBook[book.ID] {
-				mimeType := opdspkg.MIMETypeForFileType(f.FileType)
-				if mimeType == "" {
-					mimeType = "application/octet-stream"
-				}
-				entry.Links = append(entry.Links, opdspkg.Link{
-					Rel:  opdspkg.RelAcquisition,
-					Href: baseURL + "/download/" + f.ID,
-					Type: mimeType,
-				})
+		for _, f := range filesByBook[book.ID] {
+			mimeType := opdspkg.MIMETypeForFileType(f.FileType)
+			if mimeType == "" {
+				mimeType = "application/octet-stream"
 			}
+			entry.Links = append(entry.Links, opdspkg.Link{
+				Rel:  opdspkg.RelAcquisition,
+				Href: baseURL + "/download/" + f.ID,
+				Type: mimeType,
+			})
 		}
 
 		entries = append(entries, entry)
 	}
-	return entries
+	return entries, nil
 }
