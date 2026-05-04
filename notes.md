@@ -1,7 +1,7 @@
 # Test Improver Memory — biblioteka
 
 ## Last Updated
-2026-05-03
+2026-05-04
 
 ## Build/Test/Coverage Commands
 
@@ -16,7 +16,7 @@ go tool cover -func=/tmp/coverage.out    # function-level report
 ### Coverage Pipeline
 - A `weekly-coverage-summary.md` CI workflow generates weekly coverage trends in discussions.
 - The CI installs `exiftool` (`sudo apt-get install -y libimage-exiftool-perl`) before running tests - required by metadata extraction tests.
-- Frontend: `cd frontend && node_modules/.bin/vitest run`
+- Frontend: `cd frontend && npm install && node_modules/.bin/vitest run`
 - npm install required if node_modules/.bin/vitest missing
 
 ### Formatting/Lint
@@ -31,6 +31,7 @@ cd frontend && node_modules/.bin/prettier --write .
 ## Agent Environment Note
 Go 1.26.2 is available (GOTOOLCHAIN=auto auto-downloads it). Tests run successfully.
 go.mod requires go >= 1.26.2; use GOTOOLCHAIN=auto.
+pnpm not available; use npm install instead.
 
 ## Testing Notes
 - Uses testify/require for all assertions (not t.Fatal/t.Fatalf)
@@ -53,11 +54,13 @@ go.mod requires go >= 1.26.2; use GOTOOLCHAIN=auto.
 - Frontend vi.mock("./api", ...) pattern works for mocking API module functions in lib/ tests
 - autofocusFirstButton action is mocked as: `() => ({ destroy: () => {} })` in tests
 - types.ts split into types/ directory (annotation, audit, auth, book, calibre, config, library, metadata, reading) — tests still import from "../../types" via index.ts barrel
+- Svelte 5 $effect fires async on mount; use `await tick(); await tick()` to drain effects in tests
+- UsersTab mock pattern: module-level vi.mock with all API functions; use vi.mocked(fn).mockResolvedValue per test in beforeEach
 
 ## Testing Landscape
 Codebase is very well tested overall. Most packages have 1:1 test file ratio.
 DB package has 46 test files for 40 source files — extremely thorough.
-Frontend: 1103 tests pass across 92 test files (as of 2026-05-01).
+Frontend: 1103+ tests pass across 92+ test files.
 Packages with no test files (intentional):
 - internal/otel       (bootstrap/init code)
 - internal/otelkeys   (pure constants)
@@ -69,27 +72,13 @@ Packages with no test files (intentional):
 Frontend API modules: all covered
 Frontend stores: all covered
 Frontend components: all covered
+Handler files without own test files (covered by shared test files): book_crud.go, book_dto.go, crud.go, dberrors.go, doc.go, group_lists.go, group_members.go, group_progress.go, groups_crud.go, metadata_dto.go, metadata_goodreads.go, metadata_sse.go, request.go, tokens_compat.go, validate.go
 
 ## Task Round-Robin Status
-- 2026-04-11: Tasks 1, 2, 3, 7
-- 2026-04-12 run 2: Tasks 4, 3, 7
-- 2026-04-12 run 3: Tasks 2, 3, 7
-- 2026-04-13: Tasks 3, 7
-- 2026-04-14: Tasks 4, 6, 7
-- 2026-04-15: Tasks 2, 3, 7
-- 2026-04-17: Tasks 3, 7
-- 2026-04-18: Tasks 4, 2, 3, 7
-- 2026-04-19: Tasks 5, 2, 3, 7
-- 2026-04-20: Tasks 6, 4, 2, 3, 7
-- 2026-04-21: Tasks 3, 7
-- 2026-04-22: Tasks 4, 3, 7
-- 2026-04-25: Tasks 2, 3, 4, 7
-- 2026-04-26: Tasks 2, 3, 7
-- 2026-04-27: Tasks 1, 4, 5, 6, 7
-- 2026-04-30: Tasks 4, 5, 6, 3, 7
 - 2026-05-01: Tasks 1, 2, 7 (validate commands, scan opportunities, monthly issue)
 - 2026-05-03: Tasks 4, 3, 7 (no open PRs; created registration config API test PR)
-- Next run: Tasks 1, 2, 5, 6, 7
+- 2026-05-04: Tasks 2, 3, 4, 7 (scanned May additions, UsersTab toggle tests, monthly issue)
+- Next run: Tasks 1, 5, 6, 7
 
 ## Testing Backlog (prioritized)
 
@@ -101,9 +90,10 @@ Frontend components: all covered
 6. ~~**kobo metadata branch coverage**~~ — PR #2592 merged ✅
 7. ~~**WithTx and deferRollback**~~ — PR #2654 merged ✅
 8. ~~**kobo sync pagination**~~ — PR #2690 merged ✅
-9. ~~**registration config API frontend tests**~~ — PR branch test-assist/registration-config-api-tests (pending)
-10. **organize path-escape defense-in-depth** — `filepath.Rel` escape guard has no dedicated test. Unreachable in normal operation. Low value.
-11. **Scan May additions** — scan each run for newly added features lacking test coverage
+9. ~~**registration config API frontend tests**~~ — PR #2797 open (pending merge)
+10. ~~**UsersTab registration toggle tests**~~ — PR open (pending merge)
+11. **organize path-escape defense-in-depth** — `filepath.Rel` escape guard has no dedicated test. Unreachable in normal operation. Low value.
+12. **Scan May additions** — scan each run for newly added features lacking test coverage
 
 ## Maintainer Priorities
 - All previous monthly issues closed by veverkap as "completed"
@@ -111,6 +101,12 @@ Frontend components: all covered
 - Merged: #1689, #1771, #1792, #1845, #1943, #2021, #2143, #2221, #2349, #2403, #2439, #2464, #2519, #2546, #2567, #2592, #2654, #2690
 
 ## Completed Work
+
+### 2026-05-04
+- Tasks: 2 (scanned May additions), 3 (UsersTab registration toggle tests), 4 (Go tests verified), 7 (created new May issue)
+- Created PR branch test-assist/users-tab-registration-tests: 8 new tests for registration config toggle in UsersTab
+- UsersTab.test.ts: 4 → 12 tests; covers toggleRegistration, API calls, success/error feedback
+- Gap: #2731 added registration toggle UI to UsersTab but tests only mocked the API without exercising it
 
 ### 2026-05-03
 - Tasks: 4 (no open PRs), 3 (frontend registration config API tests), 7 (created new May issue)
@@ -125,33 +121,7 @@ Frontend components: all covered
 - Scanned: types.ts split, bcrypt consolidation, getPendingAIEnrichmentOrErr, validateSSRFURL extraction — all well-covered
 
 ### 2026-04-30
-- Tasks: 4 (no open Test Improver PRs), 5 (no testing issues), 6 (no infra gaps), 3 (kobo sync pagination tests), 7
-- PR #2690 merged: 3 new tests for Kobo sync pagination (ContinueHeaderWhenHasMore, NoContinueHeaderWhenFitsOnePage, SyncTokenAdvancesForFilelessBooks)
+- Tasks: 4, 5, 6, 3, 7; PR #2690 merged: 3 new tests for Kobo sync pagination
 
-### 2026-04-29
-- PR #2654 merged: 6 unit tests for WithTx and deferRollback
-
-### 2026-04-27
-- PR #2592 merged: 12 branch-coverage tests for kobo metadata helpers
-
-### 2026-04-26
-- PR #2567 merged: 7 tests for DeleteConfirmation component
-
-### 2026-04-25
-- PR #2546 merged: 4 error-path tests for NewEnrichAIHandler
-
-### 2026-04-24
-- PR #2519 merged: 19 tests for authRequiredErrors + authFeatureFlags
-
-### 2026-04-22
-- Updated PR #2439 (addressing 4 review comments)
-- PR #2464 merged: 2 handler-level 409 Conflict tests
-
-### 2026-04-21
-- PR #2439 merged: 44 test cases for pathparser helpers
-
-### 2026-04-20
-- PR #2403 merged: 13 tests for calibre.ts + recommendations.ts
-
-### Earlier (2026-04-11 to 2026-04-19)
-- PRs #1689, #1771, #1792, #1845, #1943, #2021, #2143, #2221, #2349 — all merged ✅
+### Earlier (2026-04-11 to 2026-04-29)
+- PRs #1689, #1771, #1792, #1845, #1943, #2021, #2143, #2221, #2349, #2403, #2439, #2464, #2519, #2546, #2567, #2592, #2654, #2690 — all merged ✅
