@@ -244,11 +244,11 @@ Entries are returned newest-first. `limit` defaults to `50` (maximum `200`); `of
 | `group.list_unshared`  | `group`       | `list_id`                                        | `DELETE /api/groups/{id}/lists/{list_id}` |
 | `calibre.imported`     | `calibre_import` | `total`, `imported`, `skipped`, `errors`, `library_id` | `POST /api/calibre-import/confirm` |
 | `metadata.fetch_requested` | `book`    | `task_id`                                        | `POST /api/books/{id}/metadata/fetch`   |
-| `metadata.applied`     | `book`        | `metadata_id`, `source`                          | `POST /api/books/{id}/metadata/{metadata_id}/apply` |
-| `metadata.rejected`    | `book`        | `metadata_id`, `source`                          | `POST /api/books/{id}/metadata/{metadata_id}/reject` |
-| `ai_enrichment.fetch_requested` | `book` | `task_id`                                     | `POST /api/books/{id}/ai-enrichment/fetch` |
-| `ai_enrichment.applied` | `book`       | `enrichment_id`                                  | `POST /api/books/{id}/ai-enrichment/{enrichment_id}/apply` |
-| `ai_enrichment.rejected` | `book`      | `enrichment_id`                                  | `POST /api/books/{id}/ai-enrichment/{enrichment_id}/reject` |
+| `metadata.applied`     | `book`        | `metadata_id`, `source`                          | `POST /api/books/{id}/metadata/apply`   |
+| `metadata.rejected`    | `book`        | `metadata_id`, `source`                          | `POST /api/books/{id}/metadata/reject`  |
+| `ai_enrichment.fetch_requested` | `book` | `task_id`                                     | `POST /api/books/{id}/metadata/ai-fetch` |
+| `ai_enrichment.applied` | `book`       | `enrichment_id`                                  | `POST /api/books/{id}/metadata/ai-apply` |
+| `ai_enrichment.rejected` | `book`      | `enrichment_id`                                  | `POST /api/books/{id}/metadata/ai-reject` |
 | `api_key.created`      | `api_key`     | `name`                                           | `POST /api/api-keys`                    |
 | `api_key.deleted`      | `api_key`     | `name`                                           | `DELETE /api/api-keys/{id}`             |
 | `opds_credential.updated` | `opds_credential` | `username`                               | `PUT /api/opds/credentials`             |
@@ -262,6 +262,7 @@ Entries are returned newest-first. `limit` defaults to `50` (maximum `200`); `of
 | `watch_folder.config_updated` | `config` | `path`, `library_id`                             | `PUT /api/config/watch-folder`          |
 | `llm.config_updated`   | `config`      | —                                                | `PUT /api/config/llm`                   |
 | `oidc.config_updated`  | `config`      | —                                                | `PUT /api/config/oidc`                  |
+| `registration.config_updated` | `config` | `registration_disabled`                        | `PUT /api/config/registration`          |
 
 **Notes:** `user_id` is the actor who performed the action (`null` for system/background actions). Entries are append-only and never modified. Book files created by the background scanner do **not** currently produce an audit entry — only files created via the API are audited. Background imports run without an authenticated user context (there is no actor to attribute the action to), so they cannot be represented in the same audit model as user-initiated writes.
 
