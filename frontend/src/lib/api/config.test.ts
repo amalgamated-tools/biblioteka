@@ -18,12 +18,15 @@ import {
   setWatchFolderConfig,
   getLLMConfig,
   setLLMConfig,
+  getRegistrationConfig,
+  setRegistrationConfig,
   clearToken,
 } from "../api";
 import type {
   ConfigStatus,
   LLMConfig,
   OIDCConfig,
+  RegistrationConfig,
   SetLLMConfigInput,
   SetOIDCConfigInput,
   SMTPConfig,
@@ -248,6 +251,35 @@ describe("Config API", () => {
       expect(options.method).toBe("PUT");
       expect(JSON.parse(options.body)).toEqual(fakeSetLLMInput);
       expect(result).toEqual(responseWithRestart);
+    });
+  });
+
+  describe("getRegistrationConfig", () => {
+    it("sends GET /api/config/registration and returns the config", async () => {
+      const fakeConfig: RegistrationConfig = { registration_disabled: false };
+      mockFetchResponse(fakeConfig);
+
+      const result = await getRegistrationConfig();
+
+      const [url, options] = fetchMock.mock.calls[0];
+      expect(url).toBe("/api/config/registration");
+      expect(options.method).toBe("GET");
+      expect(result).toEqual(fakeConfig);
+    });
+  });
+
+  describe("setRegistrationConfig", () => {
+    it("sends PUT /api/config/registration with the config body and returns the updated config", async () => {
+      const fakeConfig: RegistrationConfig = { registration_disabled: true };
+      mockFetchResponse(fakeConfig);
+
+      const result = await setRegistrationConfig(fakeConfig);
+
+      const [url, options] = fetchMock.mock.calls[0];
+      expect(url).toBe("/api/config/registration");
+      expect(options.method).toBe("PUT");
+      expect(JSON.parse(options.body)).toEqual(fakeConfig);
+      expect(result).toEqual(fakeConfig);
     });
   });
 });
