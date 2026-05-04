@@ -1,8 +1,7 @@
 {
-  "last_run": "2026-05-03T20:26:51Z",
+  "last_run": "2026-05-04T20:42:44Z",
   "tasks_run": [
-    "task2",
-    "task3",
+    "task4",
     "task7"
   ],
   "commands": {
@@ -14,151 +13,34 @@
     "note": "Go 1.26.2 is auto-downloaded when needed. internal/jobs tests have pre-existing failures. pnpm not installed in CI so frontend fmt fails but Go fmt works fine."
   },
   "backlog": [
-    {
-      "id": "static-asset-caching",
-      "status": "merged",
-      "pr_number": 1790
-    },
-    {
-      "id": "books-title-index",
-      "status": "merged",
-      "pr_number": 1677
-    },
-    {
-      "id": "fts-search",
-      "status": "implemented_by_maintainers"
-    },
-    {
-      "id": "benchmark-db-queries",
-      "status": "merged"
-    },
-    {
-      "id": "book-downloads-file-id-index",
-      "status": "merged",
-      "pr_number": 1806
-    },
-    {
-      "id": "reading-progress-user-updated-at-index",
-      "status": "merged",
-      "pr_number": 1876
-    },
-    {
-      "id": "load-book-relations-parallel",
-      "status": "merged"
-    },
-    {
-      "id": "book-tags-goodreads-indexes",
-      "status": "merged",
-      "pr_number": 2051
-    },
-    {
-      "id": "reading-group-lists-passkey-challenges-indexes",
-      "status": "merged",
-      "pr_number": 2107
-    },
-    {
-      "id": "kobo-ai-goodreads-annotation-indexes",
-      "status": "merged",
-      "pr_number": 2168
-    },
-    {
-      "id": "tags-name-sort-index",
-      "status": "merged",
-      "pr_number": 2275
-    },
-    {
-      "id": "user-created-at-sort-indexes",
-      "status": "merged",
-      "pr_number": 2361
-    },
-    {
-      "id": "group-members-audit-logs-sort-indexes",
-      "status": "merged",
-      "pr_number": 2423
-    },
-    {
-      "id": "benchmark-gaps",
-      "status": "merged",
-      "pr_number": 2451
-    },
-    {
-      "id": "book-annotations-book-created-at-index",
-      "status": "merged",
-      "pr_number": 2474
-    },
-    {
-      "id": "reading-list-books-added-at-index",
-      "status": "merged",
-      "pr_number": 2499
-    },
-    {
-      "id": "reading-lists-correlated-subquery",
-      "status": "merged",
-      "pr_number": 2533
-    },
-    {
-      "id": "book-series-position-index",
-      "status": "merged",
-      "pr_number": 2555
-    },
-    {
-      "id": "parallelize_kobo_sync_batch_queries",
-      "status": "merged",
-      "pr_number": 2576
-    },
-    {
-      "id": "bench-reading-list-queries",
-      "status": "merged",
-      "pr_number": 2616
-    },
-    {
-      "id": "books-created-at-id-index",
-      "status": "merged",
-      "pr_number": 2642
-    },
-    {
-      "id": "sqlite-pragma-tuning",
-      "status": "merged",
-      "pr_number": 2673
-    },
-    {
-      "id": "authors-series-lower-name-sort",
-      "status": "merged",
-      "pr_number": 2702
-    },
-    {
-      "id": "bench-ai-enrichment",
-      "status": "pr_created",
-      "branch": "perf-assist/bench-ai-enrichment-20260502-15fc613eed6ad109",
-      "pr_number": 2780,
-      "description": "BenchmarkGetPendingAIEnrichmentByBook; doc comment fix pushed"
-    },
-    {
-      "id": "bench-goodreads-pending",
-      "status": "pr_created",
-      "branch": "perf-assist/bench-goodreads-pending-20260503",
-      "pr_number": 2813,
-      "description": "BenchmarkGetPendingGoodreadsMetadataByBook - 66916 ns/op baseline"
-    },
-    {
-      "id": "bench-recommendations",
-      "status": "pr_created",
-      "branch": "perf-assist/bench-recommendations-20260503",
-      "pr_number": null,
-      "description": "BenchmarkGetRecommendations - 2766649 ns/op baseline (~2.77ms), 647 allocs/op on AMD EPYC 7763"
-    },
-    {
-      "id": "group-lists-reading-lists-temp-btree",
-      "status": "identified",
-      "description": "ListGroups has USE TEMP B-TREE FOR ORDER BY. Caused by join+ORDER BY; requires denormalization.",
-      "priority": "low"
-    },
-    {
-      "id": "group-member-progress-sort",
-      "status": "identified",
-      "description": "ListGroupMemberProgress has USE TEMP B-TREE FOR ORDER BY on computed sort expression - cannot be fixed with standard indexes.",
-      "priority": "low"
-    }
+    {"id": "static-asset-caching", "status": "merged", "pr_number": 1790},
+    {"id": "books-title-index", "status": "merged", "pr_number": 1677},
+    {"id": "fts-search", "status": "implemented_by_maintainers"},
+    {"id": "benchmark-db-queries", "status": "merged"},
+    {"id": "book-downloads-file-id-index", "status": "merged", "pr_number": 1806},
+    {"id": "reading-progress-user-updated-at-index", "status": "merged", "pr_number": 1876},
+    {"id": "load-book-relations-parallel", "status": "merged"},
+    {"id": "book-tags-goodreads-indexes", "status": "merged", "pr_number": 2051},
+    {"id": "reading-group-lists-passkey-challenges-indexes", "status": "merged", "pr_number": 2107},
+    {"id": "kobo-ai-goodreads-annotation-indexes", "status": "merged", "pr_number": 2168},
+    {"id": "tags-name-sort-index", "status": "merged", "pr_number": 2275},
+    {"id": "user-created-at-sort-indexes", "status": "merged", "pr_number": 2361},
+    {"id": "group-members-audit-logs-sort-indexes", "status": "merged", "pr_number": 2423},
+    {"id": "benchmark-gaps", "status": "merged", "pr_number": 2451},
+    {"id": "book-annotations-book-created-at-index", "status": "merged", "pr_number": 2474},
+    {"id": "reading-list-books-added-at-index", "status": "merged", "pr_number": 2499},
+    {"id": "reading-lists-correlated-subquery", "status": "merged", "pr_number": 2533},
+    {"id": "book-series-position-index", "status": "merged", "pr_number": 2555},
+    {"id": "parallelize_kobo_sync_batch_queries", "status": "merged", "pr_number": 2576},
+    {"id": "bench-reading-list-queries", "status": "merged", "pr_number": 2616},
+    {"id": "books-created-at-id-index", "status": "merged", "pr_number": 2642},
+    {"id": "sqlite-pragma-tuning", "status": "merged", "pr_number": 2673},
+    {"id": "authors-series-lower-name-sort", "status": "merged", "pr_number": 2702},
+    {"id": "bench-ai-enrichment", "status": "pr_created", "branch": "perf-assist/bench-ai-enrichment-20260502-15fc613eed6ad109", "pr_number": 2780, "description": "BenchmarkGetPendingAIEnrichmentByBook; doc comment fix pushed"},
+    {"id": "bench-goodreads-pending", "status": "pr_created", "branch": "perf-assist/bench-goodreads-pending-20260503-4cd42b49e5658a6b", "pr_number": 2813, "description": "BenchmarkGetPendingGoodreadsMetadataByBook; fixed doc comment (20->40) and password arg"},
+    {"id": "bench-recommendations", "status": "pr_created", "branch": "perf-assist/bench-recommendations-20260503-682da4931334e248", "pr_number": 2818, "description": "BenchmarkGetRecommendations; fixed all 3 Greptile issues: series arm (distinct series), publisher arm, comment accuracy"},
+    {"id": "group-lists-reading-lists-temp-btree", "status": "identified", "description": "ListGroups has USE TEMP B-TREE FOR ORDER BY. Caused by join+ORDER BY; requires denormalization.", "priority": "low"},
+    {"id": "group-member-progress-sort", "status": "identified", "description": "ListGroupMemberProgress has USE TEMP B-TREE FOR ORDER BY on computed sort expression - cannot be fixed with standard indexes.", "priority": "low"}
   ],
   "monthly_activity_issue_number": 2814,
   "monthly_activity_issue_month": "2026-05",
@@ -167,9 +49,9 @@
     "task1_commands": "2026-04-29T20:43:38Z",
     "task2_opportunities": "2026-05-03T20:26:51Z",
     "task3_implement": "2026-05-03T20:26:51Z",
-    "task4_pr_maintenance": "2026-05-03T14:00:00Z",
+    "task4_pr_maintenance": "2026-05-04T20:42:44Z",
     "task5_comments": "2026-04-24T20:28:00Z",
     "task6_infrastructure": "2026-05-02T20:26:04Z",
-    "task7_monthly_summary": "2026-05-03T20:26:51Z"
+    "task7_monthly_summary": "2026-05-04T20:42:44Z"
   }
 }
