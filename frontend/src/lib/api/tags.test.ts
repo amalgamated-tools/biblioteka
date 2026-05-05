@@ -51,7 +51,7 @@ afterEach(() => {
 describe("Tags API", () => {
   describe("listTags", () => {
     it("sends GET /api/tags and returns the list", async () => {
-      mockFetchResponse([fakeTag]);
+      mockFetchResponse({ tags: [fakeTag], total: 1, limit: 50, offset: 0 });
 
       const result = await listTags();
 

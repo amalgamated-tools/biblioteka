@@ -2,8 +2,16 @@ import type { Author, AuthorInput, PaginatedBooks } from "../../types";
 import { request } from "./core";
 import { listEntityBooks } from "./pagination";
 
+interface AuthorListResponse {
+  authors: Author[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
 export async function listAuthors(): Promise<Author[]> {
-  return request<Author[]>("GET", "/api/authors");
+  const result = await request<AuthorListResponse>("GET", "/api/authors");
+  return result.authors;
 }
 
 export async function getAuthor(id: string): Promise<Author> {

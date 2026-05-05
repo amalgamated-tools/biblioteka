@@ -55,7 +55,7 @@ afterEach(() => {
 describe("Series API", () => {
   describe("listSeries", () => {
     it("sends GET /api/series and returns the list", async () => {
-      mockFetchResponse([fakeSeries]);
+      mockFetchResponse({ series: [fakeSeries], total: 1, limit: 50, offset: 0 });
 
       const result = await listSeries();
 

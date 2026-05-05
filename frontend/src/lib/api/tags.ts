@@ -1,8 +1,16 @@
 import type { Tag, TagInput } from "../../types";
 import { request } from "./core";
 
+interface TagListResponse {
+  tags: Tag[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
 export async function listTags(): Promise<Tag[]> {
-  return request<Tag[]>("GET", "/api/tags");
+  const result = await request<TagListResponse>("GET", "/api/tags");
+  return result.tags;
 }
 
 export async function getTag(id: string): Promise<Tag> {

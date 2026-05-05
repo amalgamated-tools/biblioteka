@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -123,8 +124,27 @@ func (h *TagHandler) HandleTag(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type tagListDTO struct {
+	Tags   []tagDTO `json:"tags"`
+	Total  int      `json:"total"`
+	Limit  int      `json:"limit"`
+	Offset int      `json:"offset"`
+}
+
 func (h *TagHandler) listTags(w http.ResponseWriter, r *http.Request) {
-	listEntities(w, r, "tags", h.DB.ListTags, toTagDTO)
+	limit, offset := parseLimitOffset(r, defaultPageLimit, maxPageLimit)
+	tags, total, err := h.DB.ListTagsPaginated(r.Context(), limit, offset)
+	if err != nil {
+		slog.ErrorContext(r.Context(), "failed to list tags", slog.Any(otelkeys.Error, err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list tags")
+		return
+	}
+	writeJSON(r.Context(), w, http.StatusOK, tagListDTO{
+		Tags:   mapSlice(tags, toTagDTO),
+		Total:  total,
+		Limit:  limit,
+		Offset: offset,
+	})
 }
 
 func (h *TagHandler) createTag(w http.ResponseWriter, r *http.Request) {

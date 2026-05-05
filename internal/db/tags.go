@@ -83,6 +83,15 @@ func (d *DB) ListTags(ctx context.Context) ([]Tag, error) {
 	return listAll(ctx, d, tagListQuery{}, scanTag)
 }
 
+// ListTagsPaginated returns tags ordered by name with pagination and total count.
+func (d *DB) ListTagsPaginated(ctx context.Context, limit, offset int) ([]Tag, int, error) {
+	slog.DebugContext(ctx, "db: listing tags paginated",
+		slog.Int(otelkeys.Limit, limit),
+		slog.Int(otelkeys.Offset, offset),
+	)
+	return listPaginated(ctx, d, tagListQuery{}, limit, offset, scanTag)
+}
+
 // UpdateTag replaces the name of the tag identified by id. The name is
 // normalized. Returns sql.ErrNoRows if the tag does not exist, or
 // ErrTagNameExists if the new name conflicts with another tag.

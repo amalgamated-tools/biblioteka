@@ -56,7 +56,7 @@ afterEach(() => {
 describe("Authors API", () => {
   describe("listAuthors", () => {
     it("sends GET /api/authors and returns the list", async () => {
-      mockFetchResponse([fakeAuthor]);
+      mockFetchResponse({ authors: [fakeAuthor], total: 1, limit: 50, offset: 0 });
 
       const result = await listAuthors();
 
