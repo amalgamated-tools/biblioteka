@@ -1,7 +1,8 @@
 {
-  "last_run": "2026-05-04T20:42:44Z",
+  "last_run": "2026-05-05T20:37:39Z",
   "tasks_run": [
-    "task4",
+    "task3",
+    "task5",
     "task7"
   ],
   "commands": {
@@ -39,6 +40,7 @@
     {"id": "bench-ai-enrichment", "status": "pr_created", "branch": "perf-assist/bench-ai-enrichment-20260502-15fc613eed6ad109", "pr_number": 2780, "description": "BenchmarkGetPendingAIEnrichmentByBook; doc comment fix pushed"},
     {"id": "bench-goodreads-pending", "status": "pr_created", "branch": "perf-assist/bench-goodreads-pending-20260503-4cd42b49e5658a6b", "pr_number": 2813, "description": "BenchmarkGetPendingGoodreadsMetadataByBook; fixed doc comment (20->40) and password arg"},
     {"id": "bench-recommendations", "status": "pr_created", "branch": "perf-assist/bench-recommendations-20260503-682da4931334e248", "pr_number": 2818, "description": "BenchmarkGetRecommendations; fixed all 3 Greptile issues: series arm (distinct series), publisher arm, comment accuracy"},
+    {"id": "bench-kobo-reading-states", "status": "pr_staged", "branch": "perf-assist/bench-kobo-reading-states-20260505", "description": "BenchmarkListKoboReadingStatesSince_All_50 (~365us/op) and _Incremental_50 (~382us/op) on AMD EPYC 7763"},
     {"id": "group-lists-reading-lists-temp-btree", "status": "identified", "description": "ListGroups has USE TEMP B-TREE FOR ORDER BY. Caused by join+ORDER BY; requires denormalization.", "priority": "low"},
     {"id": "group-member-progress-sort", "status": "identified", "description": "ListGroupMemberProgress has USE TEMP B-TREE FOR ORDER BY on computed sort expression - cannot be fixed with standard indexes.", "priority": "low"}
   ],
@@ -48,10 +50,10 @@
   "tasks_last_run": {
     "task1_commands": "2026-04-29T20:43:38Z",
     "task2_opportunities": "2026-05-03T20:26:51Z",
-    "task3_implement": "2026-05-03T20:26:51Z",
+    "task3_implement": "2026-05-05T20:37:39Z",
     "task4_pr_maintenance": "2026-05-04T20:42:44Z",
-    "task5_comments": "2026-04-24T20:28:00Z",
+    "task5_comments": "2026-05-05T20:37:39Z",
     "task6_infrastructure": "2026-05-02T20:26:04Z",
-    "task7_monthly_summary": "2026-05-04T20:42:44Z"
+    "task7_monthly_summary": "2026-05-05T20:37:39Z"
   }
 }
