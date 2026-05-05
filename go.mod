@@ -4,10 +4,10 @@ go 1.26.2
 
 require (
 	github.com/Khan/genqlient v0.8.1
-	github.com/amalgamated-tools/goauth v0.4.0
+	github.com/amalgamated-tools/goauth v0.5.0
 	github.com/buger/jsonparser v1.2.0
 	github.com/coreos/go-oidc/v3 v3.18.0
-	github.com/go-webauthn/webauthn v0.17.0
+	github.com/go-webauthn/webauthn v0.17.2
 	github.com/google/uuid v1.6.0
 	github.com/hibiken/asynq v0.26.0
 	github.com/hibiken/asynqmon v0.7.2
@@ -84,7 +84,7 @@ require (
 	golang.org/x/vuln v1.2.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	mvdan.cc/gofumpt v0.9.2 // indirect
+	mvdan.cc/gofumpt v0.10.0 // indirect
 )
 
 require (
