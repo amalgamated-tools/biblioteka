@@ -294,20 +294,28 @@ server {
 
 ### SQLite
 
-The SQLite database is stored in a Docker named volume (`biblioteka-data`). To back it up:
+The SQLite database is stored in a Docker named volume (`biblioteka-data`).
 
-```bash
-# Copy the database file from the running container
-docker compose cp biblioteka:/data/biblioteka.db ./biblioteka.db.bak
-```
-
-Or stop the container before copying for a guaranteed consistent snapshot:
+**Recommended — stop the container for a guaranteed consistent snapshot:**
 
 ```bash
 docker compose stop biblioteka
 docker compose cp biblioteka:/data/biblioteka.db ./biblioteka-$(date +%Y%m%d).db
 docker compose start biblioteka
 ```
+
+**Hot backup (container running):** Biblioteka uses SQLite in [WAL mode](https://www.sqlite.org/wal.html). The database state spans up to three files: the main `.db` file, a write-ahead log `.db-wal`, and a shared-memory index `.db-shm`. Copying only the `.db` file while the server is running may produce an **incomplete backup** — committed writes that have not yet been checkpointed live in `.db-wal`, not in `.db`. Copy all three files to ensure a complete, consistent backup:
+
+```bash
+# WAL-mode hot backup — copy all three files together
+docker compose cp biblioteka:/data/biblioteka.db     ./biblioteka.db.bak
+docker compose cp biblioteka:/data/biblioteka.db-wal ./biblioteka.db-wal.bak
+docker compose cp biblioteka:/data/biblioteka.db-shm ./biblioteka.db-shm.bak
+```
+
+Keep all three files in the same directory. To restore, place them together and rename to remove the `.bak` suffix. If `.db-wal` and `.db-shm` do not exist (the database has been fully checkpointed — normal after a clean shutdown), the `.db` file alone is sufficient.
+
+> **After restoring from backup:** If you ran `VACUUM` on the restored database file outside of Biblioteka, the full-text search index may be corrupt. Start the server once normally — it runs a startup integrity check and rebuilds the FTS index automatically if needed. See [Search Index Maintenance](administration.md#search-index-maintenance-sqlite).
 
 ### PostgreSQL
 
