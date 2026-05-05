@@ -173,6 +173,12 @@ Reading lists are managed via the REST API at `/api/reading-lists` and `/api/rea
 
 A scored list of books the authenticated user has not yet read, generated locally without an external service. The ranking algorithm combines four signals derived from the user's Kobo reading history: author overlap with books the user is currently reading or has finished, series continuation (books in the same series as books the user is reading or has finished), publisher match, and overall download popularity across the instance. Results are returned by `GET /api/recommendations` (default 10, max 50) and displayed on the dashboard as a **You Might Also Like** panel backed by the `Recommendations.svelte` component. See [API Reference](api-reference.md).
 
+## `registration_disabled`
+
+A runtime admin setting stored in the `settings` table that controls whether public self-registration is permitted. When set to `true`, `POST /api/auth/signup` returns `403 Forbidden` and the OIDC callback also blocks new-user registrations via SSO. When `false` (the default seeded by migrations), public signup is open.
+
+This setting is evaluated alongside the `DISABLE_SIGNUP` environment variable — if either flag is `true`, `GET /api/auth/signup/enabled` returns `{"enabled": false}` and all signup paths are blocked. Unlike the env var, `registration_disabled` can be toggled at runtime without restarting the server. Admins manage it via `PUT /api/config/registration` (returns the updated value) and read it via `GET /api/config/registration` (admin-only). The current state is also exposed to all clients through `GET /api/auth/signup/enabled`. Frontend toggle is available under **Settings → Users**. See [Administration](administration.md) and [Authentication](authentication.md).
+
 ## Runes
 
 Svelte 5's compiler-level reactivity primitives, written as `$`-prefixed keywords (`$state`, `$derived`, `$effect`, `$props`, `$derived.by`). Runes replace Svelte 4's `writable`/`readable` store API and `$:` reactive statements with explicit, fine-grained reactive declarations. All Biblioteka frontend code uses runes mode exclusively. See also [`$state`](#state), [`$derived`](#derived), [`$effect`](#effect), [`$props`](#props).
