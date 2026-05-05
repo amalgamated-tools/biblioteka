@@ -565,6 +565,72 @@ func BenchmarkListAuthors_100(b *testing.B) {
 	}
 }
 
+// ---- ListKoboReadingStatesSince ----
+
+// BenchmarkListKoboReadingStatesSince_All_50 measures the full-sync path of
+// ListKoboReadingStatesSince (since=zero), which fetches all 50 reading states
+// for a user. This exercises the idx_kobo_reading_states_user_updated composite
+// index on (user_id, updated_at) for an ORDER BY updated_at ASC scan.
+func BenchmarkListKoboReadingStatesSince_All_50(b *testing.B) {
+	d := newBenchDB(b)
+	ctx := b.Context()
+
+	user, err := d.CreateUser(ctx, "bench-kobo-user", "kobo@example.com", "hashedpw")
+	require.NoError(b, err, "CreateUser")
+
+	pct := 0.5
+	for i := range 50 {
+		bk, err := d.CreateBook(ctx, BookInput{Title: fmt.Sprintf("Kobo Book %05d", i+1)})
+		require.NoError(b, err, "CreateBook")
+		_, err = d.UpsertKoboReadingState(ctx, user.ID, bk.ID, StatusReading, &pct, nil, nil, nil)
+		require.NoError(b, err, "UpsertKoboReadingState")
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for range b.N {
+		_, err := d.ListKoboReadingStatesSince(ctx, user.ID, time.Time{})
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+// BenchmarkListKoboReadingStatesSince_Incremental_50 measures the incremental
+// sync path of ListKoboReadingStatesSince (since=non-zero), which returns only
+// states updated after the given timestamp. This exercises the
+// idx_kobo_reading_states_user_updated composite index on (user_id, updated_at)
+// for a range scan with an ORDER BY updated_at ASC filter.
+func BenchmarkListKoboReadingStatesSince_Incremental_50(b *testing.B) {
+	d := newBenchDB(b)
+	ctx := b.Context()
+
+	user, err := d.CreateUser(ctx, "bench-kobo-incr-user", "koboincr@example.com", "hashedpw")
+	require.NoError(b, err, "CreateUser")
+
+	pct := 0.5
+	// Seed 50 reading states; use a fixed past timestamp as the sync boundary.
+	for i := range 50 {
+		bk, err := d.CreateBook(ctx, BookInput{Title: fmt.Sprintf("Kobo Incr Book %05d", i+1)})
+		require.NoError(b, err, "CreateBook")
+		_, err = d.UpsertKoboReadingState(ctx, user.ID, bk.ID, StatusReading, &pct, nil, nil, nil)
+		require.NoError(b, err, "UpsertKoboReadingState")
+	}
+
+	// since is set before all seeded states so all 50 rows are returned —
+	// a realistic worst-case for a first incremental sync after initial setup.
+	since := time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for range b.N {
+		_, err := d.ListKoboReadingStatesSince(ctx, user.ID, since)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
 // ---- ListSeries ----
 
 // BenchmarkListSeries_100 measures the full (non-paginated) series-list query
