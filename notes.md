@@ -1,7 +1,7 @@
 # Test Improver Memory — biblioteka
 
 ## Last Updated
-2026-05-04
+2026-05-05
 
 ## Build/Test/Coverage Commands
 
@@ -32,6 +32,7 @@ cd frontend && node_modules/.bin/prettier --write .
 Go 1.26.2 is available (GOTOOLCHAIN=auto auto-downloads it). Tests run successfully.
 go.mod requires go >= 1.26.2; use GOTOOLCHAIN=auto.
 pnpm not available; use npm install instead.
+exiftool not available via sudo in container. Go tests that use exiftool time out.
 
 ## Testing Notes
 - Uses testify/require for all assertions (not t.Fatal/t.Fatalf)
@@ -78,7 +79,8 @@ Handler files without own test files (covered by shared test files): book_crud.g
 - 2026-05-01: Tasks 1, 2, 7 (validate commands, scan opportunities, monthly issue)
 - 2026-05-03: Tasks 4, 3, 7 (no open PRs; created registration config API test PR)
 - 2026-05-04: Tasks 2, 3, 4, 7 (scanned May additions, UsersTab toggle tests, monthly issue)
-- Next run: Tasks 1, 5, 6, 7
+- 2026-05-05: Tasks 4, 5, 1/6, 7 (PR #2837 healthy, no testing issues, no new gaps, monthly update)
+- Next run: Tasks 2, 3, 4, 7
 
 ## Testing Backlog (prioritized)
 
@@ -90,17 +92,22 @@ Handler files without own test files (covered by shared test files): book_crud.g
 6. ~~**kobo metadata branch coverage**~~ — PR #2592 merged ✅
 7. ~~**WithTx and deferRollback**~~ — PR #2654 merged ✅
 8. ~~**kobo sync pagination**~~ — PR #2690 merged ✅
-9. ~~**registration config API frontend tests**~~ — PR #2797 open (pending merge)
-10. ~~**UsersTab registration toggle tests**~~ — PR open (pending merge)
+9. ~~**registration config API frontend tests**~~ — PR #2797 merged ✅
+10. ~~**UsersTab registration toggle tests**~~ — PR #2837 open (pending merge)
 11. **organize path-escape defense-in-depth** — `filepath.Rel` escape guard has no dedicated test. Unreachable in normal operation. Low value.
 12. **Scan May additions** — scan each run for newly added features lacking test coverage
 
 ## Maintainer Priorities
 - All previous monthly issues closed by veverkap as "completed"
 - Signals strong positive reception; maintainer is actively merging Test Improver PRs
-- Merged: #1689, #1771, #1792, #1845, #1943, #2021, #2143, #2221, #2349, #2403, #2439, #2464, #2519, #2546, #2567, #2592, #2654, #2690
+- Merged: #1689, #1771, #1792, #1845, #1943, #2021, #2143, #2221, #2349, #2403, #2439, #2464, #2519, #2546, #2567, #2592, #2654, #2690, #2797
 
 ## Completed Work
+
+### 2026-05-05
+- Tasks: 4 (PR #2837 healthy, 12/12 tests), 5 (no issues), 1/6 (no new gaps), 7 (monthly issue updated)
+- PR #2797 confirmed merged ✅
+- Only 2 commits since last run: migration fix + test PR merge; no new gaps found
 
 ### 2026-05-04
 - Tasks: 2 (scanned May additions), 3 (UsersTab registration toggle tests), 4 (Go tests verified), 7 (created new May issue)
