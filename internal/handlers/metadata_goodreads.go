@@ -158,7 +158,7 @@ func (h *MetadataHandler) applyMetadata(w http.ResponseWriter, r *http.Request, 
 	}
 
 	logAudit(r.Context(), h.DB, userID, db.AuditActionMetadataApplied, "book", bookID,
-		map[string]any{"metadata_id": gm.ID, "source": db.MetadataSourceGoodreads})
+		map[string]any{otelkeys.MetadataID: gm.ID, otelkeys.Source: db.MetadataSourceGoodreads})
 
 	writeJSON(r.Context(), w, http.StatusOK, toBookSummaryDTO(updated))
 }
@@ -214,7 +214,7 @@ func (h *MetadataHandler) rejectMetadata(w http.ResponseWriter, r *http.Request,
 	}
 
 	logAudit(r.Context(), h.DB, userID, db.AuditActionMetadataRejected, "book", bookID,
-		map[string]any{"metadata_id": gm.ID, "source": db.MetadataSourceGoodreads})
+		map[string]any{otelkeys.MetadataID: gm.ID, otelkeys.Source: db.MetadataSourceGoodreads})
 
 	w.WriteHeader(http.StatusNoContent)
 }

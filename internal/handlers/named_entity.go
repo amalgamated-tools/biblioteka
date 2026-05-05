@@ -84,7 +84,7 @@ func createNamedEntity[T, DTO, Req any](ops namedEntityOps[T, DTO, Req], w http.
 	)
 
 	userID := auth.UserIDFromContext(ctx)
-	logAudit(ctx, ops.db, userID, ops.auditCreate, ops.entityLabel, ops.entityID(entity), map[string]any{"name": ops.entityName(entity)})
+	logAudit(ctx, ops.db, userID, ops.auditCreate, ops.entityLabel, ops.entityID(entity), map[string]any{otelkeys.Name: ops.entityName(entity)})
 
 	writeJSON(ctx, w, http.StatusCreated, ops.toDTO(entity))
 }
@@ -139,7 +139,7 @@ func updateNamedEntity[T, DTO, Req any](ops namedEntityOps[T, DTO, Req], w http.
 	}
 
 	userID := auth.UserIDFromContext(ctx)
-	logAudit(ctx, ops.db, userID, ops.auditUpdate, ops.entityLabel, ops.entityID(entity), map[string]any{"name": ops.entityName(entity)})
+	logAudit(ctx, ops.db, userID, ops.auditUpdate, ops.entityLabel, ops.entityID(entity), map[string]any{otelkeys.Name: ops.entityName(entity)})
 
 	writeJSON(ctx, w, http.StatusOK, ops.toDTO(entity))
 }
