@@ -176,3 +176,34 @@ func TestPutBookSeries_EmptyEntries(t *testing.T) {
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &entries), "unmarshal")
 	require.Len(t, entries, 0)
 }
+
+func TestPutBookSeries_AuditLog(t *testing.T) {
+	h, userID := setupBookHandler(t)
+
+	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
+	require.NoError(t, err, "create book")
+	s, err := h.DB.CreateSeries(t.Context(), "The Dark Tower", nil, nil, nil)
+	require.NoError(t, err, "create series")
+
+	pos := 1.0
+	body := mustMarshal(t, setBookSeriesRequest{Entries: []db.BookSeriesInput{{SeriesID: s.ID, Position: &pos}}})
+	r := httptest.NewRequest(http.MethodPut, "/api/books/"+b.ID+"/series", bytes.NewReader(body))
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleBookRoutes(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+
+	logs, _, err := h.DB.ListAuditLogs(t.Context(), 10, 0)
+	require.NoError(t, err)
+
+	var found bool
+	for _, l := range logs {
+		if l.Action == db.AuditActionBookSeriesUpdated && l.EntityID == b.ID {
+			found = true
+			break
+		}
+	}
+	require.True(t, found, "expected a book.series_updated audit log entry")
+}
