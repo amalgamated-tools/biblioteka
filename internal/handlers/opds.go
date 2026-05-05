@@ -126,7 +126,7 @@ func (h *OPDSHandler) downloadFile(w http.ResponseWriter, r *http.Request, fileI
 			slog.String(otelkeys.BookFileID, fileID),
 			slog.String(otelkeys.Path, bf.FilePath),
 		)
-		http.Error(w, "Forbidden", http.StatusForbidden)
+		writeOPDSError(r, w, http.StatusForbidden, opdspkg.AcqContentType, opdspkg.ErrorID, "Forbidden")
 		return
 	}
 
@@ -227,11 +227,19 @@ func (h *OPDSHandler) serveCover(w http.ResponseWriter, r *http.Request, bookID 
 				// Trust the declared image MIME type even if sniffing disagrees
 				// (e.g. SVG detected as text/xml or application/octet-stream).
 			default:
+				slog.WarnContext(ctx, "OPDS: cover data does not look like an image",
+					slog.String(otelkeys.BookID, bookID),
+					slog.String(otelkeys.ContentType, sniffed),
+				)
 				http.Error(w, "invalid cover image", http.StatusInternalServerError)
 				return
 			}
 		}
 		if !strings.HasPrefix(contentType, "image/") {
+			slog.WarnContext(ctx, "OPDS: non-image content type in cover data URL",
+				slog.String(otelkeys.BookID, bookID),
+				slog.String(otelkeys.ContentType, contentType),
+			)
 			http.Error(w, "invalid cover image", http.StatusInternalServerError)
 			return
 		}
@@ -240,6 +248,10 @@ func (h *OPDSHandler) serveCover(w http.ResponseWriter, r *http.Request, bookID 
 		return
 	}
 	if !errors.Is(err, errNotDataURL) {
+		slog.WarnContext(ctx, "OPDS: malformed data URL for cover image",
+			slog.String(otelkeys.BookID, bookID),
+			slog.Any(otelkeys.Error, err),
+		)
 		http.Error(w, "invalid cover image", http.StatusInternalServerError)
 		return
 	}
