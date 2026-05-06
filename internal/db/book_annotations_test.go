@@ -165,3 +165,41 @@ func TestDeleteAnnotation_OtherUserCannotDelete(t *testing.T) {
 	err = d.DeleteAnnotation(t.Context(), a.ID, otherID)
 	require.ErrorIs(t, err, sql.ErrNoRows)
 }
+
+func TestGetAnnotation_MemberCanFetchGroupAnnotation(t *testing.T) {
+	d := newTestDB(t)
+	ownerID := createTestUserForAnnotation(t, d, "owner@example.com")
+	memberID := createTestUserForAnnotation(t, d, "member@example.com")
+	bookID := createTestBookForAnnotation(t, d, "Test Book")
+
+	g, err := d.CreateGroup(t.Context(), ownerID, "Book Club", nil)
+	require.NoError(t, err)
+	_, err = d.AddGroupMember(t.Context(), g.ID, ownerID, memberID)
+	require.NoError(t, err)
+
+	a, err := d.CreateAnnotation(t.Context(), ownerID, bookID, "Group note", nil, &g.ID)
+	require.NoError(t, err)
+
+	// Group member should be able to fetch the annotation by ID.
+	got, err := d.GetAnnotation(t.Context(), a.ID, memberID)
+	require.NoError(t, err)
+	require.Equal(t, a.ID, got.ID)
+	require.Equal(t, "Group note", got.Text)
+}
+
+func TestGetAnnotation_NonMemberCannotFetchGroupAnnotation(t *testing.T) {
+	d := newTestDB(t)
+	ownerID := createTestUserForAnnotation(t, d, "owner@example.com")
+	nonMemberID := createTestUserForAnnotation(t, d, "nonmember@example.com")
+	bookID := createTestBookForAnnotation(t, d, "Test Book")
+
+	g, err := d.CreateGroup(t.Context(), ownerID, "Book Club", nil)
+	require.NoError(t, err)
+
+	a, err := d.CreateAnnotation(t.Context(), ownerID, bookID, "Group note", nil, &g.ID)
+	require.NoError(t, err)
+
+	// Non-member must receive sql.ErrNoRows.
+	_, err = d.GetAnnotation(t.Context(), a.ID, nonMemberID)
+	require.ErrorIs(t, err, sql.ErrNoRows)
+}
