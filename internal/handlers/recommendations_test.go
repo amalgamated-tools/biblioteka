@@ -103,3 +103,33 @@ func TestHandleRecommendations_MethodNotAllowed(t *testing.T) {
 		require.Equal(t, http.StatusMethodNotAllowed, w.Code, "method %s should return 405", method)
 	}
 }
+
+func TestHandleRecommendations_OffsetParam(t *testing.T) {
+	h, userID := setupRecommendationHandler(t)
+
+	for i := range 5 {
+		_, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Book " + string(rune('A'+i))})
+		require.NoError(t, err)
+	}
+
+	// Fetch all books with no offset.
+	rAll := httptest.NewRequest(http.MethodGet, "/api/recommendations?limit=5", nil)
+	rAll = withUserID(rAll, userID)
+	wAll := httptest.NewRecorder()
+	h.HandleRecommendations(wAll, rAll)
+	require.Equal(t, http.StatusOK, wAll.Code)
+	var allDTOs []bookSummaryDTO
+	require.NoError(t, json.Unmarshal(wAll.Body.Bytes(), &allDTOs))
+	require.Len(t, allDTOs, 5)
+
+	// Fetch with offset=2; should return the last 3.
+	rPaged := httptest.NewRequest(http.MethodGet, "/api/recommendations?limit=5&offset=2", nil)
+	rPaged = withUserID(rPaged, userID)
+	wPaged := httptest.NewRecorder()
+	h.HandleRecommendations(wPaged, rPaged)
+	require.Equal(t, http.StatusOK, wPaged.Code)
+	var pagedDTOs []bookSummaryDTO
+	require.NoError(t, json.Unmarshal(wPaged.Body.Bytes(), &pagedDTOs))
+	require.Len(t, pagedDTOs, 3, "offset=2 should skip the first 2 results")
+	require.Equal(t, allDTOs[2].ID, pagedDTOs[0].ID, "first paged result should match third overall result")
+}

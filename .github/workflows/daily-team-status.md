@@ -29,10 +29,11 @@ tools:
 safe-outputs:
   mentions: false
   allowed-github-references: []
-  create-issue:
-    title-prefix: "chore(team-status): "
-    labels: [report, daily-status]
-    close-older-issues: true
+  create-discussion:
+    expires: 1d
+    category: "audits"
+    max: 1
+    close-older-discussions: true  
   noop:
     report-as-issue: false
 source: githubnext/agentics/workflows/daily-team-status.md@97143ac59cb3a13ef2a77581f929f06719c7402a

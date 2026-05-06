@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Book } from "../../types";
+  import { untrack } from "svelte";
   import { routerStore } from "../../stores/router.svelte";
   import * as api from "../../lib/api";
   import {
@@ -14,6 +15,7 @@
   } from "lucide-svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
   import Button from "../ui/Button.svelte";
+  import AIEnrichmentPanel from "./AIEnrichmentPanel.svelte";
 
   interface Props {
     bookId: string;
@@ -32,7 +34,7 @@
 
   async function loadBook(id: string) {
     const seq = ++fetchSeq;
-    book = null;
+    if (untrack(() => book?.id) !== id) book = null;
     loading = true;
     error = null;
     try {
@@ -134,6 +136,7 @@
 
       <!-- Details -->
       <div class="md:col-span-2 space-y-6">
+        <AIEnrichmentPanel {bookId} onApplied={() => loadBook(bookId)} />
         <div
           class="bg-white dark:bg-ink-900 rounded-2xl shadow-sm border border-ink-100 dark:border-ink-800 p-6"
         >
