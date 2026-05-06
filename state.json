@@ -1,8 +1,8 @@
 {
-  "last_run": "2026-05-05T20:37:39Z",
+  "last_run": "2026-05-06T20:50:00Z",
   "tasks_run": [
-    "task3",
-    "task5",
+    "task4",
+    "task6",
     "task7"
   ],
   "commands": {
@@ -37,10 +37,11 @@
     {"id": "books-created-at-id-index", "status": "merged", "pr_number": 2642},
     {"id": "sqlite-pragma-tuning", "status": "merged", "pr_number": 2673},
     {"id": "authors-series-lower-name-sort", "status": "merged", "pr_number": 2702},
-    {"id": "bench-ai-enrichment", "status": "pr_created", "branch": "perf-assist/bench-ai-enrichment-20260502-15fc613eed6ad109", "pr_number": 2780, "description": "BenchmarkGetPendingAIEnrichmentByBook; doc comment fix pushed"},
-    {"id": "bench-goodreads-pending", "status": "pr_created", "branch": "perf-assist/bench-goodreads-pending-20260503-4cd42b49e5658a6b", "pr_number": 2813, "description": "BenchmarkGetPendingGoodreadsMetadataByBook; fixed doc comment (20->40) and password arg"},
-    {"id": "bench-recommendations", "status": "pr_created", "branch": "perf-assist/bench-recommendations-20260503-682da4931334e248", "pr_number": 2818, "description": "BenchmarkGetRecommendations; fixed all 3 Greptile issues: series arm (distinct series), publisher arm, comment accuracy"},
-    {"id": "bench-kobo-reading-states", "status": "pr_staged", "branch": "perf-assist/bench-kobo-reading-states-20260505", "description": "BenchmarkListKoboReadingStatesSince_All_50 (~365us/op) and _Incremental_50 (~382us/op) on AMD EPYC 7763"},
+    {"id": "bench-ai-enrichment", "status": "merged", "pr_number": 2780},
+    {"id": "bench-goodreads-pending", "status": "pr_created", "branch": "perf-assist/bench-goodreads-pending-20260503-4cd42b49e5658a6b", "pr_number": 2813, "description": "BenchmarkGetPendingGoodreadsMetadataByBook; fixed doc comment (20->40) and password arg; review comments are outdated (code was fixed)"},
+    {"id": "bench-recommendations", "status": "pr_created", "branch": "perf-assist/bench-recommendations-20260503-682da4931334e248", "pr_number": 2818, "description": "BenchmarkGetRecommendations; fixed all 3 Greptile issues; series arm unresolved comment is outdated (code was fixed)"},
+    {"id": "bench-kobo-reading-states", "status": "pr_created", "branch": "perf-assist/bench-kobo-reading-states-20260505-ffe7b0a75da3a97d", "pr_number": 2879, "description": "BenchmarkListKoboReadingStatesSince_All_50 (~364us/op) and _Incremental_50 (~363us/op) on AMD EPYC 9V74; rebased on main 2026-05-06"},
+    {"id": "bench-books-modified-since", "status": "pr_created", "branch": "perf-assist/bench-books-modified-since-20260506", "pr_number": null, "description": "BenchmarkListBooksModifiedSince_All_100 (556us/op) and _Incremental_100 (644us/op) on AMD EPYC 9V74; PR pending"},
     {"id": "group-lists-reading-lists-temp-btree", "status": "identified", "description": "ListGroups has USE TEMP B-TREE FOR ORDER BY. Caused by join+ORDER BY; requires denormalization.", "priority": "low"},
     {"id": "group-member-progress-sort", "status": "identified", "description": "ListGroupMemberProgress has USE TEMP B-TREE FOR ORDER BY on computed sort expression - cannot be fixed with standard indexes.", "priority": "low"}
   ],
@@ -51,9 +52,9 @@
     "task1_commands": "2026-04-29T20:43:38Z",
     "task2_opportunities": "2026-05-03T20:26:51Z",
     "task3_implement": "2026-05-05T20:37:39Z",
-    "task4_pr_maintenance": "2026-05-04T20:42:44Z",
+    "task4_pr_maintenance": "2026-05-06T20:50:00Z",
     "task5_comments": "2026-05-05T20:37:39Z",
-    "task6_infrastructure": "2026-05-02T20:26:04Z",
-    "task7_monthly_summary": "2026-05-05T20:37:39Z"
+    "task6_infrastructure": "2026-05-06T20:50:00Z",
+    "task7_monthly_summary": "2026-05-06T20:50:00Z"
   }
 }
