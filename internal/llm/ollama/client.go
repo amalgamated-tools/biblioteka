@@ -82,7 +82,7 @@ func (c *Client) Generate(ctx context.Context, prompt string) (string, error) {
 	}
 
 	var result ollamaChatResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	if err := json.NewDecoder(io.LimitReader(resp.Body, maxOllamaResponseBytes)).Decode(&result); err != nil {
 		return "", fmt.Errorf("ollama: decode response: %w", err)
 	}
 
@@ -92,6 +92,10 @@ func (c *Client) Generate(ctx context.Context, prompt string) (string, error) {
 
 	return result.Message.Content, nil
 }
+
+// maxOllamaResponseBytes caps the response body size when decoding the Ollama
+// API response to prevent memory exhaustion from unexpectedly large payloads.
+const maxOllamaResponseBytes = 2 << 20 // 2 MiB
 
 // Ensure Client implements llm.Provider at compile time.
 var _ llm.Provider = (*Client)(nil)

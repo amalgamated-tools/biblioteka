@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -101,4 +102,19 @@ func TestSSRFSafeHTTPClient_BlocksLocalhost(t *testing.T) {
 	c := New("http://localhost:11434", "llama3")
 	_, err := c.Generate(t.Context(), "test")
 	require.Error(t, err)
+}
+
+func TestClient_Generate_ResponseBodyTooLarge(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Write a response body that exceeds maxOllamaResponseBytes.
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(strings.Repeat("x", maxOllamaResponseBytes+1)))
+	}))
+	defer srv.Close()
+
+	client := New(srv.URL, "llama3")
+	client.HTTPClient = plainHTTPClient()
+	_, err := client.Generate(t.Context(), "test prompt")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "decode response")
 }
