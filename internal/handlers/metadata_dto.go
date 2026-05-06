@@ -56,3 +56,9 @@ type fetchMetadataResponse struct {
 	TaskID string `json:"task_id,omitempty"`
 	Status string `json:"status"`
 }
+
+const (
+	metadataStatusEnqueued       = "enqueued"
+	metadataStatusAlreadyExists  = "already_exists"
+	metadataStatusAlreadyRunning = "already_running"
+)
