@@ -269,6 +269,29 @@ describe("UsersTab registration config", () => {
     });
   });
 
+  it("shows success message after enabling registration", async () => {
+    vi.mocked(getRegistrationConfig).mockResolvedValue({
+      registration_disabled: true,
+    });
+    vi.mocked(setRegistrationConfig).mockResolvedValue({
+      registration_disabled: false,
+    });
+
+    render(UsersTab, { props: defaultProps });
+    await tick();
+    await tick();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Enable Registration" }),
+    );
+    await tick();
+    await tick();
+
+    expect(
+      screen.getByText("Public registration enabled."),
+    ).toBeInTheDocument();
+  });
+
   it("shows error banner when setRegistrationConfig rejects", async () => {
     vi.mocked(setRegistrationConfig).mockRejectedValue(
       new Error("Server error"),
