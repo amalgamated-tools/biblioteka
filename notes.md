@@ -1,7 +1,7 @@
 # Test Improver Memory — biblioteka
 
 ## Last Updated
-2026-05-05
+2026-05-06
 
 ## Build/Test/Coverage Commands
 
@@ -80,7 +80,8 @@ Handler files without own test files (covered by shared test files): book_crud.g
 - 2026-05-03: Tasks 4, 3, 7 (no open PRs; created registration config API test PR)
 - 2026-05-04: Tasks 2, 3, 4, 7 (scanned May additions, UsersTab toggle tests, monthly issue)
 - 2026-05-05: Tasks 4, 5, 1/6, 7 (PR #2837 healthy, no testing issues, no new gaps, monthly update)
-- Next run: Tasks 2, 3, 4, 7
+- 2026-05-06: Tasks 4, 2, 7 (pushed "enabled" success test to PR #2837, deep scan no new gaps)
+- Next run: Tasks 3, 5, 6, 7
 
 ## Testing Backlog (prioritized)
 
@@ -104,10 +105,11 @@ Handler files without own test files (covered by shared test files): book_crud.g
 
 ## Completed Work
 
-### 2026-05-05
-- Tasks: 4 (PR #2837 healthy, 12/12 tests), 5 (no issues), 1/6 (no new gaps), 7 (monthly issue updated)
-- PR #2797 confirmed merged ✅
-- Only 2 commits since last run: migration fix + test PR merge; no new gaps found
+### 2026-05-06
+- Tasks: 4 (pushed "enabled" success message test to PR #2837; 12→13 tests), 2 (deep scan, no new gaps found), 7 (monthly issue updated)
+- PR #2837: pushed fix for Greptile P2 gap (missing "Public registration enabled." success test)
+- Deep scan confirmed: all handlers, DB functions, frontend components/stores/API modules well covered
+- No new commits on main since 2026-05-04
 
 ### 2026-05-04
 - Tasks: 2 (scanned May additions), 3 (UsersTab registration toggle tests), 4 (Go tests verified), 7 (created new May issue)
