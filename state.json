@@ -1,37 +1,11 @@
 {
-  "last_run": "2026-05-05T01:09:22Z",
-  "comments_made": {
-    "1531": "2026-04-12T01:06:21Z",
-    "1888": "2026-04-14T01:25:00Z",
-    "1941": "2026-04-14T13:00:00Z",
-    "1971": "2026-04-15T12:48:00Z",
-    "2019": "2026-04-15T12:48:00Z",
-    "2055": "2026-04-16T01:08:00Z",
-    "1880": "2026-04-16T12:49:51Z",
-    "2084": "2026-04-17T12:46:45Z",
-    "2085": "2026-04-17T12:46:45Z",
-    "2141": "2026-04-18T01:00:54Z",
-    "2217": "2026-04-18T04:00:00Z",
-    "2220": "2026-04-18T04:00:00Z",
-    "2218": "2026-04-18T04:00:00Z",
-    "2652": "2026-05-04T01:14:36Z",
-    "2835": "2026-05-05T01:09:22Z"
+  "last_run": "2026-05-06T01:09:55Z",
+  "run_id": "25411038225",
+  "comments_made": {},
+  "fix_attempts": {
+    "2884": "repo-assist/improve-api-contract-20260506"
   },
-  "prs_created": [
-    {"branch": "repo-assist/fix-a11y-issues-1641-1642-1643-1644-1b30f25405368471", "status": "merged"},
-    {"branch": "repo-assist/fix-download-recording-kobo-opds-20260413", "status": "merged"},
-    {"branch": "repo-assist/fix-claude-md-listall-1841-1843", "status": "merged"},
-    {"branch": "repo-assist/fix-collectrows-monthly-downloads-1941", "pr_number": 2008, "status": "merged"},
-    {"branch": "repo-assist/improve-api-types-1990", "pr_number": 2007, "status": "merged"},
-    {"branch": "repo-assist/test-ai-enrichments-20260417", "pr_number": 2150, "status": "merged"},
-    {"branch": "repo-assist/perf-year-in-books-parallel-20260418", "pr_number": 2225, "status": "merged"},
-    {"branch": "repo-assist/test-reading-list-audit-20260504", "pr_number": 2826, "status": "open", "notes": "test(handlers): add audit metadata test for reading list deletion"},
-    {"branch": "repo-assist/fix-opds-errgroup-ssrf-cover-20260504", "pr_number": 2844, "status": "open", "notes": "fix(opds): replace sync.WaitGroup with errgroup; harden cover URL SSRF check. Closes #2832 #2836"},
-    {"branch": "repo-assist/feat-paginate-authors-series-tags-20260505", "status": "open", "notes": "feat(handlers): paginate GET /api/authors, /api/series, /api/tags. Closes #2858"}
-  ],
-  "issues_commented": [1531, 1888, 1941, 1971, 2019, 2055, 1880, 2084, 2085, 2141, 2217, 2220, 2218, 2652, 2835],
-  "monthly_activity_issue": "2026-05",
-  "monthly_activity_issue_number": 2827,
-  "backlog_cursor": 2859,
-  "notes": "Issues #2832 and #2836 fixed in PR #2844. PR #2826 and #2844 open for review. New pagination PR created for #2858. Copilot PRs open: #2822, #2860 (userOwnedNamedEntityOps), #2808 (TokenHash JSON), #2788 (bounded int parsing). PRs #2805 and #2807 appear merged. Issue #2652 still open - suggested close."
+  "issue_cursor": 2884,
+  "pr_cursor": 2882,
+  "notes": "issue #2652 groups.go is already split - still open, needs closing. PRs #2873, #2872, #2863, #2844, #2826 are open Repo Assist PRs needing review."
 }
