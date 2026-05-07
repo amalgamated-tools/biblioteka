@@ -54,6 +54,47 @@ func seedBooks(b *testing.B, d *DB, n int) {
 	}
 }
 
+// ---- ListBooksModifiedSince ----
+
+// BenchmarkListBooksModifiedSince_All_100 measures the full-sync path of
+// ListBooksModifiedSince (since=zero), which returns up to 100 rows ordered by
+// (updated_at ASC, id ASC). This exercises the
+// idx_books_updated_at_id composite index on (updated_at, id).
+func BenchmarkListBooksModifiedSince_All_100(b *testing.B) {
+	d := newBenchDB(b)
+	seedBooks(b, d, 100)
+	ctx := b.Context()
+	b.ResetTimer()
+	b.ReportAllocs()
+	for range b.N {
+		_, err := d.ListBooksModifiedSince(ctx, time.Time{}, "", 100)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+// BenchmarkListBooksModifiedSince_Incremental_100 measures the incremental sync
+// path of ListBooksModifiedSince (since=non-zero), which applies a compound
+// (updated_at, id) range filter for cursor-based pagination. This exercises the
+// idx_books_updated_at_id composite index on (updated_at, id).
+// All 100 rows are returned — a realistic worst case for a first incremental sync.
+func BenchmarkListBooksModifiedSince_Incremental_100(b *testing.B) {
+	d := newBenchDB(b)
+	seedBooks(b, d, 100)
+	ctx := b.Context()
+	// since is before all seeded rows so all 100 are returned.
+	since := time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
+	b.ResetTimer()
+	b.ReportAllocs()
+	for range b.N {
+		_, err := d.ListBooksModifiedSince(ctx, since, "", 100)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
 // ---- ListBooksPaginated ----
 
 func BenchmarkListBooksPaginated_100(b *testing.B) {
