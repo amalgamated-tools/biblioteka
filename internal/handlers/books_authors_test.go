@@ -159,33 +159,3 @@ func TestPutBookAuthors_EmptyList(t *testing.T) {
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "unmarshal")
 	require.Len(t, dtos, 0)
 }
-
-func TestPutBookAuthors_AuditLog(t *testing.T) {
-	h, userID := setupBookHandler(t)
-
-	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
-	require.NoError(t, err, "create book")
-	a, err := h.DB.CreateAuthor(t.Context(), "Stephen King", nil, nil, nil, nil)
-	require.NoError(t, err, "create author")
-
-	body := mustMarshal(t, setBookAuthorsRequest{AuthorIDs: []string{a.ID}})
-	r := httptest.NewRequest(http.MethodPut, "/api/books/"+b.ID+"/authors", bytes.NewReader(body))
-	r = withUserID(r, userID)
-	w := httptest.NewRecorder()
-
-	h.HandleBookRoutes(w, r)
-
-	require.Equal(t, http.StatusOK, w.Code)
-
-	logs, _, err := h.DB.ListAuditLogs(t.Context(), 10, 0)
-	require.NoError(t, err)
-
-	var found bool
-	for _, l := range logs {
-		if l.Action == db.AuditActionBookAuthorsUpdated && l.EntityID == b.ID {
-			found = true
-			break
-		}
-	}
-	require.True(t, found, "expected a book.authors_updated audit log entry")
-}

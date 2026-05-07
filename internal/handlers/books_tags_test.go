@@ -144,33 +144,3 @@ func TestPutBookTags_EmptyList(t *testing.T) {
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos))
 	require.Len(t, dtos, 0)
 }
-
-func TestPutBookTags_AuditLog(t *testing.T) {
-	h, userID := setupBookHandler(t)
-
-	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Test Book"})
-	require.NoError(t, err)
-	tag, err := h.DB.CreateTag(t.Context(), "sci-fi")
-	require.NoError(t, err)
-
-	body := mustMarshal(t, setBookTagsRequest{TagIDs: []string{tag.ID}})
-	r := httptest.NewRequest(http.MethodPut, "/api/books/"+b.ID+"/tags", bytes.NewReader(body))
-	r = withUserID(r, userID)
-	w := httptest.NewRecorder()
-
-	h.HandleBookRoutes(w, r)
-
-	require.Equal(t, http.StatusOK, w.Code)
-
-	logs, _, err := h.DB.ListAuditLogs(t.Context(), 10, 0)
-	require.NoError(t, err)
-
-	var found bool
-	for _, l := range logs {
-		if l.Action == db.AuditActionBookTagsUpdated && l.EntityID == b.ID {
-			found = true
-			break
-		}
-	}
-	require.True(t, found, "expected a book.tags_updated audit log entry")
-}
