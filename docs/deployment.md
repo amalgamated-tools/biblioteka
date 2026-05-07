@@ -296,24 +296,26 @@ server {
 
 The SQLite database is stored in a Docker named volume (`biblioteka-data`).
 
-**Recommended — stop the container for a guaranteed consistent snapshot:**
+**Recommended — stop all SQLite writers for a guaranteed consistent snapshot:**
 
 ```bash
+# Single-container deployment:
 docker compose stop biblioteka
 docker compose cp biblioteka:/data/biblioteka.db ./biblioteka-$(date +%Y%m%d).db
 docker compose start biblioteka
 ```
 
-**Hot backup (container running):** Biblioteka uses SQLite in [WAL mode](https://www.sqlite.org/wal.html). The database state spans up to three files: the main `.db` file, a write-ahead log `.db-wal`, and a shared-memory index `.db-shm`. Copying only the `.db` file while the server is running may produce an **incomplete backup** — committed writes that have not yet been checkpointed live in `.db-wal`, not in `.db`. Copy all three files to ensure a complete, consistent backup:
+For split-process deployments, stop and start both services instead: `docker compose stop biblioteka biblioteka-worker` and `docker compose start biblioteka biblioteka-worker`.
+
+**Hot backup (container running, best effort):** Biblioteka uses SQLite in [WAL mode](https://www.sqlite.org/wal.html). Copying only the `.db` file while the server is running may produce an **incomplete backup** — committed writes that have not yet been checkpointed live in `.db-wal`, not in `.db`. For the best chance of a usable hot backup, copy `.db-wal` first, then `.db`:
 
 ```bash
-# WAL-mode hot backup — copy all three files together
+# WAL-mode hot backup — copy WAL first, then main database
+docker compose cp biblioteka:/data/biblioteka.db-wal ./biblioteka.db-wal.bak || true
 docker compose cp biblioteka:/data/biblioteka.db     ./biblioteka.db.bak
-docker compose cp biblioteka:/data/biblioteka.db-wal ./biblioteka.db-wal.bak
-docker compose cp biblioteka:/data/biblioteka.db-shm ./biblioteka.db-shm.bak
 ```
 
-Keep all three files in the same directory. To restore, place them together and rename to remove the `.bak` suffix. If `.db-wal` and `.db-shm` do not exist (the database has been fully checkpointed — normal after a clean shutdown), the `.db` file alone is sufficient.
+Keep both files in the same directory. To restore, place them together and rename to remove the `.bak` suffix. If `.db-wal` does not exist (the database has been fully checkpointed — normal after a clean shutdown), the `.db` file alone is sufficient. SQLite recreates `.db-shm` automatically.
 
 > **After restoring from backup:** If you ran `VACUUM` on the restored database file outside of Biblioteka, the full-text search index may be corrupt. Start the server once normally — it runs a startup integrity check and rebuilds the FTS index automatically if needed. See [Search Index Maintenance](administration.md#search-index-maintenance-sqlite).
 
