@@ -311,8 +311,10 @@ For split-process deployments, stop and start both services instead: `docker com
 
 ```bash
 # WAL-mode hot backup — copy WAL first, then main database
-docker compose cp biblioteka:/data/biblioteka.db-wal ./biblioteka.db-wal.bak || true
-docker compose cp biblioteka:/data/biblioteka.db     ./biblioteka.db.bak
+docker compose cp biblioteka:/data/biblioteka.db-wal ./biblioteka.db-wal.bak \
+  && echo "WAL captured" \
+  || { rm -f ./biblioteka.db-wal.bak; echo "WAL not present — database is fully checkpointed; .db alone is sufficient"; }
+docker compose cp biblioteka:/data/biblioteka.db ./biblioteka.db.bak
 ```
 
 Keep both files in the same directory. To restore, place them together and rename to remove the `.bak` suffix. If `.db-wal` does not exist (the database has been fully checkpointed — normal after a clean shutdown), the `.db` file alone is sufficient. SQLite recreates `.db-shm` automatically.
