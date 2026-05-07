@@ -166,9 +166,10 @@ describe("UsersTab registration config", () => {
   it("shows 'Registration is enabled' when config returns registration_disabled: false", async () => {
     render(UsersTab, { props: defaultProps });
 
-    await waitFor(() =>
-      expect(screen.getByText("Registration is enabled")).toBeInTheDocument(),
-    );
+    await waitFor(() => {
+      expect(vi.mocked(getRegistrationConfig)).toHaveBeenCalledOnce();
+      expect(screen.getByText("Registration is enabled")).toBeInTheDocument();
+    });
   });
 
   it("shows 'Registration is disabled' when config returns registration_disabled: true", async () => {
@@ -186,11 +187,12 @@ describe("UsersTab registration config", () => {
   it("shows 'Disable Registration' button when registration is enabled", async () => {
     render(UsersTab, { props: defaultProps });
 
-    await waitFor(() =>
+    await waitFor(() => {
+      expect(vi.mocked(getRegistrationConfig)).toHaveBeenCalledOnce();
       expect(
         screen.getByRole("button", { name: "Disable Registration" }),
-      ).toBeInTheDocument(),
-    );
+      ).toBeInTheDocument();
+    });
   });
 
   it("shows 'Enable Registration' button when registration is disabled", async () => {
