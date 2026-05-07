@@ -1,5 +1,54 @@
 # Changelog
 
+## [0.17.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.16.0...v0.17.0) (2026-05-07)
+
+
+### Features
+
+* **audit:** add audit logging for book relationships and OIDC config changes ([#2735](https://github.com/amalgamated-tools/biblioteka/issues/2735)) ([14f2201](https://github.com/amalgamated-tools/biblioteka/commit/14f2201e8e4cb19e74f8fd908bbcc546bb53fc34))
+* **frontend:** AI enrichment review panel on book detail page ([#2732](https://github.com/amalgamated-tools/biblioteka/issues/2732)) ([3be700e](https://github.com/amalgamated-tools/biblioteka/commit/3be700e66872eff17a1f70388f3f3176bf3e3be3))
+* **handlers:** introduce userOwnedNamedEntityOps to eliminate duplicate user-owned CRUD pattern ([#2822](https://github.com/amalgamated-tools/biblioteka/issues/2822)) ([e1b28b8](https://github.com/amalgamated-tools/biblioteka/commit/e1b28b82c080be296b4a0dd7b0d6a500edb4c603))
+* **handlers:** paginate GET /api/authors, /api/series, and /api/tags ([#2863](https://github.com/amalgamated-tools/biblioteka/issues/2863)) ([73fa826](https://github.com/amalgamated-tools/biblioteka/commit/73fa826aef22fffcecb8780af9456e5bfd8a164c))
+* **registration:** add runtime registration_disabled setting to lock public self-registration ([#2731](https://github.com/amalgamated-tools/biblioteka/issues/2731)) ([5e2fc24](https://github.com/amalgamated-tools/biblioteka/commit/5e2fc246d634c3d449053b0eb7d1786accd1ef93))
+
+
+### Bug Fixes
+
+* **db:** GetAnnotation includes group-visible annotations for members ([#2894](https://github.com/amalgamated-tools/biblioteka/issues/2894)) ([9f9a153](https://github.com/amalgamated-tools/biblioteka/commit/9f9a153fa772d44c0797894e828a6996ed53f9b2))
+* **db:** reuse execAffected for AI enrichment and Goodreads metadata deletes ([#2909](https://github.com/amalgamated-tools/biblioteka/issues/2909)) ([18ae0d4](https://github.com/amalgamated-tools/biblioteka/commit/18ae0d44b8eae58682dc844e03826b1806a6aef7))
+* **handlers:** align group delete audit entity_type and resource label to "group" ([#2860](https://github.com/amalgamated-tools/biblioteka/issues/2860)) ([ce095b1](https://github.com/amalgamated-tools/biblioteka/commit/ce095b1ad7d586f75a014c9662eba8b75acd225c))
+* **handlers:** replace http.Error() with writeError()/writeOPDSError() and add structured logging ([#2882](https://github.com/amalgamated-tools/biblioteka/issues/2882)) ([b11d035](https://github.com/amalgamated-tools/biblioteka/commit/b11d035764f5a88618a61421e4e835b30abd5c67))
+* **llm:** cap Ollama response body with io.LimitReader ([#2893](https://github.com/amalgamated-tools/biblioteka/issues/2893)) ([577be85](https://github.com/amalgamated-tools/biblioteka/commit/577be851cb079ecda67babbafb0bb42328c45688))
+* **recommendations:** respect `offset` query parameter in GET /api/recommendations ([#2806](https://github.com/amalgamated-tools/biblioteka/issues/2806)) ([30723b5](https://github.com/amalgamated-tools/biblioteka/commit/30723b51fa06e54d3e16ec7b7fd1d27e1012986f))
+* **repo assist:** fix(opds): replace sync.WaitGroup with errgroup; harden cover URL SSRF check ([#2844](https://github.com/amalgamated-tools/biblioteka/issues/2844)) ([3a042d8](https://github.com/amalgamated-tools/biblioteka/commit/3a042d8300ac407099a20617293f900ba97d6f01))
+* **repo assist:** test(handlers): add audit metadata test for reading list deletion ([#2826](https://github.com/amalgamated-tools/biblioteka/issues/2826)) ([855ca22](https://github.com/amalgamated-tools/biblioteka/commit/855ca223e4086d1e5959707765070396e0b7d157))
+* **smtp:** block private/loopback/link-local SMTP hosts (SSRF) ([#2736](https://github.com/amalgamated-tools/biblioteka/issues/2736)) ([a3bd164](https://github.com/amalgamated-tools/biblioteka/commit/a3bd164bc208906e96b6e8823c7298710c29689e))
+* **workflows:** revert gh-aw-actions/setup from v0.71.3 to v0.71.0 ([#2763](https://github.com/amalgamated-tools/biblioteka/issues/2763)) ([fe0b337](https://github.com/amalgamated-tools/biblioteka/commit/fe0b33746e757130b85f48b555d3444850d5d342))
+
+
+### Performance Improvements
+
+* add (book_id, created_at) index on book_annotations to eliminate ORDER BY filesort ([#2474](https://github.com/amalgamated-tools/biblioteka/issues/2474)) ([b4309df](https://github.com/amalgamated-tools/biblioteka/commit/b4309dfa3b8382f5983e8b8e8b5b45caf5d41bab))
+* add (reading_list_id, added_at) index on reading_list_books to eliminate ORDER BY filesort ([#2499](https://github.com/amalgamated-tools/biblioteka/issues/2499)) ([651885d](https://github.com/amalgamated-tools/biblioteka/commit/651885d0f292379840ee30854a0f40623236e33b))
+* add (series_id, position) index on book_series to eliminate ORDER BY filesort ([#2555](https://github.com/amalgamated-tools/biblioteka/issues/2555)) ([de523d9](https://github.com/amalgamated-tools/biblioteka/commit/de523d9b231f3a9912dd1421bee264efac74c9b4))
+* Add BenchmarkGetPendingAIEnrichmentByBook ([#2780](https://github.com/amalgamated-tools/biblioteka/issues/2780)) ([ee9fa4f](https://github.com/amalgamated-tools/biblioteka/commit/ee9fa4fff065dad0e845c09bbeb0ea69e585244c))
+* Add BenchmarkGetPendingGoodreadsMetadataByBook ([#2813](https://github.com/amalgamated-tools/biblioteka/issues/2813)) ([47301de](https://github.com/amalgamated-tools/biblioteka/commit/47301de858ce78af328e6966b2f0358e4adcf532))
+* Add BenchmarkGetRecommendations baseline ([#2818](https://github.com/amalgamated-tools/biblioteka/issues/2818)) ([66da786](https://github.com/amalgamated-tools/biblioteka/commit/66da786119729b6e9b8cd6326d2465025b7e1ce6))
+* Add BenchmarkListBooksModifiedSince benchmarks ([#2905](https://github.com/amalgamated-tools/biblioteka/issues/2905)) ([35977f4](https://github.com/amalgamated-tools/biblioteka/commit/35977f46be45de38c6a34c6e4b49f6ab0877746f))
+* add benchmarks for ListAuditLogs, ListGroupMembers, and ListAnnotationsForBook ([#2451](https://github.com/amalgamated-tools/biblioteka/issues/2451)) ([9a73b07](https://github.com/amalgamated-tools/biblioteka/commit/9a73b073cf71ff8efd2e74cabc92e7689b0c0a62))
+* add benchmarks for ListReadingLists and ListReadingListBooks ([#2616](https://github.com/amalgamated-tools/biblioteka/issues/2616)) ([8979a94](https://github.com/amalgamated-tools/biblioteka/commit/8979a945a52a679f7bf8fe0460eebebbbf9558b6))
+* add composite sort indexes for reading_group_members and audit_logs ([#2423](https://github.com/amalgamated-tools/biblioteka/issues/2423)) ([1eb1139](https://github.com/amalgamated-tools/biblioteka/commit/1eb11396f53a60d67c145ca893333055f91cce30))
+* add temp_store=MEMORY and cache_size PRAGMAs to SQLite setup ([#2673](https://github.com/amalgamated-tools/biblioteka/issues/2673)) ([da27a42](https://github.com/amalgamated-tools/biblioteka/commit/da27a4253dfc2af9dbfc9f52ca1c4d7f55109412))
+* extend books created_at index to include id tiebreaker ([#2642](https://github.com/amalgamated-tools/biblioteka/issues/2642)) ([26ced81](https://github.com/amalgamated-tools/biblioteka/commit/26ced819979bf6a236f1793215db953af82d8b43))
+* parallelize batch DB queries in Kobo sync and OPDS ([#2576](https://github.com/amalgamated-tools/biblioteka/issues/2576)) ([06a3673](https://github.com/amalgamated-tools/biblioteka/commit/06a3673bd32e540478810484debf3b45b54b6977))
+* rewrite reading list queries to use correlated subquery for book count ([#2533](https://github.com/amalgamated-tools/biblioteka/issues/2533)) ([cc48c90](https://github.com/amalgamated-tools/biblioteka/commit/cc48c904b3a628bedb8ef6ed23d63619aad941e0))
+* Update GitHub Actions versions - 2026-04-20 ([#2408](https://github.com/amalgamated-tools/biblioteka/issues/2408)) ([bdf13f9](https://github.com/amalgamated-tools/biblioteka/commit/bdf13f95a572732fcace8f749c42cbcd32015c59))
+* Update GitHub Actions versions - 2026-04-22 ([#2466](https://github.com/amalgamated-tools/biblioteka/issues/2466)) ([cf7d6b6](https://github.com/amalgamated-tools/biblioteka/commit/cf7d6b6f3292bfc14c22203afee6ec192d792307))
+* Update GitHub Actions versions - 2026-04-27 ([#2599](https://github.com/amalgamated-tools/biblioteka/issues/2599)) ([d7539b8](https://github.com/amalgamated-tools/biblioteka/commit/d7539b8d6c655cca7f7e6fefcf4cc021288b6e59))
+* Update GitHub Actions versions - 2026-04-29 ([#2656](https://github.com/amalgamated-tools/biblioteka/issues/2656)) ([5432844](https://github.com/amalgamated-tools/biblioteka/commit/5432844df9928f241d58116815f9b6ba891f322a))
+* Update GitHub Actions versions - 2026-05-01 ([#2725](https://github.com/amalgamated-tools/biblioteka/issues/2725)) ([a22f7a0](https://github.com/amalgamated-tools/biblioteka/commit/a22f7a0babed04cc35f906307939f3a17a2decfb))
+* use LOWER(name) sort for authors and series list queries ([#2702](https://github.com/amalgamated-tools/biblioteka/issues/2702)) ([75c785c](https://github.com/amalgamated-tools/biblioteka/commit/75c785c4d6d51b439d6c4d7988b432ef2c8e1f28))
+
 ## [0.16.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.15.0...v0.16.0) (2026-04-20)
 
 
