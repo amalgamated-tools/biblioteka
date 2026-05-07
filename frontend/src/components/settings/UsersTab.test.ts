@@ -309,4 +309,20 @@ describe("UsersTab registration config", () => {
 
     expect(screen.getByText("Server error")).toBeInTheDocument();
   });
+
+  it("shows error banner when getRegistrationConfig rejects on mount", async () => {
+    vi.mocked(getRegistrationConfig).mockRejectedValue(
+      new Error("Network error"),
+    );
+
+    render(UsersTab, { props: defaultProps });
+    await tick();
+    await tick();
+
+    expect(
+      screen.getByText(
+        "Failed to load registration config. The status shown below may be stale.",
+      ),
+    ).toBeInTheDocument();
+  });
 });
