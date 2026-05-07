@@ -311,13 +311,14 @@ For split-process deployments, stop and start both services instead: `docker com
 
 ```bash
 # WAL-mode hot backup — copy WAL first, then main database
-docker compose cp biblioteka:/data/biblioteka.db-wal ./biblioteka.db-wal.bak \
+BACKUP_DATE=$(date +%Y%m%d)
+docker compose cp biblioteka:/data/biblioteka.db-wal ./biblioteka-${BACKUP_DATE}.db-wal \
   && echo "WAL captured" \
-  || { rm -f ./biblioteka.db-wal.bak; echo "WAL not present — database is fully checkpointed; .db alone is sufficient"; }
-docker compose cp biblioteka:/data/biblioteka.db ./biblioteka.db.bak
+  || { rm -f ./biblioteka-${BACKUP_DATE}.db-wal; echo "WAL not present — database is fully checkpointed; .db alone is sufficient"; }
+docker compose cp biblioteka:/data/biblioteka.db ./biblioteka-${BACKUP_DATE}.db
 ```
 
-Keep both files in the same directory. To restore, place them together and rename to remove the `.bak` suffix. If `.db-wal` does not exist (the database has been fully checkpointed — normal after a clean shutdown), the `.db` file alone is sufficient. SQLite recreates `.db-shm` automatically.
+Keep both files in the same directory. To restore, place them together (e.g., `biblioteka-20260101.db` and `biblioteka-20260101.db-wal`). If `.db-wal` does not exist (the database has been fully checkpointed — normal after a clean shutdown), the `.db` file alone is sufficient. SQLite recreates `.db-shm` automatically.
 
 > **After restoring from backup:** If you ran `VACUUM` on the restored database file outside of Biblioteka, the full-text search index may be corrupt. Start the server once normally — it runs a startup integrity check and rebuilds the FTS index automatically if needed. See [Search Index Maintenance](administration.md#search-index-maintenance-sqlite).
 
