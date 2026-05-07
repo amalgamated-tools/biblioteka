@@ -112,19 +112,40 @@ func (h *SeriesHandler) HandleSeries(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// listSeries returns all series.
+type seriesListDTO struct {
+	Series []seriesDTO `json:"series"`
+	Total  int         `json:"total"`
+	Limit  int         `json:"limit"`
+	Offset int         `json:"offset"`
+}
+
+// listSeries returns a paginated list of series.
 //
 //	@Summary		List series
-//	@Description	Returns all series
+//	@Description	Returns series with pagination
 //	@Tags			Series
 //	@Produce		json
 //	@Security		BearerAuth
-//	@Failure		401	{object}	errorResponse
-//	@Success		200	{array}		seriesDTO
-//	@Failure		500	{object}	errorResponse
+//	@Param			limit	query		int	false	"Max items per page (default 50, max 200)"
+//	@Param			offset	query		int	false	"Number of items to skip (default 0)"
+//	@Failure		401		{object}	errorResponse
+//	@Success		200		{object}	seriesListDTO
+//	@Failure		500		{object}	errorResponse
 //	@Router			/series [get]
 func (h *SeriesHandler) listSeries(w http.ResponseWriter, r *http.Request) {
-	listEntities(w, r, "series", h.DB.ListSeries, toSeriesDTO)
+	limit, offset := parseLimitOffset(r, defaultPageLimit, maxPageLimit)
+	series, total, err := h.DB.ListSeriesPaginated(r.Context(), limit, offset)
+	if err != nil {
+		slog.ErrorContext(r.Context(), "failed to list series", slog.Any(otelkeys.Error, err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list series")
+		return
+	}
+	writeJSON(r.Context(), w, http.StatusOK, seriesListDTO{
+		Series: mapSlice(series, toSeriesDTO),
+		Total:  total,
+		Limit:  limit,
+		Offset: offset,
+	})
 }
 
 // createSeries creates a new series.

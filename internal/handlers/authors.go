@@ -115,19 +115,40 @@ func (h *AuthorHandler) HandleAuthor(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// listAuthors returns all authors.
+type authorListDTO struct {
+	Authors []authorDTO `json:"authors"`
+	Total   int         `json:"total"`
+	Limit   int         `json:"limit"`
+	Offset  int         `json:"offset"`
+}
+
+// listAuthors returns a paginated list of authors.
 //
 //	@Summary		List authors
-//	@Description	Returns all authors
+//	@Description	Returns authors with pagination
 //	@Tags			Authors
 //	@Produce		json
 //	@Security		BearerAuth
-//	@Failure		401	{object}	errorResponse
-//	@Success		200	{array}		authorDTO
-//	@Failure		500	{object}	errorResponse
+//	@Param			limit	query		int	false	"Max items per page (default 50, max 200)"
+//	@Param			offset	query		int	false	"Number of items to skip (default 0)"
+//	@Failure		401		{object}	errorResponse
+//	@Success		200		{object}	authorListDTO
+//	@Failure		500		{object}	errorResponse
 //	@Router			/authors [get]
 func (h *AuthorHandler) listAuthors(w http.ResponseWriter, r *http.Request) {
-	listEntities(w, r, "authors", h.DB.ListAuthors, toAuthorDTO)
+	limit, offset := parseLimitOffset(r, defaultPageLimit, maxPageLimit)
+	authors, total, err := h.DB.ListAuthorsPaginated(r.Context(), limit, offset)
+	if err != nil {
+		slog.ErrorContext(r.Context(), "failed to list authors", slog.Any(otelkeys.Error, err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list authors")
+		return
+	}
+	writeJSON(r.Context(), w, http.StatusOK, authorListDTO{
+		Authors: mapSlice(authors, toAuthorDTO),
+		Total:   total,
+		Limit:   limit,
+		Offset:  offset,
+	})
 }
 
 // createAuthor creates a new author.

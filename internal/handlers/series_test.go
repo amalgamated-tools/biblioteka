@@ -113,9 +113,10 @@ func TestListSeries_Handler(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, w.Code)
 
-	var dtos []seriesDTO
-	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "unmarshal")
-	require.Len(t, dtos, 2)
+	var dto seriesListDTO
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto), "unmarshal")
+	require.Len(t, dto.Series, 2)
+	require.Equal(t, 2, dto.Total)
 }
 
 func TestGetSeries_Handler(t *testing.T) {

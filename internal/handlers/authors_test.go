@@ -112,9 +112,10 @@ func TestListAuthors_Handler(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, w.Code)
 
-	var dtos []authorDTO
-	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "unmarshal")
-	require.Len(t, dtos, 2)
+	var dto authorListDTO
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto), "unmarshal")
+	require.Len(t, dto.Authors, 2)
+	require.Equal(t, 2, dto.Total)
 }
 
 func TestGetAuthor_Handler(t *testing.T) {

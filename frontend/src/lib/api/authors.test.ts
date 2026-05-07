@@ -55,15 +55,47 @@ afterEach(() => {
 
 describe("Authors API", () => {
   describe("listAuthors", () => {
-    it("sends GET /api/authors and returns the list", async () => {
-      mockFetchResponse([fakeAuthor]);
+    it("fetches all pages and returns the full list", async () => {
+      const fakeAuthor2: Author = {
+        ...fakeAuthor,
+        id: "a2",
+        name: "Second Author",
+      };
+      const makeResponse = (body: unknown): Response =>
+        ({
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          headers: new Headers({ "content-type": "application/json" }),
+          json: vi.fn().mockResolvedValue(body),
+          text: vi.fn().mockResolvedValue(JSON.stringify(body)),
+        }) as unknown as Response;
+      fetchMock.mockResolvedValueOnce(
+        makeResponse({
+          authors: [fakeAuthor],
+          total: 2,
+          limit: 200,
+          offset: 0,
+        }),
+      );
+      fetchMock.mockResolvedValueOnce(
+        makeResponse({
+          authors: [fakeAuthor2],
+          total: 2,
+          limit: 200,
+          offset: 1,
+        }),
+      );
 
       const result = await listAuthors();
 
-      const [url, options] = fetchMock.mock.calls[0];
-      expect(url).toBe("/api/authors");
-      expect(options.method).toBe("GET");
-      expect(result).toEqual([fakeAuthor]);
+      const [firstURL, firstOptions] = fetchMock.mock.calls[0];
+      const [secondURL, secondOptions] = fetchMock.mock.calls[1];
+      expect(firstURL).toBe("/api/authors?limit=200&offset=0");
+      expect(firstOptions.method).toBe("GET");
+      expect(secondURL).toBe("/api/authors?limit=200&offset=1");
+      expect(secondOptions.method).toBe("GET");
+      expect(result).toEqual([fakeAuthor, fakeAuthor2]);
     });
   });
 

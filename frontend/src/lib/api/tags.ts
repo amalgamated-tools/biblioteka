@@ -1,8 +1,9 @@
 import type { Tag, TagInput } from "../../types";
 import { request } from "./core";
+import { listAllPaginated } from "./pagination";
 
 export async function listTags(): Promise<Tag[]> {
-  return request<Tag[]>("GET", "/api/tags");
+  return listAllPaginated<Tag, "tags">("/api/tags", "tags");
 }
 
 export async function getTag(id: string): Promise<Tag> {

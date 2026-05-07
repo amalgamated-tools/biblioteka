@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -61,13 +62,15 @@ func (h *TagHandler) tagOps() namedEntityOps[db.Tag, tagDTO, tagRequest] {
 // HandleTags handles GET /api/tags and POST /api/tags.
 //
 //	@Summary		List or create tags
-//	@Description	GET returns all tags. POST creates a new tag.
+//	@Description	GET returns paginated tags. POST creates a new tag.
 //	@Tags			Tags
 //	@Accept			json
 //	@Produce		json
 //	@Security		BearerAuth
+//	@Param			limit	query		int	false	"Max items per page (default 50, max 200)"
+//	@Param			offset	query		int	false	"Number of items to skip (default 0)"
 //	@Failure		401	{object}	errorResponse
-//	@Success		200	{array}		tagDTO
+//	@Success		200	{object}	tagListDTO
 //	@Success		201	{object}	tagDTO
 //	@Failure		400	{object}	errorResponse
 //	@Failure		409	{object}	errorResponse
@@ -123,8 +126,27 @@ func (h *TagHandler) HandleTag(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type tagListDTO struct {
+	Tags   []tagDTO `json:"tags"`
+	Total  int      `json:"total"`
+	Limit  int      `json:"limit"`
+	Offset int      `json:"offset"`
+}
+
 func (h *TagHandler) listTags(w http.ResponseWriter, r *http.Request) {
-	listEntities(w, r, "tags", h.DB.ListTags, toTagDTO)
+	limit, offset := parseLimitOffset(r, defaultPageLimit, maxPageLimit)
+	tags, total, err := h.DB.ListTagsPaginated(r.Context(), limit, offset)
+	if err != nil {
+		slog.ErrorContext(r.Context(), "failed to list tags", slog.Any(otelkeys.Error, err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list tags")
+		return
+	}
+	writeJSON(r.Context(), w, http.StatusOK, tagListDTO{
+		Tags:   mapSlice(tags, toTagDTO),
+		Total:  total,
+		Limit:  limit,
+		Offset: offset,
+	})
 }
 
 func (h *TagHandler) createTag(w http.ResponseWriter, r *http.Request) {
