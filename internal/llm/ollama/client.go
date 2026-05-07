@@ -81,8 +81,16 @@ func (c *Client) Generate(ctx context.Context, prompt string) (string, error) {
 		return "", fmt.Errorf("ollama: unexpected status %d", resp.StatusCode)
 	}
 
+	respBody, err := io.ReadAll(io.LimitReader(resp.Body, maxOllamaResponseBytes+1))
+	if err != nil {
+		return "", fmt.Errorf("ollama: read response: %w", err)
+	}
+	if len(respBody) > maxOllamaResponseBytes {
+		return "", fmt.Errorf("ollama: response too large: exceeds %d bytes", maxOllamaResponseBytes)
+	}
+
 	var result ollamaChatResponse
-	if err := json.NewDecoder(io.LimitReader(resp.Body, maxOllamaResponseBytes)).Decode(&result); err != nil {
+	if err := json.Unmarshal(respBody, &result); err != nil {
 		return "", fmt.Errorf("ollama: decode response: %w", err)
 	}
 
