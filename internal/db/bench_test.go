@@ -54,6 +54,47 @@ func seedBooks(b *testing.B, d *DB, n int) {
 	}
 }
 
+// ---- ListBooksModifiedSince ----
+
+// BenchmarkListBooksModifiedSince_All_100 measures the full-sync path of
+// ListBooksModifiedSince (since=zero), which returns up to 100 rows ordered by
+// (updated_at ASC, id ASC). This exercises the
+// idx_books_updated_at_id composite index on (updated_at, id).
+func BenchmarkListBooksModifiedSince_All_100(b *testing.B) {
+	d := newBenchDB(b)
+	seedBooks(b, d, 100)
+	ctx := b.Context()
+	b.ResetTimer()
+	b.ReportAllocs()
+	for range b.N {
+		_, err := d.ListBooksModifiedSince(ctx, time.Time{}, "", 100)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+// BenchmarkListBooksModifiedSince_Incremental_100 measures the incremental sync
+// path of ListBooksModifiedSince (since=non-zero), which applies a compound
+// (updated_at, id) range filter for cursor-based pagination. This exercises the
+// idx_books_updated_at_id composite index on (updated_at, id).
+// All 100 rows are returned — a realistic worst case for a first incremental sync.
+func BenchmarkListBooksModifiedSince_Incremental_100(b *testing.B) {
+	d := newBenchDB(b)
+	seedBooks(b, d, 100)
+	ctx := b.Context()
+	// since is before all seeded rows so all 100 are returned.
+	since := time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
+	b.ResetTimer()
+	b.ReportAllocs()
+	for range b.N {
+		_, err := d.ListBooksModifiedSince(ctx, since, "", 100)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
 // ---- ListBooksPaginated ----
 
 func BenchmarkListBooksPaginated_100(b *testing.B) {
@@ -565,6 +606,72 @@ func BenchmarkListAuthors_100(b *testing.B) {
 	}
 }
 
+// ---- ListKoboReadingStatesSince ----
+
+// BenchmarkListKoboReadingStatesSince_All_50 measures the full-sync path of
+// ListKoboReadingStatesSince (since=zero), which fetches all 50 reading states
+// for a user. This exercises the idx_kobo_reading_states_user_updated composite
+// index on (user_id, updated_at) for an ORDER BY updated_at ASC scan.
+func BenchmarkListKoboReadingStatesSince_All_50(b *testing.B) {
+	d := newBenchDB(b)
+	ctx := b.Context()
+
+	user, err := d.CreateUser(ctx, "bench-kobo-user", "kobo@example.com", "hashedpw")
+	require.NoError(b, err, "CreateUser")
+
+	pct := 0.5
+	for i := range 50 {
+		bk, err := d.CreateBook(ctx, BookInput{Title: fmt.Sprintf("Kobo Book %05d", i+1)})
+		require.NoError(b, err, "CreateBook")
+		_, err = d.UpsertKoboReadingState(ctx, user.ID, bk.ID, StatusReading, &pct, nil, nil, nil)
+		require.NoError(b, err, "UpsertKoboReadingState")
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for range b.N {
+		_, err := d.ListKoboReadingStatesSince(ctx, user.ID, time.Time{})
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+// BenchmarkListKoboReadingStatesSince_Incremental_50 measures the incremental
+// sync path of ListKoboReadingStatesSince (since=non-zero), which returns only
+// states updated after the given timestamp. This exercises the
+// idx_kobo_reading_states_user_updated composite index on (user_id, updated_at)
+// for a range scan with an ORDER BY updated_at ASC filter.
+func BenchmarkListKoboReadingStatesSince_Incremental_50(b *testing.B) {
+	d := newBenchDB(b)
+	ctx := b.Context()
+
+	user, err := d.CreateUser(ctx, "bench-kobo-incr-user", "koboincr@example.com", "hashedpw")
+	require.NoError(b, err, "CreateUser")
+
+	pct := 0.5
+	// Seed 50 reading states; use a fixed past timestamp as the sync boundary.
+	for i := range 50 {
+		bk, err := d.CreateBook(ctx, BookInput{Title: fmt.Sprintf("Kobo Incr Book %05d", i+1)})
+		require.NoError(b, err, "CreateBook")
+		_, err = d.UpsertKoboReadingState(ctx, user.ID, bk.ID, StatusReading, &pct, nil, nil, nil)
+		require.NoError(b, err, "UpsertKoboReadingState")
+	}
+
+	// since is set before all seeded states so all 50 rows are returned —
+	// a realistic worst-case for a first incremental sync after initial setup.
+	since := time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for range b.N {
+		_, err := d.ListKoboReadingStatesSince(ctx, user.ID, since)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
 // ---- ListSeries ----
 
 // BenchmarkListSeries_100 measures the full (non-paginated) series-list query
@@ -584,6 +691,128 @@ func BenchmarkListSeries_100(b *testing.B) {
 	b.ReportAllocs()
 	for range b.N {
 		_, err := d.ListSeries(ctx)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+// ---- GetPendingGoodreadsMetadataByBook ----
+
+// BenchmarkGetPendingGoodreadsMetadataByBook measures the lookup for the most
+// recent pending Goodreads metadata row for a specific book. The query filters
+// on (user_id, book_id, status) and orders by created_at DESC, id DESC LIMIT 1,
+// which is fully covered by idx_goodreads_metadata_user_book_status
+// (user_id, book_id, status, created_at DESC, id DESC) — no temp B-tree sort.
+//
+// The fixture seeds 40 metadata rows (a mix of pending/applied/rejected) across
+// 5 books and 2 users (4 rows per book per user) to ensure realistic index selectivity.
+func BenchmarkGetPendingGoodreadsMetadataByBook(b *testing.B) {
+	d := newBenchDB(b)
+	ctx := b.Context()
+
+	user1, err := d.CreateUser(ctx, "bench-gm-user1", "gm1@example.com", "hashedpw")
+	require.NoError(b, err, "CreateUser user1")
+	user2, err := d.CreateUser(ctx, "bench-gm-user2", "gm2@example.com", "hashedpw")
+	require.NoError(b, err, "CreateUser user2")
+
+	books := make([]string, 5)
+	for i := range 5 {
+		bk, err := d.CreateBook(ctx, BookInput{Title: fmt.Sprintf("GM Book %02d", i+1)})
+		require.NoError(b, err, "CreateBook")
+		books[i] = bk.ID
+	}
+
+	// Seed 4 rows per book per user: two pending + one applied + one rejected.
+	statuses := []string{
+		GoodreadsMetadataStatusPending,
+		GoodreadsMetadataStatusApplied,
+		GoodreadsMetadataStatusRejected,
+		GoodreadsMetadataStatusPending,
+	}
+	for _, userID := range []string{user1.ID, user2.ID} {
+		for _, bookID := range books {
+			bid := bookID
+			for j, status := range statuses {
+				title := fmt.Sprintf("Title %d", j)
+				gm, err := d.CreateGoodreadsMetadata(ctx, userID, GoodreadsMetadataInput{
+					BookID: &bid,
+					Title:  &title,
+				})
+				require.NoError(b, err, "CreateGoodreadsMetadata")
+				if status != GoodreadsMetadataStatusPending {
+					_, err = d.UpdateGoodreadsMetadataStatus(ctx, userID, gm.ID, status)
+					require.NoError(b, err, "UpdateGoodreadsMetadataStatus")
+				}
+			}
+		}
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for range b.N {
+		_, err := d.GetPendingGoodreadsMetadataByBook(ctx, user1.ID, books[2])
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+// ---- GetPendingAIEnrichmentByBook ----
+
+// BenchmarkGetPendingAIEnrichmentByBook measures the lookup for the most recent
+// pending AI enrichment for a specific book. The query filters on
+// (user_id, book_id, status) and orders by created_at DESC LIMIT 1, which is
+// fully covered by idx_ai_enrichments_user_book_status
+// (user_id, book_id, status, created_at DESC) — no temp B-tree sort.
+//
+// The fixture seeds 20 enrichments (a mix of pending/applied/rejected) across
+// 5 books and 2 users to ensure the index selectivity is realistic.
+func BenchmarkGetPendingAIEnrichmentByBook(b *testing.B) {
+	d := newBenchDB(b)
+	ctx := b.Context()
+
+	user1, err := d.CreateUser(ctx, "bench-ai-user1", "ai1@example.com", "hash")
+	require.NoError(b, err, "CreateUser user1")
+
+	user2, err := d.CreateUser(ctx, "bench-ai-user2", "ai2@example.com", "hash")
+	require.NoError(b, err, "CreateUser user2")
+
+	books := make([]Book, 5)
+	for i := range 5 {
+		bk, err := d.CreateBook(ctx, BookInput{Title: fmt.Sprintf("AI Bench Book %d", i+1)})
+		require.NoError(b, err, "CreateBook")
+		books[i] = *bk
+	}
+
+	statuses := []string{AIEnrichmentStatusPending, AIEnrichmentStatusApplied, AIEnrichmentStatusRejected, AIEnrichmentStatusPending}
+	users := []*User{user1, user2}
+	for i, bk := range books {
+		for j, status := range statuses {
+			u := users[(i+j)%2]
+			bkID := bk.ID
+			e, err := d.CreateAIEnrichment(ctx, u.ID, &bkID, "test-provider", "test-model", nil, nil, nil, "{}")
+			require.NoError(b, err, "CreateAIEnrichment")
+			if status != AIEnrichmentStatusPending {
+				_, err = d.UpdateAIEnrichmentStatus(ctx, u.ID, e.ID, status)
+				require.NoError(b, err, "UpdateAIEnrichmentStatus")
+			}
+		}
+	}
+
+	// Add two more pending enrichments for user1 on books[2] so the query must
+	// choose among multiple pending rows using ORDER BY created_at DESC LIMIT 1.
+	targetBook := books[2]
+	for range 2 {
+		bkID := targetBook.ID
+		_, err := d.CreateAIEnrichment(ctx, user1.ID, &bkID, "test-provider", "test-model", nil, nil, nil, "{}")
+		require.NoError(b, err, "CreateAIEnrichment extra pending")
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for range b.N {
+		_, err := d.GetPendingAIEnrichmentByBook(ctx, user1.ID, targetBook.ID)
 		if err != nil {
 			b.Fatal(err)
 		}

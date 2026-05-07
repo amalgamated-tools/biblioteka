@@ -8,24 +8,31 @@ import (
 const (
 	defaultPageLimit = 50
 	maxPageLimit     = 200
+	maxPageOffset    = maxPageLimit * 1000 // 200,000
 )
 
-// parseLimit extracts only the limit pagination parameter from the request query
-// string. Use this for endpoints that do not support offset-based pagination
-// (e.g. scored recommendation feeds). Invalid or out-of-range values silently
-// fall back to safe defaults.
-func parseLimit(r *http.Request, defaultLimit, maxLimit int) int {
-	limit := defaultLimit
-	if v := r.URL.Query().Get("limit"); v != "" {
-		n, err := strconv.Atoi(v)
-		if err == nil && n >= 1 {
-			if n > maxLimit {
-				n = maxLimit
+// parseBoundedQueryInt extracts a single integer query parameter by key.
+// It falls back to defaultVal on parse errors or when the value is below
+// minVal, and caps values above maxVal at maxVal.
+func parseBoundedQueryInt(r *http.Request, key string, defaultVal, minVal, maxVal int) int {
+	v := defaultVal
+	if s := r.URL.Query().Get(key); s != "" {
+		n, err := strconv.Atoi(s)
+		if err == nil && n >= minVal {
+			if n > maxVal {
+				n = maxVal
 			}
-			limit = n
+			v = n
 		}
 	}
-	return limit
+	return v
+}
+
+// parseLimit extracts only the limit pagination parameter from the request query
+// string. Use this for endpoints that do not support offset-based pagination.
+// Invalid or out-of-range values silently fall back to safe defaults.
+func parseLimit(r *http.Request, defaultLimit, maxLimit int) int {
+	return parseBoundedQueryInt(r, "limit", defaultLimit, 1, maxLimit)
 }
 
 // parseLimitOffset extracts pagination parameters from the request query string.
@@ -37,6 +44,9 @@ func parseLimitOffset(r *http.Request, defaultLimit, maxLimit int) (int, int) {
 	if v := r.URL.Query().Get("offset"); v != "" {
 		n, err := strconv.Atoi(v)
 		if err == nil && n >= 0 {
+			if n > maxPageOffset {
+				n = maxPageOffset
+			}
 			offset = n
 		}
 	}

@@ -59,7 +59,7 @@ func (h *KoboHandler) HandleCoverImage(w http.ResponseWriter, r *http.Request) {
 						slog.String(otelkeys.BookID, bookID),
 						slog.String(otelkeys.ContentType, sniffed),
 					)
-					http.Error(w, "invalid cover image", http.StatusInternalServerError)
+					writeError(r.Context(), w, http.StatusInternalServerError, "invalid cover image")
 					return
 				}
 			} else {
@@ -71,7 +71,7 @@ func (h *KoboHandler) HandleCoverImage(w http.ResponseWriter, r *http.Request) {
 						slog.String(otelkeys.BookID, bookID),
 						slog.String(otelkeys.ContentType, sniffed),
 					)
-					http.Error(w, "invalid cover image", http.StatusInternalServerError)
+					writeError(r.Context(), w, http.StatusInternalServerError, "invalid cover image")
 					return
 				}
 			}
@@ -81,7 +81,7 @@ func (h *KoboHandler) HandleCoverImage(w http.ResponseWriter, r *http.Request) {
 				slog.String(otelkeys.BookID, bookID),
 				slog.String(otelkeys.ContentType, contentType),
 			)
-			http.Error(w, "invalid cover image", http.StatusInternalServerError)
+			writeError(r.Context(), w, http.StatusInternalServerError, "invalid cover image")
 			return
 		}
 		w.Header().Set("Content-Type", effectiveContentType)
@@ -93,7 +93,7 @@ func (h *KoboHandler) HandleCoverImage(w http.ResponseWriter, r *http.Request) {
 			slog.String(otelkeys.BookID, bookID),
 			slog.Any(otelkeys.Error, err),
 		)
-		http.Error(w, "invalid cover image", http.StatusInternalServerError)
+		writeError(r.Context(), w, http.StatusInternalServerError, "invalid cover image")
 		return
 	}
 

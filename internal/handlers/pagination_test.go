@@ -8,6 +8,117 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestParseBoundedQueryInt(t *testing.T) {
+	tests := []struct {
+		name       string
+		url        string
+		key        string
+		defaultVal int
+		minVal     int
+		maxVal     int
+		want       int
+	}{
+		{
+			name:       "missing param returns default",
+			url:        "/",
+			key:        "n",
+			defaultVal: 10,
+			minVal:     1,
+			maxVal:     100,
+			want:       10,
+		},
+		{
+			name:       "empty param returns default",
+			url:        "/?n=",
+			key:        "n",
+			defaultVal: 10,
+			minVal:     1,
+			maxVal:     100,
+			want:       10,
+		},
+		{
+			name:       "valid value within range",
+			url:        "/?n=50",
+			key:        "n",
+			defaultVal: 10,
+			minVal:     1,
+			maxVal:     100,
+			want:       50,
+		},
+		{
+			name:       "value equals minVal is accepted",
+			url:        "/?n=1",
+			key:        "n",
+			defaultVal: 10,
+			minVal:     1,
+			maxVal:     100,
+			want:       1,
+		},
+		{
+			name:       "value equals maxVal is accepted",
+			url:        "/?n=100",
+			key:        "n",
+			defaultVal: 10,
+			minVal:     1,
+			maxVal:     100,
+			want:       100,
+		},
+		{
+			name:       "value above maxVal is clamped to maxVal",
+			url:        "/?n=999",
+			key:        "n",
+			defaultVal: 10,
+			minVal:     1,
+			maxVal:     100,
+			want:       100,
+		},
+		{
+			name:       "value below minVal returns default",
+			url:        "/?n=0",
+			key:        "n",
+			defaultVal: 10,
+			minVal:     1,
+			maxVal:     100,
+			want:       10,
+		},
+		{
+			name:       "negative value returns default",
+			url:        "/?n=-5",
+			key:        "n",
+			defaultVal: 10,
+			minVal:     1,
+			maxVal:     100,
+			want:       10,
+		},
+		{
+			name:       "non-integer returns default",
+			url:        "/?n=abc",
+			key:        "n",
+			defaultVal: 10,
+			minVal:     1,
+			maxVal:     100,
+			want:       10,
+		},
+		{
+			name:       "overflow value returns default",
+			url:        "/?n=99999999999999999999",
+			key:        "n",
+			defaultVal: 10,
+			minVal:     1,
+			maxVal:     100,
+			want:       10,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := httptest.NewRequest(http.MethodGet, tt.url, nil)
+			got := parseBoundedQueryInt(r, tt.key, tt.defaultVal, tt.minVal, tt.maxVal)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func TestParseLimitOffset(t *testing.T) {
 	tests := []struct {
 		name         string
@@ -120,6 +231,14 @@ func TestParseLimitOffset(t *testing.T) {
 			maxLimit:     200,
 			wantLimit:    50,
 			wantOffset:   1000,
+		},
+		{
+			name:         "offset exceeding max is clamped",
+			url:          "/?offset=99999999",
+			defaultLimit: 50,
+			maxLimit:     200,
+			wantLimit:    50,
+			wantOffset:   maxPageOffset,
 		},
 		{
 			name:         "custom default and max limits",

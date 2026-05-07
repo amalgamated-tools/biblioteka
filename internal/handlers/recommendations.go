@@ -22,7 +22,7 @@ type RecommendationHandler struct {
 // HandleRecommendations handles GET /api/recommendations.
 // It returns a scored list of books the user has not yet read, based on
 // author overlap, series continuation, publisher match, and download popularity.
-// Optional query parameter: limit (default 10, max 50).
+// Optional query parameters: limit (default 10, max 50), offset (default 0).
 //
 //	@Summary		Get book recommendations
 //	@Description	Returns a scored list of recommended books for the authenticated user based on reading history.
@@ -30,6 +30,7 @@ type RecommendationHandler struct {
 //	@Produce		json
 //	@Security		BearerAuth
 //	@Param			limit	query		int	false	"Max items to return (default 10, max 50)"
+//	@Param			offset	query		int	false	"Number of items to skip (default 0)"
 //	@Success		200		{array}		bookSummaryDTO
 //	@Failure		401		{object}	errorResponse
 //	@Failure		405		{object}	errorResponse
@@ -41,7 +42,7 @@ func (h *RecommendationHandler) HandleRecommendations(w http.ResponseWriter, r *
 		return
 	}
 
-	limit := parseLimit(r, defaultRecommendationLimit, maxRecommendationLimit)
+	limit, offset := parseLimitOffset(r, defaultRecommendationLimit, maxRecommendationLimit)
 
 	ctx := r.Context()
 	userID := auth.UserIDFromContext(ctx)
@@ -49,9 +50,10 @@ func (h *RecommendationHandler) HandleRecommendations(w http.ResponseWriter, r *
 	slog.DebugContext(ctx, "fetching recommendations",
 		slog.String(otelkeys.UserID, userID),
 		slog.Int(otelkeys.Limit, limit),
+		slog.Int(otelkeys.Offset, offset),
 	)
 
-	books, err := h.DB.GetRecommendations(ctx, userID, limit)
+	books, err := h.DB.GetRecommendations(ctx, userID, limit, offset)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to fetch recommendations",
 			slog.String(otelkeys.UserID, userID),

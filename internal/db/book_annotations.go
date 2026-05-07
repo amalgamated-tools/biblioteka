@@ -62,7 +62,9 @@ func (d *DB) CreateAnnotation(ctx context.Context, userID, bookID, text string, 
 	))
 }
 
-// GetAnnotation retrieves an annotation by ID scoped to the owning user.
+// GetAnnotation retrieves an annotation by ID visible to the requesting user.
+// Visibility includes annotations owned by the user and group annotations where
+// the user is a member of the group.
 func (d *DB) GetAnnotation(ctx context.Context, id, userID string) (*BookAnnotation, error) {
 	slog.DebugContext(ctx, "db: fetching book annotation",
 		slog.String(otelkeys.AnnotationID, id),
@@ -72,7 +74,13 @@ func (d *DB) GetAnnotation(ctx context.Context, id, userID string) (*BookAnnotat
 		`SELECT `+bookAnnotationColumns+`
 		 FROM book_annotations ba
 		 JOIN users u ON u.id = ba.user_id
-		 WHERE ba.id = $1 AND ba.user_id = $2`,
+		 WHERE ba.id = $1
+		   AND (
+		     ba.user_id = $2
+		     OR (ba.group_id IS NOT NULL AND ba.group_id IN (
+		       SELECT group_id FROM reading_group_members WHERE user_id = $2
+		     ))
+		   )`,
 		id, userID,
 	))
 }
