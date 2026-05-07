@@ -589,3 +589,64 @@ func BenchmarkListSeries_100(b *testing.B) {
 		}
 	}
 }
+
+// ---- GetPendingAIEnrichmentByBook ----
+
+// BenchmarkGetPendingAIEnrichmentByBook measures the lookup for the most recent
+// pending AI enrichment for a specific book. The query filters on
+// (user_id, book_id, status) and orders by created_at DESC LIMIT 1, which is
+// fully covered by idx_ai_enrichments_user_book_status
+// (user_id, book_id, status, created_at DESC) — no temp B-tree sort.
+//
+// The fixture seeds 20 enrichments (a mix of pending/applied/rejected) across
+// 5 books and 2 users to ensure the index selectivity is realistic.
+func BenchmarkGetPendingAIEnrichmentByBook(b *testing.B) {
+	d := newBenchDB(b)
+	ctx := b.Context()
+
+	user1, err := d.CreateUser(ctx, "bench-ai-user1", "ai1@example.com", "hash")
+	require.NoError(b, err, "CreateUser user1")
+
+	user2, err := d.CreateUser(ctx, "bench-ai-user2", "ai2@example.com", "hash")
+	require.NoError(b, err, "CreateUser user2")
+
+	books := make([]Book, 5)
+	for i := range 5 {
+		bk, err := d.CreateBook(ctx, BookInput{Title: fmt.Sprintf("AI Bench Book %d", i+1)})
+		require.NoError(b, err, "CreateBook")
+		books[i] = *bk
+	}
+
+	statuses := []string{AIEnrichmentStatusPending, AIEnrichmentStatusApplied, AIEnrichmentStatusRejected, AIEnrichmentStatusPending}
+	users := []*User{user1, user2}
+	for i, bk := range books {
+		for j, status := range statuses {
+			u := users[(i+j)%2]
+			bkID := bk.ID
+			e, err := d.CreateAIEnrichment(ctx, u.ID, &bkID, "test-provider", "test-model", nil, nil, nil, "{}")
+			require.NoError(b, err, "CreateAIEnrichment")
+			if status != AIEnrichmentStatusPending {
+				_, err = d.UpdateAIEnrichmentStatus(ctx, u.ID, e.ID, status)
+				require.NoError(b, err, "UpdateAIEnrichmentStatus")
+			}
+		}
+	}
+
+	// Add two more pending enrichments for user1 on books[2] so the query must
+	// choose among multiple pending rows using ORDER BY created_at DESC LIMIT 1.
+	targetBook := books[2]
+	for range 2 {
+		bkID := targetBook.ID
+		_, err := d.CreateAIEnrichment(ctx, user1.ID, &bkID, "test-provider", "test-model", nil, nil, nil, "{}")
+		require.NoError(b, err, "CreateAIEnrichment extra pending")
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for range b.N {
+		_, err := d.GetPendingAIEnrichmentByBook(ctx, user1.ID, targetBook.ID)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
