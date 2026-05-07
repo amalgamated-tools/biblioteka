@@ -175,7 +175,7 @@ A scored list of books the authenticated user has not yet read, generated locall
 
 ## `registration_disabled`
 
-A runtime admin setting stored in the `settings` table that controls whether public self-registration is permitted. When set to `true`, `POST /api/auth/signup` returns `403 Forbidden` and the OIDC callback also blocks new-user registrations via SSO. When `false` (the default seeded by migrations), public signup is permitted unless it is blocked by `DISABLE_SIGNUP`.
+A runtime admin setting stored in the `settings` table that controls whether public self-registration is permitted. When set to `true`, `POST /api/auth/signup` returns `403 Forbidden` and the OIDC callback also returns `403 Forbidden` for all SSO callback attempts, effectively disabling OIDC login while the setting is enabled. This is stricter than only blocking new-user SSO registrations, because the callback flow cannot distinguish returning users from new users before user creation. When `false` (the default seeded by migrations), public signup is permitted unless it is blocked by `DISABLE_SIGNUP`.
 
 This setting is evaluated alongside the `DISABLE_SIGNUP` environment variable — if either flag is `true`, `GET /api/auth/signup/enabled` returns `{"enabled": false}` and all signup paths are blocked. Unlike the env var, `registration_disabled` can be toggled at runtime without restarting the server. Admins manage it via `PUT /api/config/registration` (returns the updated value) and read it via `GET /api/config/registration` (admin-only). The current state is also exposed to all clients through `GET /api/auth/signup/enabled`. Frontend toggle is available under **Settings → Users**. See [Administration](administration.md) and [Authentication](authentication.md).
 
