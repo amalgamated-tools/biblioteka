@@ -56,6 +56,12 @@ func isSafeCoverRedirectURL(rawURL string) bool {
 		return false
 	}
 	host := parsedURL.Hostname()
+	// Reject IPv6 zone identifiers (e.g. "fe80::1%lo0"): net.ParseIP returns
+	// nil for such strings, letting them slip through to the hostname branch.
+	// ssrf.ValidateURL applies the same guard.
+	if strings.Contains(host, "%") {
+		return false
+	}
 	if ip := net.ParseIP(host); ip != nil {
 		return !ssrf.IsPrivateIP(ip)
 	}

@@ -26,6 +26,8 @@ func TestIsSafeCoverRedirectURL(t *testing.T) {
 		{"private IP 10.x.x.x is rejected", "https://10.0.0.1/cover.jpg", false},
 		{"loopback 127.0.0.1 is rejected", "https://127.0.0.1/cover.jpg", false},
 		{"loopback IPv6 ::1 is rejected", "https://[::1]/cover.jpg", false},
+		{"IPv6 zone identifier link-local is rejected", "https://[fe80::1%25lo0]/cover.jpg", false},
+		{"IPv6 zone identifier with en0 is rejected", "https://[fe80::1%25en0]/cover.jpg", false},
 		{"public hostname is allowed", "https://covers.openlibrary.org/b/id/1.jpg", true},
 	}
 
