@@ -1,13 +1,38 @@
 package handlers
 
 import (
-	"log/slog"
+	"context"
 	"net/http"
 
-	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
+
+// groupOps returns the userOwnedNamedEntityOps configuration for the ReadingGroup entity.
+func (h *GroupHandler) groupOps() userOwnedNamedEntityOps[db.ReadingGroup, groupDTO, groupRequest] {
+	return userOwnedNamedEntityOps[db.ReadingGroup, groupDTO, groupRequest]{
+		db:              h.DB,
+		entityLabel:     "group",
+		auditEntityType: "group",
+		entityArticle:   "a group",
+		idKey:           otelkeys.GroupID,
+		errInvalidName:  db.ErrInvalidGroupName,
+		errNameExists:   db.ErrGroupNameExists,
+		auditCreate:     db.AuditActionGroupCreated,
+		auditUpdate:     db.AuditActionGroupUpdated,
+		get:             h.DB.GetGroup,
+		create: func(ctx context.Context, userID string, req groupRequest) (*db.ReadingGroup, error) {
+			return h.DB.CreateGroup(ctx, userID, req.Name, req.Description)
+		},
+		update: func(ctx context.Context, id, userID string, req groupRequest) (*db.ReadingGroup, error) {
+			return h.DB.UpdateGroup(ctx, id, userID, req.Name, req.Description)
+		},
+		reqName:    func(req groupRequest) string { return req.Name },
+		entityName: func(g *db.ReadingGroup) string { return g.Name },
+		entityID:   func(g *db.ReadingGroup) string { return g.ID },
+		toDTO:      toGroupDTO,
+	}
+}
 
 // listGroups returns all groups for the authenticated user.
 //
@@ -40,30 +65,7 @@ func (h *GroupHandler) listGroups(w http.ResponseWriter, r *http.Request) {
 //	@Failure		500		{object}	errorResponse
 //	@Router			/groups [post]
 func (h *GroupHandler) createGroup(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	var req groupRequest
-	if !decodeJSON(r, w, &req) {
-		return
-	}
-	if !validateName(ctx, w, req.Name) {
-		return
-	}
-
-	userID := auth.UserIDFromContext(ctx)
-	g, err := h.DB.CreateGroup(ctx, userID, req.Name, req.Description)
-	if err != nil {
-		if handleNameErr(ctx, w, err, db.ErrInvalidGroupName, db.ErrGroupNameExists, "a group") {
-			return
-		}
-		slog.ErrorContext(ctx, "failed to create group", slog.Any(otelkeys.Error, err))
-		writeError(ctx, w, http.StatusInternalServerError, "failed to create group")
-		return
-	}
-
-	logAudit(ctx, h.DB, userID, db.AuditActionGroupCreated, "group", g.ID,
-		map[string]any{"name": g.Name},
-	)
-	writeJSON(ctx, w, http.StatusCreated, toGroupDTO(g))
+	createUserOwnedNamedEntity(h.groupOps(), w, r)
 }
 
 func (h *GroupHandler) handleGroup(w http.ResponseWriter, r *http.Request, id string) {
@@ -94,13 +96,7 @@ func (h *GroupHandler) handleGroup(w http.ResponseWriter, r *http.Request, id st
 //	@Failure		500	{object}	errorResponse
 //	@Router			/groups/{id} [get]
 func (h *GroupHandler) getGroup(w http.ResponseWriter, r *http.Request, id string) {
-	ctx := r.Context()
-	userID := auth.UserIDFromContext(ctx)
-	g, err := h.DB.GetGroup(ctx, id, userID)
-	if handleDBErr(ctx, w, err, "group") {
-		return
-	}
-	writeJSON(ctx, w, http.StatusOK, toGroupDTO(g))
+	getUserOwnedNamedEntity(h.groupOps(), w, r, id)
 }
 
 // updateGroup updates an existing group.
@@ -121,25 +117,7 @@ func (h *GroupHandler) getGroup(w http.ResponseWriter, r *http.Request, id strin
 //	@Failure		500		{object}	errorResponse
 //	@Router			/groups/{id} [put]
 func (h *GroupHandler) updateGroup(w http.ResponseWriter, r *http.Request, id string) {
-	ctx := r.Context()
-	var req groupRequest
-	if !decodeJSON(r, w, &req) {
-		return
-	}
-	if !validateName(ctx, w, req.Name) {
-		return
-	}
-
-	userID := auth.UserIDFromContext(ctx)
-	g, err := h.DB.UpdateGroup(ctx, id, userID, req.Name, req.Description)
-	if handleUpdateErr(ctx, w, err, db.ErrInvalidGroupName, db.ErrGroupNameExists, "a group", "group", id) {
-		return
-	}
-
-	logAudit(ctx, h.DB, userID, db.AuditActionGroupUpdated, "group", g.ID,
-		map[string]any{"name": g.Name},
-	)
-	writeJSON(ctx, w, http.StatusOK, toGroupDTO(g))
+	updateUserOwnedNamedEntity(h.groupOps(), w, r, id)
 }
 
 // deleteGroup deletes a reading group.
