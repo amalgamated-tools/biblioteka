@@ -30,6 +30,24 @@ func toMonthlyDownloadsDTO(c *db.MonthlyDownloadCount) monthlyDownloadsDTO {
 	return monthlyDownloadsDTO{Month: c.Month, Count: c.Count}
 }
 
+type yearInBooksDTO struct {
+	Year           int `json:"year"`
+	BooksFinished  int `json:"books_finished"`
+	ActiveDays     int `json:"active_days"`
+	LongestStreak  int `json:"longest_streak"`
+	TotalDownloads int `json:"total_downloads"`
+}
+
+func toYearInBooksDTO(y db.YearInBooks) yearInBooksDTO {
+	return yearInBooksDTO{
+		Year:           y.Year,
+		BooksFinished:  y.BooksFinished,
+		ActiveDays:     y.ActiveDays,
+		LongestStreak:  y.LongestStreak,
+		TotalDownloads: y.TotalDownloads,
+	}
+}
+
 // HandleDownloadsPerMonth handles GET /api/stats/downloads-per-month.
 // It returns monthly download counts for the authenticated user.
 // Optional query parameter: months (default 12, max 24).
@@ -71,7 +89,7 @@ func (h *StatsHandler) HandleDownloadsPerMonth(w http.ResponseWriter, r *http.Re
 //	@Security		BearerAuth
 //	@Produce		json
 //	@Param			year	query		int	false	"Calendar year (default: current year)"
-//	@Success		200		{object}	db.YearInBooks
+//	@Success		200		{object}	yearInBooksDTO
 //	@Failure		400		{object}	errorResponse	"Bad request"
 //	@Failure		401		{object}	errorResponse	"Unauthorized"
 //	@Failure		405		{object}	errorResponse	"Method not allowed"
@@ -111,5 +129,5 @@ func (h *StatsHandler) HandleYearInBooks(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	writeJSON(r.Context(), w, http.StatusOK, stats)
+	writeJSON(r.Context(), w, http.StatusOK, toYearInBooksDTO(stats))
 }
