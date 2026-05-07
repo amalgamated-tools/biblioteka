@@ -120,5 +120,5 @@ func TestClient_Generate_ResponseBodyTooLarge(t *testing.T) {
 	client.HTTPClient = plainHTTPClient()
 	_, err := client.Generate(t.Context(), "test prompt")
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "decode response")
+	require.Contains(t, err.Error(), "response too large")
 }
