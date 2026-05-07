@@ -126,7 +126,7 @@ func TestSeriesBooks_DBError(t *testing.T) {
 
 // --- bookEntries error paths ---
 
-func TestBookEntries_AuthorLoadError(t *testing.T) {
+func TestBookEntries_BatchLoadError(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := t.Context()
 
@@ -137,11 +137,9 @@ func TestBookEntries_AuthorLoadError(t *testing.T) {
 	require.NoError(t, h.DB.Close(), "close db")
 
 	books := []db.Book{*book}
-	entries := h.bookEntries(ctx, books, "http://example.com/opds")
+	entries, err := h.bookEntries(ctx, books, "http://example.com/opds")
 
-	// Should still return entries, just without authors or download links.
-	require.Len(t, entries, 1)
-	require.Equal(t, "Test Book", entries[0].Title)
-	require.Len(t, entries[0].Authors, 0)
-	require.Len(t, entries[0].Links, 0)
+	// Should propagate the error rather than returning a partial feed.
+	require.Error(t, err)
+	require.Nil(t, entries)
 }

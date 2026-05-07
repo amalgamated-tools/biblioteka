@@ -93,7 +93,16 @@ func (h *OPDSHandler) writeBooksFeed(
 		return
 	}
 
-	entries := h.bookEntries(ctx, books, baseURL)
+	entries, err := h.bookEntries(ctx, books, baseURL)
+	if err != nil {
+		slog.ErrorContext(ctx, "OPDS: failed to load book data for feed",
+			slog.String(otelkeys.URL, selfURL),
+			slog.String(otelkeys.Title, title),
+			slog.Any(otelkeys.Error, err),
+		)
+		writeOPDSError(r, w, http.StatusInternalServerError, opdspkg.AcqContentType, selfURL, "Failed to load book data")
+		return
+	}
 	links := opdspkg.PaginationLinks(selfURL, page, total, opdspkg.PageSize, opdspkg.AcqContentType)
 	links = append(links, extraLinks...)
 	now := timeutil.NowRFC3339()
@@ -271,7 +280,12 @@ func (h *OPDSHandler) searchResults(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	entries := h.bookEntries(ctx, books, baseURL)
+	entries, err := h.bookEntries(ctx, books, baseURL)
+	if err != nil {
+		slog.ErrorContext(ctx, "OPDS: failed to load book data for search feed", slog.Any(otelkeys.Error, err))
+		writeOPDSError(r, w, http.StatusInternalServerError, opdspkg.AcqContentType, baseURL+"/search", "Failed to load book data")
+		return
+	}
 	escapedQuery := url.QueryEscape(query)
 	selfURL := baseURL + "/search?q=" + escapedQuery
 	now := timeutil.NowRFC3339()

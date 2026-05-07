@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"net"
 	"net/url"
 	"path"
 	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/coverutil"
+	"github.com/amalgamated-tools/biblioteka/internal/ssrf"
 )
 
 var errNotDataURL = coverutil.ErrNotDataURL
@@ -43,13 +45,27 @@ func decodeDataURL(raw string) (string, []byte, error) {
 // isSafeCoverRedirectURL reports whether rawURL is safe to redirect to for a
 // cover image. Only absolute HTTPS URLs with a non-empty host are permitted;
 // all other schemes (http, javascript, data, protocol-relative, etc.) are
-// rejected to prevent open-redirect attacks.
+// rejected to prevent open-redirect attacks. IP-literal private, loopback, and
+// link-local addresses are also rejected to prevent SSRF via cover metadata.
 func isSafeCoverRedirectURL(rawURL string) bool {
 	parsedURL, err := url.Parse(rawURL)
 	if err != nil {
 		return false
 	}
-	return strings.EqualFold(parsedURL.Scheme, "https") && parsedURL.Host != ""
+	if !strings.EqualFold(parsedURL.Scheme, "https") || parsedURL.Host == "" {
+		return false
+	}
+	host := parsedURL.Hostname()
+	// Reject IPv6 zone identifiers (e.g. "fe80::1%lo0"): net.ParseIP returns
+	// nil for such strings, letting them slip through to the hostname branch.
+	// ssrf.ValidateURL applies the same guard.
+	if strings.Contains(host, "%") {
+		return false
+	}
+	if ip := net.ParseIP(host); ip != nil {
+		return !ssrf.IsPrivateIP(ip)
+	}
+	return true
 }
 
 func dataURLMIMEType(raw string) (string, bool) {
