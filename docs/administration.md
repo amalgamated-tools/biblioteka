@@ -191,7 +191,7 @@ The change takes effect immediately. A successful update is recorded in the audi
 Regardless of which method is used, when self-registration is disabled:
 
 - `POST /api/auth/signup` returns `403 Forbidden`.
-- `POST /api/auth/oidc/callback` also returns `403 Forbidden`, preventing OIDC sign-in while registration is disabled.
+- `POST /api/auth/oidc/callback` also returns `403 Forbidden` for **new** OIDC accounts — existing OIDC users are not affected and can still sign in.
 - The **Sign Up** tab is hidden in the web UI.
 - `GET /api/auth/signup/enabled` returns `{"enabled": false}` so third-party clients can adapt their UI accordingly.
 
