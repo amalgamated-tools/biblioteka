@@ -697,6 +697,108 @@ func BenchmarkListSeries_100(b *testing.B) {
 	}
 }
 
+// ---- GetRecommendations ----
+
+// BenchmarkGetRecommendations exercises the full CTE-based recommendation
+// scoring query. The setup creates a realistic scenario:
+//   - 1 user with 5 read books spread across 2 authors, 1 series, and 1 publisher
+//   - 100 candidate (unread) books: 30 share an author (10 also continue a
+//     distinct series each), 5 match the publisher, rest are unrelated
+//
+// Each scoring arm is exercised: author overlap (+3), series continuation (+5,
+// via 10 distinct one-book series so the NOT EXISTS guard fires for each),
+// publisher match (+1), and download-count tiebreaker (5 author-overlap-only
+// candidates get book_files rows so the download_pts CTE produces non-NULL rows).
+// Provides a baseline for future optimisation of the recommendations query.
+func BenchmarkGetRecommendations(b *testing.B) {
+	d := newBenchDB(b)
+	ctx := b.Context()
+
+	user, err := d.CreateUser(ctx, "Bench User", "bench@example.com", "hashedpw")
+	require.NoError(b, err, "CreateUser")
+
+	// Two shared authors.
+	authorA, err := d.CreateAuthor(ctx, "Author Alpha", nil, nil, nil, nil)
+	require.NoError(b, err, "CreateAuthor A")
+	authorB, err := d.CreateAuthor(ctx, "Author Beta", nil, nil, nil, nil)
+	require.NoError(b, err, "CreateAuthor B")
+
+	// One series that the user is partway through (used for the read books only).
+	series, err := d.CreateSeries(ctx, "Bench Series", nil, nil, nil)
+	require.NoError(b, err, "CreateSeries")
+
+	pub := "Bench Publisher"
+
+	// Read books: 5 total, sharing the two authors, the series, and a publisher.
+	for i := range 5 {
+		pos := float64(i + 1)
+		bk, err := d.CreateBook(ctx, BookInput{Title: fmt.Sprintf("Read Book %02d", i+1), Publisher: &pub})
+		require.NoError(b, err, "CreateBook read")
+		if i%2 == 0 {
+			require.NoError(b, d.SetBookAuthors(ctx, bk.ID, []string{authorA.ID}), "SetBookAuthors A")
+		} else {
+			require.NoError(b, d.SetBookAuthors(ctx, bk.ID, []string{authorB.ID}), "SetBookAuthors B")
+		}
+		require.NoError(b, d.SetBookSeries(ctx, bk.ID, []BookSeriesInput{{SeriesID: series.ID, Position: &pos}}), "SetBookSeries")
+		_, err = d.UpsertKoboReadingState(ctx, user.ID, bk.ID, StatusFinished, nil, nil, nil, nil)
+		require.NoError(b, err, "UpsertKoboReadingState")
+	}
+
+	// 100 candidate books: 30 share an author (10 also in a distinct series each),
+	// 5 match publisher, rest unrelated. Collect the first 5 author-overlap-only
+	// IDs to seed book_files for the download-count arm.
+	var downloadCandidateIDs []string
+	for i := range 100 {
+		var candidatePub *string
+		if i >= 30 && i < 35 {
+			candidatePub = &pub // publisher-match candidates
+		}
+		bk, err := d.CreateBook(ctx, BookInput{Title: fmt.Sprintf("Candidate Book %03d", i+1), Publisher: candidatePub})
+		require.NoError(b, err, "CreateBook candidate")
+		switch {
+		case i < 10:
+			// Series continuation: each candidate is position 2 in its own one-book
+			// series, so the NOT EXISTS guard in series_pts fires for every book.
+			extraSeries, err := d.CreateSeries(ctx, fmt.Sprintf("Bench Series Extra %d", i), nil, nil, nil)
+			require.NoError(b, err, "CreateSeries extra")
+			seedBk, err := d.CreateBook(ctx, BookInput{Title: fmt.Sprintf("Series Seed Book %03d", i+1)})
+			require.NoError(b, err, "CreateBook series seed")
+			seedPos := 1.0
+			require.NoError(b, d.SetBookSeries(ctx, seedBk.ID, []BookSeriesInput{{SeriesID: extraSeries.ID, Position: &seedPos}}), "SetBookSeries seed")
+			_, err = d.UpsertKoboReadingState(ctx, user.ID, seedBk.ID, StatusFinished, nil, nil, nil, nil)
+			require.NoError(b, err, "UpsertKoboReadingState series seed")
+			nextPos := 2.0
+			require.NoError(b, d.SetBookSeries(ctx, bk.ID, []BookSeriesInput{{SeriesID: extraSeries.ID, Position: &nextPos}}), "SetBookSeries candidate")
+			require.NoError(b, d.SetBookAuthors(ctx, bk.ID, []string{authorA.ID}), "SetBookAuthors candidate A")
+		case i < 30:
+			// Author-overlap-only candidates.
+			require.NoError(b, d.SetBookAuthors(ctx, bk.ID, []string{authorB.ID}), "SetBookAuthors candidate B")
+			if len(downloadCandidateIDs) < 5 {
+				downloadCandidateIDs = append(downloadCandidateIDs, bk.ID)
+			}
+		}
+	}
+
+	// Seed book_files with non-zero download_count so the download_pts CTE
+	// produces rows and the popularity tiebreaker arm is exercised.
+	for j, bookID := range downloadCandidateIDs {
+		bf, err := d.CreateBookFile(ctx, bookID, "epub",
+			fmt.Sprintf("candidate-%02d.epub", j+1), 1024, nil,
+			fmt.Sprintf("/books/candidate-%02d.epub", j+1))
+		require.NoError(b, err, "CreateBookFile")
+		require.NoError(b, d.IncrementBookFileDownloadCount(ctx, bf.ID), "IncrementBookFileDownloadCount")
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for range b.N {
+		_, err := d.GetRecommendations(ctx, user.ID, 20, 0)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
 // ---- GetPendingGoodreadsMetadataByBook ----
 
 // BenchmarkGetPendingGoodreadsMetadataByBook measures the lookup for the most
