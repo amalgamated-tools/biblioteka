@@ -231,6 +231,8 @@ Entries are returned newest-first. `limit` defaults to `50` (maximum `200`); `of
 
 **Notes:** `user_id` is the actor who performed the action (`null` for system/background actions). Entries are append-only and never modified. Book files created by the background scanner do **not** currently produce an audit entry — only files created via the API are audited. Background imports run without an authenticated user context (there is no actor to attribute the action to), so they cannot be represented in the same audit model as user-initiated writes.
 
+> **Tracing background import activity:** To track which files were imported by background jobs, use the structured log queries in [Observability → Book import troubleshooting](observability.md#book-import-troubleshooting). The job log events (`process:file`, `scan:path`, and related) provide file-level import traceability as an alternative to the audit log — you can filter by `library_id`, `file_path`, or error level to see exactly what the background scanner processed.
+
 ---
 
 ## Background Job Monitoring
