@@ -12,6 +12,13 @@ Biblioteka stores one progress record per `(user, document)` pair in the `readin
 
 ---
 
+> **Before you begin:** KOReader sync has two notable limitations to be aware of before setting up:
+>
+> - **No Settings UI** — there is no dedicated Settings tab for KOReader sync. Credentials are created and managed exclusively through the API (see [KOSync Credentials API](#kosync-credentials-api) below).
+> - **Reading Groups incompatibility** — reading progress synced via KOReader is **not** counted in [Reading Group](reading-groups.md) progress comparisons. Group members who sync only via KOReader will always appear as `0%` in group progress views, regardless of how far they have read. Only Kobo native sync data is used for group progress. If your reading circle relies on Reading Groups, see [Kobo Sync](kobo.md).
+
+---
+
 ## Setting up KOReader sync
 
 ### 1. Create KOSync credentials
