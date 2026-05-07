@@ -82,7 +82,7 @@ func (h *GroupHandler) shareList(w http.ResponseWriter, r *http.Request, groupID
 	}
 
 	logAudit(ctx, h.DB, userID, db.AuditActionGroupListShared, "group", groupID,
-		map[string]any{"list_id": req.ListID},
+		map[string]any{otelkeys.ListID: req.ListID},
 	)
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -121,7 +121,7 @@ func (h *GroupHandler) unshareList(w http.ResponseWriter, r *http.Request, group
 	}
 
 	logAudit(ctx, h.DB, userID, db.AuditActionGroupListUnshared, "group", groupID,
-		map[string]any{"list_id": listID},
+		map[string]any{otelkeys.ListID: listID},
 	)
 	w.WriteHeader(http.StatusNoContent)
 }

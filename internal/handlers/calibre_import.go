@@ -144,11 +144,11 @@ func (h *CalibreImportHandler) HandleImport(w http.ResponseWriter, r *http.Reque
 	}
 
 	logAudit(r.Context(), h.DB, userID, db.AuditActionCalibreImported, "calibre_import", "", map[string]any{
-		"total":      result.Total,
-		"imported":   result.Imported,
-		"skipped":    result.Skipped,
-		"errors":     result.Errors,
-		"library_id": src.libraryID,
+		otelkeys.Total:     result.Total,
+		otelkeys.Imported:  result.Imported,
+		otelkeys.Skipped:   result.Skipped,
+		otelkeys.Errors:    result.Errors,
+		otelkeys.LibraryID: src.libraryID,
 	})
 
 	slog.InfoContext(r.Context(), "calibre web import complete",
