@@ -286,7 +286,7 @@ Entries are returned newest-first. `limit` defaults to `50` (maximum `200`); `of
 | `group.updated`        | `group`       | `name`                                           | `PUT /api/groups/{id}`                  |
 | `group.deleted`        | `reading_group` | `name`                                         | `DELETE /api/groups/{id}`               |
 | `group.member_added`   | `group`       | `member_user_id`                                 | `POST /api/groups/{id}/members`         |
-| `group.member_removed` | `group`       | `member_user_id`                                 | `DELETE /api/groups/{id}/members/{userID}` |
+| `group.member_removed` | `group`       | `member_user_id`                                 | `DELETE /api/groups/{id}/members/{memberID}` |
 | `group.list_shared`    | `group`       | `list_id`                                        | `POST /api/groups/{id}/lists`           |
 | `group.list_unshared`  | `group`       | `list_id`                                        | `DELETE /api/groups/{id}/lists/{listID}` |
 | `calibre.imported`     | `calibre_import` | `total`, `imported`, `skipped`, `errors`, `library_id` | `POST /api/calibre-import/confirm` |
