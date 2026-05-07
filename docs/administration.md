@@ -144,15 +144,62 @@ The following rows are deleted along with the user record via `ON DELETE CASCADE
 
 ### Controlling self-registration
 
-By default, anyone who can reach your Biblioteka instance can create an account. To prevent new self-service registrations (for example, in a single-user or invite-only deployment), set the `DISABLE_SIGNUP` environment variable:
+Biblioteka provides two ways to disable public self-registration: a static environment variable (set at deploy time) and a runtime API (toggled without restarting).
+
+#### Option 1 — Environment variable (static, requires restart)
+
+Set the `DISABLE_SIGNUP` environment variable before starting the server:
 
 ```bash
 DISABLE_SIGNUP=true
 ```
 
-When enabled, `POST /api/auth/signup` returns `403 Forbidden` and the **Sign Up** tab is hidden in the web UI. The first admin account retains full access. The `GET /api/auth/signup/enabled` endpoint returns `{"enabled": false}` so clients can adapt their UI accordingly.
+This is evaluated at startup and cannot be changed while the server is running. Use it when you manage configuration entirely through environment variables or deployment manifests.
 
-> **Tip:** If you are the sole user, deploy with signup enabled initially, create your first admin account, then set `DISABLE_SIGNUP=true` and redeploy to prevent further self-service registrations.
+#### Option 2 — Runtime API (no restart required)
+
+Admins can toggle registration at runtime via **Settings → Users** in the **Public Registration** section, or via the API:
+
+```bash
+# Check current state
+curl http://localhost:8080/api/config/registration \
+  -H "Authorization: Bearer <admin-jwt>"
+
+# Disable self-registration
+curl -X PUT http://localhost:8080/api/config/registration \
+  -H "Authorization: Bearer <admin-jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{"registration_disabled": true}'
+
+# Re-enable self-registration
+curl -X PUT http://localhost:8080/api/config/registration \
+  -H "Authorization: Bearer <admin-jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{"registration_disabled": false}'
+```
+
+**Response body (`200`):**
+
+```json
+{ "registration_disabled": true }
+```
+
+The change takes effect immediately. A successful update is recorded in the audit log as `registration.config_updated`.
+
+#### Effect of disabling registration
+
+Regardless of which method is used, when self-registration is disabled:
+
+- `POST /api/auth/signup` returns `403 Forbidden`.
+- `POST /api/auth/oidc/callback` also returns `403 Forbidden` for **new** OIDC accounts — existing OIDC users are not affected and can still sign in.
+- The **Sign Up** tab is hidden in the web UI.
+- `GET /api/auth/signup/enabled` returns `{"enabled": false}` so third-party clients can adapt their UI accordingly.
+
+Admin accounts using username/password or passkeys retain full access. Admins who authenticate exclusively through OIDC are also blocked while registration is disabled — re-enable registration to restore their access.
+
+**Precedence:** The `DISABLE_SIGNUP` environment variable always takes precedence over the database setting. If `DISABLE_SIGNUP=true` is set, the runtime toggle has no effect — registration stays disabled regardless of what the API returns.
+
+> **Tip:** If you are the sole user, deploy with signup enabled initially, create your first admin account, then disable registration (via either method) to prevent further self-service sign-ups.
 
 ---
 
@@ -265,6 +312,8 @@ Entries are returned newest-first. `limit` defaults to `50` (maximum `200`); `of
 | `registration.config_updated` | `config` | `registration_disabled`                        | `PUT /api/config/registration`          |
 
 **Notes:** `user_id` is the actor who performed the action (`null` for system/background actions). Entries are append-only and never modified. Book files created by the background scanner do **not** currently produce an audit entry — only files created via the API are audited. Background imports run without an authenticated user context (there is no actor to attribute the action to), so they cannot be represented in the same audit model as user-initiated writes.
+
+> **Tracing background import activity:** To track which files were imported by background jobs, use the structured log queries in [Observability → Book import troubleshooting](observability.md#book-import-troubleshooting). The job log events (`process:file`, `scan:path`, and related) provide file-level import traceability as an alternative to the audit log — you can filter by `library_id`, `file_path`, or error level to see exactly what the background scanner processed.
 
 ---
 
@@ -583,6 +632,33 @@ A successful update is recorded in the audit log as `llm.config_updated`.
 > **Restart required.** LLM configuration is read once at server startup. After saving a new configuration via the API, **restart the server** (or the worker process if running in split mode) for the change to take effect. The `PUT /api/config/llm` response always includes `"restart_required": true` as a reminder.
 
 See [API reference — LLM config endpoints](api/config.md#get-apiconfigllm--admin--jwt-only) for the full request/response shapes.
+
+---
+
+## Registration Configuration (Runtime)
+
+Admins can enable or disable public self-registration at runtime without a server restart via **Settings → Users** → **Public Registration**, or via the API. See [Controlling self-registration](#controlling-self-registration) in the User Management section for the full description, curl examples, and precedence rules.
+
+**Quick reference:**
+
+| Endpoint | Auth | Description |
+|----------|------|-------------|
+| `GET /api/config/registration` | 🔒 Admin · JWT | Return current registration state |
+| `PUT /api/config/registration` | 🔒 Admin · JWT | Enable or disable self-registration |
+
+**Request body (`PUT`):**
+
+```json
+{ "registration_disabled": true }
+```
+
+**Response body (`GET` and `PUT`):**
+
+```json
+{ "registration_disabled": true }
+```
+
+A successful update is recorded in the audit log as `registration.config_updated`.
 
 ---
 

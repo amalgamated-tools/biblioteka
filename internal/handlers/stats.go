@@ -39,16 +39,7 @@ func (h *StatsHandler) HandleDownloadsPerMonth(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	months := defaultStatMonths
-	if s := r.URL.Query().Get("months"); s != "" {
-		v, err := strconv.Atoi(s)
-		if err != nil || v < 1 {
-			v = defaultStatMonths
-		} else if v > maxStatMonths {
-			v = maxStatMonths
-		}
-		months = v
-	}
+	months := parseBoundedQueryInt(r, "months", defaultStatMonths, 1, maxStatMonths)
 
 	userID := auth.UserIDFromContext(r.Context())
 
