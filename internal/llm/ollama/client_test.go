@@ -105,10 +105,14 @@ func TestSSRFSafeHTTPClient_BlocksLocalhost(t *testing.T) {
 }
 
 func TestClient_Generate_ResponseBodyTooLarge(t *testing.T) {
+	largeContent := strings.Repeat("x", maxOllamaResponseBytes)
+
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Write a response body that exceeds maxOllamaResponseBytes.
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(strings.Repeat("x", maxOllamaResponseBytes+1)))
+		resp := ollamaChatResponse{
+			Message: ollamaMessage{Role: "assistant", Content: largeContent},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		require.NoError(t, json.NewEncoder(w).Encode(resp))
 	}))
 	defer srv.Close()
 
