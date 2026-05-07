@@ -179,7 +179,7 @@ Returns a ranked list of books the authenticated user has not yet read as `bookS
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `limit` | integer | `10` | Maximum number of recommendations to return. Invalid, zero, or negative values use the default (`10`); values greater than `50` are capped at `50`. |
-| `offset` | integer | `0` | Number of recommendations to skip before returning results. Useful for paginating through the full ranked list. Invalid or negative values default to `0`. |
+| `offset` | integer | `0` | Number of recommendations to skip before returning results. Useful for paginating through the full ranked list. Invalid or negative values default to `0`; values greater than `200000` are capped at `200000`. |
 
 **Response:** `200 OK`
 
