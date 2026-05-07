@@ -8,14 +8,15 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
-// groupOps returns the userOwnedNamedEntityOps configuration for the ReadingGroup entity.
+// groupOps returns the userOwnedNamedEntityOps configuration for the
+// ReadingGroup entity.
 func (h *GroupHandler) groupOps() userOwnedNamedEntityOps[db.ReadingGroup, groupDTO, groupRequest] {
 	return userOwnedNamedEntityOps[db.ReadingGroup, groupDTO, groupRequest]{
 		db:              h.DB,
 		entityLabel:     "group",
-		auditEntityType: "group",
 		entityArticle:   "a group",
 		idKey:           otelkeys.GroupID,
+		auditEntityType: "group",
 		errInvalidName:  db.ErrInvalidGroupName,
 		errNameExists:   db.ErrGroupNameExists,
 		auditCreate:     db.AuditActionGroupCreated,
@@ -134,7 +135,7 @@ func (h *GroupHandler) updateGroup(w http.ResponseWriter, r *http.Request, id st
 //	@Failure		500	{object}	errorResponse
 //	@Router			/groups/{id} [delete]
 func (h *GroupHandler) deleteGroup(w http.ResponseWriter, r *http.Request, id string) {
-	deleteUserOwnedResource(h.DB, w, r, id, "reading group", "reading_group", otelkeys.GroupID,
+	deleteUserOwnedResource(h.DB, w, r, id, "group", "group", otelkeys.GroupID,
 		h.DB.GetGroup, h.DB.DeleteGroup,
 		db.AuditActionGroupDeleted,
 		func(g *db.ReadingGroup) map[string]any { return map[string]any{"name": g.Name} },
