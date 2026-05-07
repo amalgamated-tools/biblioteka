@@ -145,7 +145,7 @@ func (h *MetadataHandler) enqueueEnrichmentJob(w http.ResponseWriter, r *http.Re
 			slog.String(otelkeys.BookID, bookID),
 			cfg.idLogAttr(existingID),
 		)
-		writeJSON(ctx, w, http.StatusAccepted, fetchMetadataResponse{Status: "already_exists"})
+		writeJSON(ctx, w, http.StatusAccepted, fetchMetadataResponse{Status: metadataStatusAlreadyExists})
 		return
 	} else if !errors.Is(lookupErr, sql.ErrNoRows) {
 		slog.ErrorContext(ctx, "failed to check pending "+cfg.resourceLabel,
@@ -159,7 +159,7 @@ func (h *MetadataHandler) enqueueEnrichmentJob(w http.ResponseWriter, r *http.Re
 	taskID, err := h.Enqueuer.Enqueue(ctx, cfg.jobType, cfg.buildPayload(bookID, userID))
 	if err != nil {
 		if errors.Is(err, asynq.ErrDuplicateTask) {
-			writeJSON(ctx, w, http.StatusAccepted, fetchMetadataResponse{Status: "already_running"})
+			writeJSON(ctx, w, http.StatusAccepted, fetchMetadataResponse{Status: metadataStatusAlreadyRunning})
 			return
 		}
 		slog.ErrorContext(ctx, "failed to enqueue "+cfg.resourceLabel+" fetch",
@@ -172,5 +172,5 @@ func (h *MetadataHandler) enqueueEnrichmentJob(w http.ResponseWriter, r *http.Re
 
 	logAudit(ctx, h.DB, userID, cfg.auditAction, "book", bookID, map[string]any{"task_id": taskID})
 
-	writeJSON(ctx, w, http.StatusAccepted, fetchMetadataResponse{TaskID: taskID, Status: "enqueued"})
+	writeJSON(ctx, w, http.StatusAccepted, fetchMetadataResponse{TaskID: taskID, Status: metadataStatusEnqueued})
 }
