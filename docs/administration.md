@@ -249,22 +249,55 @@ Entries are returned newest-first. `limit` defaults to `50` (maximum `200`); `of
 | `user.signed_up`       | `user`        | `email`, `name`                                  | New account via `POST /api/auth/signup`  |
 | `user.admin_updated`   | `user`        | `is_admin`                                       | Admin toggle via `PUT /api/admin/users/{id}` |
 | `user.profile_updated` | `user`        | `name`                                           | Display name changed via `PUT /api/auth/me` |
+| `user.password_changed` | `user`       | —                                                | Password updated via `PUT /api/auth/password` |
+| `passkey.created`      | `passkey`     | —                                                | `POST /api/auth/passkey/register/finish` |
+| `passkey.deleted`      | `passkey`     | —                                                | `DELETE /api/auth/passkey/credentials/{id}` |
 | `library.created`      | `library`     | `name`                                           | `POST /api/libraries`                   |
 | `library.updated`      | `library`     | `name`                                           | `PUT /api/libraries/{id}`               |
 | `library.deleted`      | `library`     | `name`                                           | `DELETE /api/libraries/{id}`            |
 | `book.created`         | `book`        | `title`                                          | `POST /api/books`                       |
 | `book.updated`         | `book`        | `title`                                          | `PUT /api/books/{id}`                   |
 | `book.deleted`         | `book`        | `title`                                          | `DELETE /api/books/{id}`                |
+| `book.uploaded`        | `book_upload` | `file_name`, `file_type`, `file_size`, `library_id` | `POST /api/books/upload`             |
+| `book.authors_updated` | `book`        | —                                                | `PUT /api/books/{id}/authors`           |
+| `book.series_updated`  | `book`        | —                                                | `PUT /api/books/{id}/series`            |
+| `book.tags_updated`    | `book`        | —                                                | `PUT /api/books/{id}/tags`              |
 | `author.created`       | `author`      | `name`                                           | `POST /api/authors`                     |
 | `author.updated`       | `author`      | `name`                                           | `PUT /api/authors/{id}`                 |
 | `author.deleted`       | `author`      | `name`                                           | `DELETE /api/authors/{id}`              |
 | `series.created`       | `series`      | `name`                                           | `POST /api/series`                      |
 | `series.updated`       | `series`      | `name`                                           | `PUT /api/series/{id}`                  |
 | `series.deleted`       | `series`      | `name`                                           | `DELETE /api/series/{id}`               |
+| `tag.created`          | `tag`         | `name`                                           | `POST /api/tags`                        |
+| `tag.updated`          | `tag`         | `name`                                           | `PUT /api/tags/{id}`                    |
+| `tag.deleted`          | `tag`         | `name`                                           | `DELETE /api/tags/{id}`                 |
 | `book_file.created`    | `book_file`   | `book_id`, `file_name`, `file_type`              | `POST /api/books/{id}/files`            |
 | `book_file.deleted`    | `book_file`   | `book_id`, `file_name`, `file_type`              | `DELETE /api/book-files/{id}`           |
+| `book_file.emailed`    | `book_file`   | `book_id`, `file_name`, `to`                     | `POST /api/book-files/{id}/email`       |
+| `annotation.created`   | `annotation`  | —                                                | `POST /api/books/{id}/annotations`      |
+| `annotation.updated`   | `annotation`  | —                                                | `PUT /api/annotations/{id}`             |
+| `annotation.deleted`   | `annotation`  | —                                                | `DELETE /api/annotations/{id}`          |
+| `reading_list.created` | `reading_list` | `name`                                          | `POST /api/reading-lists`               |
+| `reading_list.updated` | `reading_list` | `name`                                          | `PUT /api/reading-lists/{id}`           |
+| `reading_list.deleted` | `reading_list` | `name`                                          | `DELETE /api/reading-lists/{id}`        |
+| `reading_list.book_added` | `reading_list` | `book_id`                                    | `POST /api/reading-lists/{id}/books`    |
+| `reading_list.book_removed` | `reading_list` | `book_id`                                  | `DELETE /api/reading-lists/{id}/books/{bookID}` |
+| `group.created`        | `group`       | `name`                                           | `POST /api/groups`                      |
+| `group.updated`        | `group`       | `name`                                           | `PUT /api/groups/{id}`                  |
+| `group.deleted`        | `reading_group` | `name`                                         | `DELETE /api/groups/{id}`               |
+| `group.member_added`   | `group`       | `member_user_id`                                 | `POST /api/groups/{id}/members`         |
+| `group.member_removed` | `group`       | `member_user_id`                                 | `DELETE /api/groups/{id}/members/{memberID}` |
+| `group.list_shared`    | `group`       | `list_id`                                        | `POST /api/groups/{id}/lists`           |
+| `group.list_unshared`  | `group`       | `list_id`                                        | `DELETE /api/groups/{id}/lists/{listID}` |
+| `calibre.imported`     | `calibre_import` | `total`, `imported`, `skipped`, `errors`, `library_id` | `POST /api/calibre-import/confirm` |
+| `metadata.fetch_requested` | `book`    | `task_id`                                        | `POST /api/books/{id}/metadata/fetch`   |
+| `metadata.applied`     | `book`        | `metadata_id`, `source`                          | `POST /api/books/{id}/metadata/apply`   |
+| `metadata.rejected`    | `book`        | `metadata_id`, `source`                          | `POST /api/books/{id}/metadata/reject`  |
+| `ai_enrichment.fetch_requested` | `book` | `task_id`                                     | `POST /api/books/{id}/metadata/ai-fetch` |
+| `ai_enrichment.applied` | `book`       | `enrichment_id`                                  | `POST /api/books/{id}/metadata/ai-apply` |
+| `ai_enrichment.rejected` | `book`      | `enrichment_id`                                  | `POST /api/books/{id}/metadata/ai-reject` |
 | `api_key.created`      | `api_key`     | `name`                                           | `POST /api/api-keys`                    |
-| `api_key.deleted`      | `api_key`     | `name`                                           | `DELETE /api/api-keys/{id}`             |
+| `api_key.deleted`      | `api_key`     | —                                                | `DELETE /api/api-keys/{id}`             |
 | `opds_credential.updated` | `opds_credential` | `username`                               | `PUT /api/opds/credentials`             |
 | `opds_credential.deleted` | `opds_credential` | `username`                               | `DELETE /api/opds/credentials`          |
 | `kobo_token.created`   | `kobo_token`  | `name`                                           | `POST /api/kobo/tokens`                 |
@@ -275,7 +308,8 @@ Entries are returned newest-first. `limit` defaults to `50` (maximum `200`); `of
 | `fts.rebuilt`          | `fts`         | —                                                | `POST /api/admin/search/reindex`        |
 | `watch_folder.config_updated` | `config` | `path`, `library_id`                             | `PUT /api/config/watch-folder`          |
 | `llm.config_updated`   | `config`      | —                                                | `PUT /api/config/llm`                   |
-| `registration.config_updated` | `config` | `registration_disabled`                      | `PUT /api/config/registration`          |
+| `oidc.config_updated`  | `config`      | —                                                | `PUT /api/config/oidc`                  |
+| `registration.config_updated` | `config` | `registration_disabled`                        | `PUT /api/config/registration`          |
 
 **Notes:** `user_id` is the actor who performed the action (`null` for system/background actions). Entries are append-only and never modified. Book files created by the background scanner do **not** currently produce an audit entry — only files created via the API are audited. Background imports run without an authenticated user context (there is no actor to attribute the action to), so they cannot be represented in the same audit model as user-initiated writes.
 
@@ -491,6 +525,8 @@ If validation passes, the server performs OIDC discovery. If discovery fails, th
 All four settings (`issuer_url`, `client_id`, `client_secret`, `redirect_uri`) are saved atomically in a single database transaction. If the write fails, none of the settings are changed — the configuration is never left in a partially-updated state.
 
 **Precedence:** Environment variables (`OIDC_ISSUER_URL`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_REDIRECT_URI`) always override database-stored settings. If environment variables are set, the runtime configuration UI will appear read-only.
+
+> **Audit trail:** OIDC configuration changes that are persisted to the database are recorded in the audit log as `oidc.config_updated`. This entry is written when the settings are saved, even if the server subsequently fails to apply them at runtime.
 
 ---
 
