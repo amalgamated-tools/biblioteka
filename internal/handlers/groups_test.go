@@ -187,6 +187,7 @@ func TestDeleteGroup_AuditMetadata(t *testing.T) {
 		}
 	}
 	require.NotNil(t, deleteLog, "expected a group.deleted audit log entry")
+	require.Equal(t, "group", deleteLog.EntityType, "delete audit entity_type should match create/update")
 	require.NotNil(t, deleteLog.Metadata, "audit log metadata should not be nil")
 
 	var meta map[string]any
