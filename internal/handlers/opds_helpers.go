@@ -5,8 +5,8 @@ import (
 	"context"
 	"encoding/xml"
 	"log/slog"
+	"math"
 	"net/http"
-	"strconv"
 
 	"github.com/amalgamated-tools/biblioteka/internal/opds"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
@@ -70,11 +70,7 @@ func opdsBaseURL(r *http.Request) string {
 }
 
 func parsePage(r *http.Request) int {
-	page, err := strconv.Atoi(r.URL.Query().Get("page"))
-	if err != nil || page < 1 {
-		return 1
-	}
-	return page
+	return parseBoundedQueryInt(r, "page", 1, 1, math.MaxInt)
 }
 
 func writeOPDSFeed(r *http.Request, w http.ResponseWriter, contentType string, feed *opds.Feed) {
