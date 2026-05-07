@@ -212,10 +212,10 @@ func (h *BookHandler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logAudit(r.Context(), h.DB, userID, db.AuditActionBookUploaded, "book_upload", stagingPath, map[string]any{
-		"file_name":  filename,
-		"file_type":  fileType,
-		"file_size":  fileSize,
-		"library_id": libraryID,
+		otelkeys.FileName:  filename,
+		otelkeys.FileType:  fileType,
+		otelkeys.FileSize:  fileSize,
+		otelkeys.LibraryID: libraryID,
 	})
 
 	slog.InfoContext(r.Context(), "book file upload accepted",

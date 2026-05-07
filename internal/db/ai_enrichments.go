@@ -35,7 +35,7 @@ type AIEnrichment struct {
 	SuggestedTags        []string  `json:"suggested_tags"`
 	ReadingLevel         *string   `json:"reading_level"`
 	GeneratedDescription *string   `json:"generated_description"`
-	RawResponse          string    `json:"raw_response"`
+	RawResponse          string    `json:"-"`
 	CreatedAt            Timestamp `json:"created_at"`
 	UpdatedAt            Timestamp `json:"updated_at"`
 }
@@ -164,18 +164,10 @@ func (d *DB) DeleteAIEnrichment(ctx context.Context, userID, id string) error {
 		slog.String(otelkeys.AIEnrichmentID, id),
 		slog.String(otelkeys.UserID, userID),
 	)
-	res, err := d.ExecContext(ctx,
+	return d.execAffected(ctx,
 		`DELETE FROM ai_enrichments WHERE id = $1 AND user_id = $2`,
 		id, userID,
 	)
-	if err != nil {
-		return err
-	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
-		return sql.ErrNoRows
-	}
-	return nil
 }
 
 // ApplyAIEnrichmentInput holds the parameters for ApplyAIEnrichment.
