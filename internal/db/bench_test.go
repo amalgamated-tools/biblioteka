@@ -54,6 +54,47 @@ func seedBooks(b *testing.B, d *DB, n int) {
 	}
 }
 
+// ---- ListBooksModifiedSince ----
+
+// BenchmarkListBooksModifiedSince_All_100 measures the full-sync path of
+// ListBooksModifiedSince (since=zero), which returns up to 100 rows ordered by
+// (updated_at ASC, id ASC). This exercises the
+// idx_books_updated_at_id composite index on (updated_at, id).
+func BenchmarkListBooksModifiedSince_All_100(b *testing.B) {
+	d := newBenchDB(b)
+	seedBooks(b, d, 100)
+	ctx := b.Context()
+	b.ResetTimer()
+	b.ReportAllocs()
+	for range b.N {
+		_, err := d.ListBooksModifiedSince(ctx, time.Time{}, "", 100)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+// BenchmarkListBooksModifiedSince_Incremental_100 measures the incremental sync
+// path of ListBooksModifiedSince (since=non-zero), which applies a compound
+// (updated_at, id) range filter for cursor-based pagination. This exercises the
+// idx_books_updated_at_id composite index on (updated_at, id).
+// All 100 rows are returned — a realistic worst case for a first incremental sync.
+func BenchmarkListBooksModifiedSince_Incremental_100(b *testing.B) {
+	d := newBenchDB(b)
+	seedBooks(b, d, 100)
+	ctx := b.Context()
+	// since is before all seeded rows so all 100 are returned.
+	since := time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
+	b.ResetTimer()
+	b.ReportAllocs()
+	for range b.N {
+		_, err := d.ListBooksModifiedSince(ctx, since, "", 100)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
 // ---- ListBooksPaginated ----
 
 func BenchmarkListBooksPaginated_100(b *testing.B) {
@@ -600,8 +641,9 @@ func BenchmarkListSeries_100(b *testing.B) {
 //
 // Each scoring arm is exercised: author overlap (+3), series continuation (+5,
 // via 10 distinct one-book series so the NOT EXISTS guard fires for each),
-// publisher match (+1), and download-count tiebreaker. Provides a baseline for
-// future optimisation of the recommendations query.
+// publisher match (+1), and download-count tiebreaker (5 author-overlap-only
+// candidates get book_files rows so the download_pts CTE produces non-NULL rows).
+// Provides a baseline for future optimisation of the recommendations query.
 func BenchmarkGetRecommendations(b *testing.B) {
 	d := newBenchDB(b)
 	ctx := b.Context()
@@ -637,7 +679,9 @@ func BenchmarkGetRecommendations(b *testing.B) {
 	}
 
 	// 100 candidate books: 30 share an author (10 also in a distinct series each),
-	// 5 match publisher, rest unrelated.
+	// 5 match publisher, rest unrelated. Collect the first 5 author-overlap-only
+	// IDs to seed book_files for the download-count arm.
+	var downloadCandidateIDs []string
 	for i := range 100 {
 		var candidatePub *string
 		if i >= 30 && i < 35 {
@@ -663,13 +707,87 @@ func BenchmarkGetRecommendations(b *testing.B) {
 		case i < 30:
 			// Author-overlap-only candidates.
 			require.NoError(b, d.SetBookAuthors(ctx, bk.ID, []string{authorB.ID}), "SetBookAuthors candidate B")
+			if len(downloadCandidateIDs) < 5 {
+				downloadCandidateIDs = append(downloadCandidateIDs, bk.ID)
+			}
 		}
+	}
+
+	// Seed book_files with non-zero download_count so the download_pts CTE
+	// produces rows and the popularity tiebreaker arm is exercised.
+	for j, bookID := range downloadCandidateIDs {
+		bf, err := d.CreateBookFile(ctx, bookID, "epub",
+			fmt.Sprintf("candidate-%02d.epub", j+1), 1024, nil,
+			fmt.Sprintf("/books/candidate-%02d.epub", j+1))
+		require.NoError(b, err, "CreateBookFile")
+		require.NoError(b, d.IncrementBookFileDownloadCount(ctx, bf.ID), "IncrementBookFileDownloadCount")
 	}
 
 	b.ResetTimer()
 	b.ReportAllocs()
 	for range b.N {
 		_, err := d.GetRecommendations(ctx, user.ID, 20, 0)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+// ---- GetPendingGoodreadsMetadataByBook ----
+
+// BenchmarkGetPendingGoodreadsMetadataByBook measures the lookup for the most
+// recent pending Goodreads metadata row for a specific book. The query filters
+// on (user_id, book_id, status) and orders by created_at DESC, id DESC LIMIT 1,
+// which is fully covered by idx_goodreads_metadata_user_book_status
+// (user_id, book_id, status, created_at DESC, id DESC) — no temp B-tree sort.
+//
+// The fixture seeds 40 metadata rows (a mix of pending/applied/rejected) across
+// 5 books and 2 users (4 rows per book per user) to ensure realistic index selectivity.
+func BenchmarkGetPendingGoodreadsMetadataByBook(b *testing.B) {
+	d := newBenchDB(b)
+	ctx := b.Context()
+
+	user1, err := d.CreateUser(ctx, "bench-gm-user1", "gm1@example.com", "hashedpw")
+	require.NoError(b, err, "CreateUser user1")
+	user2, err := d.CreateUser(ctx, "bench-gm-user2", "gm2@example.com", "hashedpw")
+	require.NoError(b, err, "CreateUser user2")
+
+	books := make([]string, 5)
+	for i := range 5 {
+		bk, err := d.CreateBook(ctx, BookInput{Title: fmt.Sprintf("GM Book %02d", i+1)})
+		require.NoError(b, err, "CreateBook")
+		books[i] = bk.ID
+	}
+
+	// Seed 4 rows per book per user: two pending + one applied + one rejected.
+	statuses := []string{
+		GoodreadsMetadataStatusPending,
+		GoodreadsMetadataStatusApplied,
+		GoodreadsMetadataStatusRejected,
+		GoodreadsMetadataStatusPending,
+	}
+	for _, userID := range []string{user1.ID, user2.ID} {
+		for _, bookID := range books {
+			bid := bookID
+			for j, status := range statuses {
+				title := fmt.Sprintf("Title %d", j)
+				gm, err := d.CreateGoodreadsMetadata(ctx, userID, GoodreadsMetadataInput{
+					BookID: &bid,
+					Title:  &title,
+				})
+				require.NoError(b, err, "CreateGoodreadsMetadata")
+				if status != GoodreadsMetadataStatusPending {
+					_, err = d.UpdateGoodreadsMetadataStatus(ctx, userID, gm.ID, status)
+					require.NoError(b, err, "UpdateGoodreadsMetadataStatus")
+				}
+			}
+		}
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for range b.N {
+		_, err := d.GetPendingGoodreadsMetadataByBook(ctx, user1.ID, books[2])
 		if err != nil {
 			b.Fatal(err)
 		}
