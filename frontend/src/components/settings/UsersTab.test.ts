@@ -144,6 +144,7 @@ describe("UsersTab accessibility", () => {
 
 describe("UsersTab registration config", () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     vi.mocked(getRegistrationConfig).mockResolvedValue({
       registration_disabled: false,
     });
@@ -154,7 +155,6 @@ describe("UsersTab registration config", () => {
 
   afterEach(() => {
     cleanup();
-    vi.clearAllMocks();
   });
 
   const defaultProps = {
