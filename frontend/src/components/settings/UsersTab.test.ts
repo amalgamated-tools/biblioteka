@@ -6,7 +6,6 @@ import {
   waitFor,
   fireEvent,
 } from "@testing-library/svelte";
-import { tick } from "svelte";
 
 vi.mock("../../stores/auth.svelte", () => ({
   authStore: {
@@ -34,6 +33,7 @@ import {
   getRegistrationConfig,
   setRegistrationConfig,
 } from "../../lib/api";
+import type { AdminUser } from "../../types";
 
 describe("UsersTab accessibility", () => {
   afterEach(() => {
@@ -143,6 +143,11 @@ describe("UsersTab accessibility", () => {
 });
 
 describe("UsersTab registration config", () => {
+  let defaultProps: {
+    cachedUsers: AdminUser[];
+    onUsersLoaded: (users: AdminUser[]) => void;
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(getRegistrationConfig).mockResolvedValue({
@@ -151,23 +156,19 @@ describe("UsersTab registration config", () => {
     vi.mocked(setRegistrationConfig).mockResolvedValue({
       registration_disabled: false,
     });
+    defaultProps = { cachedUsers: [], onUsersLoaded: vi.fn() };
   });
 
   afterEach(() => {
     cleanup();
   });
 
-  const defaultProps = {
-    cachedUsers: [],
-    onUsersLoaded: vi.fn(),
-  };
-
   it("shows 'Registration is enabled' when config returns registration_disabled: false", async () => {
     render(UsersTab, { props: defaultProps });
-    await tick();
-    await tick();
 
-    expect(screen.getByText("Registration is enabled")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByText("Registration is enabled")).toBeInTheDocument(),
+    );
   });
 
   it("shows 'Registration is disabled' when config returns registration_disabled: true", async () => {
@@ -176,20 +177,20 @@ describe("UsersTab registration config", () => {
     });
 
     render(UsersTab, { props: defaultProps });
-    await tick();
-    await tick();
 
-    expect(screen.getByText("Registration is disabled")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByText("Registration is disabled")).toBeInTheDocument(),
+    );
   });
 
   it("shows 'Disable Registration' button when registration is enabled", async () => {
     render(UsersTab, { props: defaultProps });
-    await tick();
-    await tick();
 
-    expect(
-      screen.getByRole("button", { name: "Disable Registration" }),
-    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Disable Registration" }),
+      ).toBeInTheDocument(),
+    );
   });
 
   it("shows 'Enable Registration' button when registration is disabled", async () => {
@@ -198,12 +199,12 @@ describe("UsersTab registration config", () => {
     });
 
     render(UsersTab, { props: defaultProps });
-    await tick();
-    await tick();
 
-    expect(
-      screen.getByRole("button", { name: "Enable Registration" }),
-    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Enable Registration" }),
+      ).toBeInTheDocument(),
+    );
   });
 
   it("calls setRegistrationConfig with registration_disabled: true when disabling", async () => {
@@ -212,18 +213,22 @@ describe("UsersTab registration config", () => {
     });
 
     render(UsersTab, { props: defaultProps });
-    await tick();
-    await tick();
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Disable Registration" }),
+      ).toBeInTheDocument(),
+    );
 
     fireEvent.click(
       screen.getByRole("button", { name: "Disable Registration" }),
     );
-    await tick();
-    await tick();
 
-    expect(vi.mocked(setRegistrationConfig)).toHaveBeenCalledWith({
-      registration_disabled: true,
-    });
+    await waitFor(() =>
+      expect(vi.mocked(setRegistrationConfig)).toHaveBeenCalledWith({
+        registration_disabled: true,
+      }),
+    );
   });
 
   it("shows success message after disabling registration", async () => {
@@ -232,18 +237,22 @@ describe("UsersTab registration config", () => {
     });
 
     render(UsersTab, { props: defaultProps });
-    await tick();
-    await tick();
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Disable Registration" }),
+      ).toBeInTheDocument(),
+    );
 
     fireEvent.click(
       screen.getByRole("button", { name: "Disable Registration" }),
     );
-    await tick();
-    await tick();
 
-    expect(
-      screen.getByText("Public registration disabled."),
-    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.getByText("Public registration disabled."),
+      ).toBeInTheDocument(),
+    );
   });
 
   it("calls setRegistrationConfig with registration_disabled: false when enabling", async () => {
@@ -255,18 +264,22 @@ describe("UsersTab registration config", () => {
     });
 
     render(UsersTab, { props: defaultProps });
-    await tick();
-    await tick();
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Enable Registration" }),
+      ).toBeInTheDocument(),
+    );
 
     fireEvent.click(
       screen.getByRole("button", { name: "Enable Registration" }),
     );
-    await tick();
-    await tick();
 
-    expect(vi.mocked(setRegistrationConfig)).toHaveBeenCalledWith({
-      registration_disabled: false,
-    });
+    await waitFor(() =>
+      expect(vi.mocked(setRegistrationConfig)).toHaveBeenCalledWith({
+        registration_disabled: false,
+      }),
+    );
   });
 
   it("shows success message after enabling registration", async () => {
@@ -278,18 +291,22 @@ describe("UsersTab registration config", () => {
     });
 
     render(UsersTab, { props: defaultProps });
-    await tick();
-    await tick();
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Enable Registration" }),
+      ).toBeInTheDocument(),
+    );
 
     fireEvent.click(
       screen.getByRole("button", { name: "Enable Registration" }),
     );
-    await tick();
-    await tick();
 
-    expect(
-      screen.getByText("Public registration enabled."),
-    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.getByText("Public registration enabled."),
+      ).toBeInTheDocument(),
+    );
   });
 
   it("shows error banner when setRegistrationConfig rejects", async () => {
@@ -298,16 +315,20 @@ describe("UsersTab registration config", () => {
     );
 
     render(UsersTab, { props: defaultProps });
-    await tick();
-    await tick();
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Disable Registration" }),
+      ).toBeInTheDocument(),
+    );
 
     fireEvent.click(
       screen.getByRole("button", { name: "Disable Registration" }),
     );
-    await tick();
-    await tick();
 
-    expect(screen.getByText("Server error")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByText("Server error")).toBeInTheDocument(),
+    );
   });
 
   it("shows error banner when getRegistrationConfig rejects on mount", async () => {
@@ -316,13 +337,13 @@ describe("UsersTab registration config", () => {
     );
 
     render(UsersTab, { props: defaultProps });
-    await tick();
-    await tick();
 
-    expect(
-      screen.getByText(
-        "Failed to load registration config. The status shown below may be stale.",
-      ),
-    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.getByText(
+          "Failed to load registration config. The status shown below may be stale.",
+        ),
+      ).toBeInTheDocument(),
+    );
   });
 });
