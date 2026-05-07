@@ -195,7 +195,7 @@ Regardless of which method is used, when self-registration is disabled:
 - The **Sign Up** tab is hidden in the web UI.
 - `GET /api/auth/signup/enabled` returns `{"enabled": false}` so third-party clients can adapt their UI accordingly.
 
-Admin accounts are not affected and retain full access.
+Admin accounts using username/password or passkeys retain full access. Admins who authenticate exclusively through OIDC are also blocked while registration is disabled — re-enable registration to restore their access.
 
 **Precedence:** The `DISABLE_SIGNUP` environment variable always takes precedence over the database setting. If `DISABLE_SIGNUP=true` is set, the runtime toggle has no effect — registration stays disabled regardless of what the API returns.
 
@@ -599,7 +599,7 @@ See [API reference — LLM config endpoints](api/config.md#get-apiconfigllm--adm
 
 ## Registration Configuration (Runtime)
 
-Admins can enable or disable public self-registration at runtime without a server restart via **Settings → Registration** or the API. See [Controlling self-registration](#controlling-self-registration) in the User Management section for the full description, curl examples, and precedence rules.
+Admins can enable or disable public self-registration at runtime without a server restart via **Settings → Users** → **Public Registration**, or via the API. See [Controlling self-registration](#controlling-self-registration) in the User Management section for the full description, curl examples, and precedence rules.
 
 **Quick reference:**
 
@@ -608,11 +608,13 @@ Admins can enable or disable public self-registration at runtime without a serve
 | `GET /api/config/registration` | 🔒 Admin · JWT | Return current registration state |
 | `PUT /api/config/registration` | 🔒 Admin · JWT | Enable or disable self-registration |
 
-**Request / response shape (`PUT`):**
+**Request body (`PUT`):**
 
 ```json
 { "registration_disabled": true }
 ```
+
+**Response body (`GET` and `PUT`):**
 
 ```json
 { "registration_disabled": true }
