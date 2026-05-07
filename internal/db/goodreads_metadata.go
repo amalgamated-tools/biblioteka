@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -188,16 +187,8 @@ func (d *DB) DeleteGoodreadsMetadata(ctx context.Context, userID, id string) err
 		slog.String(otelkeys.GoodreadsMetadataID, id),
 		slog.String(otelkeys.UserID, userID),
 	)
-	res, err := d.ExecContext(ctx,
+	return d.execAffected(ctx,
 		`DELETE FROM goodreads_metadata WHERE id = $1 AND user_id = $2`,
 		id, userID,
 	)
-	if err != nil {
-		return err
-	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
-		return sql.ErrNoRows
-	}
-	return nil
 }
