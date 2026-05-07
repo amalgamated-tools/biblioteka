@@ -323,6 +323,37 @@ func TestHandleReadingListRoutes_Books_Remove_ListNotFound(t *testing.T) {
 	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
+func TestHandleReadingListRoutes_Delete_AuditMetadata(t *testing.T) {
+	h, userID := setupReadingListHandler(t)
+
+	rl, err := h.DB.CreateReadingList(t.Context(), userID, "My Favorites", nil)
+	require.NoError(t, err)
+
+	r := httptest.NewRequest(http.MethodDelete, "/api/reading-lists/"+rl.ID, nil)
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+	h.HandleReadingListRoutes(w, r)
+
+	require.Equal(t, http.StatusNoContent, w.Code)
+
+	logs, _, err := h.DB.ListAuditLogs(t.Context(), 10, 0)
+	require.NoError(t, err)
+
+	var deleteLog *db.AuditLog
+	for i := range logs {
+		if logs[i].Action == db.AuditActionReadingListDeleted {
+			deleteLog = &logs[i]
+			break
+		}
+	}
+	require.NotNil(t, deleteLog, "expected a reading_list.deleted audit log entry")
+	require.NotNil(t, deleteLog.Metadata, "audit log metadata should not be nil")
+
+	var meta map[string]any
+	require.NoError(t, json.Unmarshal([]byte(*deleteLog.Metadata), &meta))
+	require.Equal(t, "My Favorites", meta["name"])
+}
+
 func TestHandleReadingListRoutes_InvalidPath(t *testing.T) {
 	h, userID := setupReadingListHandler(t)
 

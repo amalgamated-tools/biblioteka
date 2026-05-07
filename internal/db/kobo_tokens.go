@@ -12,7 +12,7 @@ type KoboToken struct {
 	ID        string    `json:"id"`
 	UserID    string    `json:"user_id"`
 	Name      string    `json:"name"`
-	TokenHash string    `json:"token_hash"`
+	TokenHash string    `json:"-"`
 	CreatedAt Timestamp `json:"created_at"`
 }
 
