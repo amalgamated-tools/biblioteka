@@ -72,7 +72,9 @@ func createNamedEntity[T, DTO, Req any](ops namedEntityOps[T, DTO, Req], w http.
 		return
 	}
 	if entity == nil {
-		slog.ErrorContext(ctx, "create returned nil entity without error")
+		slog.ErrorContext(ctx, "create returned nil entity without error",
+			slog.String(otelkeys.EntityType, ops.entityLabel),
+		)
 		writeError(ctx, w, http.StatusInternalServerError, "failed to create "+ops.entityLabel)
 		return
 	}
@@ -210,7 +212,9 @@ func createUserOwnedNamedEntity[T, DTO, Req any](ops userOwnedNamedEntityOps[T, 
 		return
 	}
 	if entity == nil {
-		slog.ErrorContext(ctx, "create returned nil entity without error")
+		slog.ErrorContext(ctx, "create returned nil entity without error",
+			slog.String(otelkeys.EntityType, ops.entityLabel),
+		)
 		writeError(ctx, w, http.StatusInternalServerError, "failed to create "+ops.entityLabel)
 		return
 	}

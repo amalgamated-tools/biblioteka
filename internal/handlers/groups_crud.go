@@ -135,7 +135,7 @@ func (h *GroupHandler) updateGroup(w http.ResponseWriter, r *http.Request, id st
 //	@Failure		500	{object}	errorResponse
 //	@Router			/groups/{id} [delete]
 func (h *GroupHandler) deleteGroup(w http.ResponseWriter, r *http.Request, id string) {
-	deleteUserOwnedResource(h.DB, w, r, id, "reading group", "group", otelkeys.GroupID,
+	deleteUserOwnedResource(h.DB, w, r, id, "group", "group", otelkeys.GroupID,
 		h.DB.GetGroup, h.DB.DeleteGroup,
 		db.AuditActionGroupDeleted,
 		func(g *db.ReadingGroup) map[string]any { return map[string]any{"name": g.Name} },
