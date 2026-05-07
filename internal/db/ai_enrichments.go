@@ -35,7 +35,7 @@ type AIEnrichment struct {
 	SuggestedTags        []string  `json:"suggested_tags"`
 	ReadingLevel         *string   `json:"reading_level"`
 	GeneratedDescription *string   `json:"generated_description"`
-	RawResponse          string    `json:"raw_response"`
+	RawResponse          string    `json:"-"`
 	CreatedAt            Timestamp `json:"created_at"`
 	UpdatedAt            Timestamp `json:"updated_at"`
 }
