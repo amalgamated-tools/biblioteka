@@ -250,7 +250,7 @@ Entries are returned newest-first. `limit` defaults to `50` (maximum `200`); `of
 | `ai_enrichment.applied` | `book`       | `enrichment_id`                                  | `POST /api/books/{id}/metadata/ai-apply` |
 | `ai_enrichment.rejected` | `book`      | `enrichment_id`                                  | `POST /api/books/{id}/metadata/ai-reject` |
 | `api_key.created`      | `api_key`     | `name`                                           | `POST /api/api-keys`                    |
-| `api_key.deleted`      | `api_key`     | `name`                                           | `DELETE /api/api-keys/{id}`             |
+| `api_key.deleted`      | `api_key`     | —                                                | `DELETE /api/api-keys/{id}`             |
 | `opds_credential.updated` | `opds_credential` | `username`                               | `PUT /api/opds/credentials`             |
 | `opds_credential.deleted` | `opds_credential` | `username`                               | `DELETE /api/opds/credentials`          |
 | `kobo_token.created`   | `kobo_token`  | `name`                                           | `POST /api/kobo/tokens`                 |
