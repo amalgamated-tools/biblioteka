@@ -631,6 +631,67 @@ func BenchmarkListSeries_100(b *testing.B) {
 	}
 }
 
+// ---- GetPendingGoodreadsMetadataByBook ----
+
+// BenchmarkGetPendingGoodreadsMetadataByBook measures the lookup for the most
+// recent pending Goodreads metadata row for a specific book. The query filters
+// on (user_id, book_id, status) and orders by created_at DESC, id DESC LIMIT 1,
+// which is fully covered by idx_goodreads_metadata_user_book_status
+// (user_id, book_id, status, created_at DESC, id DESC) — no temp B-tree sort.
+//
+// The fixture seeds 40 metadata rows (a mix of pending/applied/rejected) across
+// 5 books and 2 users (4 rows per book per user) to ensure realistic index selectivity.
+func BenchmarkGetPendingGoodreadsMetadataByBook(b *testing.B) {
+	d := newBenchDB(b)
+	ctx := b.Context()
+
+	user1, err := d.CreateUser(ctx, "bench-gm-user1", "gm1@example.com", "hashedpw")
+	require.NoError(b, err, "CreateUser user1")
+	user2, err := d.CreateUser(ctx, "bench-gm-user2", "gm2@example.com", "hashedpw")
+	require.NoError(b, err, "CreateUser user2")
+
+	books := make([]string, 5)
+	for i := range 5 {
+		bk, err := d.CreateBook(ctx, BookInput{Title: fmt.Sprintf("GM Book %02d", i+1)})
+		require.NoError(b, err, "CreateBook")
+		books[i] = bk.ID
+	}
+
+	// Seed 4 rows per book per user: two pending + one applied + one rejected.
+	statuses := []string{
+		GoodreadsMetadataStatusPending,
+		GoodreadsMetadataStatusApplied,
+		GoodreadsMetadataStatusRejected,
+		GoodreadsMetadataStatusPending,
+	}
+	for _, userID := range []string{user1.ID, user2.ID} {
+		for _, bookID := range books {
+			bid := bookID
+			for j, status := range statuses {
+				title := fmt.Sprintf("Title %d", j)
+				gm, err := d.CreateGoodreadsMetadata(ctx, userID, GoodreadsMetadataInput{
+					BookID: &bid,
+					Title:  &title,
+				})
+				require.NoError(b, err, "CreateGoodreadsMetadata")
+				if status != GoodreadsMetadataStatusPending {
+					_, err = d.UpdateGoodreadsMetadataStatus(ctx, userID, gm.ID, status)
+					require.NoError(b, err, "UpdateGoodreadsMetadataStatus")
+				}
+			}
+		}
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for range b.N {
+		_, err := d.GetPendingGoodreadsMetadataByBook(ctx, user1.ID, books[2])
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
 // ---- GetPendingAIEnrichmentByBook ----
 
 // BenchmarkGetPendingAIEnrichmentByBook measures the lookup for the most recent
