@@ -3512,16 +3512,16 @@ The following test suites cover reactive stores and the API client. Unlike the a
 
 1. **`shows a loading spinner initially`** — mounts with a never-resolving `getPendingAIEnrichment` mock; asserts a `role="status"` element containing "Checking for AI enrichment..." is rendered.
 2. **`renders nothing when no pending enrichment exists (404)`** — mock rejects with `ApiError(404)`; asserts neither the panel container (`data-testid="ai-enrichment-panel"`) nor any `role="alert"` is rendered after loading completes.
-3. **`renders enrichment data when pending enrichment exists`** — mock resolves with a full enrichment fixture; asserts the panel heading "AI Enrichment Review", suggested tag chips, "Reading Level", "Generated Description", and the provider/model attribution line are all rendered.
-4. **`renders Apply and Reject buttons`** — asserts both action buttons are present and enabled once enrichment data has loaded.
+3. **`renders enrichment data when pending enrichment exists`** — mock resolves with a full enrichment fixture; asserts the panel heading "AI Enrichment Review", suggested tag chips, reading-level value, generated-description text, and the provider/model attribution line are rendered.
+4. **`renders Apply and Reject buttons`** — asserts both action buttons are present once enrichment data has loaded.
 5. **`calls applyAIEnrichment and invokes onApplied callback on success`** — simulates clicking **Apply**; asserts `applyAIEnrichment` is called with the correct book ID, the panel disappears, and the `onApplied` spy is called.
 6. **`calls rejectAIEnrichment and invokes onRejected callback on success`** — simulates clicking **Reject**; asserts `rejectAIEnrichment` is called with the correct book ID, the panel disappears, and the `onRejected` spy is called.
-7. **`shows an error message when initial load fails with a non-404 error`** — mock rejects with a generic error; asserts an error message is rendered and the panel container is absent.
+7. **`shows an error message when initial load fails with a non-404 error`** — mock rejects with a generic error; asserts an error message is rendered.
 8. **`shows an error inside the panel when apply fails`** — mock rejects on `applyAIEnrichment`; asserts an inline `AlertBanner` appears while the enrichment data remains visible.
 9. **`shows an error inside the panel when reject fails`** — mock rejects on `rejectAIEnrichment`; asserts an inline `AlertBanner` appears while the enrichment data remains visible.
 10. **`disables both buttons while applying`** — clicks **Apply** against a stalled promise; asserts the Apply button shows "Applying..." and that the action buttons are disabled during the pending request.
 11. **`disables both buttons while rejecting`** — clicks **Reject** against a stalled promise; asserts the Reject button shows "Rejecting..." and that the action buttons are disabled during the pending request.
-12. **`renders without optional enrichment content when tags, reading level, and description are missing`** — resolves with a minimal enrichment (empty tags, `null` reading level and description); asserts the panel still renders without showing optional enrichment content.
+12. **`renders nothing when enrichment has no suggested tags, reading level, or description`** — resolves with a minimal enrichment (empty tags, `null` reading level and description); asserts the panel still renders without showing optional enrichment content.
 13. **`discards enrichment result when bookId changes before the request settles`** — stalls the first request for book `b1`, then re-renders with `bookId="b2"` before resolving; resolves the stale first request; asserts that `b1`'s enrichment does not appear (stale-result guard via the `bookId !== id` check in `loadEnrichment`; `AbortController` is also aborted but the mock resolves regardless).
 
 > **Testing note:** `ApiError` (from `../../lib/api/core`) is manually mocked to expose a typed `status` field so the component's 404 suppression logic can be exercised in JSDOM. The `lucide-svelte` icon components are stubbed to avoid SVG rendering overhead.
