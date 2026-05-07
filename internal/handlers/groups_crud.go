@@ -11,15 +11,16 @@ import (
 // groupOps returns the userOwnedNamedEntityOps configuration for the ReadingGroup entity.
 func (h *GroupHandler) groupOps() userOwnedNamedEntityOps[db.ReadingGroup, groupDTO, groupRequest] {
 	return userOwnedNamedEntityOps[db.ReadingGroup, groupDTO, groupRequest]{
-		db:             h.DB,
-		entityLabel:    "group",
-		entityArticle:  "a group",
-		idKey:          otelkeys.GroupID,
-		errInvalidName: db.ErrInvalidGroupName,
-		errNameExists:  db.ErrGroupNameExists,
-		auditCreate:    db.AuditActionGroupCreated,
-		auditUpdate:    db.AuditActionGroupUpdated,
-		get:            h.DB.GetGroup,
+		db:              h.DB,
+		entityLabel:     "group",
+		auditEntityType: "group",
+		entityArticle:   "a group",
+		idKey:           otelkeys.GroupID,
+		errInvalidName:  db.ErrInvalidGroupName,
+		errNameExists:   db.ErrGroupNameExists,
+		auditCreate:     db.AuditActionGroupCreated,
+		auditUpdate:     db.AuditActionGroupUpdated,
+		get:             h.DB.GetGroup,
 		create: func(ctx context.Context, userID string, req groupRequest) (*db.ReadingGroup, error) {
 			return h.DB.CreateGroup(ctx, userID, req.Name, req.Description)
 		},

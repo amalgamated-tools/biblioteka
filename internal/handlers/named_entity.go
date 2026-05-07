@@ -150,14 +150,15 @@ func updateNamedEntity[T, DTO, Req any](ops namedEntityOps[T, DTO, Req], w http.
 // receive the authenticated user's ID so that ownership and visibility can be
 // enforced at the database layer.
 type userOwnedNamedEntityOps[T any, DTO any, Req any] struct {
-	db             *db.DB
-	entityLabel    string // human-readable label, e.g. "reading list" or "group"
-	entityArticle  string // with indefinite article, e.g. "a reading list" or "a group"
-	idKey          string // otelkeys constant for the entity ID field
-	errInvalidName error
-	errNameExists  error
-	auditCreate    string
-	auditUpdate    string
+	db              *db.DB
+	entityLabel     string // human-readable label, e.g. "reading list" or "group"
+	auditEntityType string // stable snake_case type written to audit logs, e.g. "reading_list" or "group"
+	entityArticle   string // with indefinite article, e.g. "a reading list" or "a group"
+	idKey           string // otelkeys constant for the entity ID field
+	errInvalidName  error
+	errNameExists   error
+	auditCreate     string
+	auditUpdate     string
 
 	get    func(context.Context, string, string) (*T, error)
 	create func(context.Context, string, Req) (*T, error)
@@ -220,7 +221,7 @@ func createUserOwnedNamedEntity[T, DTO, Req any](ops userOwnedNamedEntityOps[T, 
 		slog.String(otelkeys.Name, ops.entityName(entity)),
 	)
 
-	logAudit(ctx, ops.db, userID, ops.auditCreate, ops.entityLabel, ops.entityID(entity), map[string]any{"name": ops.entityName(entity)})
+	logAudit(ctx, ops.db, userID, ops.auditCreate, ops.auditEntityType, ops.entityID(entity), map[string]any{"name": ops.entityName(entity)})
 
 	writeJSON(ctx, w, http.StatusCreated, ops.toDTO(entity))
 }
@@ -277,7 +278,7 @@ func updateUserOwnedNamedEntity[T, DTO, Req any](ops userOwnedNamedEntityOps[T, 
 		return
 	}
 
-	logAudit(ctx, ops.db, userID, ops.auditUpdate, ops.entityLabel, ops.entityID(entity), map[string]any{"name": ops.entityName(entity)})
+	logAudit(ctx, ops.db, userID, ops.auditUpdate, ops.auditEntityType, ops.entityID(entity), map[string]any{"name": ops.entityName(entity)})
 
 	writeJSON(ctx, w, http.StatusOK, ops.toDTO(entity))
 }

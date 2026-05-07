@@ -430,14 +430,15 @@ func makeTestUserOwnedNamedEntityOps(t *testing.T) userOwnedNamedEntityOps[testE
 	d := newTestDB(t)
 
 	return userOwnedNamedEntityOps[testEntity, testEntityDTO, testEntityRequest]{
-		db:             d,
-		entityLabel:    "widget",
-		entityArticle:  "a widget",
-		idKey:          testWidgetIDKey,
-		errInvalidName: errInvalidWidgetName,
-		errNameExists:  errWidgetNameExists,
-		auditCreate:    testAuditWidgetCreate,
-		auditUpdate:    testAuditWidgetUpdate,
+		db:              d,
+		entityLabel:     "widget",
+		auditEntityType: "widget",
+		entityArticle:   "a widget",
+		idKey:           testWidgetIDKey,
+		errInvalidName:  errInvalidWidgetName,
+		errNameExists:   errWidgetNameExists,
+		auditCreate:     testAuditWidgetCreate,
+		auditUpdate:     testAuditWidgetUpdate,
 		get: func(_ context.Context, id, _ string) (*testEntity, error) {
 			return nil, sql.ErrNoRows // default to not-found; override in tests
 		},
@@ -496,6 +497,22 @@ func TestCreateUserOwnedNamedEntity_EmptyName(t *testing.T) {
 	ops := makeTestUserOwnedNamedEntityOps(t)
 
 	body := mustMarshal(t, testEntityRequest{Name: ""})
+	r := httptest.NewRequest(http.MethodPost, "/api/widgets", bytes.NewReader(body))
+	r = withUserID(r, "user-1")
+	w := httptest.NewRecorder()
+
+	createUserOwnedNamedEntity(ops, w, r)
+
+	require.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestCreateUserOwnedNamedEntity_ErrInvalidName(t *testing.T) {
+	ops := makeTestUserOwnedNamedEntityOps(t)
+	ops.create = func(_ context.Context, _ string, _ testEntityRequest) (*testEntity, error) {
+		return nil, errInvalidWidgetName
+	}
+
+	body := mustMarshal(t, testEntityRequest{Name: "Valid Name"})
 	r := httptest.NewRequest(http.MethodPost, "/api/widgets", bytes.NewReader(body))
 	r = withUserID(r, "user-1")
 	w := httptest.NewRecorder()
@@ -687,6 +704,22 @@ func TestUpdateUserOwnedNamedEntity_NotFound(t *testing.T) {
 	updateUserOwnedNamedEntity(ops, w, r, "missing")
 
 	require.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestUpdateUserOwnedNamedEntity_ErrInvalidName(t *testing.T) {
+	ops := makeTestUserOwnedNamedEntityOps(t)
+	ops.update = func(_ context.Context, _, _ string, _ testEntityRequest) (*testEntity, error) {
+		return nil, errInvalidWidgetName
+	}
+
+	body := mustMarshal(t, testEntityRequest{Name: "Anything"})
+	r := httptest.NewRequest(http.MethodPut, "/api/widgets/entity-1", bytes.NewReader(body))
+	r = withUserID(r, "user-1")
+	w := httptest.NewRecorder()
+
+	updateUserOwnedNamedEntity(ops, w, r, "entity-1")
+
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestUpdateUserOwnedNamedEntity_ErrNameExists(t *testing.T) {

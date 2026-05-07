@@ -49,15 +49,16 @@ func toReadingListDTO(rl *db.ReadingList) readingListDTO {
 // readingListOps returns the userOwnedNamedEntityOps configuration for the ReadingList entity.
 func (h *ReadingListHandler) readingListOps() userOwnedNamedEntityOps[db.ReadingList, readingListDTO, readingListRequest] {
 	return userOwnedNamedEntityOps[db.ReadingList, readingListDTO, readingListRequest]{
-		db:             h.DB,
-		entityLabel:    "reading list",
-		entityArticle:  "a reading list",
-		idKey:          otelkeys.ReadingListID,
-		errInvalidName: db.ErrInvalidReadingListName,
-		errNameExists:  db.ErrReadingListNameExists,
-		auditCreate:    db.AuditActionReadingListCreated,
-		auditUpdate:    db.AuditActionReadingListUpdated,
-		get:            h.DB.GetReadingList,
+		db:              h.DB,
+		entityLabel:     "reading list",
+		auditEntityType: "reading_list",
+		entityArticle:   "a reading list",
+		idKey:           otelkeys.ReadingListID,
+		errInvalidName:  db.ErrInvalidReadingListName,
+		errNameExists:   db.ErrReadingListNameExists,
+		auditCreate:     db.AuditActionReadingListCreated,
+		auditUpdate:     db.AuditActionReadingListUpdated,
+		get:             h.DB.GetReadingList,
 		create: func(ctx context.Context, userID string, req readingListRequest) (*db.ReadingList, error) {
 			return h.DB.CreateReadingList(ctx, userID, req.Name, req.Description)
 		},
