@@ -1,16 +1,9 @@
 import type { Tag, TagInput } from "../../types";
 import { request } from "./core";
-
-interface TagListResponse {
-  tags: Tag[];
-  total: number;
-  limit: number;
-  offset: number;
-}
+import { listAllPaginated } from "./pagination";
 
 export async function listTags(): Promise<Tag[]> {
-  const result = await request<TagListResponse>("GET", "/api/tags");
-  return result.tags;
+  return listAllPaginated<Tag, "tags">("/api/tags", "tags");
 }
 
 export async function getTag(id: string): Promise<Tag> {

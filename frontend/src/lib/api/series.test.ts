@@ -54,15 +54,47 @@ afterEach(() => {
 
 describe("Series API", () => {
   describe("listSeries", () => {
-    it("sends GET /api/series and returns the list", async () => {
-      mockFetchResponse({ series: [fakeSeries], total: 1, limit: 50, offset: 0 });
+    it("fetches all pages and returns the full list", async () => {
+      const fakeSeries2: Series = {
+        ...fakeSeries,
+        id: "s2",
+        name: "Second Series",
+      };
+      const makeResponse = (body: unknown): Response =>
+        ({
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          headers: new Headers({ "content-type": "application/json" }),
+          json: vi.fn().mockResolvedValue(body),
+          text: vi.fn().mockResolvedValue(JSON.stringify(body)),
+        }) as unknown as Response;
+      fetchMock.mockResolvedValueOnce(
+        makeResponse({
+          series: [fakeSeries],
+          total: 2,
+          limit: 200,
+          offset: 0,
+        }),
+      );
+      fetchMock.mockResolvedValueOnce(
+        makeResponse({
+          series: [fakeSeries2],
+          total: 2,
+          limit: 200,
+          offset: 1,
+        }),
+      );
 
       const result = await listSeries();
 
-      const [url, options] = fetchMock.mock.calls[0];
-      expect(url).toBe("/api/series");
-      expect(options.method).toBe("GET");
-      expect(result).toEqual([fakeSeries]);
+      const [firstURL, firstOptions] = fetchMock.mock.calls[0];
+      const [secondURL, secondOptions] = fetchMock.mock.calls[1];
+      expect(firstURL).toBe("/api/series?limit=200&offset=0");
+      expect(firstOptions.method).toBe("GET");
+      expect(secondURL).toBe("/api/series?limit=200&offset=1");
+      expect(secondOptions.method).toBe("GET");
+      expect(result).toEqual([fakeSeries, fakeSeries2]);
     });
   });
 

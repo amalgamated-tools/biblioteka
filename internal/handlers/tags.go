@@ -62,13 +62,15 @@ func (h *TagHandler) tagOps() namedEntityOps[db.Tag, tagDTO, tagRequest] {
 // HandleTags handles GET /api/tags and POST /api/tags.
 //
 //	@Summary		List or create tags
-//	@Description	GET returns all tags. POST creates a new tag.
+//	@Description	GET returns paginated tags. POST creates a new tag.
 //	@Tags			Tags
 //	@Accept			json
 //	@Produce		json
 //	@Security		BearerAuth
+//	@Param			limit	query		int	false	"Max items per page (default 50, max 200)"
+//	@Param			offset	query		int	false	"Number of items to skip (default 0)"
 //	@Failure		401	{object}	errorResponse
-//	@Success		200	{array}		tagDTO
+//	@Success		200	{object}	tagListDTO
 //	@Success		201	{object}	tagDTO
 //	@Failure		400	{object}	errorResponse
 //	@Failure		409	{object}	errorResponse

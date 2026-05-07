@@ -42,6 +42,9 @@ func TestListTags_Handler(t *testing.T) {
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto))
 	require.Len(t, dto.Tags, 1)
 	require.Equal(t, "fiction", dto.Tags[0].Name)
+	require.Equal(t, 1, dto.Total)
+	require.Equal(t, defaultPageLimit, dto.Limit)
+	require.Equal(t, 0, dto.Offset)
 }
 
 func TestCreateTag_Handler(t *testing.T) {

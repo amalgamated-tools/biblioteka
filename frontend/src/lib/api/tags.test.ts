@@ -50,15 +50,43 @@ afterEach(() => {
 
 describe("Tags API", () => {
   describe("listTags", () => {
-    it("sends GET /api/tags and returns the list", async () => {
-      mockFetchResponse({ tags: [fakeTag], total: 1, limit: 50, offset: 0 });
+    it("fetches all pages and returns the full list", async () => {
+      const fakeTag2: Tag = { ...fakeTag, id: "t2", name: "fantasy" };
+      const makeResponse = (body: unknown): Response =>
+        ({
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          headers: new Headers({ "content-type": "application/json" }),
+          json: vi.fn().mockResolvedValue(body),
+          text: vi.fn().mockResolvedValue(JSON.stringify(body)),
+        }) as unknown as Response;
+      fetchMock.mockResolvedValueOnce(
+        makeResponse({
+          tags: [fakeTag],
+          total: 2,
+          limit: 200,
+          offset: 0,
+        }),
+      );
+      fetchMock.mockResolvedValueOnce(
+        makeResponse({
+          tags: [fakeTag2],
+          total: 2,
+          limit: 200,
+          offset: 1,
+        }),
+      );
 
       const result = await listTags();
 
-      const [url, options] = fetchMock.mock.calls[0];
-      expect(url).toBe("/api/tags");
-      expect(options.method).toBe("GET");
-      expect(result).toEqual([fakeTag]);
+      const [firstURL, firstOptions] = fetchMock.mock.calls[0];
+      const [secondURL, secondOptions] = fetchMock.mock.calls[1];
+      expect(firstURL).toBe("/api/tags?limit=200&offset=0");
+      expect(firstOptions.method).toBe("GET");
+      expect(secondURL).toBe("/api/tags?limit=200&offset=1");
+      expect(secondOptions.method).toBe("GET");
+      expect(result).toEqual([fakeTag, fakeTag2]);
     });
   });
 

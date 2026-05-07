@@ -1,17 +1,9 @@
 import type { Series, SeriesInput, PaginatedBooks } from "../../types";
 import { request } from "./core";
-import { listEntityBooks } from "./pagination";
-
-interface SeriesListResponse {
-  series: Series[];
-  total: number;
-  limit: number;
-  offset: number;
-}
+import { listAllPaginated, listEntityBooks } from "./pagination";
 
 export async function listSeries(): Promise<Series[]> {
-  const result = await request<SeriesListResponse>("GET", "/api/series");
-  return result.series;
+  return listAllPaginated<Series, "series">("/api/series", "series");
 }
 
 export async function getSeries(id: string): Promise<Series> {
