@@ -46,6 +46,32 @@ func toReadingListDTO(rl *db.ReadingList) readingListDTO {
 	}
 }
 
+// readingListOps returns the userOwnedNamedEntityOps configuration for the ReadingList entity.
+func (h *ReadingListHandler) readingListOps() userOwnedNamedEntityOps[db.ReadingList, readingListDTO, readingListRequest] {
+	return userOwnedNamedEntityOps[db.ReadingList, readingListDTO, readingListRequest]{
+		db:              h.DB,
+		entityLabel:     "reading list",
+		auditEntityType: "reading_list",
+		entityArticle:   "a reading list",
+		idKey:           otelkeys.ReadingListID,
+		errInvalidName:  db.ErrInvalidReadingListName,
+		errNameExists:   db.ErrReadingListNameExists,
+		auditCreate:     db.AuditActionReadingListCreated,
+		auditUpdate:     db.AuditActionReadingListUpdated,
+		get:             h.DB.GetReadingList,
+		create: func(ctx context.Context, userID string, req readingListRequest) (*db.ReadingList, error) {
+			return h.DB.CreateReadingList(ctx, userID, req.Name, req.Description)
+		},
+		update: func(ctx context.Context, id, userID string, req readingListRequest) (*db.ReadingList, error) {
+			return h.DB.UpdateReadingList(ctx, id, userID, req.Name, req.Description)
+		},
+		reqName:    func(req readingListRequest) string { return req.Name },
+		entityName: func(rl *db.ReadingList) string { return rl.Name },
+		entityID:   func(rl *db.ReadingList) string { return rl.ID },
+		toDTO:      toReadingListDTO,
+	}
+}
+
 // HandleReadingLists handles GET /api/reading-lists and POST /api/reading-lists.
 func (h *ReadingListHandler) HandleReadingLists(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
@@ -97,33 +123,6 @@ func (h *ReadingListHandler) HandleReadingListRoutes(w http.ResponseWriter, r *h
 //	@Router			/reading-lists [get]
 func (h *ReadingListHandler) listReadingLists(w http.ResponseWriter, r *http.Request) {
 	listUserEntities(w, r, "reading lists", h.DB.ListReadingLists, toReadingListDTO)
-}
-
-// readingListOps returns the userOwnedNamedEntityOps configuration for the
-// ReadingList entity.
-func (h *ReadingListHandler) readingListOps() userOwnedNamedEntityOps[db.ReadingList, readingListDTO, readingListRequest] {
-	return userOwnedNamedEntityOps[db.ReadingList, readingListDTO, readingListRequest]{
-		db:              h.DB,
-		entityLabel:     "reading list",
-		entityArticle:   "a reading list",
-		idKey:           otelkeys.ReadingListID,
-		auditEntityType: "reading_list",
-		errInvalidName:  db.ErrInvalidReadingListName,
-		errNameExists:   db.ErrReadingListNameExists,
-		auditCreate:     db.AuditActionReadingListCreated,
-		auditUpdate:     db.AuditActionReadingListUpdated,
-		get:             h.DB.GetReadingList,
-		create: func(ctx context.Context, userID string, req readingListRequest) (*db.ReadingList, error) {
-			return h.DB.CreateReadingList(ctx, userID, req.Name, req.Description)
-		},
-		update: func(ctx context.Context, id, userID string, req readingListRequest) (*db.ReadingList, error) {
-			return h.DB.UpdateReadingList(ctx, id, userID, req.Name, req.Description)
-		},
-		reqName:    func(req readingListRequest) string { return req.Name },
-		entityName: func(rl *db.ReadingList) string { return rl.Name },
-		entityID:   func(rl *db.ReadingList) string { return rl.ID },
-		toDTO:      toReadingListDTO,
-	}
 }
 
 // createReadingList creates a new reading list for the authenticated user.

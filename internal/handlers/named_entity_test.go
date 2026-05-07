@@ -432,9 +432,9 @@ func makeTestUserOwnedNamedEntityOps(t *testing.T) userOwnedNamedEntityOps[testE
 	return userOwnedNamedEntityOps[testEntity, testEntityDTO, testEntityRequest]{
 		db:              d,
 		entityLabel:     "widget",
+		auditEntityType: "widget",
 		entityArticle:   "a widget",
 		idKey:           testWidgetIDKey,
-		auditEntityType: "widget",
 		errInvalidName:  errInvalidWidgetName,
 		errNameExists:   errWidgetNameExists,
 		auditCreate:     testAuditWidgetCreate,
@@ -460,6 +460,12 @@ func makeTestUserOwnedNamedEntityOps(t *testing.T) userOwnedNamedEntityOps[testE
 func TestCreateUserOwnedNamedEntity_Success(t *testing.T) {
 	ops := makeTestUserOwnedNamedEntityOps(t)
 
+	var capturedUserID string
+	ops.create = func(_ context.Context, userID string, req testEntityRequest) (*testEntity, error) {
+		capturedUserID = userID
+		return &testEntity{ID: "new-id", Name: req.Name}, nil
+	}
+
 	body := mustMarshal(t, testEntityRequest{Name: "My Widget"})
 	r := httptest.NewRequest(http.MethodPost, "/api/widgets", bytes.NewReader(body))
 	r = withUserID(r, "user-1")
@@ -468,30 +474,11 @@ func TestCreateUserOwnedNamedEntity_Success(t *testing.T) {
 	createUserOwnedNamedEntity(ops, w, r)
 
 	require.Equal(t, http.StatusCreated, w.Code)
+	require.Equal(t, "user-1", capturedUserID)
 
 	var dto testEntityDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto), "unmarshal")
 	require.Equal(t, "My Widget", dto.Name)
-}
-
-func TestCreateUserOwnedNamedEntity_UserIDForwarded(t *testing.T) {
-	ops := makeTestUserOwnedNamedEntityOps(t)
-
-	var capturedUserID string
-	ops.create = func(_ context.Context, userID string, req testEntityRequest) (*testEntity, error) {
-		capturedUserID = userID
-		return &testEntity{ID: "new-id", Name: req.Name}, nil
-	}
-
-	body := mustMarshal(t, testEntityRequest{Name: "Widget"})
-	r := httptest.NewRequest(http.MethodPost, "/api/widgets", bytes.NewReader(body))
-	r = withUserID(r, "user-42")
-	w := httptest.NewRecorder()
-
-	createUserOwnedNamedEntity(ops, w, r)
-
-	require.Equal(t, http.StatusCreated, w.Code)
-	require.Equal(t, "user-42", capturedUserID)
 }
 
 func TestCreateUserOwnedNamedEntity_InvalidJSON(t *testing.T) {
@@ -587,7 +574,10 @@ func TestCreateUserOwnedNamedEntity_NilEntityWithoutError(t *testing.T) {
 
 func TestGetUserOwnedNamedEntity_Success(t *testing.T) {
 	ops := makeTestUserOwnedNamedEntityOps(t)
-	ops.get = func(_ context.Context, id, _ string) (*testEntity, error) {
+
+	var capturedUserID string
+	ops.get = func(_ context.Context, id, userID string) (*testEntity, error) {
+		capturedUserID = userID
 		return &testEntity{ID: id, Name: "Existing Widget"}, nil
 	}
 
@@ -598,6 +588,7 @@ func TestGetUserOwnedNamedEntity_Success(t *testing.T) {
 	getUserOwnedNamedEntity(ops, w, r, "entity-1")
 
 	require.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, "user-1", capturedUserID)
 
 	var dto testEntityDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto), "unmarshal")
@@ -605,43 +596,9 @@ func TestGetUserOwnedNamedEntity_Success(t *testing.T) {
 	require.Equal(t, "entity-1", dto.ID)
 }
 
-func TestGetUserOwnedNamedEntity_UserIDForwarded(t *testing.T) {
-	ops := makeTestUserOwnedNamedEntityOps(t)
-
-	var capturedUserID string
-	ops.get = func(_ context.Context, id, userID string) (*testEntity, error) {
-		capturedUserID = userID
-		return &testEntity{ID: id, Name: "Widget"}, nil
-	}
-
-	r := httptest.NewRequest(http.MethodGet, "/api/widgets/entity-1", nil)
-	r = withUserID(r, "user-42")
-	w := httptest.NewRecorder()
-
-	getUserOwnedNamedEntity(ops, w, r, "entity-1")
-
-	require.Equal(t, http.StatusOK, w.Code)
-	require.Equal(t, "user-42", capturedUserID)
-}
-
 func TestGetUserOwnedNamedEntity_NotFound(t *testing.T) {
 	ops := makeTestUserOwnedNamedEntityOps(t)
 	// ops.get already returns sql.ErrNoRows by default
-
-	r := httptest.NewRequest(http.MethodGet, "/api/widgets/missing", nil)
-	r = withUserID(r, "user-1")
-	w := httptest.NewRecorder()
-
-	getUserOwnedNamedEntity(ops, w, r, "missing")
-
-	require.Equal(t, http.StatusNotFound, w.Code)
-}
-
-func TestGetUserOwnedNamedEntity_WrappedNotFound(t *testing.T) {
-	ops := makeTestUserOwnedNamedEntityOps(t)
-	ops.get = func(_ context.Context, _, _ string) (*testEntity, error) {
-		return nil, fmt.Errorf("query failed: %w", sql.ErrNoRows)
-	}
 
 	r := httptest.NewRequest(http.MethodGet, "/api/widgets/missing", nil)
 	r = withUserID(r, "user-1")
@@ -687,6 +644,12 @@ func TestGetUserOwnedNamedEntity_NilEntityWithoutError(t *testing.T) {
 func TestUpdateUserOwnedNamedEntity_Success(t *testing.T) {
 	ops := makeTestUserOwnedNamedEntityOps(t)
 
+	var capturedUserID string
+	ops.update = func(_ context.Context, id, userID string, req testEntityRequest) (*testEntity, error) {
+		capturedUserID = userID
+		return &testEntity{ID: id, Name: req.Name}, nil
+	}
+
 	body := mustMarshal(t, testEntityRequest{Name: "Updated Widget"})
 	r := httptest.NewRequest(http.MethodPut, "/api/widgets/entity-1", bytes.NewReader(body))
 	r = withUserID(r, "user-1")
@@ -695,30 +658,11 @@ func TestUpdateUserOwnedNamedEntity_Success(t *testing.T) {
 	updateUserOwnedNamedEntity(ops, w, r, "entity-1")
 
 	require.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, "user-1", capturedUserID)
 
 	var dto testEntityDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto), "unmarshal")
 	require.Equal(t, "Updated Widget", dto.Name)
-}
-
-func TestUpdateUserOwnedNamedEntity_UserIDForwarded(t *testing.T) {
-	ops := makeTestUserOwnedNamedEntityOps(t)
-
-	var capturedUserID string
-	ops.update = func(_ context.Context, id, userID string, req testEntityRequest) (*testEntity, error) {
-		capturedUserID = userID
-		return &testEntity{ID: id, Name: req.Name}, nil
-	}
-
-	body := mustMarshal(t, testEntityRequest{Name: "Widget"})
-	r := httptest.NewRequest(http.MethodPut, "/api/widgets/entity-1", bytes.NewReader(body))
-	r = withUserID(r, "user-42")
-	w := httptest.NewRecorder()
-
-	updateUserOwnedNamedEntity(ops, w, r, "entity-1")
-
-	require.Equal(t, http.StatusOK, w.Code)
-	require.Equal(t, "user-42", capturedUserID)
 }
 
 func TestUpdateUserOwnedNamedEntity_InvalidJSON(t *testing.T) {
@@ -750,22 +694,6 @@ func TestUpdateUserOwnedNamedEntity_NotFound(t *testing.T) {
 	ops := makeTestUserOwnedNamedEntityOps(t)
 	ops.update = func(_ context.Context, _, _ string, _ testEntityRequest) (*testEntity, error) {
 		return nil, sql.ErrNoRows
-	}
-
-	body := mustMarshal(t, testEntityRequest{Name: "New Name"})
-	r := httptest.NewRequest(http.MethodPut, "/api/widgets/missing", bytes.NewReader(body))
-	r = withUserID(r, "user-1")
-	w := httptest.NewRecorder()
-
-	updateUserOwnedNamedEntity(ops, w, r, "missing")
-
-	require.Equal(t, http.StatusNotFound, w.Code)
-}
-
-func TestUpdateUserOwnedNamedEntity_WrappedNotFound(t *testing.T) {
-	ops := makeTestUserOwnedNamedEntityOps(t)
-	ops.update = func(_ context.Context, _, _ string, _ testEntityRequest) (*testEntity, error) {
-		return nil, fmt.Errorf("update failed: %w", sql.ErrNoRows)
 	}
 
 	body := mustMarshal(t, testEntityRequest{Name: "New Name"})

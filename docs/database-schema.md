@@ -824,7 +824,7 @@ AI-generated metadata suggestions for books, produced by a background enrichment
 | `updated_at`            | DATETIME | NOT NULL | `now()`     | When the enrichment was last updated                                              |
 
 **Indexes:**
-- `idx_ai_enrichments_user_book_status` — composite index on `(user_id, book_id, status, created_at DESC)` for paginated listing filtered by status
+- `idx_ai_enrichments_user_book_status` — composite index on `(user_id, book_id, status, created_at DESC)` covering `GetPendingAIEnrichmentByBook`: filters on `(user_id, book_id, status)` and eliminates a temp B-tree sort for the `ORDER BY created_at DESC LIMIT 1` used to retrieve the most recent pending enrichment for a given user and book
 
 **Notes:**
 - `suggested_tags` is a JSON array of strings stored as TEXT; it is deserialized into `[]string` by `AIEnrichment.SuggestedTags` in Go.
