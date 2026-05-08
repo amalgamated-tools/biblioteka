@@ -24,7 +24,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - name: Install gh-aw extension
-        uses: github/gh-aw-actions/setup-cli@49157453228f9641824955e35cbeccbca74ee0fd # v0.71.0
+        uses: github/gh-aw-actions/setup-cli@bc56a0cad2f450c562810785ef38649c04db812a # v0.72.1
         with:
           version: v0.68.3
 
@@ -65,7 +65,7 @@ jobs:
       # ── Frontend ──────────────────────────────────────────────────────────
       # pnpm must be set up before setup-node so the node cache can locate the pnpm store.
       - name: Install pnpm
-        uses: pnpm/action-setup@26f6d4f2c533a43e6b5da0b4a5dd983f98f7b49a
+        uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d
         with:
           version: 10.32.1
 
