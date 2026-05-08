@@ -35,6 +35,7 @@ safe-outputs:
 
 tools:
   playwright:
+    mode: cli
   web-fetch:
   github:
     toolsets: [all]
