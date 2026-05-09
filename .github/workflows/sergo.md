@@ -38,8 +38,8 @@ tools:
     - "cat go.mod"
     - "cat go.sum"
     - "go list -m all"
-    - "find . -name"
-    - "grep -r"
+    - "find . -name '*.go' -type f"
+    - "grep -r 'func ' --include='*.go'"
     - "wc -l"
 
 timeout-minutes: 45

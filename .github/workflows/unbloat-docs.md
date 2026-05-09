@@ -36,7 +36,7 @@ tools:
     toolsets: [default]
   edit:
   bash:
-    - "find * -name"
+    - "find * -name '*.md'"
     - "wc -l *"
     - "grep -n *"
     - "git"

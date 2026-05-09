@@ -12,13 +12,13 @@ imports:
 
 tools:
   bash:
-    - "find pkg -name"
-    - "find pkg -type f -name"
+    - "find pkg -name '*.go' ! -name '*_test.go' -type f"
+    - "find pkg -type f -name '*.go' ! -name '*_test.go'"
     - "find pkg/ -maxdepth 1 -ls"
     - "find pkg/workflow/ -maxdepth 1 -ls"
     - "wc -l pkg/**/*.go"
     - "head -n * pkg/**/*.go"
-    - "grep -r"
+    - "grep -r 'func ' pkg --include='*.go'"
     - "cat pkg/**/*.go"
 ---
 
