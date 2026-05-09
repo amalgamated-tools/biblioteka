@@ -37,6 +37,7 @@ tools:
   cli-proxy: true
   cache-memory: true
   github:
+    github-token: ${{ secrets.COPILOT_GITHUB_TOKEN }}
     mode: gh-proxy
     toolsets: [default]
   edit:
