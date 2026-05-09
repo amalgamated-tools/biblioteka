@@ -68,78 +68,72 @@ func TestValidateURL_ValidHTTP(t *testing.T) {
 
 func TestValidateURL_EmptySchemesRejected(t *testing.T) {
 	err := ssrf.ValidateURL(t.Context(), "https://example.com", "issuer_url", nil)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "scheme")
+	require.ErrorContains(t, err, "scheme")
 }
 
 func TestValidateURL_SchemeRejectedSingleAllowed(t *testing.T) {
 	err := ssrf.ValidateURL(t.Context(), "http://example.com", "issuer_url", []string{"https"})
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "https")
+	require.ErrorContains(t, err, "https")
 }
 
 func TestValidateURL_SchemeRejectedMultipleAllowed(t *testing.T) {
 	err := ssrf.ValidateURL(t.Context(), "gopher://example.com", "endpoint", []string{"http", "https"})
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "http")
+	require.ErrorContains(t, err, "http")
 }
 
 func TestValidateURL_UserinfoRejected(t *testing.T) {
 	err := ssrf.ValidateURL(t.Context(), "https://user:pass@example.com", "issuer_url", []string{"https"})
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "userinfo")
+	require.ErrorContains(t, err, "userinfo")
 }
 
 func TestValidateURL_UserinfoUsernameOnlyRejected(t *testing.T) {
 	err := ssrf.ValidateURL(t.Context(), "https://admin@example.com", "issuer_url", []string{"https"})
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "userinfo")
+	require.ErrorContains(t, err, "userinfo")
 }
 
 func TestValidateURL_MissingHost(t *testing.T) {
 	err := ssrf.ValidateURL(t.Context(), "https://", "issuer_url", []string{"https"})
-	require.Error(t, err)
+	require.ErrorContains(t, err, "host")
 }
 
 func TestValidateURL_IPv6ZoneIDRejected(t *testing.T) {
 	err := ssrf.ValidateURL(t.Context(), "https://[fe80::1%25lo0]", "issuer_url", []string{"https"})
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "zone")
+	require.ErrorContains(t, err, "zone")
 }
 
 func TestValidateURL_LoopbackIPv4Rejected(t *testing.T) {
 	err := ssrf.ValidateURL(t.Context(), "https://127.0.0.1", "issuer_url", []string{"https"})
-	require.Error(t, err)
+	require.ErrorContains(t, err, "private, loopback, or link-local")
 }
 
 func TestValidateURL_AWSMetadataIPRejected(t *testing.T) {
 	err := ssrf.ValidateURL(t.Context(), "https://169.254.169.254", "issuer_url", []string{"https"})
-	require.Error(t, err)
+	require.ErrorContains(t, err, "private, loopback, or link-local")
 }
 
 func TestValidateURL_RFC1918ClassARejected(t *testing.T) {
 	err := ssrf.ValidateURL(t.Context(), "https://10.0.0.1", "issuer_url", []string{"https"})
-	require.Error(t, err)
+	require.ErrorContains(t, err, "private, loopback, or link-local")
 }
 
 func TestValidateURL_RFC1918ClassBRejected(t *testing.T) {
 	err := ssrf.ValidateURL(t.Context(), "https://172.16.0.1", "issuer_url", []string{"https"})
-	require.Error(t, err)
+	require.ErrorContains(t, err, "private, loopback, or link-local")
 }
 
 func TestValidateURL_RFC1918ClassCRejected(t *testing.T) {
 	err := ssrf.ValidateURL(t.Context(), "https://192.168.1.1", "issuer_url", []string{"https"})
-	require.Error(t, err)
+	require.ErrorContains(t, err, "private, loopback, or link-local")
 }
 
 func TestValidateURL_IPv6LoopbackRejected(t *testing.T) {
 	err := ssrf.ValidateURL(t.Context(), "https://[::1]", "issuer_url", []string{"https"})
-	require.Error(t, err)
+	require.ErrorContains(t, err, "private, loopback, or link-local")
 }
 
 func TestValidateURL_IPv6LinkLocalRejected(t *testing.T) {
 	err := ssrf.ValidateURL(t.Context(), "https://[fe80::1]", "issuer_url", []string{"https"})
-	require.Error(t, err)
+	require.ErrorContains(t, err, "private, loopback, or link-local")
 }
 
 func TestValidateURL_LocalhostRejectedViaDNS(t *testing.T) {
@@ -149,13 +143,12 @@ func TestValidateURL_LocalhostRejectedViaDNS(t *testing.T) {
 		t.Skip("localhost does not resolve via DNS in this environment")
 	}
 	err := ssrf.ValidateURL(t.Context(), "https://localhost", "issuer_url", []string{"https"})
-	require.Error(t, err)
+	require.ErrorContains(t, err, "private, loopback, or link-local")
 }
 
 func TestValidateURL_FieldNameAppearsInError(t *testing.T) {
 	err := ssrf.ValidateURL(t.Context(), "ftp://example.com", "my_field", []string{"https"})
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "my_field")
+	require.ErrorContains(t, err, "my_field")
 }
 
 // --- SafeHTTPClient ---
@@ -184,8 +177,7 @@ func TestSafeHTTPClient_BlocksPrivateIP(t *testing.T) {
 	if err == nil {
 		resp.Body.Close()
 	}
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "private")
+	require.ErrorContains(t, err, "private")
 }
 
 func TestSafeHTTPClient_BlocksAWSMetadata(t *testing.T) {
@@ -194,6 +186,5 @@ func TestSafeHTTPClient_BlocksAWSMetadata(t *testing.T) {
 	if err == nil {
 		resp.Body.Close()
 	}
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "private")
+	require.ErrorContains(t, err, "private")
 }
