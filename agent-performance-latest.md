@@ -1,31 +1,39 @@
-# Agent Performance 2026-05-05
+# Agent Performance 2026-05-09
 
-**Run**: agent-performance-analyzer | 2026-05-05T23:45Z
+**Run**: agent-performance-analyzer | 2026-05-09T13:20Z
 
 ## Summary
-- 55 registered workflows (30 active in 7 days)
-- 60 runs: 31 success (52%), 5 failed (8%), 24 cancelled (40%)
-- Vs baseline (2026-04-04): success rate dropped from 100% → 52%
+- 27 distinct workflows active in 7-day window (2026-05-02 to 2026-05-09)
+- 100 runs analyzed: ~16 workflows succeeded (59%), 5 failed outright, 6 workflows with 100% skip rates
+- vs prior report (2026-05-05): overall success rate slightly improved; cancellation storm appears resolved
+- Concurrency cascade (prior CRIT): no new evidence of 8+ simultaneous cancellation bursts this week
 
 ## Top Performers
-- **Agentic Triage**: 7/7 success (100%)
-- **Contribution Guidelines Checker**: 7/7 success (100%)
-- **Daily single-run workflows**: ~20 workflows at 100% on scheduled runs
+- **Agentic Maintenance**: 5/5 success (100%) — consistent, reliable
+- **CodeQL**: 6/6 success (100%) — security scanning solid
+- **Release Please**: 3/3 success (100%)
+- **Dead Code Removal Agent**: 2/2 success (100%)
+- **Daily security/quality scans** (Malicious Code, Security Red Team, Testify Expert, Go Function Namer): 1/1 each (100%)
 
 ## Underperformers
-- **PR Nitpick Reviewer 🔍**: 0/5 success (100% cancelled)
-- **Grumpy Code Reviewer 🔥**: 0/4 (100% cancelled)
-- **Daily Perf Improver**: 1/5 (80% cancelled)
-- **Daily Performance Summary Generator**: 1/1 failed; 901k tokens, 91 tool types — tool naming confusion
+- **Contribution Check**: 0/3 (100% failure) — ongoing issue from prior report, still not fixed
+- **Duplicate Code Detector**: 0/1 failed
+- **Daily File Diet**: 0/1 failed — issue #2958 open
+- **Go Fan**: 0/1 failed
+- **Go Pattern Detector**: 0/1 failed
+- **Q**: 0/22 (100% skipped — never produces output)
+- **Mergefest + PR Code Quality Reviewer**: 0/12 each (100% skipped)
+- **Daily Documentation Updater**: 1/1 success but created 16 PRs (over-creation concern)
 
-## Key Issues
-1. **CRIT - Concurrency cascade**: 24 cancellations from PR review comment storms (20:17-20:19 on May 5); 8 workflows fired simultaneously per event
-2. **HIGH - Recurring failures**: Markdown Linter, Daily Grumpy Reviewer, Daily Nitpick Reviewer, Contribution Check all failed today
-3. **HIGH - Tool naming hallucination**: Daily Perf Summary Generator tried github___, github-, github_ variants (91 tool types); failed despite 901k tokens
-4. **MED - Zero outputs**: Many workflows run but produce no safe outputs — requires investigation
+## Key Findings
+1. **HIGH - Contribution Check still failing**: 3 failures this week, open issue #2959 — no fix applied
+2. **HIGH - 5 workflows at 100% failure rate**: Duplicate Code Detector, File Diet, Go Fan, Go Pattern Detector, Contribution Check
+3. **MED - Q/Mergefest/PR Code Quality Reviewer permanently skipped**: 22+12+12 = 46 no-op runs consuming GitHub Actions minutes
+4. **MED - Daily Doc Updater over-creation**: 16 PRs/run (flagged previously, still unaddressed per shared alerts)
+5. **LOW - Concurrency cascade**: No new evidence this week; likely resolved or PR load reduced
 
 ## Discussion Created
 - Yes (this run)
 
 ## Issues Created
-- None this run (pattern matches existing CRIT alert)
+- None new (existing issues #2958, #2959 already track key failures)
