@@ -8,7 +8,7 @@ permissions:
   issues: read
   security-events: read
 tracker-id: security-red-team
-engine: claude
+engine: copilot
 strict: true
 tools:
   cli-proxy: true

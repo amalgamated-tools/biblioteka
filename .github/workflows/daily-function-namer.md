@@ -12,7 +12,7 @@ permissions:
 
 tracker-id: daily-function-namer
 
-engine: claude
+engine: copilot
 
 imports:
   - uses: shared/daily-audit-base.md

@@ -11,7 +11,7 @@ permissions:
   issues: read
   pull-requests: read
 
-engine: claude
+engine: copilot
 
 imports:
   - uses: shared/daily-audit-base.md
