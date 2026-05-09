@@ -36,7 +36,7 @@ tools:
     toolsets: [default]
   edit:
   bash:
-    - "find pkg -name '*.go' ! -name '*_test.go' -type f -exec wc -l {} \\; | sort -rn"
+    - "find internal -name '*.go' ! -name '*_test.go' -type f -exec wc -l {} \\; | sort -rn"
 
 timeout-minutes: 20
 strict: true
@@ -68,7 +68,7 @@ Analyze the Go codebase daily to identify the largest source file and determine 
 Use the following command to find all Go source files (excluding tests) and sort by size:
 
 ```bash
-find pkg -name '*.go' ! -name '*_test.go' -type f -exec wc -l {} \; | sort -rn | head -1
+find internal -name '*.go' ! -name '*_test.go' -type f -exec wc -l {} \; | sort -rn | head -1
 ```
 
 Extract:
@@ -241,7 +241,7 @@ Add comprehensive tests for each new file:
 
 - **Repository Guidelines**: Follow patterns in `.github/agents/developer.instructions.agent.md`
 - **Code Organization**: Prefer many small files grouped by functionality
-- **Testing**: Match existing test patterns in `pkg/workflow/*_test.go`
+- **Testing**: Match existing test patterns in `internal/*_test.go`
 
 </details>
 
@@ -270,7 +270,7 @@ Your output MUST either:
 - **Use Serena for semantic analysis**: Leverage the MCP server's code understanding capabilities
 - **Be specific and actionable**: Provide concrete file split suggestions, not vague advice
 - **Include test coverage plans**: Always specify what tests should be added
-- **Consider repository patterns**: Review existing code organization in `pkg/` for consistency
+- **Consider repository patterns**: Review existing code organization in `internal/` for consistency
 - **Estimate effort realistically**: Large files may require significant refactoring effort
 
 ## Serena Configuration

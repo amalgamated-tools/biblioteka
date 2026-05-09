@@ -138,12 +138,7 @@ Pre-downloaded CI run data and artifacts are available for analysis:
 ## Test Case Locations
 
 Go test cases are located throughout the repository:
-- **Command tests**: `./cmd/gh-aw/*_test.go`
-- **Workflow tests**: `./pkg/workflow/*_test.go`
-- **CLI tests**: `./pkg/cli/*_test.go`
-- **Parser tests**: `./pkg/parser/*_test.go`
-- **Campaign tests**: `./pkg/campaign/*_test.go`
-- **Other package tests**: Various `./pkg/*/test.go` files
+- **Other package tests**: Various `./internal/*/test.go` files
 
 ## Environment Setup
 

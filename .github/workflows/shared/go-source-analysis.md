@@ -12,14 +12,14 @@ imports:
 
 tools:
   bash:
-    - "find pkg -name '*.go' ! -name '*_test.go' -type f"
-    - "find pkg -type f -name '*.go' ! -name '*_test.go'"
-    - "find pkg/ -maxdepth 1 -ls"
-    - "find pkg/workflow/ -maxdepth 1 -ls"
-    - "wc -l pkg/**/*.go"
-    - "head -n * pkg/**/*.go"
-    - "grep -r 'func ' pkg --include='*.go'"
-    - "cat pkg/**/*.go"
+    - "find internal -name '*.go' ! -name '*_test.go' -type f"
+    - "find internal -type f -name '*.go' ! -name '*_test.go'"
+    - "find internal/ -maxdepth 1 -ls"
+    - "find internal/workflow/ -maxdepth 1 -ls"
+    - "wc -l internal/**/*.go"
+    - "head -n * internal/**/*.go"
+    - "grep -r 'func ' internal --include='*.go'"
+    - "cat internal/**/*.go"
 ---
 
 ## Go Source Code Analysis Setup
@@ -30,8 +30,8 @@ Serena Go LSP analysis is configured for this workspace. Standard bash tools for
 
 Use these bash tools to supplement Serena's semantic analysis:
 
-- `find pkg -name '*.go' ! -name '*_test.go' -type f` — list all non-test Go source files
-- `find pkg/ -maxdepth 1 -ls` / `find pkg/workflow/ -maxdepth 1 -ls` — explore directory structure
-- `wc -l pkg/**/*.go` — measure file sizes
-- `head -n * pkg/**/*.go` / `cat pkg/**/*.go` — read file contents
-- `grep -r 'func ' pkg --include='*.go'` — find all function definitions
+- `find internal -name '*.go' ! -name '*_test.go' -type f` — list all non-test Go source files
+- `find internal/ -maxdepth 1 -ls` / `find internal/workflow/ -maxdepth 1 -ls` — explore directory structure
+- `wc -l internal/**/*.go` — measure file sizes
+- `head -n * internal/**/*.go` / `cat internal/**/*.go` — read file contents
+- `grep -r 'func ' internal --include='*.go'` — find all function definitions

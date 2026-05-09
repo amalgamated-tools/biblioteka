@@ -43,7 +43,7 @@ tools:
     - "cat go.sum"
     - "go list -m all"
     - "grep -r 'import' --include='*.go'"
-    - "find pkg -name '*.go'"
+    - "find internal -name '*.go'"
     - "find scratchpad/mods/ -maxdepth 1 -ls"
     - "cat scratchpad/mods/*"
 

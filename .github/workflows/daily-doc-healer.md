@@ -118,7 +118,7 @@ find docs/src/content/docs -name '*.md' -o -name '*.mdx'
 5. **Artifact constant check**: After reviewing recent commits, run:
 
 ```bash
-grep -Pn "ArtifactName\s*=" pkg/constants/constants.go pkg/constants/job_constants.go
+grep -Pn "ArtifactName\s*=" internal/constants/constants.go internal/constants/job_constants.go
 ```
 
 For each constant found, verify that the artifact name value is listed in `docs/src/content/docs/reference/artifacts.md`. If a constant is missing from the reference page, treat it as a documentation gap and add it.

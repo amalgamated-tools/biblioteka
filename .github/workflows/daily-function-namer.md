@@ -50,7 +50,7 @@ You are an AI agent that analyzes Go functions daily to improve their names for 
 
 ## Mission
 
-Each day, analyze **one entire Go package** using round-robin rotation across all package directories in `pkg/`. For each package:
+Each day, analyze **one entire Go package** using round-robin rotation across all package directories in `internal/`. For each package:
 
 1. Enumerate all functions in the package with a fast `grep` sweep
 2. Activate Serena for deeper semantic analysis of functions that need it
@@ -85,11 +85,11 @@ else:
 ")
 
 # Enumerate all unique package directories containing non-test Go files
-mapfile -t ALL_PKGS < <(find pkg -name '*.go' ! -name '*_test.go' -type f | xargs -I{} dirname {} | sort -u)
+mapfile -t ALL_PKGS < <(find internal -name '*.go' ! -name '*_test.go' -type f | xargs -I{} dirname {} | sort -u)
 TOTAL=${#ALL_PKGS[@]}
 
 if [ "$TOTAL" -eq 0 ]; then
-  echo "ERROR: no Go packages found in pkg/" >&2
+  echo "ERROR: no Go packages found in internal/" >&2
   exit 1
 fi
 
@@ -207,7 +207,7 @@ For each function that would benefit from a clearer name:
 
 ```
 Tool: find_referencing_symbols
-Args: { "symbol_name": "<currentName>", "file_path": "pkg/..." }
+Args: { "symbol_name": "<currentName>", "file_path": "internal/..." }
 ```
 
 **Rename examples:**

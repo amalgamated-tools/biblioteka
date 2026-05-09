@@ -75,7 +75,7 @@ Example fix for missing catch-all (add to `.github/workflows/ci.yml`):
 ```yaml
 # Add to the integration job's matrix.include section:
 - name: "CLI Other"  # Catch-all for tests not matched by specific patterns
-  packages: "./pkg/cli"
+  packages: "./internal/cli"
   pattern: ""  # Empty pattern runs all remaining tests
 ```
 

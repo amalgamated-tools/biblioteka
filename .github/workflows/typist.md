@@ -28,14 +28,14 @@ tools:
     toolsets: [default]
   edit:
   bash:
-    - "find pkg -name '*.go' ! -name '*_test.go' -type f"
-    - "find pkg -type f -name '*.go' ! -name '*_test.go'"
-    - "find pkg/ -maxdepth 1 -ls"
-    - "wc -l pkg/**/*.go"
-    - "grep -r 'type ' pkg --include='*.go'"
-    - "grep -r 'interface{}' pkg --include='*.go'"
-    - "grep -r '\\bany\\b' pkg --include='*.go'"
-    - "cat pkg/**/*.go"
+    - "find internal -name '*.go' ! -name '*_test.go' -type f"
+    - "find internal -type f -name '*.go' ! -name '*_test.go'"
+    - "find internal/ -maxdepth 1 -ls"
+    - "wc -l internal/**/*.go"
+    - "grep -r 'type ' internal --include='*.go'"
+    - "grep -r 'interface{}' internal --include='*.go'"
+    - "grep -r '\\bany\\b' internal --include='*.go'"
+    - "cat internal/**/*.go"
 
 timeout-minutes: 20
 strict: true
@@ -65,7 +65,7 @@ Generate a single formatted discussion summarizing all refactoring opportunities
 
 1. **Only analyze `.go` files** - Ignore all other file types
 2. **Skip test files** - Never analyze files ending in `_test.go`
-3. **Focus on pkg/ directory** - Primary analysis area
+3. **Focus on internal/ directory** - Primary analysis area
 4. **Use Serena for semantic analysis** - Leverage the MCP server's capabilities
 5. **Strong typing principle** - Prefer specific types over generic types
 
@@ -79,7 +79,7 @@ Generate a single formatted discussion summarizing all refactoring opportunities
 2. **Discover Go Source Files**:
    Find all non-test Go files in the repository:
    ```bash
-   find pkg -name "*.go" ! -name "*_test.go" -type f | sort
+   find internal -name "*.go" ! -name "*_test.go" -type f | sort
    ```
 
 ### Phase 1: Identify Duplicated Type Definitions

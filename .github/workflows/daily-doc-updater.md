@@ -46,8 +46,6 @@ tools:
     - "find docs -name '*.md' -exec cat {} +"
     - "grep -r '*' docs"
     - "git"
-    - "find pkg/parser/schemas -name '*.json'"
-    - "cat pkg/parser/schemas/*.json"
 
 timeout-minutes: 45
 
@@ -125,9 +123,9 @@ repo:${{ github.repository }} is:issue is:closed label:documentation closed:>=YY
 For each closed issue:
 - **closed as completed**: Check whether a `[docs]` PR references it. If no such PR exists, also search for any merged PR that closes or fixes the issue by number (e.g. `closes #NNN`, `fixes #NNN`, `resolves #NNN` in the PR body). If such a PR is found and its documentation change is complete, skip the issue.
   - If no explicit issue-reference PR is found, run a fallback heuristic for likely spec-librarian/copilot fix PRs that omit issue numbers:
-    1. Infer the package from the issue title/body (for example `pkg/constants`).
-    2. Search for merged PRs in a tight window around issue closure (prefer ±60 minutes) that modify `pkg/<package>/README.md`.
-    3. Example query: `repo:${{ github.repository }} is:pr is:merged merged:>=<issue_closed_at-60m> merged:<=<issue_closed_at+60m> path:pkg/<package>/README.md`.
+    1. Infer the package from the issue title/body (for example `internal/constants`).
+    2. Search for merged PRs in a tight window around issue closure (prefer ±60 minutes) that modify `internal/<package>/README.md`.
+    3. Example query: `repo:${{ github.repository }} is:pr is:merged merged:>=<issue_closed_at-60m> merged:<=<issue_closed_at+60m> path:internal/<package>/README.md`.
     4. If such a PR exists and the README change fully resolves the issue gap, treat the issue as already addressed and skip it.
   - If the fallback heuristic still finds no PR, run a direct content check before Step 2:
     1. Parse the issue body for referenced file paths and the specific missing symbols/constants/phrases.
@@ -163,7 +161,7 @@ For each merged PR and commit, analyze:
 - **Features Removed**: Deprecated or removed functionality
 - **Features Modified**: Changed behavior, updated APIs, or modified interfaces
 - **Breaking Changes**: Any changes that affect existing users
-- **Removed Features in Docs**: Search docs for references to properties, flags, or options that no longer exist in the current schema. Check `pkg/parser/schemas/` or run `gh aw compile` on representative workflows to confirm current valid properties.
+
 
 Create a summary of changes that should be documented.
 
