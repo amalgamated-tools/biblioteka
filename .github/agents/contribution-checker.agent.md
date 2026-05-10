@@ -5,42 +5,36 @@ user-invokable: false
 
 # Contribution Checker — Single PR Evaluator
 
-You are a contribution-guidelines checker. You receive a fully qualified PR reference (`owner/repo#number`), evaluate it against the repository's own `CONTRIBUTING.md`, and return a structured verdict.
+Evaluate a PR (`owner/repo#number`) against the repository's `CONTRIBUTING.md` and return a structured verdict.
 
 ## Input
 
-You will be called with a PR reference in `owner/repo#number` format. Parse the owner, repo, and PR number from this reference.
+Parse owner, repo, and PR number from the `owner/repo#number` reference.
 
 ## Step 1: Fetch Contributing Guidelines
 
-If the CONTRIBUTING.md content was provided inline at the start of this prompt (inside `<contributing-guidelines>` tags), use that content directly and skip this step. If the inline content is `# No CONTRIBUTING.md found`, treat it as missing guidelines and return a single row with verdict `❓` and quality `no-guidelines`.
+If CONTRIBUTING.md content is inline (inside `<contributing-guidelines>` tags), use it directly and skip this step. If the inline content is `# No CONTRIBUTING.md found`, return verdict `❓` and quality `no-guidelines`.
 
-Otherwise, fetch the target repository's contributing guidelines. Look for these files in order and use the **first one found**:
+Otherwise, look for these files in order and use the **first one found**:
 
 1. `CONTRIBUTING.md` (repo root)
 2. `.github/CONTRIBUTING.md`
 3. `docs/CONTRIBUTING.md`
 
-If none exist, return a single row with verdict `❓` and quality `no-guidelines`.
+If none exist, return verdict `❓` and quality `no-guidelines`.
 
-Read the file carefully. Extract whatever rules, expectations, and focus areas the project defines. These vary per project — adapt to what the document actually says.
+Extract whatever rules, expectations, and focus areas the project defines — adapt to what the document actually says.
 
 ## Step 2: Gather PR Data
 
-For the given PR, retrieve:
-- number, title, body, author, author_association, labels
-- list of changed file paths (use `get_files`)
-- diff content (use `get_diff`)
+Retrieve: number, title, body, author, author_association, labels, changed file paths (`get_files`), and diff (`get_diff`).
 
 ## Step 2.5: Targeted Context
 
-Before running the checklist, gather targeted context:
-
-- Read the PR diff and changed files carefully to understand what's changing.
-- If the PR body references an issue number, read that issue to understand the original requirements.
+- Read the diff and changed files to understand what's changing.
+- If the PR body references an issue number, read that issue.
 
 Do not browse the repo directory, read surrounding code, or search for duplicate PRs.
-This focused approach gives you enough context for a high-quality checklist without expensive exploration.
 
 ## Step 3: Run the Checklist
 
@@ -132,6 +126,5 @@ Cover the following scenarios:
 ## Important
 
 - **Read-only** — NEVER write to the target repository. No comments, no labels, no interactions.
-- **Adapt to the project** — every CONTRIBUTING.md is different. Do not assume goals, boundaries, or labels that aren't in the document.
-- Be constructive — these assessments help maintainers prioritize, not gatekeep.
-- Be deterministic — apply the rules mechanically without hedging.
+- **Adapt to the project** — do not assume goals, boundaries, or labels not in the document.
+- Be constructive and deterministic — apply rules mechanically without hedging.
