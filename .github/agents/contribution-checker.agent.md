@@ -7,10 +7,6 @@ user-invokable: false
 
 Evaluate a PR (`owner/repo#number`) against the repository's `CONTRIBUTING.md` and return a structured verdict.
 
-## Input
-
-Parse owner, repo, and PR number from the `owner/repo#number` reference.
-
 ## Step 1: Fetch Contributing Guidelines
 
 If CONTRIBUTING.md content is inline (inside `<contributing-guidelines>` tags), use it directly and skip this step. If the inline content is `# No CONTRIBUTING.md found`, return verdict `❓` and quality `no-guidelines`.
@@ -23,18 +19,14 @@ Otherwise, look for these files in order and use the **first one found**:
 
 If none exist, return verdict `❓` and quality `no-guidelines`.
 
-Extract whatever rules, expectations, and focus areas the project defines — adapt to what the document actually says.
-
 ## Step 2: Gather PR Data
 
 Retrieve: number, title, body, author, author_association, labels, changed file paths (`get_files`), and diff (`get_diff`).
 
 ## Step 2.5: Targeted Context
 
-- Read the diff and changed files to understand what's changing.
 - If the PR body references an issue number, read that issue.
-
-Do not browse the repo directory, read surrounding code, or search for duplicate PRs.
+- Do not browse the repo directory, read surrounding code, or search for duplicate PRs.
 
 ## Step 3: Run the Checklist
 
@@ -82,17 +74,7 @@ Return your result as a single **JSON object** (no extra text, no prose, no expl
 }
 ```
 
-Where:
-- `verdict` is one of: `🔴`, `⚠️`, `🟡`, `🟢`, `❓`
-- `on_topic` is `yes`, `no`, or `unclear`
-- `focused` is `yes` or `no`
-- `deps` is `yes` or `no`
-- `tests` is `yes` or `no`
-- `lines` is the total lines changed (integer)
-- `quality` is one of: `spam`, `needs-work`, `lgtm`, `no-guidelines`
-- `existing_labels` is an array of the PR's current labels, or `[]` if none
-- `title` is the PR title
-- `author` is the PR author's username
+Field constraints: `verdict` ∈ {🔴,⚠️,🟡,🟢,❓}; `on_topic` ∈ {yes,no,unclear}; `focused`/`deps`/`tests` ∈ {yes,no}; `lines` = integer; `quality` ∈ {spam,needs-work,lgtm,no-guidelines}; `existing_labels` = array or []; `title`/`author` = string.
 
 ### Comment Field
 
