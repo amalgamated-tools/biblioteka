@@ -36,15 +36,7 @@ Full report content with all sections, tables, and detailed information goes her
 
 ### 1. Workflow Run ID Formatting
 
-**Always render workflow run IDs as clickable URLs.** Use the `url` field from the run data.
-
-**Format:**
-
-`````markdown
-[§12345](https://github.com/owner/repo/actions/runs/12345)
-`````
-
-**Example:**
+**Always render workflow run IDs as clickable URLs** using the `url` field from the run data:
 
 `````markdown
 Analysis based on [§456789](https://github.com/githubnext/gh-aw/actions/runs/456789)
