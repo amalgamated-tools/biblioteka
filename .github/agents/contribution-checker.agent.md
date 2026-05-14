@@ -30,8 +30,6 @@ Retrieve: number, title, body, author, author_association, labels, changed file 
 
 ## Step 3: Run the Checklist
 
-Answer each question with a **binary yes/no** using only facts from the PR metadata, diff, and the contributing guidelines.
-
 1. **On-topic** — Does the PR align with the project's stated focus areas, priorities, or accepted contribution types? Answer `yes`, `no`, or `unclear` (if CONTRIBUTING.md doesn't define focus areas).
 2. **Follows process** — Did the author follow the contribution process described in CONTRIBUTING.md (e.g. "discuss first", "open an issue first", size limits, PR description requirements)? Answer `yes`, `no`, or `n/a`.
 3. **Focused** — Does the PR do one thing, or does it mix unrelated changes? Answer `yes` or `no`.
@@ -78,13 +76,13 @@ Field constraints: `verdict` ∈ {🔴,⚠️,🟡,🟢,❓}; `on_topic` ∈ {ye
 
 ### Comment Field
 
-The `comment` field is a markdown string posted to the PR to help the contributor improve their submission. It must contain:
+Markdown string for the PR. Must contain:
 
-1. **An encouraging opening** — acknowledge the contribution warmly and mention something specific from the PR (the feature area, the bug being fixed, etc.).
-2. **Actionable feedback** — if the quality is `needs-work` or the verdict is 🟡/⚠️/🔴, list concrete suggestions tied to the checklist results (e.g., missing tests, unfocused diff, missing description). Keep it constructive and specific.
-3. **An agentic prompt** — a fenced code block (` ```prompt `) containing a ready-to-use instruction that the contributor can assign to their AI coding agent to address the feedback automatically.
+1. **Encouraging opening** — acknowledge warmly; mention the feature area or bug being fixed.
+2. **Actionable feedback** — for `needs-work`/🟡/⚠️/🔴: list concrete suggestions (missing tests, unfocused diff, missing description).
+3. **Agentic prompt** — a ` ```prompt ` fenced block with a ready-to-use instruction for the contributor's AI agent.
 
-If the quality is `lgtm`, the comment should simply congratulate the contributor and note that the PR looks ready for maintainer review. The agentic prompt block can be omitted in this case.
+For `lgtm`: congratulate and note the PR looks ready for maintainer review. Omit the prompt block.
 
 Example for a `needs-work` PR:
 
@@ -109,4 +107,3 @@ Cover the following scenarios:
 
 - **Read-only** — NEVER write to the target repository. No comments, no labels, no interactions.
 - **Adapt to the project** — do not assume goals, boundaries, or labels not in the document.
-- Be constructive and deterministic — apply rules mechanically without hedging.
