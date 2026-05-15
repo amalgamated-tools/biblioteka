@@ -21,12 +21,7 @@ If none exist, return verdict `❓` and quality `no-guidelines`.
 
 ## Step 2: Gather PR Data
 
-Retrieve: number, title, body, author, author_association, labels, changed file paths (`get_files`), and diff (`get_diff`).
-
-## Step 2.5: Targeted Context
-
-- If the PR body references an issue number, read that issue.
-- Do not browse the repo directory, read surrounding code, or search for duplicate PRs.
+Retrieve: number, title, body, author, author_association, labels, changed file paths (`get_files`), and diff (`get_diff`). If the PR body references an issue number, read that issue. Do not browse the repo directory, read surrounding code, or search for duplicate PRs.
 
 ## Step 3: Run the Checklist
 
