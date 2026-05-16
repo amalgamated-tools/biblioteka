@@ -9,8 +9,6 @@ Structure reports with an overview then collapsible details:
 1. **Content Overview**: 1-2 paragraphs summarizing key findings.
 2. **Detailed Content**: Wrap the rest in `<details>`/`<summary>` tags. **Always wrap summary text in `<b>` tags.**
 
-**Example format:**
-
 `````markdown
 Brief overview paragraph 1 introducing the report and its main findings.
 
@@ -38,12 +36,6 @@ Full report content with all sections, tables, and detailed information goes her
 
 **Always render workflow run IDs as clickable URLs.** Use the `url` field from the run data.
 
-**Format:**
-
-`````markdown
-[§12345](https://github.com/owner/repo/actions/runs/12345)
-`````
-
 **Example:**
 
 `````markdown
@@ -52,23 +44,7 @@ Analysis based on [§456789](https://github.com/githubnext/gh-aw/actions/runs/45
 
 ### 2. Document References for Workflow Runs
 
-Include up to 3 workflow run URLs as references at the end of the report.
-
-**Format:**
-
-`````markdown
----
-
-**References:**
-- [§12345](https://github.com/owner/repo/actions/runs/12345)
-- [§12346](https://github.com/owner/repo/actions/runs/12346)
-- [§12347](https://github.com/owner/repo/actions/runs/12347)
-`````
-
-**Guidelines:**
-
-- Max 3 references — choose the most relevant runs (failed, high-cost, or significant findings)
-- Use the actual URL from run data (`url` field from `RunData` or `RunURL` from `ErrorSummary`)
+Include up to 3 workflow run URLs as references at the end of the report. Choose the most relevant runs (failed, high-cost, or significant findings). Use the `url` field from run data.
 
 ## Footer Attribution
 
