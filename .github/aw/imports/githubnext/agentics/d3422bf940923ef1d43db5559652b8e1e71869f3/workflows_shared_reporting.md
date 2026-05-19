@@ -38,8 +38,6 @@ Full report content with all sections, tables, and detailed information goes her
 
 **Always render workflow run IDs as clickable URLs.** Use the `url` field from the run data.
 
-**Format:**
-
 `````markdown
 [§12345](https://github.com/owner/repo/actions/runs/12345)
 `````
@@ -52,9 +50,7 @@ Analysis based on [§456789](https://github.com/githubnext/gh-aw/actions/runs/45
 
 ### 2. Document References for Workflow Runs
 
-Include up to 3 workflow run URLs as references at the end of the report.
-
-**Format:**
+Max 3 refs (failed, high-cost, or significant). Use `url` field from run data (`RunData.url` or `ErrorSummary.RunURL`).
 
 `````markdown
 ---
@@ -64,11 +60,6 @@ Include up to 3 workflow run URLs as references at the end of the report.
 - [§12346](https://github.com/owner/repo/actions/runs/12346)
 - [§12347](https://github.com/owner/repo/actions/runs/12347)
 `````
-
-**Guidelines:**
-
-- Max 3 references — choose the most relevant runs (failed, high-cost, or significant findings)
-- Use the actual URL from run data (`url` field from `RunData` or `RunURL` from `ErrorSummary`)
 
 ## Footer Attribution
 
