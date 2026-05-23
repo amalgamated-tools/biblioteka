@@ -1,10 +1,11 @@
-## 2026-05-22 (Updated by agent-performance-analyzer)
-- UNCHANGED CRITICAL: Architecture Guardian — OFFLINE 13+ consecutive days (May 9–22); issue #3033 OPEN; requires `gh aw compile` or manual YAML/config fix — no automated recovery
-- NEW ESCALATION: Testify Expert — 5th consecutive daily issue; issue #3046 body="test body" = prompt/template BROKEN; new issue created for quality regression; needs dedup guard + output validation
-- CONTINUING WATCH: Go Fan — 3rd consecutive day (#3039 closed, #3043, #3049 open); deadline 2026-05-24 (2 days); if 4th issue created, escalate to throttle issue
-- STABLE: Daily Documentation Healer — 4+ clean days; recommend closing #3022
-- STABLE: Daily Documentation Updater — 4+ clean days, fully recovered
-- STABLE: Agentic Maintenance 4/4 (100%), Contribution Check 2/2 (100%)
-- EXPECTED: Q, PR Code Quality Reviewer, CLA Assistant, Mergefest — event-triggered skips normal
-- LOW: Metrics Collector shared memory stale 48+ days (last update 2026-04-04); recommend re-run
-- LOW: Code Simplifier — 0 outputs despite successful run; monitor for silent failure pattern
+## 2026-05-23 (Updated by agent-performance-analyzer)
+- UNCHANGED CRITICAL: Architecture Guardian — OFFLINE 14+ consecutive days (May 9–23); issue #3033 OPEN; requires `gh aw compile` or manual YAML/config fix
+- IMPROVED (WATCH): Testify Expert — partial recovery (#3056 today has proper title/body); #3052 regression issue still OPEN; repetition pattern on pathparser_test.go persists; dedup guard still needed
+- RESOLVED (MONITOR): Go Fan — no new issue on deadline day (2026-05-23); 3/5 recent issues closed; may be settling; watch 1 more day
+- NEW FLAG: Function Namer — 3/3 recent issues auto-closed wontfix; over-creation + scope-creep; recommend prompt scope restriction
+- NEW FLAG: Daily Caveman Optimizer — 3 PRs this week, 0 merged; over-production; recommend output validation gate
+- NEW FLAG: Code Simplifier — 2nd consecutive day with 0 outputs despite successful run; possible silent failure
+- STABLE: Daily Documentation Healer (5+ clean days, #3022 should be closed), Daily Documentation Updater (recovered, #3031 should be closed)
+- STABLE: Agentic Maintenance 6/6 (100%), Contribution Check 3/3 (100%)
+- LOW: Metrics Collector shared memory stale 49 days (last update 2026-04-04); recommend re-run
+- OPEN STALE ISSUES: #3022 (Doc Healer), #3031 (Doc Updater) — both workflows recovered; recommend closing
