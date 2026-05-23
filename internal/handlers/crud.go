@@ -103,12 +103,22 @@ func listPaginatedEntities[T any, DTO any, ListDTO any](
 	ctx := r.Context()
 	limit, offset := parseLimitOffset(r, defaultPageLimit, maxPageLimit)
 
+	slog.DebugContext(ctx, "listing entities", slog.String(otelkeys.Resource, resource))
+
 	entities, total, err := list(ctx, limit, offset)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to list "+resource, slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(ctx, "failed to list entities",
+			slog.String(otelkeys.Resource, resource),
+			slog.Any(otelkeys.Error, err),
+		)
 		writeError(ctx, w, http.StatusInternalServerError, "failed to list "+resource)
 		return
 	}
+
+	slog.DebugContext(ctx, "entities listed",
+		slog.String(otelkeys.Resource, resource),
+		slog.Int(otelkeys.Count, len(entities)),
+	)
 
 	writeJSON(ctx, w, http.StatusOK, toListDTO(mapSlice(entities, toDTO), total, limit, offset))
 }
