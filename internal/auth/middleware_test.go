@@ -76,7 +76,7 @@ func TestMiddleware_ValidToken(t *testing.T) {
 	require.NoError(t, err, "NewJWTManager()")
 	mw := Middleware(jm, testJWTOnlyConfig(), nil)
 
-	token, err := jm.CreateToken(t.Context(), "user-abc")
+	token, err := jm.CreateToken("user-abc")
 	require.NoError(t, err, "CreateToken()")
 
 	var gotUserID string
@@ -126,7 +126,7 @@ func TestMiddleware_ValidTokenViaCookie(t *testing.T) {
 	require.NoError(t, err, "NewJWTManager()")
 	mw := Middleware(jm, testJWTOnlyConfig(), nil)
 
-	token, err := jm.CreateToken(t.Context(), "cookie-user")
+	token, err := jm.CreateToken("cookie-user")
 	require.NoError(t, err, "CreateToken()")
 
 	var gotUserID string
@@ -168,9 +168,9 @@ func TestMiddleware_HeaderTakesPrecedenceOverCookie(t *testing.T) {
 	require.NoError(t, err, "NewJWTManager()")
 	mw := Middleware(jm, testJWTOnlyConfig(), nil)
 
-	headerToken, err := jm.CreateToken(t.Context(), "header-user")
+	headerToken, err := jm.CreateToken("header-user")
 	require.NoError(t, err, "CreateToken()")
-	cookieToken, err := jm.CreateToken(t.Context(), "cookie-user")
+	cookieToken, err := jm.CreateToken("cookie-user")
 	require.NoError(t, err, "CreateToken()")
 
 	var gotUserID string
