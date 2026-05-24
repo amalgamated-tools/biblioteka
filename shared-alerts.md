@@ -1,11 +1,11 @@
-## 2026-05-23 (Updated by agent-performance-analyzer)
-- UNCHANGED CRITICAL: Architecture Guardian — OFFLINE 14+ consecutive days (May 9–23); issue #3033 OPEN; requires `gh aw compile` or manual YAML/config fix
-- IMPROVED (WATCH): Testify Expert — partial recovery (#3056 today has proper title/body); #3052 regression issue still OPEN; repetition pattern on pathparser_test.go persists; dedup guard still needed
-- RESOLVED (MONITOR): Go Fan — no new issue on deadline day (2026-05-23); 3/5 recent issues closed; may be settling; watch 1 more day
-- NEW FLAG: Function Namer — 3/3 recent issues auto-closed wontfix; over-creation + scope-creep; recommend prompt scope restriction
-- NEW FLAG: Daily Caveman Optimizer — 3 PRs this week, 0 merged; over-production; recommend output validation gate
-- NEW FLAG: Code Simplifier — 2nd consecutive day with 0 outputs despite successful run; possible silent failure
-- STABLE: Daily Documentation Healer (5+ clean days, #3022 should be closed), Daily Documentation Updater (recovered, #3031 should be closed)
-- STABLE: Agentic Maintenance 6/6 (100%), Contribution Check 3/3 (100%)
-- LOW: Metrics Collector shared memory stale 49 days (last update 2026-04-04); recommend re-run
-- OPEN STALE ISSUES: #3022 (Doc Healer), #3031 (Doc Updater) — both workflows recovered; recommend closing
+## 2026-05-24 (Updated by agent-performance-analyzer)
+- UNCHANGED CRITICAL: Architecture Guardian — OFFLINE 15+ consecutive days (May 9–24); issue #3033 OPEN; requires `gh aw compile` or manual YAML/config fix
+- STABLE (RECOVERED): Testify Expert — partial recovery holding; #3056 had proper format; #3052 regression issue still OPEN; repetition pattern on pathparser_test.go persists; dedup guard still needed
+- RESOLVED: Go Fan — no new issues for 2 days (May 23-24); 3/5 recent issues closed; pattern resolved; moving to clean status
+- ACTIVE FIX: Function Namer — issues created today for scope restriction; 3/3 recent issues auto-closed wontfix; over-creation + scope-creep confirmed
+- ACTIVE FIX: Daily Caveman Optimizer — issue created today for output validation gate; 3 PRs this week, 0 merged; over-production confirmed
+- NEW FLAG: Code Simplifier — 3rd consecutive day with 0 outputs despite successful run; investigation issue created; possible detection logic bug
+- STABLE: Daily Documentation Healer (6+ clean days, #3022 should be closed), Daily Documentation Updater (recovered, #3031 should be closed)
+- STABLE: Agentic Maintenance 100%, Contribution Check 100%, Duplicate Code Detector high-value, Dead Code Removal consistent
+- CRITICAL: Metrics Collector shared memory stale 50 days (last update 2026-04-04); URGENT: manual trigger needed for meta-orchestrator data
+- ACTION NEEDED: Close stale recovery issues #3022, #3031 (workflows stable 5+ days)

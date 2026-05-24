@@ -1,56 +1,53 @@
-# Agent Performance 2026-05-23
+# Agent Performance 2026-05-24
 
-**Run**: agent-performance-analyzer | 2026-05-23T13:21Z
+**Run**: agent-performance-analyzer | 2026-05-24T13:21Z
 
 ## Summary
-- 14 workflows analyzed (10 active, 4 event-triggered skip-only)
-- Active agents successful today: Agentic Maintenance (6/6), Contribution Check (3/3), Code Simplifier (1/1), Daily Caveman Optimizer (1/1), Daily Documentation Healer (1/1), Daily Documentation Updater (1/1), Daily Malicious Code Scan (1/1), Daily Testify Uber Super Expert (1/1), Dead Code Removal (1/1), Duplicate Code Detector (1/1)
-- vs prior report (2026-05-22):
-  - UNCHANGED CRITICAL: Architecture Guardian — now 14+ days offline; issue #3033 OPEN
-  - IMPROVED: Testify Expert — #3056 today has proper title/body (partial recovery from #3046 regression); #3052 regression issue remains OPEN; repetition pattern persists (same pathparser_test.go target)
-  - RESOLVED WATCH: Go Fan — no new issue created today (deadline day 2026-05-24); 3 of 5 recent issues now closed; pattern may be settling
-  - NEW FLAG: Function Namer — over-creation + scope-creep confirmed (3/3 recent issues auto-closed as wontfix)
-  - NEW FLAG: Daily Caveman Optimizer — over-creation (3 PRs this week, 0 merged in current batch)
-  - STABLE: Daily Documentation Healer (4+ clean days), Daily Documentation Updater (recovered), Agentic Maintenance (6/6), Contribution Check (3/3)
-  - STALE DATA: Metrics Collector last update 2026-04-04 (49 days ago)
+- 14 workflows analyzed (10 active, 4 event-triggered)
+- Quality: 63/100 (stable from yesterday)
+- Effectiveness: 61/100 (stable from yesterday)
+- 9 behavioral patterns across 5 agents
 
-## Pattern Detector Results (2026-05-23)
-- over_creation: 3 (Go Fan, Daily Caveman Optimizer, Function Namer)
-- repetition: 1 (Testify Expert — pathparser_test.go repeated target)
-- inconsistency: 2 (Testify Expert — #3046 regression; PR Triage — 50% success rate)
-- under_creation: 2 (Architecture Guardian — offline; Code Simplifier — 0 outputs)
-- scope_creep: 1 (Function Namer — issues consistently rejected as wontfix)
-- clean: 7 agents
+## Key Changes from 2026-05-23
+- **Architecture Guardian**: Now 15+ days offline (was 14+); #3033 remains OPEN (CRITICAL)
+- **Go Fan**: Confirmed stable - no new issue today (monitor period complete)
+- **Function Namer**: 3 improvement issues created (scope restriction)
+- **Caveman Optimizer**: 1 improvement issue created (output validation)
+- **Code Simplifier**: 1 investigation issue created (silent failure, 3rd day)
+- **Testify Expert**: Stable at partial recovery level
+- **Metrics Collector**: Still stale 49 days (needs manual trigger)
 
-## Quality Scores (this run)
-- Average quality: 63/100 (↑2 from yesterday — Testify partial recovery)
-- Average effectiveness: 61/100 (↑1 from yesterday)
-- PR merge rate: ~84% (stable, historical baseline from metrics)
-- 9 behavioral patterns detected across 5 agents (↑2 from yesterday — Function Namer + Caveman newly classified)
+## Pattern Detector Results
+- over_creation: 2 active (Caveman, Function Namer; Go Fan resolved)
+- repetition: 1 (Testify Expert)
+- inconsistency: 1 (Testify Expert; PR Triage not re-analyzed)
+- under_creation: 2 (Architecture Guardian offline, Code Simplifier silent)
+- scope_creep: 1 (Function Namer)
+- clean: 8 agents (↑1 from yesterday - Go Fan resolved)
 
-## Top Performers
-- **Agentic Maintenance**: 6/6 (100%) — backbone agent
-- **Duplicate Code Detector**: 2 actionable issues this week, both triggered downstream Copilot PRs (#3037, #3055)
-- **Contribution Check**: 3/3 clean reports; all structured and closed after review
-- **Dead Code Removal**: quality PR (#3025), consistent
+## Top Performers (unchanged)
+- **Agentic Maintenance**: 100% success, backbone agent
+- **Duplicate Code Detector**: High-value outputs, triggers downstream PRs
+- **Contribution Check**: 100% clean reports
+- **Dead Code Removal**: Quality PRs, consistent
 
 ## Underperformers
-- **Architecture Guardian**: OFFLINE 14+ days (#3033, CRITICAL, still open)
-- **Function Namer**: 3/3 recent issues auto-closed as wontfix — scope-creep + over-creation
-- **Daily Caveman Optimizer**: 3 PRs this week, 0 merged — over-production
-- **Testify Expert**: repetition on pathparser_test.go + prior regression (#3046); partial recovery today
-- **Code Simplifier**: 0 outputs despite successful run (2nd consecutive day)
+- **Architecture Guardian**: OFFLINE 15+ days (CRITICAL, #3033)
+- **Function Namer**: 100% rejection rate, scope creep (issues created today)
+- **Caveman Optimizer**: 0% merge rate, over-production (issue created today)
+- **Code Simplifier**: 3rd day silent failure (issue created today)
+- **Testify Expert**: Repetition pattern (stable at partial recovery)
 
-## Issues Tracked
-- #2995: Issue Group — OPEN (this report's parent)
-- #2956: No-Op Runs tracker — OPEN (expected/normal)
-- #2328: Detection Runs — OPEN (expected/normal)
-- #3022: Daily Doc Healer — OPEN; still recommend CLOSE (5+ clean days)
-- #3031: Daily Doc Updater — OPEN; recommend CLOSE (recovered)
-- #3033: Architecture Guardian failure — OPEN (CRITICAL)
-- #3045: Contribution Check failure — OPEN (one-off engine failure, monitor)
-- #3052: Testify Expert regression (#3046) — OPEN (active investigation)
-- #3056: Testify Expert #3056 (pathparser) — today's, quality OK
+## Issues Created This Run
+- Function Namer scope restriction (3 separate issues with examples)
+- Caveman Optimizer output validation gate
+- Code Simplifier silent failure investigation
+- Stale issue cleanup recommendations (#3022, #3031)
 
-## Report Posted
-- Comment on #2995 (Issue Group)
+## Recommendations for Human Action
+1. URGENT: Fix Architecture Guardian (15+ days offline, requires gh aw compile)
+2. URGENT: Trigger Metrics Collector manually (49 days stale)
+3. Review and merge: Function Namer scope restriction fixes
+4. Review and merge: Caveman Optimizer validation gate
+5. Close recovered issues: #3022, #3031
+
