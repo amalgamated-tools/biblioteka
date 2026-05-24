@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"log/slog"
 	"net/http"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -134,19 +133,16 @@ type tagListDTO struct {
 }
 
 func (h *TagHandler) listTags(w http.ResponseWriter, r *http.Request) {
-	limit, offset := parseLimitOffset(r, defaultPageLimit, maxPageLimit)
-	tags, total, err := h.DB.ListTagsPaginated(r.Context(), limit, offset)
-	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to list tags", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list tags")
-		return
-	}
-	writeJSON(r.Context(), w, http.StatusOK, tagListDTO{
-		Tags:   mapSlice(tags, toTagDTO),
-		Total:  total,
-		Limit:  limit,
-		Offset: offset,
-	})
+	listPaginatedEntities(w, r, "tags", h.DB.ListTagsPaginated, toTagDTO,
+		func(items []tagDTO, total, limit, offset int) tagListDTO {
+			return tagListDTO{
+				Tags:   items,
+				Total:  total,
+				Limit:  limit,
+				Offset: offset,
+			}
+		},
+	)
 }
 
 func (h *TagHandler) createTag(w http.ResponseWriter, r *http.Request) {

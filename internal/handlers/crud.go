@@ -89,6 +89,40 @@ func listUserEntities[T any, DTO any](
 	writeJSON(ctx, w, http.StatusOK, mapSlice(entities, toDTO))
 }
 
+// listPaginatedEntities is a generic helper for paginated list endpoints. It
+// parses limit/offset query params, calls the paginated list function, converts
+// entities to DTOs, and writes the JSON response.
+func listPaginatedEntities[T any, DTO any, ListDTO any](
+	w http.ResponseWriter,
+	r *http.Request,
+	resource string,
+	list func(context.Context, int, int) ([]T, int, error),
+	toDTO func(*T) DTO,
+	toListDTO func([]DTO, int, int, int) ListDTO,
+) {
+	ctx := r.Context()
+	limit, offset := parseLimitOffset(r, defaultPageLimit, maxPageLimit)
+
+	slog.DebugContext(ctx, "listing entities", slog.String(otelkeys.Resource, resource))
+
+	entities, total, err := list(ctx, limit, offset)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to list entities",
+			slog.String(otelkeys.Resource, resource),
+			slog.Any(otelkeys.Error, err),
+		)
+		writeError(ctx, w, http.StatusInternalServerError, "failed to list "+resource)
+		return
+	}
+
+	slog.DebugContext(ctx, "entities listed",
+		slog.String(otelkeys.Resource, resource),
+		slog.Int(otelkeys.Count, len(entities)),
+	)
+
+	writeJSON(ctx, w, http.StatusOK, toListDTO(mapSlice(entities, toDTO), total, limit, offset))
+}
+
 // deleteResourceCore is the shared implementation of the
 // fetch-then-delete-then-audit pattern. get and del are pre-bound closures
 // that already capture the resource ID (and, for user-owned resources, the
