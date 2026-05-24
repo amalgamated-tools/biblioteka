@@ -136,19 +136,16 @@ type authorListDTO struct {
 //	@Failure		500		{object}	errorResponse
 //	@Router			/authors [get]
 func (h *AuthorHandler) listAuthors(w http.ResponseWriter, r *http.Request) {
-	limit, offset := parseLimitOffset(r, defaultPageLimit, maxPageLimit)
-	authors, total, err := h.DB.ListAuthorsPaginated(r.Context(), limit, offset)
-	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to list authors", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list authors")
-		return
-	}
-	writeJSON(r.Context(), w, http.StatusOK, authorListDTO{
-		Authors: mapSlice(authors, toAuthorDTO),
-		Total:   total,
-		Limit:   limit,
-		Offset:  offset,
-	})
+	listPaginatedEntities(w, r, "authors", h.DB.ListAuthorsPaginated, toAuthorDTO,
+		func(items []authorDTO, total, limit, offset int) authorListDTO {
+			return authorListDTO{
+				Authors: items,
+				Total:   total,
+				Limit:   limit,
+				Offset:  offset,
+			}
+		},
+	)
 }
 
 // createAuthor creates a new author.

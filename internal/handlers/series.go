@@ -133,19 +133,16 @@ type seriesListDTO struct {
 //	@Failure		500		{object}	errorResponse
 //	@Router			/series [get]
 func (h *SeriesHandler) listSeries(w http.ResponseWriter, r *http.Request) {
-	limit, offset := parseLimitOffset(r, defaultPageLimit, maxPageLimit)
-	series, total, err := h.DB.ListSeriesPaginated(r.Context(), limit, offset)
-	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to list series", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list series")
-		return
-	}
-	writeJSON(r.Context(), w, http.StatusOK, seriesListDTO{
-		Series: mapSlice(series, toSeriesDTO),
-		Total:  total,
-		Limit:  limit,
-		Offset: offset,
-	})
+	listPaginatedEntities(w, r, "series", h.DB.ListSeriesPaginated, toSeriesDTO,
+		func(items []seriesDTO, total, limit, offset int) seriesListDTO {
+			return seriesListDTO{
+				Series: items,
+				Total:  total,
+				Limit:  limit,
+				Offset: offset,
+			}
+		},
+	)
 }
 
 // createSeries creates a new series.

@@ -1,6 +1,6 @@
 # Biblioteka
 
-A self-hosted personal book library manager. Scan local files, extract metadata, and browse your e-book and physical book collection through a clean web interface.
+A self-hosted personal book library manager. Scan local files, extract metadata, and browse your e-book collection through a clean web interface.
 
 ## Features
 

@@ -182,3 +182,82 @@ func Test_ListUserEntities(t *testing.T) {
 		require.Equal(t, "Beta", dtos[1].Label)
 	})
 }
+
+func Test_ListPaginatedEntities(t *testing.T) {
+	type entity struct {
+		ID   int
+		Name string
+	}
+	type dto struct {
+		Label string `json:"label"`
+	}
+	type listDTO struct {
+		Items  []dto `json:"items"`
+		Total  int   `json:"total"`
+		Limit  int   `json:"limit"`
+		Offset int   `json:"offset"`
+	}
+	toDTO := func(e *entity) dto {
+		return dto{Label: e.Name}
+	}
+	makeListDTO := func(items []dto, total, limit, offset int) listDTO {
+		return listDTO{
+			Items:  items,
+			Total:  total,
+			Limit:  limit,
+			Offset: offset,
+		}
+	}
+
+	t.Run("error yields 500", func(t *testing.T) {
+		listFn := func(_ context.Context, _, _ int) ([]entity, int, error) {
+			return nil, 0, errors.New("db failure")
+		}
+
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest(http.MethodGet, "/", nil)
+		listPaginatedEntities(w, r, "widgets", listFn, toDTO, makeListDTO)
+
+		require.Equal(t, http.StatusInternalServerError, w.Code)
+		var result map[string]string
+		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result), "failed to unmarshal")
+		require.Equal(t, "failed to list widgets", result["error"])
+	})
+
+	t.Run("passes parsed pagination values", func(t *testing.T) {
+		var capturedLimit, capturedOffset int
+		listFn := func(_ context.Context, limit, offset int) ([]entity, int, error) {
+			capturedLimit = limit
+			capturedOffset = offset
+			return []entity{}, 0, nil
+		}
+
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest(http.MethodGet, "/?limit=7&offset=3", nil)
+		listPaginatedEntities(w, r, "widgets", listFn, toDTO, makeListDTO)
+
+		require.Equal(t, http.StatusOK, w.Code)
+		require.Equal(t, 7, capturedLimit)
+		require.Equal(t, 3, capturedOffset)
+	})
+
+	t.Run("success converts items and includes pagination", func(t *testing.T) {
+		listFn := func(_ context.Context, _, _ int) ([]entity, int, error) {
+			return []entity{{ID: 1, Name: "Alpha"}, {ID: 2, Name: "Beta"}}, 12, nil
+		}
+
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest(http.MethodGet, "/?limit=2&offset=4", nil)
+		listPaginatedEntities(w, r, "widgets", listFn, toDTO, makeListDTO)
+
+		require.Equal(t, http.StatusOK, w.Code)
+		var response listDTO
+		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &response), "failed to unmarshal")
+		require.Len(t, response.Items, 2)
+		require.Equal(t, "Alpha", response.Items[0].Label)
+		require.Equal(t, "Beta", response.Items[1].Label)
+		require.Equal(t, 12, response.Total)
+		require.Equal(t, 2, response.Limit)
+		require.Equal(t, 4, response.Offset)
+	})
+}
