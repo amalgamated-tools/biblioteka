@@ -71,7 +71,7 @@ func TestAdminMiddleware_NonAdminUser(t *testing.T) {
 	checker := &mockAdminChecker{admins: map[string]bool{"admin-user": true}}
 	mw := AdminMiddleware(jm, checker, testJWTOnlyConfig(), nil)
 
-	token, err := jm.CreateToken(t.Context(), "regular-user")
+	token, err := jm.CreateToken("regular-user")
 	require.NoError(t, err, "CreateToken() error")
 
 	called := false
@@ -95,7 +95,7 @@ func TestAdminMiddleware_AdminUser(t *testing.T) {
 	checker := &mockAdminChecker{admins: map[string]bool{"admin-user": true}}
 	mw := AdminMiddleware(jm, checker, testJWTOnlyConfig(), nil)
 
-	token, err := jm.CreateToken(t.Context(), "admin-user")
+	token, err := jm.CreateToken("admin-user")
 	require.NoError(t, err, "CreateToken() error")
 
 	var gotUserID string
@@ -118,7 +118,7 @@ func TestAdminMiddleware_AdminViaCookie(t *testing.T) {
 	checker := &mockAdminChecker{admins: map[string]bool{"admin-user": true}}
 	mw := AdminMiddleware(jm, checker, testJWTOnlyConfig(), nil)
 
-	token, err := jm.CreateToken(t.Context(), "admin-user")
+	token, err := jm.CreateToken("admin-user")
 	require.NoError(t, err, "CreateToken() error")
 
 	var gotUserID string
@@ -141,7 +141,7 @@ func TestAdminMiddleware_CheckerError(t *testing.T) {
 	checker := &mockAdminChecker{err: errors.New("db down")}
 	mw := AdminMiddleware(jm, checker, testJWTOnlyConfig(), nil)
 
-	token, err := jm.CreateToken(t.Context(), "some-user")
+	token, err := jm.CreateToken("some-user")
 	require.NoError(t, err, "CreateToken() error")
 
 	called := false
