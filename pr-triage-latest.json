@@ -1,6 +1,6 @@
 {
-  "run_date": "2026-05-25T08:22:03Z",
-  "run_id": "26390882967",
+  "run_date": "2026-05-25T13:54:18Z",
+  "run_id": "26404001240",
   "total_prs_triaged": 0,
   "auto_merge_candidates": [],
   "fast_track_needed": [],
@@ -12,5 +12,5 @@
     "by_priority": {},
     "by_action": {}
   },
-  "note": "No fork-based agent PRs found. 1 open Copilot PR (#3037) originates from a same-repo branch (isCrossRepository=false) and is excluded per fork-only filter."
+  "note": "No fork-based agent PRs found. Open PRs: #3037 (app/copilot-swe-agent, same-repo branch, isCrossRepository=false) and #2963 (veverkap, release PR). Both excluded per fork-only + agent-author filter."
 }
