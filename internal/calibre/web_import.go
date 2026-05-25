@@ -208,70 +208,7 @@ func webImportBook(ctx context.Context, biblDB *db.DB, book *Book, opts WebImpor
 		slog.String(otelkeys.Title, biblBook.Title),
 	)
 
-	// Link authors — best-effort.
-	if len(book.Authors) > 0 {
-		authorIDs := make([]string, 0, len(book.Authors))
-		for _, name := range book.Authors {
-			author, authorErr := biblDB.FindOrCreateAuthor(ctx, name)
-			if authorErr != nil {
-				slog.WarnContext(ctx, "calibre: failed to find or create author",
-					slog.String(otelkeys.BookID, biblBook.ID),
-					slog.String(otelkeys.Author, name),
-					slog.Any(otelkeys.Error, authorErr),
-				)
-				continue
-			}
-			authorIDs = append(authorIDs, author.ID)
-		}
-		if len(authorIDs) > 0 {
-			if err := biblDB.SetBookAuthors(ctx, biblBook.ID, authorIDs); err != nil {
-				slog.WarnContext(ctx, "calibre: failed to set book authors",
-					slog.String(otelkeys.BookID, biblBook.ID),
-					slog.Any(otelkeys.Error, err),
-				)
-			}
-		}
-	}
-
-	// Link series — best-effort.
-	if len(book.Series) > 0 {
-		seriesInputs := make([]db.BookSeriesInput, 0, len(book.Series))
-		for _, se := range book.Series {
-			s, seriesErr := biblDB.FindOrCreateSeries(ctx, se.Name)
-			if seriesErr != nil {
-				slog.WarnContext(ctx, "calibre: failed to find or create series",
-					slog.String(otelkeys.BookID, biblBook.ID),
-					slog.String(otelkeys.Name, se.Name),
-					slog.Any(otelkeys.Error, seriesErr),
-				)
-				continue
-			}
-			pos := se.Position
-			seriesInputs = append(seriesInputs, db.BookSeriesInput{
-				SeriesID: s.ID,
-				Position: &pos,
-			})
-		}
-		if len(seriesInputs) > 0 {
-			if err := biblDB.SetBookSeries(ctx, biblBook.ID, seriesInputs); err != nil {
-				slog.WarnContext(ctx, "calibre: failed to set book series",
-					slog.String(otelkeys.BookID, biblBook.ID),
-					slog.Any(otelkeys.Error, err),
-				)
-			}
-		}
-	}
-
-	// Associate with a Biblioteka library — best-effort.
-	if opts.LibraryID != "" {
-		if err := biblDB.AddBookToLibrary(ctx, opts.LibraryID, biblBook.ID); err != nil {
-			slog.WarnContext(ctx, "calibre: failed to add book to library",
-				slog.String(otelkeys.BookID, biblBook.ID),
-				slog.String(otelkeys.LibraryID, opts.LibraryID),
-				slog.Any(otelkeys.Error, err),
-			)
-		}
-	}
+	linkBookAssociations(ctx, biblDB, biblBook, book, opts.LibraryID)
 
 	return true, nil
 }

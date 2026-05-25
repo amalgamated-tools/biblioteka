@@ -186,6 +186,14 @@ func importBook(ctx context.Context, biblDB *db.DB, book *Book, opts ImportOptio
 		return false, fmt.Errorf("all %d file record(s) failed to create for book %q", len(book.Formats), book.Title)
 	}
 
+	linkBookAssociations(ctx, biblDB, biblBook, book, opts.LibraryID)
+
+	return true, nil
+}
+
+// linkBookAssociations links authors and series to a newly created book and
+// optionally associates it with a library. All operations are best-effort.
+func linkBookAssociations(ctx context.Context, biblDB *db.DB, biblBook *db.Book, book *Book, libraryID string) {
 	// Link authors — best-effort.
 	if len(book.Authors) > 0 {
 		authorIDs := make([]string, 0, len(book.Authors))
@@ -241,17 +249,15 @@ func importBook(ctx context.Context, biblDB *db.DB, book *Book, opts ImportOptio
 	}
 
 	// Associate with a Biblioteka library — best-effort.
-	if opts.LibraryID != "" {
-		if err := biblDB.AddBookToLibrary(ctx, opts.LibraryID, biblBook.ID); err != nil {
+	if libraryID != "" {
+		if err := biblDB.AddBookToLibrary(ctx, libraryID, biblBook.ID); err != nil {
 			slog.WarnContext(ctx, "calibre: failed to add book to library",
 				slog.String(otelkeys.BookID, biblBook.ID),
-				slog.String(otelkeys.LibraryID, opts.LibraryID),
+				slog.String(otelkeys.LibraryID, libraryID),
 				slog.Any(otelkeys.Error, err),
 			)
 		}
 	}
-
-	return true, nil
 }
 
 // buildBookInput maps a Calibre book to a Biblioteka BookInput.
