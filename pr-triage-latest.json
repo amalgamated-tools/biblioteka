@@ -1,6 +1,6 @@
 {
-  "run_date": "2026-05-24T19:21:28Z",
-  "run_id": "26370440512",
+  "run_date": "2026-05-25T01:34:51Z",
+  "run_id": "26378677747",
   "total_prs_triaged": 0,
   "auto_merge_candidates": [],
   "fast_track_needed": [],
@@ -12,5 +12,5 @@
     "by_priority": {},
     "by_action": {}
   },
-  "note": "No fork-based agent PRs found. 3 open PRs all originate from same-repo branches and were excluded per fork-only filter."
+  "note": "No fork-based agent PRs found. 1 open Copilot PR (#3037) originates from a same-repo branch and is excluded per fork-only filter."
 }
