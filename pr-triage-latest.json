@@ -1,6 +1,6 @@
 {
-  "run_date": "2026-05-26T08:07:27Z",
-  "run_id": "26440267437",
+  "run_date": "2026-05-26T13:53:46Z",
+  "run_id": "26452341374",
   "total_prs_triaged": 0,
   "auto_merge_candidates": [],
   "fast_track_needed": [],
@@ -12,5 +12,5 @@
     "by_priority": {},
     "by_action": {}
   },
-  "notes": "No fork-origin agent PRs open. PR #3075 (copilot-swe-agent) is same-repo branch and excluded per fork-only filter."
+  "notes": "No fork-origin agent PRs from app/github-copilot open. Open PRs (#3076 amalgamated-bot, #3075 copilot-swe-agent, #2963 release-please) are all same-repo branches and excluded per fork-only filter."
 }
