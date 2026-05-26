@@ -208,6 +208,7 @@ func TestWebImport_InvalidLibraryID(t *testing.T) {
 
 	_, err := WebImport(t.Context(), biblDB, cdb, WebImportOptions{LibraryID: "nonexistent-id"})
 	require.Error(t, err)
+	require.ErrorIs(t, err, ErrLibraryNotFound)
 	require.Contains(t, err.Error(), "not found")
 }
 

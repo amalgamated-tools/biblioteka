@@ -649,3 +649,16 @@ func TestImport_InvalidLibraryID(t *testing.T) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "not found")
 }
+
+// TestImport_LoadBooksError verifies that when loading Calibre books fails, the
+// error keeps the existing load-calibre-books prefix.
+func TestImport_LoadBooksError(t *testing.T) {
+	biblDB := newTestBibliotekaDB(t)
+	cdb := newTestCalibreDB(t)
+	require.NoError(t, cdb.db.Close())
+
+	opts := ImportOptions{LibraryPath: "/calibre/library"}
+	_, err := runImport(t.Context(), biblDB, cdb, opts)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "load calibre books:")
+}
