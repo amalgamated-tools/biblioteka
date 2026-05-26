@@ -71,53 +71,18 @@ func Import(ctx context.Context, biblDB *db.DB, opts ImportOptions) (*ImportResu
 // runImport is the internal implementation of Import, split out so tests can
 // inject a pre-populated calibre.DB directly.
 func runImport(ctx context.Context, biblDB *db.DB, calibreDB *DB, opts ImportOptions) (*ImportResult, error) {
-	// Validate the library ID once before processing any books.
-	if opts.LibraryID != "" {
-		if _, err := biblDB.GetLibrary(ctx, opts.LibraryID); err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				return nil, fmt.Errorf("library %q not found", opts.LibraryID)
-			}
-			return nil, fmt.Errorf("validate library %q: %w", opts.LibraryID, err)
-		}
-	}
-
-	books, err := calibreDB.LoadBooks(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("load calibre books: %w", err)
-	}
-
-	result := &ImportResult{Total: len(books)}
-	slog.InfoContext(ctx, "calibre: loaded books",
-		slog.Int(otelkeys.BookCount, len(books)),
-	)
-	slog.DebugContext(ctx, "calibre: note: Calibre tags are not imported; re-tag books manually in Biblioteka if needed")
-
-	for i := range books {
-		book := &books[i]
-		imported, importErr := importBook(ctx, biblDB, book, opts)
-		if importErr != nil {
-			slog.WarnContext(ctx, "calibre: failed to import book",
-				slog.Int64(otelkeys.CalibreID, book.CalibreID),
-				slog.String(otelkeys.Title, book.Title),
-				slog.Any(otelkeys.Error, importErr),
-			)
-			result.Errors++
-			continue
-		}
-		if imported {
-			result.Imported++
-		} else {
-			result.Skipped++
-		}
-	}
-
-	slog.InfoContext(ctx, "calibre: import complete",
-		slog.Int(otelkeys.BookCount, result.Total),
-		slog.Int(otelkeys.Imported, result.Imported),
-		slog.Int(otelkeys.Skipped, result.Skipped),
-		slog.Int(otelkeys.ErrorCount, result.Errors),
-	)
-	return result, nil
+	return runBookImport(ctx, biblDB, calibreDB, runBookImportOptions{
+		libraryID:      opts.LibraryID,
+		loadedBooksMsg: "calibre: loaded books",
+		completeMsg:    "calibre: import complete",
+		importErrMsg:   "calibre: failed to import book",
+		afterLoad: func(ctx context.Context, _ int) {
+			slog.DebugContext(ctx, "calibre: note: Calibre tags are not imported; re-tag books manually in Biblioteka if needed")
+		},
+		importOne: func(ctx context.Context, book *Book) (bool, error) {
+			return importBook(ctx, biblDB, book, opts)
+		},
+	})
 }
 
 // importBook imports a single Calibre book. It returns (true, nil) when the

@@ -128,52 +128,21 @@ type WebImportOptions struct {
 // ISBN-10, ASIN, or Goodreads ID when those fields are present. Books with no
 // recognised external identifier are always imported.
 func WebImport(ctx context.Context, biblDB *db.DB, calibreDB *DB, opts WebImportOptions) (*ImportResult, error) {
-	if opts.LibraryID != "" {
-		if _, err := biblDB.GetLibrary(ctx, opts.LibraryID); err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				return nil, fmt.Errorf("%w: %q", ErrLibraryNotFound, opts.LibraryID)
-			}
-			return nil, fmt.Errorf("validate library %q: %w", opts.LibraryID, err)
-		}
-	}
-
-	books, err := calibreDB.LoadBooks(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrLoadCalibreBooks, err)
-	}
-
-	result := &ImportResult{Total: len(books)}
-	slog.InfoContext(ctx, "calibre: starting web import",
-		slog.Int(otelkeys.BookCount, len(books)),
-	)
-
-	for i := range books {
-		book := &books[i]
-		imported, importErr := webImportBook(ctx, biblDB, book, opts)
-		if importErr != nil {
-			slog.WarnContext(ctx, "calibre: failed to web-import book",
-				slog.Int64(otelkeys.CalibreID, book.CalibreID),
-				slog.String(otelkeys.Title, book.Title),
-				slog.Any(otelkeys.Error, importErr),
-			)
-			result.Errors++
-			continue
-		}
-		if imported {
-			result.Imported++
-		} else {
-			result.Skipped++
-		}
-	}
-
-	slog.InfoContext(ctx, "calibre: web import complete",
-		slog.Int(otelkeys.BookCount, result.Total),
-		slog.Int(otelkeys.Imported, result.Imported),
-		slog.Int(otelkeys.Skipped, result.Skipped),
-		slog.Int(otelkeys.ErrorCount, result.Errors),
-	)
-
-	return result, nil
+	return runBookImport(ctx, biblDB, calibreDB, runBookImportOptions{
+		libraryID:      opts.LibraryID,
+		loadedBooksMsg: "calibre: starting web import",
+		completeMsg:    "calibre: web import complete",
+		importErrMsg:   "calibre: failed to web-import book",
+		libraryNotFoundErr: func(libraryID string) error {
+			return fmt.Errorf("%w: %q", ErrLibraryNotFound, libraryID)
+		},
+		loadBooksErr: func(err error) error {
+			return fmt.Errorf("%w: %v", ErrLoadCalibreBooks, err)
+		},
+		importOne: func(ctx context.Context, book *Book) (bool, error) {
+			return webImportBook(ctx, biblDB, book, opts)
+		},
+	})
 }
 
 // webImportBook imports a single Calibre book as metadata only (no file
