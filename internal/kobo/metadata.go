@@ -214,9 +214,9 @@ func BookMetadata(book *db.Book, authors []db.Author, series []db.BookSeriesEntr
 		IsInternetArchive:       false,
 		IsPreOrder:              false,
 		IsSocialEnabled:         true,
-		Language:                language(book),
+		Language:                resolveBookLanguage(book),
 		PhoneticPronunciations:  map[string]any{},
-		PublicationDate:         pubDate(book),
+		PublicationDate:         formatPublicationDate(book),
 		Publisher:               PublisherInfo{Imprint: "", Name: book.Publisher},
 		RevisionID:              book.ID,
 		Title:                   book.Title,
@@ -281,14 +281,14 @@ func ReadingStateResponse(state *db.KoboReadingState) *ReadingState {
 	}
 }
 
-func language(book *db.Book) string {
+func resolveBookLanguage(book *db.Book) string {
 	if book.Language != nil && *book.Language != "" {
 		return *book.Language
 	}
 	return "en"
 }
 
-func pubDate(book *db.Book) string {
+func formatPublicationDate(book *db.Book) string {
 	if book.PublicationDate != nil && *book.PublicationDate != "" {
 		for _, layout := range []string{time.RFC3339, "2006-01-02", "2006"} {
 			if t, err := time.Parse(layout, *book.PublicationDate); err == nil {
