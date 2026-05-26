@@ -1,6 +1,6 @@
 {
-  "run_date": "2026-05-26T01:30:00Z",
-  "run_id": "26427111932",
+  "run_date": "2026-05-26T08:07:27Z",
+  "run_id": "26440267437",
   "total_prs_triaged": 0,
   "auto_merge_candidates": [],
   "fast_track_needed": [],
@@ -12,5 +12,5 @@
     "by_priority": {},
     "by_action": {}
   },
-  "note": "No fork-based agent PRs found. Only open PR is #2963 (veverkap, same-repo release-please PR). Consistent with prior runs 26416285465 and 26404001240."
+  "notes": "No fork-origin agent PRs open. PR #3075 (copilot-swe-agent) is same-repo branch and excluded per fork-only filter."
 }
