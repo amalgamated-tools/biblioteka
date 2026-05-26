@@ -194,7 +194,7 @@ func (h *BookHandler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 	enqueueCtx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), 10*time.Second)
 	defer cancel()
 
-	if _, err := h.Enqueuer.Enqueue(enqueueCtx, jobs.JobProcessFile, payload); err != nil {
+	if _, err := h.Enqueuer.Enqueue(enqueueCtx, jobs.JobProcessFile, payload, jobs.WithUnique(24*time.Hour)); err != nil {
 		slog.ErrorContext(r.Context(), "failed to enqueue process:file job",
 			slog.String(otelkeys.FileName, filename),
 			slog.String(otelkeys.LibraryID, libraryID),

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
@@ -56,7 +57,7 @@ func NewScanLibrariesHandler(lister LibraryLister, enqueuer Enqueuer) func(ctx c
 			if _, err := enqueuer.Enqueue(ctx, JobScanLibrary, ScanLibraryPayload{
 				LibraryID: lib.ID,
 				Paths:     paths,
-			}); err != nil {
+			}, WithUnique(24*time.Hour)); err != nil {
 				slog.WarnContext(ctx, "failed to enqueue scan:library job",
 					slog.String(otelkeys.LibraryID, lib.ID),
 					slog.Any(otelkeys.Error, err),

@@ -3,13 +3,13 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/llm"
-	"github.com/hibiken/asynq"
 	"github.com/stretchr/testify/require"
 )
 
@@ -69,9 +69,9 @@ func TestFetchAIEnrichment_AlreadyExists(t *testing.T) {
 	require.Equal(t, "already_exists", resp.Status)
 }
 
-func TestFetchAIEnrichment_DuplicateTask(t *testing.T) {
+func TestFetchAIEnrichment_EnqueueError(t *testing.T) {
 	d := newTestDB(t)
-	enq := &mockEnqueuer{err: asynq.ErrDuplicateTask}
+	enq := &mockEnqueuer{err: errors.New("redis unavailable")}
 	h := &MetadataHandler{DB: d, Enqueuer: enq, LLMProvider: &stubLLMProvider{}}
 
 	user, err := d.CreateUser(t.Context(), "Test User", "dup@example.com", "password1")
@@ -85,10 +85,7 @@ func TestFetchAIEnrichment_DuplicateTask(t *testing.T) {
 
 	h.HandleBookMetadata(w, r, book.ID)
 
-	require.Equal(t, http.StatusAccepted, w.Code)
-	var resp fetchMetadataResponse
-	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
-	require.Equal(t, "already_running", resp.Status)
+	require.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
 // --- AI Get Pending ---

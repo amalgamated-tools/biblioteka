@@ -223,7 +223,7 @@ func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 		if _, err := h.Enqueuer.Enqueue(ctx, jobs.JobScanLibrary, jobs.ScanLibraryPayload{
 			LibraryID: lib.ID,
 			Paths:     dto.Paths,
-		}); err != nil {
+		}, jobs.WithUnique(24*time.Hour)); err != nil {
 			slog.ErrorContext(r.Context(), "failed to enqueue scan:library job",
 				slog.String(otelkeys.LibraryID, lib.ID),
 				slog.Any(otelkeys.Error, err),

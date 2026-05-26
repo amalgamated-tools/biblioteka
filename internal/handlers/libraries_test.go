@@ -6,6 +6,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/amalgamated-tools/biblioteka/internal/jobs"
 	"github.com/stretchr/testify/require"
 )
 
@@ -21,7 +22,7 @@ type enqueued struct {
 	Payload json.RawMessage
 }
 
-func (m *mockEnqueuer) Enqueue(_ context.Context, name string, payload any) (string, error) {
+func (m *mockEnqueuer) Enqueue(_ context.Context, name string, payload any, _ ...jobs.EnqueueOption) (string, error) {
 	if m.err != nil {
 		return "", m.err
 	}

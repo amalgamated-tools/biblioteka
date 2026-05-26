@@ -211,6 +211,6 @@ type errEnqueuer struct {
 	err error
 }
 
-func (e *errEnqueuer) Enqueue(_ context.Context, _ string, _ any) (string, error) {
+func (e *errEnqueuer) Enqueue(_ context.Context, _ string, _ any, _ ...EnqueueOption) (string, error) {
 	return "", e.err
 }
