@@ -6,7 +6,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -173,6 +172,8 @@ func TestPathExists(t *testing.T) {
 }
 
 func TestRunProcessFile_Errors(t *testing.T) {
+	missingPath := filepath.Join(t.TempDir(), "missing.epub")
+
 	tests := []struct {
 		name       string
 		path       string
@@ -180,7 +181,7 @@ func TestRunProcessFile_Errors(t *testing.T) {
 	}{
 		{
 			name:       "missing file",
-			path:       filepath.Join(t.TempDir(), "missing.epub"),
+			path:       missingPath,
 			errMessage: "error stating file",
 		},
 		{
@@ -254,21 +255,16 @@ func TestRunCalibreImport_InvalidPath(t *testing.T) {
 
 func TestRunDBMigrate(t *testing.T) {
 	t.Setenv("DATABASE_URL", "")
-	dbPath := defaultSQLiteDBPath(t)
-	removeSQLiteFiles(t, dbPath)
-	t.Cleanup(func() {
-		removeSQLiteFiles(t, dbPath)
-	})
 
 	err := runDBMigrate(t.Context())
 	require.NoError(t, err)
 
-	sqlDB, err := sql.Open("sqlite", dbPath)
-	require.NoError(t, err, "open sqlite database")
-	t.Cleanup(func() { _ = sqlDB.Close() })
-
 	var count int
-	err = sqlDB.QueryRow(`SELECT COUNT(*) FROM schema_migrations`).Scan(&count)
+	database, err := db.SetupDatabase(t.Context())
+	require.NoError(t, err, "setup database")
+	t.Cleanup(func() { _ = database.Close() })
+
+	err = database.QueryRowContext(t.Context(), `SELECT COUNT(*) FROM schema_migrations`).Scan(&count)
 	require.NoError(t, err, "query schema_migrations")
 	require.Greater(t, count, 0)
 }
@@ -279,22 +275,4 @@ func fileInfo(t *testing.T, path string) fs.FileInfo {
 	info, err := os.Stat(path)
 	require.NoError(t, err, "stat %q", path)
 	return info
-}
-
-func defaultSQLiteDBPath(t *testing.T) string {
-	t.Helper()
-	_, currentFile, _, ok := runtime.Caller(0)
-	require.True(t, ok, "resolve caller path")
-	repoRoot := filepath.Clean(filepath.Join(filepath.Dir(currentFile), "..", ".."))
-	return filepath.Join(repoRoot, "db", "biblioteka.db")
-}
-
-func removeSQLiteFiles(t *testing.T, dbPath string) {
-	t.Helper()
-	for _, path := range []string{dbPath, dbPath + "-wal", dbPath + "-shm"} {
-		err := os.Remove(path)
-		if err != nil && !os.IsNotExist(err) {
-			require.NoError(t, err, "remove %q", path)
-		}
-	}
 }
