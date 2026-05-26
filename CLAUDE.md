@@ -169,7 +169,7 @@ db/migrations/
   )
   ```
 
-  `listPaginatedEntities` is a generic function in `internal/handlers/crud.go`. It calls `parseLimitOffset(r, defaultPageLimit, maxPageLimit)` to parse and clamp the `limit`/`offset` query parameters, invokes the paginated `list(ctx, limit, offset) ([]T, int, error)` function, converts each entity to a DTO via `toDTO`, and writes a `200 OK` JSON response wrapping the result through `toListDTO(items, total, limit, offset)`. On error it logs and writes `500 Internal Server Error`. Always `return` immediately after the call. Use this helper for top-level paginated endpoints such as `GET /api/authors`, `GET /api/series`, and `GET /api/tags`.
+  `listPaginatedEntities` is a generic function in `internal/handlers/crud.go`. It calls `parseLimitOffset(r, defaultPageLimit, maxPageLimit)` to parse and clamp the `limit`/`offset` query parameters, invokes the paginated `list(ctx, limit, offset) ([]T, int, error)` function, converts each entity to a DTO via `toDTO`, and writes a `200 OK` JSON response wrapping the result through `toListDTO(items, total, limit, offset)`, where `items` is the converted `[]DTO` slice (not the raw entities). On error it logs and writes `500 Internal Server Error`. Always `return` immediately after the call. Use this helper for top-level paginated endpoints such as `GET /api/authors`, `GET /api/series`, and `GET /api/tags`.
 
 ### Book sub-resource handlers
 
