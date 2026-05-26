@@ -30,6 +30,10 @@ func runBookImport(
 	calibreDB *DB,
 	opts runBookImportOptions,
 ) (*ImportResult, error) {
+	if opts.importOne == nil {
+		panic("runBookImportOptions.importOne must not be nil")
+	}
+
 	if opts.libraryID != "" {
 		if _, err := biblDB.GetLibrary(ctx, opts.libraryID); err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
