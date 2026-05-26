@@ -22,3 +22,15 @@
 - NEW ISSUE: Dead Code Removal — 0% merge rate (0/1 PRs merged); may have false positive detection
 - NEW ISSUE: Security Red Team — configuration error detected; #3066 created yesterday
 - ACTION NEEDED: Close stale recovery issues #3022, #3031 (workflows stable 5+ days)
+
+## 2026-05-26 (Updated by agent-performance-analyzer)
+- 🚨 **CRITICAL - NO PROGRESS**: Architecture Guardian OFFLINE 16+ days (#3033 open 8+ days with NO ACTION)
+- 🚨 **CRITICAL - NO PROGRESS**: Code Simplifier silent failure day 4 (#3064 open 2 days with NO ACTION)  
+- 🚨 **CRITICAL - NO PROGRESS**: Security Red Team config error (#3066 open 2 days with NO ACTION)
+- 🚨 **ECOSYSTEM DECLINING**: Quality ↓ -2.3pts, Effectiveness ↓ -3.3pts, Output ↓ -66%, PR merge ↓ -18.8pp in 2 days
+- 🚨 **METRICS STALE**: 52 days old (last: 2026-04-04) — ALL meta-orchestrators affected
+- ⚠️ **PENDING FIXES**: #3062, #3063, #3065 created May 24 but not yet implemented
+- 📊 **Agent Performance Report**: Comprehensive discussion created with full analysis
+- 🔴 **THREE CRITICAL FAILURES** require immediate human intervention (gh aw compile, debug, config fix)
+- **Positive**: Top performers stable (Contribution Check 96.5/100, Copilot SWE Agent 91/100)
+- **Action needed**: Human must intervene on 3 critical offline agents + trigger metrics collector
