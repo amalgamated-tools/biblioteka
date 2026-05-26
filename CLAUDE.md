@@ -154,6 +154,23 @@ db/migrations/
 
   `listUserEntities` is a generic function in `internal/handlers/crud.go`. It extracts the authenticated user ID from context via `auth.UserIDFromContext`, calls `list(ctx, userID)`, converts entities to DTOs, and writes a `200 OK` JSON response (never `null`). On error it logs and writes `500 Internal Server Error`. Always `return` immediately after the call.
 
+- For **paginated** list endpoints that return a list DTO wrapping the items together with `total`, `limit`, and `offset` fields (e.g., `authorListDTO`, `seriesListDTO`, `tagListDTO`), use the generic `listPaginatedEntities` helper instead of hand-rolling the limit/offset parsing and list-DTO assembly:
+
+  ```go
+  listPaginatedEntities(w, r, "authors", h.DB.ListAuthorsPaginated, toAuthorDTO,
+      func(items []authorDTO, total, limit, offset int) authorListDTO {
+          return authorListDTO{
+              Authors: items,
+              Total:   total,
+              Limit:   limit,
+              Offset:  offset,
+          }
+      },
+  )
+  ```
+
+  `listPaginatedEntities` is a generic function in `internal/handlers/crud.go`. It calls `parseLimitOffset(r, defaultPageLimit, maxPageLimit)` to parse and clamp the `limit`/`offset` query parameters, invokes the paginated `list(ctx, limit, offset) ([]T, int, error)` function, converts each entity to a DTO via `toDTO`, and writes a `200 OK` JSON response wrapping the result through `toListDTO(items, total, limit, offset)`. On error it logs and writes `500 Internal Server Error`. Always `return` immediately after the call. Use this helper for top-level paginated endpoints such as `GET /api/authors`, `GET /api/series`, and `GET /api/tags`.
+
 ### Book sub-resource handlers
 
 For GET and PUT handlers that operate on a book's associated sub-resources (such as authors or series linked to a book), use `respondBookSubResource` and `putBookSubResource` from `internal/handlers/book_subresource.go` instead of hand-rolling the fetch → convert → respond pattern:
