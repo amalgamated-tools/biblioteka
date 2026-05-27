@@ -5,14 +5,14 @@ Biblioteka uses [asynq](https://github.com/hibiken/asynq), a Redis-backed task q
 ## Architecture Overview
 
 ```
-┌───────────────────────────┐        ┌───────────────┐
-│   HTTP Server             │        │    Redis      │
-│                           │        │               │
-│  POST /api/libraries ─────┼──────▶ │  "default"    │
-│  POST /api/books ─────────┼──────▶ │   queue       │
-│  Scheduled (every 24 h) ──┼──────▶ │               │
-│  Scheduled (every 1 m) ───┼──────▶ │               │
-└───────────────────────────┘        └───────┬───────┘
+┌───────────────────────────┐        ┌─────────────────────────┐
+│   HTTP Server             │        │    Redis                │
+│                           │        │                         │
+│  POST /api/libraries ─────┼──────▶ │  "critical" queue (×6)  │
+│  POST /api/books ─────────┼──────▶ │  "default"  queue (×3)  │
+│  Scheduled (every 24 h) ──┼──────▶ │  "low"      queue (×1)  │
+│  Scheduled (every 1 m) ───┼──────▶ │                         │
+└───────────────────────────┘        └───────────┬─────────────┘
                                              │
                                      ┌───────▼───────────┐
                                      │  asynq Worker      │
@@ -322,33 +322,43 @@ Configuration lives in `internal/worker/worker.go` as package-level constants:
 
 | Constant | Value | Meaning |
 |----------|-------|---------|
-| `QueueName` | `"default"` | All jobs are placed on this queue |
+| `QueueCritical` | `"critical"` | High-priority queue (weight 6) — opt in via `jobs.WithQueue(worker.QueueCritical)` |
+| `QueueName` | `"default"` | Normal-priority queue (weight 3) — scan jobs and enrichment |
+| `QueueLow` | `"low"` | Low-priority queue (weight 1) — scheduled background maintenance |
 | `DefaultConcurrency` | `4` | Maximum number of jobs executing in parallel |
 | `DefaultMaxRetry` | `5` | How many times a failed job is retried |
+| `DefaultShutdownTimeout` | `8s` | Time allowed for in-flight jobs to complete on shutdown |
 
-Tasks enqueued via `Worker.Enqueue` use a **24-hour deduplication window** (via `asynq.Unique(24*time.Hour)`). If the same job with the same payload is enqueued again through `Worker.Enqueue` within 24 hours, asynq returns an enqueue error (typically `asynq.ErrDuplicateTask`), and the duplicate task is not processed. Callers can choose whether to log or ignore this error — it is not silently skipped.
+The worker uses **weighted priority queues**: jobs in the `critical` queue are processed 6× more often than `low` jobs. Scheduled root triggers (`scan:libraries`, `scan:watch-folder`) are placed on the `low` queue; all other jobs use `default` unless explicitly overridden with `jobs.WithQueue`.
+
+Deduplication is **opt-in** via `jobs.WithUnique(d)`. Callers that need deduplication (e.g., scan jobs) pass this option explicitly; user-triggered metadata fetches intentionally omit it so users can always re-run them.
+
+Worker logs are emitted through the application's structured `slog` logger (JSON, including OTEL fields) rather than asynq's default stdout logger. The worker's `BaseContext` is set to the root application context, so tracer and logger values are available in all job handlers. OpenTelemetry trace context (W3C `traceparent`) and the request ID are propagated across the queue boundary via asynq v0.26.0 task headers, restoring end-to-end traces.
+
+On shutdown, the worker calls `srv.Stop()` (stops dequeueing new tasks) before `srv.Shutdown()` (waits for in-flight tasks), giving running jobs up to `DefaultShutdownTimeout` (8 seconds) to complete cleanly.
 
 ## How Jobs Are Enqueued
 
 Jobs enter the queue in two ways:
 
 1. **API-triggered** — Two handlers enqueue jobs on demand:
-   - When a user creates a library via `POST /api/libraries` and the library has paths, the handler immediately enqueues a `scan:library` job via `Worker.Enqueue` (see `internal/handlers/libraries.go`).
-   - When a book is created via `POST /api/books`, the handler immediately enqueues an `enrich:goodreads` job via `Worker.Enqueue` (see `internal/handlers/books.go`). A failure to enqueue is logged at `WARN` level and does not fail the book-creation response.
+   - When a user creates a library via `POST /api/libraries` and the library has paths, the handler immediately enqueues a `scan:library` job via `Worker.Enqueue` with `jobs.WithUnique(24*time.Hour)` (see `internal/handlers/libraries.go`).
+   - When a book is created via `POST /api/books`, the handler immediately enqueues an `enrich:goodreads` job via `Worker.Enqueue` with `jobs.WithUnique(24*time.Hour)` (see `internal/handlers/book_crud.go`). A failure to enqueue is logged at `WARN` level and does not fail the book-creation response.
+   - Metadata fetch endpoints (`POST /api/books/{id}/metadata/{fetch|ai-fetch}`) enqueue enrichment jobs **without** `WithUnique`, so users can always re-trigger a metadata refresh regardless of whether the job was already queued.
 
-   Both are subject to the 24-hour deduplication window described above.
+   Scan-related jobs use the 24-hour deduplication window described in [Deduplication](#deduplication); metadata fetch jobs do not.
 
 2. **Scheduled** — The asynq scheduler fires two periodic jobs:
    - `scan:libraries` every 24 hours — the trigger is issued directly by the asynq scheduler (not through `Worker.Enqueue`) and carries no deduplication. When the handler runs, it calls `Worker.Enqueue` to create `scan:library` jobs, which cascade into `scan:path` and `process:file` jobs — all of which go through `Worker.Enqueue` and benefit from the 24-hour deduplication window.
    - `scan:watch-folder` every 1 minute — the trigger is also issued directly by the asynq scheduler. The handler calls `ScanDirectory`, which enqueues `process:file` jobs through `Worker.Enqueue`.
 
-API-triggered jobs call `Worker.Enqueue`, which serialises the payload to JSON and pushes an asynq task onto the `"default"` queue with the configured deduplication options. The root scheduled triggers (`scan:libraries` and `scan:watch-folder`) are created directly by the asynq scheduler and do not go through `Worker.Enqueue`.
+API-triggered scan jobs call `Worker.Enqueue`, which serializes the payload to JSON, injects W3C trace context and the current request ID into task headers, and pushes an asynq task onto the appropriate queue. The root scheduled triggers (`scan:libraries` and `scan:watch-folder`) are created directly by the asynq scheduler and do not go through `Worker.Enqueue`.
 
 ### Deduplication
 
 The `book_files` table has a `UNIQUE` constraint on `file_path` (`idx_book_files_file_path`). If a `process:file` job tries to insert a `book_file` row for a path that is already indexed, the database rejects the insert and the handler skips creating a duplicate record. The handler also proactively checks whether the target path is already indexed before creating database records — both at the start of the job (when the original path already exists in the database) and after a file reorganization (in case a concurrent worker processed the same file first).
 
-Additionally, the 24-hour asynq deduplication window (via `asynq.Unique(24*time.Hour)`) prevents the same job payload from being enqueued more than once within that window.
+Scan jobs additionally use a **24-hour asynq deduplication window** via the `jobs.WithUnique(24*time.Hour)` option, which prevents the same job payload from being enqueued more than once within that window. Metadata fetch jobs (`enrich:goodreads`, `enrich:ai` triggered by user request) do **not** use the unique option so that users can always re-trigger a fetch without waiting for any deduplication window to expire.
 
 **Remaining edge cases:**
 
@@ -470,9 +480,12 @@ internal/
 5. **(Optional) Enqueue from a handler** if it should be triggered by an API call:
 
    ```go
-   if _, err := h.Enqueuer.Enqueue(ctx, jobs.JobExample, jobs.ExamplePayload{ID: "abc"}); err != nil {
+   if _, err := h.Enqueuer.Enqueue(ctx, jobs.JobExample, jobs.ExamplePayload{ID: "abc"},
+       jobs.WithUnique(24*time.Hour)); err != nil {
        return fmt.Errorf("enqueue example job: %w", err)
    }
    ```
+
+   Pass `jobs.WithUnique(24*time.Hour)` for deduplication (scan jobs), or omit it for user-retriggerable jobs such as metadata fetches. Use `jobs.WithMaxRetry(n)` to override the default retry count and `jobs.WithQueue(worker.QueueCritical)` to place urgent jobs on the high-priority queue.
 
 6. **Write tests** — see the existing `*_test.go` files in `internal/jobs/` for patterns using mock enqueuers and in-memory SQLite databases.

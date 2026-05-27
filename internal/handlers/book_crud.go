@@ -137,7 +137,7 @@ func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 		if _, err := h.Enqueuer.Enqueue(enqueueCtx, jobs.JobEnrichGoodreads, jobs.EnrichGoodreadsPayload{
 			BookID: b.ID,
 			UserID: userID,
-		}); err != nil {
+		}, jobs.WithUnique(24*time.Hour)); err != nil {
 			slog.WarnContext(r.Context(), "failed to enqueue enrich:goodreads job",
 				slog.String(otelkeys.BookID, b.ID),
 				slog.Any(otelkeys.Error, err),

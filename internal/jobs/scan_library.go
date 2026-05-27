@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
@@ -37,7 +38,7 @@ func NewScanLibraryHandler(enqueuer Enqueuer) func(ctx context.Context, payload 
 
 		var enqueued int
 		for _, path := range p.Paths {
-			if _, err := enqueuer.Enqueue(ctx, JobScanPath, ScanPathPayload{Path: path, LibraryID: p.LibraryID, LibraryRoot: path}); err != nil {
+			if _, err := enqueuer.Enqueue(ctx, JobScanPath, ScanPathPayload{Path: path, LibraryID: p.LibraryID, LibraryRoot: path}, WithUnique(24*time.Hour)); err != nil {
 				slog.WarnContext(ctx, "failed to enqueue scan:path job",
 					slog.String(otelkeys.LibraryID, p.LibraryID),
 					slog.String(otelkeys.Path, path),

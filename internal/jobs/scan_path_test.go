@@ -22,7 +22,7 @@ type enqueuedJob struct {
 	Payload ProcessFilePayload
 }
 
-func (m *mockEnqueuer) Enqueue(_ context.Context, name string, payload any) (string, error) {
+func (m *mockEnqueuer) Enqueue(_ context.Context, name string, payload any, _ ...EnqueueOption) (string, error) {
 	data, err := json.Marshal(payload)
 	if err != nil {
 		return "", err

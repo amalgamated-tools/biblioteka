@@ -13,7 +13,6 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/llm"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/amalgamated-tools/biblioteka/internal/pubsub"
-	"github.com/hibiken/asynq"
 )
 
 // MetadataHandler handles metadata fetch, review, and apply endpoints for books.
@@ -158,10 +157,6 @@ func (h *MetadataHandler) enqueueEnrichmentJob(w http.ResponseWriter, r *http.Re
 
 	taskID, err := h.Enqueuer.Enqueue(ctx, cfg.jobType, cfg.buildPayload(bookID, userID))
 	if err != nil {
-		if errors.Is(err, asynq.ErrDuplicateTask) {
-			writeJSON(ctx, w, http.StatusAccepted, fetchMetadataResponse{Status: metadataStatusAlreadyRunning})
-			return
-		}
 		slog.ErrorContext(ctx, "failed to enqueue "+cfg.resourceLabel+" fetch",
 			slog.String(otelkeys.BookID, bookID),
 			slog.Any(otelkeys.Error, err),
