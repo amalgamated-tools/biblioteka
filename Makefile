@@ -130,7 +130,7 @@ lint:
 lint-errorf:
 	go run ./cmd/errorfcheck ./...
 
-fmt:
+fmt: frontend/node_modules
 	go fmt ./...
 	cd frontend && pnpm run format
 

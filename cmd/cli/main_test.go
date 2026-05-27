@@ -49,145 +49,208 @@ func requireExtractor(t *testing.T) *metadata.Extractor {
 	return ext
 }
 
-func TestProcessFile_MOBI(t *testing.T) {
-	dir := t.TempDir()
-	// Name the file to match the embedded title so the assertion holds whether
-	// or not exiftool is available to extract metadata from the MOBI header.
-	mobiPath := filepath.Join(dir, "The Prince.mobi")
-	testutils.MakeTestMOBI(t, mobiPath, "The Prince", "Niccolò Machiavelli", testutils.MOBIOptions{
-		Publisher: "Public Domain",
-		Language:  "en",
-	})
+func TestProcessFile(t *testing.T) {
+	tests := []struct {
+		name          string
+		fileName      string
+		fileType      string
+		expectedTitle string
+		createFile    func(t *testing.T, path string)
+	}{
+		{
+			name:          "MOBI",
+			fileName:      "The Prince.mobi",
+			fileType:      "mobi",
+			expectedTitle: "The Prince",
+			createFile: func(t *testing.T, path string) {
+				testutils.MakeTestMOBI(t, path, "The Prince", "Niccolò Machiavelli", testutils.MOBIOptions{
+					Publisher: "Public Domain",
+					Language:  "en",
+				})
+			},
+		},
+		{
+			name:          "AZW3",
+			fileName:      "The Prince.azw3",
+			fileType:      "azw3",
+			expectedTitle: "The Prince",
+			createFile: func(t *testing.T, path string) {
+				testutils.MakeTestAZW3(t, path, "The Prince", "Niccolò Machiavelli", testutils.MOBIOptions{
+					ISBN:      "9781234567897",
+					Publisher: "Public Domain",
+					Language:  "en",
+				})
+			},
+		},
+		{
+			name:          "EPUB",
+			fileName:      "Alice in Wonderland.epub",
+			fileType:      "epub",
+			expectedTitle: "Alice in Wonderland",
+			createFile: func(t *testing.T, path string) {
+				testutils.MakeTestEPUBWithOptions(t, path, "Alice in Wonderland", "Lewis Carroll", "urn:isbn:9780141439761", testutils.EPUBOptions{
+					Version:         "2.0",
+					Description:     "A classic children's novel",
+					Publisher:       "Macmillan",
+					PublicationDate: "1865-11-26",
+					Language:        "en",
+				})
+			},
+		},
+		{
+			name:          "EPUB3",
+			fileName:      "EPUB 3 Specification.epub",
+			fileType:      "epub",
+			expectedTitle: "EPUB 3 Specification",
+			createFile: func(t *testing.T, path string) {
+				testutils.MakeTestEPUBWithOptions(t, path, "EPUB 3 Specification", "IDPF", "urn:isbn:9780000000000", testutils.EPUBOptions{
+					Version:        "3.0",
+					EPUB3Cover:     true,
+					CoverImageData: testutils.TinyPNG(),
+					Description:    "The EPUB 3.0 specification document",
+					Publisher:      "IDPF",
+					Language:       "en",
+					Subjects:       []string{"Publishing", "Standards", "Digital Books"},
+				})
+			},
+		},
+	}
 
-	database := newTestDB(t)
-	ext := requireExtractor(t)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			path := filepath.Join(dir, tt.fileName)
+			tt.createFile(t, path)
 
-	info := fileInfo(t, mobiPath)
-	err := jobs.ProcessBookFile(t.Context(), database, ext, nil, jobs.ProcessFilePayload{
-		Path:     mobiPath,
-		FileName: filepath.Base(mobiPath),
-		FileType: "mobi",
-		FileSize: info.Size(),
-	})
-	require.NoError(t, err, "ProcessBookFile() error")
+			database := newTestDB(t)
+			ext := requireExtractor(t)
 
-	books, err := database.ListBooks(t.Context())
-	require.NoError(t, err, "list books")
-	require.Len(t, books, 1)
-	require.Equal(t, "The Prince", books[0].Title)
+			info := fileInfo(t, path)
+			err := jobs.ProcessBookFile(t.Context(), database, ext, nil, jobs.ProcessFilePayload{
+				Path:     path,
+				FileName: filepath.Base(path),
+				FileType: tt.fileType,
+				FileSize: info.Size(),
+			})
+			require.NoError(t, err, "ProcessBookFile() error")
 
-	files, err := database.ListBookFiles(t.Context(), books[0].ID)
-	require.NoError(t, err, "list book files")
-	require.Len(t, files, 1)
-	require.Equal(t, "mobi", files[0].FileType)
+			books, err := database.ListBooks(t.Context())
+			require.NoError(t, err, "list books")
+			require.Len(t, books, 1)
+			require.Equal(t, tt.expectedTitle, books[0].Title)
+
+			files, err := database.ListBookFiles(t.Context(), books[0].ID)
+			require.NoError(t, err, "list book files")
+			require.Len(t, files, 1)
+			require.Equal(t, tt.fileType, files[0].FileType)
+		})
+	}
 }
 
-func TestProcessFile_AZW3(t *testing.T) {
+func TestPathExists(t *testing.T) {
 	dir := t.TempDir()
-	// Name the file to match the embedded title so the assertion holds whether
-	// or not exiftool is available to extract metadata from the MOBI header.
-	azw3Path := filepath.Join(dir, "The Prince.azw3")
-	testutils.MakeTestAZW3(t, azw3Path, "The Prince", "Niccolò Machiavelli", testutils.MOBIOptions{
-		ISBN:      "9781234567897",
-		Publisher: "Public Domain",
-		Language:  "en",
-	})
+	existingFile := filepath.Join(dir, "book.epub")
+	err := os.WriteFile(existingFile, []byte("x"), 0o600)
+	require.NoError(t, err, "create file")
 
-	database := newTestDB(t)
-	ext := requireExtractor(t)
+	tests := []struct {
+		name string
+		path string
+		want bool
+	}{
+		{name: "empty", path: "", want: false},
+		{name: "missing", path: filepath.Join(dir, "missing"), want: false},
+		{name: "existing file", path: existingFile, want: true},
+		{name: "existing directory", path: dir, want: true},
+	}
 
-	info := fileInfo(t, azw3Path)
-	err := jobs.ProcessBookFile(t.Context(), database, ext, nil, jobs.ProcessFilePayload{
-		Path:     azw3Path,
-		FileName: filepath.Base(azw3Path),
-		FileType: "azw3",
-		FileSize: info.Size(),
-	})
-	require.NoError(t, err, "ProcessBookFile() error")
-
-	books, err := database.ListBooks(t.Context())
-	require.NoError(t, err, "list books")
-	require.Len(t, books, 1)
-	require.Equal(t, "The Prince", books[0].Title)
-
-	files, err := database.ListBookFiles(t.Context(), books[0].ID)
-	require.NoError(t, err, "list book files")
-	require.Len(t, files, 1)
-	require.Equal(t, "azw3", files[0].FileType)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, pathExists(tt.path), "pathExists(%q)", tt.path)
+		})
+	}
 }
 
-func TestProcessFile_EPUB(t *testing.T) {
-	dir := t.TempDir()
-	// Name the file to match the embedded title so the assertion holds whether
-	// or not exiftool is available to extract EPUB metadata.
-	epubPath := filepath.Join(dir, "Alice in Wonderland.epub")
-	testutils.MakeTestEPUBWithOptions(t, epubPath, "Alice in Wonderland", "Lewis Carroll", "urn:isbn:9780141439761", testutils.EPUBOptions{
-		Version:         "2.0",
-		Description:     "A classic children's novel",
-		Publisher:       "Macmillan",
-		PublicationDate: "1865-11-26",
-		Language:        "en",
-	})
+func TestRunProcessFile_Errors(t *testing.T) {
+	missingPath := filepath.Join(t.TempDir(), "missing.epub")
 
-	database := newTestDB(t)
-	ext := requireExtractor(t)
+	tests := []struct {
+		name       string
+		path       string
+		errMessage string
+	}{
+		{
+			name:       "missing file",
+			path:       missingPath,
+			errMessage: "error stating file",
+		},
+		{
+			name:       "empty path",
+			path:       "",
+			errMessage: "error stating file",
+		},
+	}
 
-	info := fileInfo(t, epubPath)
-	err := jobs.ProcessBookFile(t.Context(), database, ext, nil, jobs.ProcessFilePayload{
-		Path:     epubPath,
-		FileName: filepath.Base(epubPath),
-		FileType: "epub",
-		FileSize: info.Size(),
-	})
-	require.NoError(t, err, "ProcessBookFile() error")
-
-	books, err := database.ListBooks(t.Context())
-	require.NoError(t, err, "list books")
-	require.Len(t, books, 1)
-	require.Equal(t, "Alice in Wonderland", books[0].Title)
-
-	files, err := database.ListBookFiles(t.Context(), books[0].ID)
-	require.NoError(t, err, "list book files")
-	require.Len(t, files, 1)
-	require.Equal(t, "epub", files[0].FileType)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := runProcessFile(t.Context(), tt.path)
+			require.Error(t, err)
+			require.ErrorContains(t, err, tt.errMessage)
+		})
+	}
 }
 
-func TestProcessFile_EPUB3(t *testing.T) {
-	dir := t.TempDir()
-	// Name the file to match the embedded title so the assertion holds whether
-	// or not exiftool is available to extract EPUB metadata.
-	epub3Path := filepath.Join(dir, "EPUB 3 Specification.epub")
-	testutils.MakeTestEPUBWithOptions(t, epub3Path, "EPUB 3 Specification", "IDPF", "urn:isbn:9780000000000", testutils.EPUBOptions{
-		Version:        "3.0",
-		EPUB3Cover:     true,
-		CoverImageData: testutils.TinyPNG(),
-		Description:    "The EPUB 3.0 specification document",
-		Publisher:      "IDPF",
-		Language:       "en",
-		Subjects:       []string{"Publishing", "Standards", "Digital Books"},
-	})
+func TestRunCalibreImport_InvalidPath(t *testing.T) {
+	baseDir := t.TempDir()
 
-	database := newTestDB(t)
-	ext := requireExtractor(t)
+	filePath := filepath.Join(baseDir, "library.txt")
+	err := os.WriteFile(filePath, []byte("not a directory"), 0o600)
+	require.NoError(t, err, "create test file")
 
-	info := fileInfo(t, epub3Path)
-	err := jobs.ProcessBookFile(t.Context(), database, ext, nil, jobs.ProcessFilePayload{
-		Path:     epub3Path,
-		FileName: filepath.Base(epub3Path),
-		FileType: "epub",
-		FileSize: info.Size(),
-	})
-	require.NoError(t, err, "ProcessBookFile() error")
+	dirWithoutMetadata := filepath.Join(baseDir, "no-metadata")
+	err = os.Mkdir(dirWithoutMetadata, 0o755)
+	require.NoError(t, err, "create directory without metadata")
 
-	books, err := database.ListBooks(t.Context())
-	require.NoError(t, err, "list books")
-	require.Len(t, books, 1)
-	require.Equal(t, "EPUB 3 Specification", books[0].Title)
+	dirWithMetadataDir := filepath.Join(baseDir, "metadata-is-dir")
+	err = os.Mkdir(dirWithMetadataDir, 0o755)
+	require.NoError(t, err, "create metadata parent directory")
+	err = os.Mkdir(filepath.Join(dirWithMetadataDir, "metadata.db"), 0o755)
+	require.NoError(t, err, "create metadata.db directory")
 
-	files, err := database.ListBookFiles(t.Context(), books[0].ID)
-	require.NoError(t, err, "list book files")
-	require.Len(t, files, 1)
-	require.Equal(t, "epub", files[0].FileType)
+	tests := []struct {
+		name       string
+		path       string
+		errMessage string
+	}{
+		{
+			name:       "missing path",
+			path:       filepath.Join(baseDir, "does-not-exist"),
+			errMessage: "failed to stat library path",
+		},
+		{
+			name:       "path is file",
+			path:       filePath,
+			errMessage: "is not a directory",
+		},
+		{
+			name:       "missing metadata db",
+			path:       dirWithoutMetadata,
+			errMessage: "does not contain metadata.db",
+		},
+		{
+			name:       "metadata db is directory",
+			path:       dirWithMetadataDir,
+			errMessage: "is a directory",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := runCalibreImport(t.Context(), tt.path, "")
+			require.Error(t, err)
+			require.ErrorContains(t, err, tt.errMessage)
+		})
+	}
 }
 
 // fileInfo stats a file and fails the test if it does not exist.
