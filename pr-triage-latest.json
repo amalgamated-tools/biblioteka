@@ -1,6 +1,6 @@
 {
-  "run_date": "2026-05-26T19:35:49Z",
-  "run_id": "26470601279",
+  "run_date": "2026-05-27T01:36:00Z",
+  "run_id": "26485396753",
   "total_prs_triaged": 0,
   "auto_merge_candidates": [],
   "fast_track_needed": [],
@@ -12,5 +12,5 @@
     "by_priority": {},
     "by_action": {}
   },
-  "notes": "No fork-origin agent PRs open. Open PRs (#3076 amalgamated-bot docs, #3075 copilot-swe-agent refactor, #2963 release-please) all originate from same repo branches (isCrossRepository=false) and are excluded by the fork-only filter."
+  "notes": "Only one open PR (#3083 release-please from veverkap/amalgamated-tools branch, not a fork). No fork-origin Copilot agent PRs to triage."
 }
