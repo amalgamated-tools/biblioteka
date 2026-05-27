@@ -32,13 +32,4 @@ func WithUnique(d time.Duration) EnqueueOption {
 	return func(o *EnqueueOptions) { o.Unique = d }
 }
 
-// WithMaxRetry overrides the number of times a failed task is retried.
-func WithMaxRetry(n int) EnqueueOption {
-	return func(o *EnqueueOptions) { o.MaxRetry = n }
-}
 
-// WithQueue routes the task to a named priority queue.
-// If not specified, the worker default queue is used.
-func WithQueue(name string) EnqueueOption {
-	return func(o *EnqueueOptions) { o.Queue = name }
-}
