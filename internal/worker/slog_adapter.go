@@ -16,25 +16,25 @@ import (
 // context.Background() to satisfy sloglint's requirement for *Context variants.
 type slogAdapter struct{}
 
-func (slogAdapter) Debug(args ...interface{}) {
+func (slogAdapter) Debug(args ...any) {
 	slog.DebugContext(context.Background(), fmt.Sprint(args...))
 }
 
-func (slogAdapter) Info(args ...interface{}) {
+func (slogAdapter) Info(args ...any) {
 	slog.InfoContext(context.Background(), fmt.Sprint(args...))
 }
 
-func (slogAdapter) Warn(args ...interface{}) {
+func (slogAdapter) Warn(args ...any) {
 	slog.WarnContext(context.Background(), fmt.Sprint(args...))
 }
 
-func (slogAdapter) Error(args ...interface{}) {
+func (slogAdapter) Error(args ...any) {
 	slog.ErrorContext(context.Background(), fmt.Sprint(args...))
 }
 
 // Fatal logs at Error level and then exits with status 1, matching the
 // behavior that asynq expects for fatal log entries.
-func (slogAdapter) Fatal(args ...interface{}) {
+func (slogAdapter) Fatal(args ...any) {
 	slog.ErrorContext(context.Background(), fmt.Sprint(args...))
 	os.Exit(1)
 }
