@@ -51,11 +51,11 @@ func requireExtractor(t *testing.T) *metadata.Extractor {
 
 func TestProcessFile(t *testing.T) {
 	tests := []struct {
-		name         string
-		fileName     string
-		fileType     string
+		name          string
+		fileName      string
+		fileType      string
 		expectedTitle string
-		createFile   func(t *testing.T, path string)
+		createFile    func(t *testing.T, path string)
 	}{
 		{
 			name:          "MOBI",
