@@ -1,1 +1,2 @@
 ./cmd/cli/main_test.go|2026-05-25
+./internal/handlers/testsetup_test.go|2026-05-27
