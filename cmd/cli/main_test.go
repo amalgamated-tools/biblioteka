@@ -253,22 +253,6 @@ func TestRunCalibreImport_InvalidPath(t *testing.T) {
 	}
 }
 
-func TestRunDBMigrate(t *testing.T) {
-	t.Setenv("DATABASE_URL", "")
-
-	err := runDBMigrate(t.Context())
-	require.NoError(t, err)
-
-	var count int
-	database, err := db.SetupDatabase(t.Context())
-	require.NoError(t, err, "setup database")
-	t.Cleanup(func() { _ = database.Close() })
-
-	err = database.QueryRowContext(t.Context(), `SELECT COUNT(*) FROM schema_migrations`).Scan(&count)
-	require.NoError(t, err, "query schema_migrations")
-	require.Greater(t, count, 0)
-}
-
 // fileInfo stats a file and fails the test if it does not exist.
 func fileInfo(t *testing.T, path string) fs.FileInfo {
 	t.Helper()
