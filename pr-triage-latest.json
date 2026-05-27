@@ -1,6 +1,6 @@
 {
-  "run_date": "2026-05-27T01:36:00Z",
-  "run_id": "26485396753",
+  "run_date": "2026-05-27T08:14:00Z",
+  "run_id": "26499291752",
   "total_prs_triaged": 0,
   "auto_merge_candidates": [],
   "fast_track_needed": [],
@@ -12,5 +12,5 @@
     "by_priority": {},
     "by_action": {}
   },
-  "notes": "Only one open PR (#3083 release-please from veverkap/amalgamated-tools branch, not a fork). No fork-origin Copilot agent PRs to triage."
+  "notes": "Scanned 1 open PR (#3083 release-please from same-repo branch by veverkap). No fork-origin agent (app/github-copilot) PRs found. Nothing to triage."
 }
