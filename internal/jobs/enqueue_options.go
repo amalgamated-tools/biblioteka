@@ -25,8 +25,9 @@ func ApplyEnqueueOptions(opts []EnqueueOption) EnqueueOptions {
 }
 
 // WithUnique sets a deduplication window: if the same task type and payload
-// are enqueued again within d, the enqueue is rejected with ErrDuplicateTask.
-// Pass 0 to disable uniqueness (the default).
+// are enqueued again within d, the enqueue is rejected and the underlying
+// asynq client returns an error that wraps asynq.ErrDuplicateTask (use
+// errors.Is to detect it). Pass 0 to disable uniqueness (the default).
 func WithUnique(d time.Duration) EnqueueOption {
 	return func(o *EnqueueOptions) { o.Unique = d }
 }

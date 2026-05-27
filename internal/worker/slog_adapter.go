@@ -33,7 +33,7 @@ func (slogAdapter) Error(args ...interface{}) {
 }
 
 // Fatal logs at Error level and then exits with status 1, matching the
-// behaviour that asynq expects for fatal log entries.
+// behavior that asynq expects for fatal log entries.
 func (slogAdapter) Fatal(args ...interface{}) {
 	slog.ErrorContext(context.Background(), fmt.Sprint(args...))
 	os.Exit(1)

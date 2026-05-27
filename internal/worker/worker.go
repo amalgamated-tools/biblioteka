@@ -47,8 +47,8 @@ const (
 // trace context into / from asynq task headers.
 type taskHeaderCarrier map[string]string
 
-func (c taskHeaderCarrier) Get(key string) string      { return c[key] }
-func (c taskHeaderCarrier) Set(key, value string)       { c[key] = value }
+func (c taskHeaderCarrier) Get(key string) string { return c[key] }
+func (c taskHeaderCarrier) Set(key, value string) { c[key] = value }
 func (c taskHeaderCarrier) Keys() []string {
 	keys := make([]string, 0, len(c))
 	for k := range c {
@@ -103,16 +103,11 @@ func traceAndRequestIDMiddleware(next asynq.Handler) asynq.Handler {
 			// Restore request ID so correlation survives the queue boundary.
 			if reqID := headers[otelkeys.RequestID]; reqID != "" {
 				ctx = middleware.WithRequestID(ctx, reqID)
-				ctx = context.WithValue(ctx, slogRequestIDKey{}, reqID)
 			}
 		}
 		return next.ProcessTask(ctx, task)
 	})
 }
-
-// slogRequestIDKey is the context key used to attach the request ID to
-// slog log records emitted inside job handlers.
-type slogRequestIDKey struct{}
 
 // notFoundLoggingMiddleware logs a warning when no handler is registered for
 // the incoming task type. It uses the ErrHandlerNotFound sentinel introduced
@@ -170,7 +165,10 @@ func (w *Worker) Start(ctx context.Context) error {
 		// Route all asynq-internal log output through the app's slog handler.
 		Logger: slogAdapter{},
 		// Propagate the root context (tracer, logger) into every job handler.
-		BaseContext: func() context.Context { return ctx },
+		// context.WithoutCancel so the base context survives the shutdown gate:
+		// in-flight handlers can finish cleanly within DefaultShutdownTimeout
+		// even after ctx is cancelled.
+		BaseContext: func() context.Context { return context.WithoutCancel(ctx) },
 		// Wait up to DefaultShutdownTimeout for in-flight tasks to finish.
 		ShutdownTimeout: DefaultShutdownTimeout,
 		// Emit a structured warning when Redis becomes temporarily unreachable.
@@ -200,7 +198,7 @@ func (w *Worker) Start(ctx context.Context) error {
 	return nil
 }
 
-// Enqueue adds a job to the queue with the given name and JSON-serialisable
+// Enqueue adds a job to the queue with the given name and JSON-serializable
 // payload. Options control deduplication, retry count, and target queue.
 // Trace context and request ID from ctx are injected into the task headers so
 // that end-to-end observability spans survive the queue boundary.
@@ -259,4 +257,3 @@ func (w *Worker) Close() error {
 	w.scheduler.Shutdown()
 	return w.client.Close()
 }
-

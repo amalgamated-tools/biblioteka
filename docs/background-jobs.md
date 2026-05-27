@@ -322,7 +322,7 @@ Configuration lives in `internal/worker/worker.go` as package-level constants:
 
 | Constant | Value | Meaning |
 |----------|-------|---------|
-| `QueueCritical` | `"critical"` | High-priority queue (weight 6) — user-initiated metadata fetches |
+| `QueueCritical` | `"critical"` | High-priority queue (weight 6) — opt in via `jobs.WithQueue(worker.QueueCritical)` |
 | `QueueName` | `"default"` | Normal-priority queue (weight 3) — scan jobs and enrichment |
 | `QueueLow` | `"low"` | Low-priority queue (weight 1) — scheduled background maintenance |
 | `DefaultConcurrency` | `4` | Maximum number of jobs executing in parallel |
@@ -343,7 +343,7 @@ Jobs enter the queue in two ways:
 
 1. **API-triggered** — Two handlers enqueue jobs on demand:
    - When a user creates a library via `POST /api/libraries` and the library has paths, the handler immediately enqueues a `scan:library` job via `Worker.Enqueue` with `jobs.WithUnique(24*time.Hour)` (see `internal/handlers/libraries.go`).
-   - When a book is created via `POST /api/books`, the handler immediately enqueues an `enrich:goodreads` job via `Worker.Enqueue` with `jobs.WithUnique(24*time.Hour)` (see `internal/handlers/books.go`). A failure to enqueue is logged at `WARN` level and does not fail the book-creation response.
+   - When a book is created via `POST /api/books`, the handler immediately enqueues an `enrich:goodreads` job via `Worker.Enqueue` with `jobs.WithUnique(24*time.Hour)` (see `internal/handlers/book_crud.go`). A failure to enqueue is logged at `WARN` level and does not fail the book-creation response.
    - Metadata fetch endpoints (`POST /api/books/{id}/metadata/{fetch|ai-fetch}`) enqueue enrichment jobs **without** `WithUnique`, so users can always re-trigger a metadata refresh regardless of whether the job was already queued.
 
    Scan-related jobs use the 24-hour deduplication window described in [Deduplication](#deduplication); metadata fetch jobs do not.
@@ -352,7 +352,7 @@ Jobs enter the queue in two ways:
    - `scan:libraries` every 24 hours — the trigger is issued directly by the asynq scheduler (not through `Worker.Enqueue`) and carries no deduplication. When the handler runs, it calls `Worker.Enqueue` to create `scan:library` jobs, which cascade into `scan:path` and `process:file` jobs — all of which go through `Worker.Enqueue` and benefit from the 24-hour deduplication window.
    - `scan:watch-folder` every 1 minute — the trigger is also issued directly by the asynq scheduler. The handler calls `ScanDirectory`, which enqueues `process:file` jobs through `Worker.Enqueue`.
 
-API-triggered scan jobs call `Worker.Enqueue`, which serialises the payload to JSON, injects W3C trace context and the current request ID into task headers, and pushes an asynq task onto the appropriate queue. The root scheduled triggers (`scan:libraries` and `scan:watch-folder`) are created directly by the asynq scheduler and do not go through `Worker.Enqueue`.
+API-triggered scan jobs call `Worker.Enqueue`, which serializes the payload to JSON, injects W3C trace context and the current request ID into task headers, and pushes an asynq task onto the appropriate queue. The root scheduled triggers (`scan:libraries` and `scan:watch-folder`) are created directly by the asynq scheduler and do not go through `Worker.Enqueue`.
 
 ### Deduplication
 
@@ -486,6 +486,6 @@ internal/
    }
    ```
 
-   Pass `jobs.WithUnique(24*time.Hour)` for deduplication (scan jobs), or omit it for user-retriggerable jobs such as metadata fetches. Use `jobs.WithMaxRetry(n)` to override the default retry count and `jobs.WithQueue(jobs.QueueCritical)` to place urgent jobs on the high-priority queue.
+   Pass `jobs.WithUnique(24*time.Hour)` for deduplication (scan jobs), or omit it for user-retriggerable jobs such as metadata fetches. Use `jobs.WithMaxRetry(n)` to override the default retry count and `jobs.WithQueue(worker.QueueCritical)` to place urgent jobs on the high-priority queue.
 
 6. **Write tests** — see the existing `*_test.go` files in `internal/jobs/` for patterns using mock enqueuers and in-memory SQLite databases.
