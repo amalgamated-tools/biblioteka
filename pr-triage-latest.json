@@ -1,6 +1,6 @@
 {
-  "run_date": "2026-05-27T19:37:00Z",
-  "run_id": "26534174018",
+  "run_date": "2026-05-28T01:27:43Z",
+  "run_id": "26548934626",
   "total_prs_triaged": 0,
   "auto_merge_candidates": [],
   "fast_track_needed": [],
@@ -12,5 +12,5 @@
     "by_priority": {},
     "by_action": {}
   },
-  "notes": "Scanned 4 open PRs (#3090, #3088, #3087 by amalgamated-bot; #3083 by veverkap). None are authored by app/github-copilot AND none originate from forks (all head repos match base). Nothing in scope to triage."
+  "notes": "Scanned 4 open PRs (#3090, #3088, #3087 by amalgamated-bot; #3083 by veverkap). None authored by app/github-copilot; none from forks. Nothing in scope."
 }
