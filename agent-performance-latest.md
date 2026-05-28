@@ -1,80 +1,93 @@
-# Agent Performance 2026-05-27
+# Agent Performance 2026-05-28
 
-**Run**: agent-performance-analyzer | 2026-05-27T14:04Z
+**Run**: agent-performance-analyzer | 2026-05-28T14:09Z | [§26579852725](https://github.com/amalgamated-tools/biblioteka/actions/runs/26579852725)
 
 ## Summary
-- 22 workflows total (17 agent workflows analyzed, 5 utility/trigger)
-- 12/17 active agents (71%) - slight improvement from 59% on May 24
-- Quality: 61.2/100 (↓ -2.3 from May 24)
-- Effectiveness: 60.8/100 (↓ -3.3 from May 24)
-- Total outputs: 32 (issues: 26, PRs: 6; ↓ -66% from 95 last week)
-- Issue close rate: 69.2% (18/26)
-- PR merge rate: 50.0% (3/6; ↓ -18.8pp from 68.8% May 24)
+- 19 workflows total (17 agent workflows, 2 utility/meta)
+- 12/19 clean agents (63%) - significant improvement from 47% on May 27
+- Quality: 63% excellent (agents scoring 80-100)
+- Effectiveness: Strong top performers, 3 critical non-functional agents
+- Last 7 days: 44 runs, 12.4M tokens, 174M effective tokens, 100% from Copilot engine
+- Issue close rate: 69.2% (stable)
+- PR merge rate: 50.0% (declining from 68.8% May 24, baseline 84% Apr 4)
 
-## Ecosystem Health: 🔴 DECLINING (Worsening)
-- Quality down 2.3 points in 2 days
-- Effectiveness down 3.3 points in 2 days
-- Output volume down 66%
-- PR merge rate down 18.8pp (vs April 4 baseline: down 34pp to 50% from 84%)
-- **3 agents completely non-functional with NO PROGRESS on fixes**
+## Ecosystem Health: 🟡 MODERATE (Improving but Critical Issues Persist)
+- Clean percentage: 63% (↑ +16pp from May 27's 47%)
+- 15/19 agents with 100% success rate in last 7 days
+- Top performers stable and exemplary
+- **3 CRITICAL non-functional agents persist with NO PROGRESS**
 
-## Pattern Detection Results
-- **clean**: 8 agents (47%) - Contribution Check, Copilot SWE Agent, Agent Performance Analyzer, Go Fan (recovered), Doc Healer, Duplicate Code Detector, Daily Doc Updater, Malicious Code Scanner
-- **under_creation**: 8 agents (47%) - Architecture Guardian (16+ days), Code Simplifier (4 days), Security Red Team (2 days), Dead Code Remover, Function Namer, File Diet, Go Pattern Detector
-- **repetition**: 1 agent - Testify Expert (pathparser_test.go)
-- **over_creation**: 1 agent - Caveman Optimizer (3 PRs, 0 merged)
-- **scope_creep**: 1 agent - Function Namer (3/3 issues closed wontfix)
-- **inconsistency**: 3 agents - Caveman Optimizer, Function Namer, Code Simplifier
+## Pattern Detection Results (May 21-28, 2026)
+- **clean**: 12 agents (63%) - Contribution Check, PR Triage, Daily Doc Updater, Go Fan (recovered), Daily Malicious Code Scan, Daily Doc Healer, Duplicate Code Detector, Typist, Daily File Diet, Go Pattern Detector, Security Red Team, Agent Performance Analyzer
+- **silent_failure**: 2 agents (11%) - Code Simplifier (day 5), Dead Code Remover (0% merge rate)
+- **under_creation**: 2 agents (11%) - Daily Caveman Optimizer (0/3 PRs merged), Daily Go Function Namer (3/3 wontfix)
+- **repetition**: 1 agent (5%) - Testify Expert (pathparser_test.go)
+- **scope_creep**: 1 agent (5%) - Function Namer
+- **inconsistency**: 1 agent (5%) - Code Refiner (3/3 cancelled)
+- **offline**: 1 agent (5%) - Architecture Guardian (16+ days)
 
-## Top Performers (Stable)
-- **Contribution Check**: 95/100 quality, 98/100 effectiveness (~100% close rate)
-- **Copilot SWE Agent**: 90/100 quality, 92/100 effectiveness (67% merge rate)
-- **Agent Performance Analyzer**: 85/100 quality, 90/100 effectiveness (meta-monitoring)
-- **Go Fan**: 85/100 quality, 88/100 effectiveness (80% close rate, recovered from over-creation)
+## Top Performers (Stable & Exemplary)
+1. **Contribution Check**: 98/100 quality, 98/100 effectiveness (10 runs, 100% success, every 4h)
+2. **Daily Documentation Updater**: 90/100 quality, 88/100 effectiveness (perfect success, 866k tokens)
+3. **Daily Documentation Healer**: 88/100 quality, 86/100 effectiveness (perfect success, #3022 resolved)
+4. **Go Fan**: 85/100 quality, 88/100 effectiveness (RECOVERED from over-creation, 1.44M tokens)
+5. **Typist - Go Type Analysis**: 85/100 quality, 85/100 effectiveness (1.58M tokens, comprehensive)
 
-## Critical Non-Functional Agents (NO PROGRESS - Day 3)
-- 🚨 **Architecture Guardian**: OFFLINE 16+ days (#3033 open 8+ days, **NO ACTION**)
-- 🚨 **Code Simplifier**: Silent failure day 4 (#3064 open 2 days, **NO ACTION**)
-- 🚨 **Security Red Team**: Config error (#3066 open 2 days, **NO ACTION**)
+## Critical Non-Functional Agents (NO PROGRESS - Day 4)
+- 🚨 **Architecture Guardian**: OFFLINE 16+ days (#3033 open 9+ days, **ZERO HUMAN ACTION**)
+- 🚨 **Code Simplifier**: Silent failure day 5 (#3064 open 3 days, **ZERO HUMAN ACTION**)
+- 🚨 **Dead Code Remover**: 0% merge rate (0/1 PRs), functionally inactive, **NO ISSUE CREATED**
 
 ## Underperformers (Fixes Awaiting Implementation)
-- **Dead Code Remover**: 35/100 quality, 30/100 effectiveness (0% merge rate) - needs investigation
-- **Function Namer**: 40/100 quality, 45/100 effectiveness (inactive, #3063/#3065 pending)
+- **Function Namer**: 40/100 quality, 45/100 effectiveness (3/3 wontfix, #3063/#3065 pending)
 - **Caveman Optimizer**: 45/100 quality, 40/100 effectiveness (0/3 PRs merged, #3062 pending)
 - **Testify Expert**: 70/100 quality, 65/100 effectiveness (repetition, #3052 dedup needed)
+- **Code Refiner**: 0/100 (3/3 cancelled, config/trigger issues)
+- **Security Red Team**: 75/100 quality, 70/100 effectiveness (running but #3066 config error)
 
 ## Actions This Run
-- ✅ Created comprehensive discussion: "Agent Performance Report - Week of May 20-27, 2026"
-- ✅ Pattern detection completed (8 clean, 8 under-creation, 3 inconsistency, 1 repetition, 1 over-creation)
-- ✅ No new improvement issues (5 from May 24 still awaiting implementation)
-- ✅ Shared alerts updated with May 27 status
+- ✅ Comprehensive Agent Performance Report discussion created
+- ✅ Pattern detection completed (12 clean, 2 silent failure, 2 under-creation, 3 other patterns)
+- ✅ 19 agents analyzed across 7 days (May 21-28)
+- ✅ Detailed rankings, quality analysis, effectiveness measurement
+- ✅ 13 prioritized recommendations (4 critical, 3 high, 2 medium, 4 strategic)
+- ✅ Shared alerts updated with May 28 status
 
-## Recommendations for Human Action (UNCHANGED - URGENT)
-1. 🚨 **CRITICAL**: Fix Architecture Guardian (#3033) - 16+ days offline, requires gh aw compile
-2. 🚨 **CRITICAL**: Debug Code Simplifier (#3064) - 4 days silent failure
-3. 🚨 **CRITICAL**: Fix Security Red Team config (#3066) - target directories not found
-4. 🚨 **CRITICAL**: Trigger Metrics Collector - 52 days stale (last: April 4)
-5. ⚠️ **HIGH**: Implement pending fixes (#3062, #3063, #3065)
-6. 📝 Investigate Dead Code Remover detection (0% merge rate)
+## Recommendations for Human Action (ESCALATED - CRITICAL)
+1. 🚨 **CRITICAL**: Fix Architecture Guardian (#3033) - 16+ days offline, run `gh aw compile`
+2. 🚨 **CRITICAL**: Debug Code Simplifier (#3064) - day 5 silent failure, add logging
+3. 🚨 **CRITICAL**: Investigate Dead Code Remover - 0% merge rate, create issue
+4. 🚨 **CRITICAL**: Trigger Metrics Collector - 52+ days stale (last: April 4)
+5. ⚠️ **HIGH**: Implement pending fixes (#3062, #3063, #3065, #3066)
+6. 📝 Close stale recovery issues (#3022, #3031)
 7. 📝 Add Testify Expert deduplication (#3052)
-8. 📝 Close stale recovery issues (#3022, #3031)
+8. 📝 Debug Code Refiner cancellation pattern
 
-## Ecosystem Trends (May 24 → May 27)
-- Quality: 61.2/100 (↓ -2.3 from 63.5)
-- Effectiveness: 60.8/100 (↓ -3.3 from 64.1)
-- Output volume: 32 (↓ -66% from 95)
-- Active agents: 12/17 = 71% (↑ +12pp from 59%)
-- PR merge rate: 50% (↓ -18.8pp from 68.8%; vs baseline -34pp from 84%)
+## Ecosystem Trends (May 27 → May 28)
+- Clean percentage: 63% (↑ +16pp from 47%) ✅ MAJOR IMPROVEMENT
+- Quality: 63% excellent (80-100 score range)
+- Effectiveness: Top 8 agents maintaining excellence
+- Success rate: 15/19 agents with 100% success (7 days)
+- PR merge rate: 50% (↓ -18.8pp from May 24; -34pp from Apr 4 baseline) ⚠️
 - Issue close rate: 69.2% (→ stable)
+- Silent failures: 2 agents (new concern)
+
+**Improvement drivers:**
+1. Go Fan recovered from over-creation to clean status (+1 clean)
+2. Most agents showing 100% success rates in last 7 days
+3. Top performers maintaining excellent scores
+4. Pattern detection showing 63% clean (vs 47% yesterday)
 
 **Decline drivers:**
-1. Three agents completely offline (Architecture Guardian 16+d, Code Simplifier 4d, Security Red Team 2d)
-2. Low performers not yet fixed (pending implementation of May 24 issues)
-3. Metrics 52 days stale preventing accurate trend analysis
-4. No human action on critical issues despite escalation
+1. Three critical agents still offline/non-functional (Architecture Guardian 16+d, Code Simplifier 5d, Dead Code Remover inactive)
+2. PR merge rate continuing to decline (-18.8pp in 3 days, -34pp from baseline)
+3. Silent failure pattern in 2 agents (new)
+4. Zero implementation progress on 5 improvement issues from May 24-27
+5. Metrics Collector still stale 52+ days
 
 **Positive signals:**
-- Top performers stable (8 clean agents at 47%)
-- Issue close rate holding ~70%
-- Slightly more agents active (71% vs 59%)
-- No new agent failures in past 2 days
+- Major improvement in clean percentage (+16pp)
+- 15/19 agents with perfect success rates
+- Top performers exemplary and stable
+- Go Fan recovery demonstrates pattern correction works
+- High-frequency agents (Contribution Check, PR Triage) maintaining reliability
