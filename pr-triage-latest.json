@@ -1,11 +1,11 @@
 {
-  "run_date": "2026-05-28T08:14:25Z",
-  "run_id": "26562999526",
+  "run_date": "2026-05-28T14:09:55Z",
+  "run_id": "26579871912",
   "total_prs_triaged": 0,
   "auto_merge_candidates": [],
   "fast_track_needed": [],
   "batches": {},
   "close_candidates": [],
   "statistics": {"by_category": {}, "by_risk": {}, "by_priority": {}, "by_action": {}},
-  "notes": "Scanned 4 open PRs (#3090, #3088, #3087 by amalgamated-bot; #3083 by veverkap). None authored by app/github-copilot; none from forks (all isCrossRepository=false). Nothing in scope per agent spec."
+  "notes": "Scanned 2 open PRs (#3088 amalgamated-bot, #3083 veverkap). None authored by app/github-copilot; none from forks. Nothing in scope."
 }
