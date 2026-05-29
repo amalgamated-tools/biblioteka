@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.19.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.18.0...v0.19.0) (2026-05-27)
+
+
+### Features
+
+* **worker:** asynq improvements — priority queues, opt-in Unique, slog adapter, trace propagation, graceful shutdown ([#3079](https://github.com/amalgamated-tools/biblioteka/issues/3079)) ([126235c](https://github.com/amalgamated-tools/biblioteka/commit/126235c57c0b98e2c3895ef9cf68599234ba9d95))
+
 ## [0.18.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.17.0...v0.18.0) (2026-05-26)
 
 
