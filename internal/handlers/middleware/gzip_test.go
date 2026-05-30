@@ -15,7 +15,8 @@ func TestGzipMiddleware_CompressesJSON(t *testing.T) {
 	body := strings.Repeat(`{"key":"value"}`, 100)
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = io.WriteString(w, body)
+		_, err := io.WriteString(w, body)
+		require.NoError(t, err)
 	})
 
 	req := httptest.NewRequest(http.MethodGet, "/api/books", nil)
@@ -39,7 +40,8 @@ func TestGzipMiddleware_CompressesJSON(t *testing.T) {
 func TestGzipMiddleware_NoGzipHeader(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = io.WriteString(w, `{"ok":true}`)
+		_, err := io.WriteString(w, `{"ok":true}`)
+		require.NoError(t, err)
 	})
 
 	req := httptest.NewRequest(http.MethodGet, "/api/books", nil)
@@ -71,7 +73,8 @@ func TestGzipMiddleware_SkipsImage(t *testing.T) {
 	binary := []byte{0x89, 'P', 'N', 'G'}
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "image/png")
-		_, _ = w.Write(binary)
+		_, err := w.Write(binary)
+		require.NoError(t, err)
 	})
 
 	req := httptest.NewRequest(http.MethodGet, "/api/books/1/cover", nil)
@@ -91,7 +94,8 @@ func TestGzipMiddleware_SkipsSSE(t *testing.T) {
 		w.Header().Set("Connection", "keep-alive")
 		flusher := w.(http.Flusher)
 		flusher.Flush()
-		_, _ = io.WriteString(w, "data: {\"event\":\"complete\"}\n\n")
+		_, err := io.WriteString(w, "data: {\"event\":\"complete\"}\n\n")
+		require.NoError(t, err)
 	})
 
 	req := httptest.NewRequest(http.MethodGet, "/api/books/1/metadata/events", nil)
@@ -107,7 +111,8 @@ func TestGzipMiddleware_CompressesOPDSFeed(t *testing.T) {
 	body := strings.Repeat("<feed xmlns='http://www.w3.org/2005/Atom'></feed>", 50)
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/atom+xml; charset=utf-8")
-		_, _ = io.WriteString(w, body)
+		_, err := io.WriteString(w, body)
+		require.NoError(t, err)
 	})
 
 	req := httptest.NewRequest(http.MethodGet, "/opds/v2.0/catalog", nil)
@@ -128,7 +133,8 @@ func TestGzipMiddleware_ExplicitWriteHeader(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		_, _ = io.WriteString(w, `{"id":"123"}`)
+		_, err := io.WriteString(w, `{"id":"123"}`)
+		require.NoError(t, err)
 	})
 
 	req := httptest.NewRequest(http.MethodPost, "/api/books", nil)
@@ -171,4 +177,47 @@ func TestShouldGzip(t *testing.T) {
 			require.Equal(t, tt.want, shouldGzip(tt.ct))
 		})
 	}
+}
+
+func TestAcceptsGzip(t *testing.T) {
+	tests := []struct {
+		header string
+		want   bool
+	}{
+		{"gzip", true},
+		{"gzip, deflate, br", true},
+		{"br, gzip", true},
+		{"deflate", false},
+		{"", false},
+		{"gzip;q=1.0", true},
+		{"gzip;q=0.5", true},
+		{"gzip;q=0", false},
+		{"br, gzip;q=0", false},
+		{"gzip;q=0.0", true}, // q=0.0 is not zero quality
+	}
+	for _, tt := range tests {
+		t.Run(tt.header, func(t *testing.T) {
+			require.Equal(t, tt.want, acceptsGzip(tt.header))
+		})
+	}
+}
+
+func TestGzipMiddleware_SkipsRangeRequests(t *testing.T) {
+	body := strings.Repeat(`{"key":"value"}`, 100)
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusPartialContent)
+		_, err := io.WriteString(w, body)
+		require.NoError(t, err)
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/api/books/1/file", nil)
+	req.Header.Set("Accept-Encoding", "gzip")
+	req.Header.Set("Range", "bytes=0-1023")
+	rec := httptest.NewRecorder()
+
+	GzipMiddleware(handler).ServeHTTP(rec, req)
+
+	require.Empty(t, rec.Header().Get("Content-Encoding"), "Range requests must not be compressed")
+	require.Equal(t, body, rec.Body.String())
 }

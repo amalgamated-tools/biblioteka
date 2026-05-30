@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"compress/gzip"
+	"log/slog"
 	"net/http"
 	"strings"
 	"sync"
@@ -43,9 +44,8 @@ var gzipPool = sync.Pool{
 // ResponseWriter without compression.
 type gzipResponseWriter struct {
 	http.ResponseWriter
-	gz      *gzip.Writer
-	once    sync.Once
-	decided bool
+	gz   *gzip.Writer
+	once sync.Once
 }
 
 // decide initialises the gzip writer (or decides to skip compression) by
@@ -61,7 +61,6 @@ func (grw *gzipResponseWriter) decide() {
 			// Remove Content-Length: the compressed size is not known in advance.
 			grw.ResponseWriter.Header().Del("Content-Length")
 		}
-		grw.decided = true
 	})
 }
 
@@ -122,13 +121,36 @@ func shouldGzip(contentType string) bool {
 //
 // A sync.Pool is used to reuse gzip.Writer instances, reducing per-request
 // allocation overhead.
+// acceptsGzip reports whether the client's Accept-Encoding header indicates
+// support for gzip. It correctly handles quality values, treating q=0 as an
+// explicit rejection of gzip.
+func acceptsGzip(header string) bool {
+	for _, token := range strings.Split(header, ",") {
+		token = strings.TrimSpace(token)
+		if strings.HasPrefix(strings.ToLower(token), "gzip") {
+			// Reject explicit q=0 (but not q=0.5, q=0.1, etc.).
+			if strings.Contains(token, "q=0") && !strings.Contains(token, "q=0.") {
+				return false
+			}
+			return true
+		}
+	}
+	return false
+}
+
 func GzipMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Always advertise that the response varies by Accept-Encoding so
 		// that intermediate caches store separate entries per encoding.
-		w.Header().Set("Vary", "Accept-Encoding")
+		w.Header().Add("Vary", "Accept-Encoding")
 
-		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+		// Skip compression for Range requests to preserve Content-Range semantics.
+		if r.Header.Get("Range") != "" {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		if !acceptsGzip(r.Header.Get("Accept-Encoding")) {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -136,7 +158,13 @@ func GzipMiddleware(next http.Handler) http.Handler {
 		grw := &gzipResponseWriter{ResponseWriter: w}
 		defer func() {
 			if grw.gz != nil {
-				_ = grw.gz.Close()
+				if err := grw.gz.Close(); err != nil {
+					// The gzip trailer could not be written; the client will
+					// receive a truncated stream. Log at debug level because
+					// client disconnects are the most common cause.
+					slog.DebugContext(r.Context(), "gzip close error", slog.Any("error", err))
+				}
+				grw.gz.Reset(nil)
 				gzipPool.Put(grw.gz)
 				grw.gz = nil
 			}
