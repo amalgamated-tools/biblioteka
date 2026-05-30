@@ -222,6 +222,7 @@ func (s *Server) Run(ctx context.Context) error {
 		otel.TraceMiddleware,
 		middleware.LoggingMiddleware,
 		middleware.NewSecurityHeadersMiddleware(middleware.SecurityHeadersConfig{SecureCookies: s.secureCookies}),
+		middleware.GzipMiddleware,
 	).Then(s.mux)
 
 	s.httpServer = &http.Server{
