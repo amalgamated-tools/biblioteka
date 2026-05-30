@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.19.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.18.0...v0.19.0) (2026-05-27)
+
+
+### Features
+
+* **worker:** asynq improvements — priority queues, opt-in Unique, slog adapter, trace propagation, graceful shutdown ([#3079](https://github.com/amalgamated-tools/biblioteka/issues/3079)) ([126235c](https://github.com/amalgamated-tools/biblioteka/commit/126235c57c0b98e2c3895ef9cf68599234ba9d95))
+
+## [0.18.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.17.0...v0.18.0) (2026-05-26)
+
+
+### Features
+
+* add technical documentation writer and jqschema utility; update daily doc healer workflow ([4622dca](https://github.com/amalgamated-tools/biblioteka/commit/4622dca0ec7386d4f8f672603e69e524bce2371d))
+
+
+### Bug Fixes
+
+* Architecture Guardian metric collection on zero-match grep counts ([#2968](https://github.com/amalgamated-tools/biblioteka/issues/2968)) ([31a8038](https://github.com/amalgamated-tools/biblioteka/commit/31a803879567d672f1a96492542612c7cf86a46f))
+* daily file diet ([1f8326b](https://github.com/amalgamated-tools/biblioteka/commit/1f8326b7361bd8ba3b9121ca34ec2768f6d33244))
+* missing agent ([852c7b8](https://github.com/amalgamated-tools/biblioteka/commit/852c7b8728601ed88cbcc9f0f1a09678cd2c6963))
+
 ## [0.17.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.16.0...v0.17.0) (2026-05-07)
 
 

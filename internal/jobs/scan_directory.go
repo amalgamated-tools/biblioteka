@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
@@ -46,7 +47,7 @@ func SupportedFileTypes() []string {
 
 // Enqueuer is the subset of worker.Worker needed to enqueue jobs.
 type Enqueuer interface {
-	Enqueue(ctx context.Context, name string, payload any) (string, error)
+	Enqueue(ctx context.Context, name string, payload any, opts ...EnqueueOption) (string, error)
 }
 
 // ScanDirectory walks p.Path recursively and enqueues a process:file job via
@@ -127,7 +128,7 @@ func ScanDirectory(ctx context.Context, enqueuer Enqueuer, p ScanPathPayload) er
 			FileSize:    info.Size(),
 			LibraryID:   p.LibraryID,
 			LibraryRoot: libraryRootAbs,
-		})
+		}, WithUnique(24*time.Hour))
 		if err != nil {
 			slog.WarnContext(ctx, "error enqueuing process:file job",
 				slog.String(otelkeys.Path, absPath),

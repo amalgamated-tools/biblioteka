@@ -170,7 +170,7 @@ func maybeEnqueueGoodreads(ctx context.Context, enqueuer Enqueuer, bookID, userI
 	if _, err := enqueuer.Enqueue(enqueueCtx, JobEnrichGoodreads, EnrichGoodreadsPayload{
 		BookID: bookID,
 		UserID: userID,
-	}); err != nil {
+	}, WithUnique(24*time.Hour)); err != nil {
 		slog.WarnContext(ctx, "failed to enqueue enrich:goodreads job",
 			slog.String(otelkeys.BookID, bookID),
 			slog.Any(otelkeys.Error, err),

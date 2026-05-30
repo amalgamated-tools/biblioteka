@@ -22,7 +22,7 @@ type genericEnqueuedJob struct {
 	Payload []byte
 }
 
-func (m *genericMockEnqueuer) Enqueue(_ context.Context, name string, payload any) (string, error) {
+func (m *genericMockEnqueuer) Enqueue(_ context.Context, name string, payload any, _ ...EnqueueOption) (string, error) {
 	if m.err != nil {
 		return "", m.err
 	}
