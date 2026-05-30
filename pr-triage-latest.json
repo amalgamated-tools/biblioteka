@@ -1,11 +1,11 @@
 {
-  "run_date": "2026-05-29T13:54:00Z",
-  "run_id": "26641267358",
+  "run_date": "2026-05-30T07:48:00Z",
+  "run_id": "26678446733",
   "total_prs_triaged": 0,
   "auto_merge_candidates": [],
   "fast_track_needed": [],
   "batches": {},
   "close_candidates": [],
   "statistics": {"by_category": {}, "by_risk": {}, "by_priority": {}, "by_action": {}},
-  "notes": "2 open PRs (#3088 amalgamated-bot, #3083 veverkap release-please). Neither from a fork nor authored by app/github-copilot. Nothing in scope."
+  "notes": "2 open PRs (#3105 release-please by veverkap, #3088 dead-code by amalgamated-bot). Both same-repo (isCrossRepository=false), neither authored by app/github-copilot. Nothing in scope for fork-only agent triage."
 }
