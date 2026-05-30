@@ -111,6 +111,18 @@ func shouldGzip(contentType string) bool {
 	return compressibleTypes[ct]
 }
 
+// GzipMiddleware is an HTTP middleware that transparently gzip-compresses
+// responses when:
+//  1. The client signals support via "Accept-Encoding: gzip".
+//  2. The response Content-Type is a known text-based format.
+//
+// Binary responses (images, book files) and streaming responses (SSE) are
+// passed through uncompressed. The middleware adds a "Vary: Accept-Encoding"
+// header to all responses so that caches correctly serve different encodings
+// to different clients.
+//
+// A sync.Pool is used to reuse gzip.Writer instances, reducing per-request
+// allocation overhead.
 // acceptsGzip reports whether the client's Accept-Encoding header indicates
 // support for gzip. It correctly handles quality values, treating q=0 as an
 // explicit rejection of gzip.
@@ -141,18 +153,6 @@ func acceptsGzip(header string) bool {
 	return false
 }
 
-// GzipMiddleware is an HTTP middleware that transparently gzip-compresses
-// responses when:
-//  1. The client signals support via "Accept-Encoding: gzip".
-//  2. The response Content-Type is a known text-based format.
-//
-// Binary responses (images, book files) and streaming responses (SSE) are
-// passed through uncompressed. The middleware adds a "Vary: Accept-Encoding"
-// header to all responses so that caches correctly serve different encodings
-// to different clients.
-//
-// A sync.Pool is used to reuse gzip.Writer instances, reducing per-request
-// allocation overhead.
 func GzipMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Always advertise that the response varies by Accept-Encoding so
