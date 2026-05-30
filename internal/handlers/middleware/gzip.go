@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
 // compressibleTypes is the set of MIME types for which gzip compression is
@@ -162,7 +164,7 @@ func GzipMiddleware(next http.Handler) http.Handler {
 					// The gzip trailer could not be written; the client will
 					// receive a truncated stream. Log at debug level because
 					// client disconnects are the most common cause.
-					slog.DebugContext(r.Context(), "gzip close error", slog.Any("error", err))
+					slog.DebugContext(r.Context(), "gzip close error", slog.Any(otelkeys.Error, err))
 				}
 				grw.gz.Reset(nil)
 				gzipPool.Put(grw.gz)
