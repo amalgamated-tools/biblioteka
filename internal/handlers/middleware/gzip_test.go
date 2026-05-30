@@ -34,6 +34,7 @@ func TestGzipMiddleware_CompressesJSON(t *testing.T) {
 	require.NoError(t, err)
 	got, err := io.ReadAll(gr)
 	require.NoError(t, err)
+	require.NoError(t, gr.Close())
 	require.Equal(t, body, string(got))
 }
 
@@ -126,6 +127,7 @@ func TestGzipMiddleware_CompressesOPDSFeed(t *testing.T) {
 	require.NoError(t, err)
 	got, err := io.ReadAll(gr)
 	require.NoError(t, err)
+	require.NoError(t, gr.Close())
 	require.Equal(t, body, string(got))
 }
 
@@ -149,6 +151,7 @@ func TestGzipMiddleware_ExplicitWriteHeader(t *testing.T) {
 	require.NoError(t, err)
 	got, err := io.ReadAll(gr)
 	require.NoError(t, err)
+	require.NoError(t, gr.Close())
 	require.Equal(t, `{"id":"123"}`, string(got))
 }
 
@@ -193,7 +196,8 @@ func TestAcceptsGzip(t *testing.T) {
 		{"gzip;q=0.5", true},
 		{"gzip;q=0", false},
 		{"br, gzip;q=0", false},
-		{"gzip;q=0.0", true}, // q=0.0 is not zero quality
+		{"gzip;q=0.0", false}, // q=0.0 is zero quality (not acceptable)
+		{"gzip;q=0.00", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.header, func(t *testing.T) {

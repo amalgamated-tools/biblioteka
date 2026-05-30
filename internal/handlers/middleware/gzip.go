@@ -130,9 +130,22 @@ func acceptsGzip(header string) bool {
 	for _, token := range strings.Split(header, ",") {
 		token = strings.TrimSpace(token)
 		if strings.HasPrefix(strings.ToLower(token), "gzip") {
-			// Reject explicit q=0 (but not q=0.5, q=0.1, etc.).
-			if strings.Contains(token, "q=0") && !strings.Contains(token, "q=0.") {
-				return false
+			// Reject explicit q=0 (including q=0.0, q=0.00, etc.).
+			if strings.Contains(token, "q=0") {
+				// Check if there's a non-zero digit after "q=0"
+				idx := strings.Index(token, "q=0")
+				rest := token[idx+3:] // everything after "q=0"
+				// If rest is empty or only contains dots and zeros, quality is zero.
+				hasNonZero := false
+				for _, c := range rest {
+					if c >= '1' && c <= '9' {
+						hasNonZero = true
+						break
+					}
+				}
+				if !hasNonZero {
+					return false
+				}
 			}
 			return true
 		}
