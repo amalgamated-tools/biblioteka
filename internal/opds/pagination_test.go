@@ -117,6 +117,7 @@ func TestPaginationLinks(t *testing.T) {
 				rels = append(rels, link.Rel)
 				require.Equal(t, tc.contentType, link.Type, "case %q: link %d should keep the requested content type", tc.name, i)
 			}
+			// Order mirrors PaginationLinks: self, previous, next.
 			require.Equal(t, tc.wantRels, rels, "case %q: unexpected link relation order", tc.name)
 
 			selfLink := findLinkByRel(links, RelSelf)
