@@ -65,7 +65,7 @@ tools:
   bash: true
   repo-memory: true
 
-engine: claude
+engine: copilot
 
 source: githubnext/agentics/workflows/efficiency-improver.md@c02eadfca420f2b351f9fcaee883c507a63ca316
 ---
