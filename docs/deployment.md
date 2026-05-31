@@ -377,6 +377,38 @@ No additional reverse proxy configuration is required — the application server
 
 ---
 
+## HTTP Response Compression
+
+Biblioteka automatically compresses HTTP responses using gzip when the client advertises support via the `Accept-Encoding: gzip` request header. Compression is applied transparently by the `GzipMiddleware`, which wraps the entire HTTP handler stack.
+
+### What is compressed
+
+| Content type | Compressed? |
+|---|---|
+| `application/json` (API responses) | ✅ |
+| `application/atom+xml` (OPDS feeds) | ✅ |
+| `text/html`, `text/plain`, `text/css` | ✅ |
+| `image/svg+xml` | ✅ |
+| JPEG, PNG, WebP images | ❌ Already compressed |
+| `text/event-stream` (server-sent events) | ❌ Streaming must remain uncompressed |
+| EPUB, PDF, AZW3 files | ❌ Binary formats, already compressed |
+| Clients without `Accept-Encoding: gzip` | ❌ Pass-through, no compression |
+
+The `Vary: Accept-Encoding` header is set on every response — whether or not it was compressed — so that intermediate caches (CDNs, reverse proxies) store separate versions by encoding and serve the correct variant to each client.
+
+Range requests (`Range:` header present) are never compressed, ensuring byte-range downloads for book files work correctly.
+
+### Reverse proxy considerations
+
+If your reverse proxy performs its own compression (e.g., Nginx `gzip on;`), you can either:
+
+- **Let Biblioteka handle it** — disable proxy-level compression for proxied requests to avoid double-compression and ensure the `Vary` header is passed through unchanged.
+- **Let the proxy handle it** — not recommended; the proxy would need to decompress the already-gzip response from Biblioteka before re-compressing it, adding overhead with no benefit.
+
+The built-in middleware uses `gzip.BestSpeed` (level 1) and reuses writer instances via `sync.Pool`, so CPU overhead is minimal relative to typical database query latency.
+
+---
+
 ## Static Asset Caching
 
 Biblioteka uses Vite's content-hashing for frontend assets (JavaScript, CSS, fonts). Every compiled asset under `/assets/` has a content-derived hash in its filename (e.g., `index-DfzxFbzN.js`), meaning a changed file always gets a new URL.
