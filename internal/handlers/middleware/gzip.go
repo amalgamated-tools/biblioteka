@@ -111,6 +111,27 @@ func shouldGzip(contentType string) bool {
 	return compressibleTypes[ct]
 }
 
+// acceptsGzip reports whether the client's Accept-Encoding header indicates
+// support for gzip. It correctly handles quality values, treating q=0 as an
+// explicit rejection of gzip.
+func acceptsGzip(header string) bool {
+	for _, token := range strings.Split(header, ",") {
+		token = strings.TrimSpace(token)
+		if strings.HasPrefix(strings.ToLower(token), "gzip") {
+			// Reject explicit q=0 (including q=0.0, q=0.00, etc.).
+			// After "q=0", any digit 1–9 indicates a non-zero quality value.
+			if strings.Contains(token, "q=0") {
+				idx := strings.Index(token, "q=0")
+				if !strings.ContainsAny(token[idx+3:], "123456789") {
+					return false
+				}
+			}
+			return true
+		}
+	}
+	return false
+}
+
 // GzipMiddleware is an HTTP middleware that transparently gzip-compresses
 // responses when:
 //  1. The client signals support via "Accept-Encoding: gzip".
@@ -123,36 +144,6 @@ func shouldGzip(contentType string) bool {
 //
 // A sync.Pool is used to reuse gzip.Writer instances, reducing per-request
 // allocation overhead.
-// acceptsGzip reports whether the client's Accept-Encoding header indicates
-// support for gzip. It correctly handles quality values, treating q=0 as an
-// explicit rejection of gzip.
-func acceptsGzip(header string) bool {
-	for _, token := range strings.Split(header, ",") {
-		token = strings.TrimSpace(token)
-		if strings.HasPrefix(strings.ToLower(token), "gzip") {
-			// Reject explicit q=0 (including q=0.0, q=0.00, etc.).
-			if strings.Contains(token, "q=0") {
-				// Check if there's a non-zero digit after "q=0"
-				idx := strings.Index(token, "q=0")
-				rest := token[idx+3:] // everything after "q=0"
-				// If rest is empty or only contains dots and zeros, quality is zero.
-				hasNonZero := false
-				for _, c := range rest {
-					if c >= '1' && c <= '9' {
-						hasNonZero = true
-						break
-					}
-				}
-				if !hasNonZero {
-					return false
-				}
-			}
-			return true
-		}
-	}
-	return false
-}
-
 func GzipMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Always advertise that the response varies by Accept-Encoding so
