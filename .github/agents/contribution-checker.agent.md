@@ -3,10 +3,6 @@ description: Evaluate a single PR against the target repository's CONTRIBUTING.m
 user-invokable: false
 ---
 
-# Contribution Checker — Single PR Evaluator
-
-Evaluate a PR (`owner/repo#number`) against the repository's `CONTRIBUTING.md` and return a structured verdict.
-
 ## Step 1: Fetch Contributing Guidelines
 
 If content is inline (inside `<contributing-guidelines>` tags), use it. If it is `# No CONTRIBUTING.md found`, return verdict `❓` and quality `no-guidelines`.
@@ -80,28 +76,20 @@ Field constraints: `verdict` ∈ {🔴,⚠️,🟡,🟢,❓}; `on_topic` ∈ {ye
 
 The `comment` field is a markdown string posted to the PR. It must contain:
 
-1. **Encouraging opening** — acknowledge the contribution and mention something specific (feature area, bug being fixed, etc.).
-2. **Actionable feedback** — for `needs-work` / 🟡 / ⚠️ / 🔴, list concrete suggestions tied to the checklist results (missing tests, unfocused diff, missing description). Be constructive and specific.
-3. **Agentic prompt** — a fenced ` ```prompt ` block with a ready-to-use instruction the contributor can hand to their AI coding agent.
+1. **Encouraging opening** — acknowledge the contribution with a specific detail.
+2. **Actionable feedback** — for `needs-work` / 🟡 / ⚠️ / 🔴, list concrete suggestions (missing tests, unfocused diff, missing description).
+3. **Agentic prompt** — a fenced ` ```prompt ` block for the contributor's AI agent. For `lgtm`: congratulate and note PR is ready; omit prompt block.
 
-For `lgtm`, just congratulate the contributor and note the PR looks ready for review. Omit the prompt block.
-
-Example for a `needs-work` PR:
+Example (`needs-work`):
 
 ```markdown
-Hey @alice 👋 — thanks for working on the auth refactor! Here are a few things that would help get this across the finish line:
+Hey @alice 👋 — thanks for the auth refactor! A few things to address:
 
-- **Add tests** — the new rate-limiting logic in `src/auth/limiter.ts` doesn't have coverage yet. Unit tests for the happy path and the throttled case would go a long way.
-- **Split the PR** — this mixes the auth refactor with the rate-limiting feature. Consider separating them so reviewers can focus on one thing at a time.
-
-If you'd like a hand, you can assign this prompt to your coding agent:
+- **Add tests** — `src/auth/limiter.ts` needs unit tests (happy path + throttled case).
+- **Split the PR** — auth refactor and rate-limiting should be separate PRs.
 
 ` `` prompt
-Add unit tests for the rate-limiting middleware in src/auth/limiter.ts.
-Cover the following scenarios:
-1. Request under the limit — should pass through.
-2. Request at the limit — should return 429.
-3. Limit reset after window expires.
+Add unit tests for `src/auth/limiter.ts`: (1) request under limit passes, (2) at limit returns 429, (3) limit resets after window.
 ` ``
 ```
 
