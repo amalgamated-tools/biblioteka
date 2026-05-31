@@ -1,3 +1,4 @@
 ./cmd/cli/main_test.go|2026-05-25
 ./internal/handlers/testsetup_test.go|2026-05-27
 ./internal/opds/pagination_test.go|2026-05-30
+./internal/pathparser/pathparser_test.go|2026-05-31
