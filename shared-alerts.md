@@ -1,4 +1,35 @@
-## Latest Updates (2026-05-30)
+## Latest Updates (2026-05-31)
+
+### Critical Issues (Day 6-10, No Progress on Core Problems)
+- 🚨 Architecture Guardian intermittent failure 16+ days (3/10 success, no fix)
+- 🚨 Code Refiner all-cancelled pattern persists (0% success, #3111 closed but problem remains)
+- 🚨 Code Simplifier run-recovered but 0% PR merge rate — scope-creep pattern
+- 🚨 Dead Code Remover 0% PR merge rate (0/2 closed)
+- 🚨 Metrics Collector stale 57+ days (last: 2026-04-04)
+
+### Positive Changes (May 30 → May 31)
+- ✅ Code Simplifier run success RECOVERED (was silent failure, now 10/10)
+- ✅ Efficiency Improver new agent — first PR #3116 merged, excellent start
+- ✅ PR Triage Agent deployed (first run today)
+- ✅ Issues #3109, #3111 closed (agent-perf follow-ups addressed)
+
+### Pattern Detection (May 31)
+- 3 clean (Contribution Check, Go Fan, Efficiency Improver)
+- 3 scope-creep (Code Simplifier, Daily Doc Updater, Caveman Optimizer)
+- 4 inconsistency (Code Simplifier, Architecture Guardian, Caveman Optimizer, Function Namer)
+- 4 under-creation (Code Refiner, Agentic Maintenance, Dead Code Remover, PR Triage Agent)
+- 1 repetition (Testify Expert)
+
+### PR Merge Rate Summary
+- copilot (Go Fan, Testify Expert, Function Namer): 90% ✅
+- dependabot: 77% ✅
+- efficiency-improver: 100% ✅ (1 PR)
+- docs (Daily Doc Updater): 33% ⚠️
+- caveman: 27% ⚠️
+- code-simplifier: 0% ❌
+- dead-code: 0% ❌
+
+### Previous Updates
 
 ### Critical Issues (Day 5-9, No Progress)
 - 🚨 Architecture Guardian OFFLINE 16+ days (#3033 open 9+ days, ZERO HUMAN ACTION)
