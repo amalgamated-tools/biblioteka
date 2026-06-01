@@ -1,11 +1,11 @@
 {
-  "run_date": "2026-06-01T08:45:27Z",
-  "run_id": "26744547991",
+  "run_date": "2026-06-01T15:02:04Z",
+  "run_id": "26762628656",
   "total_prs_triaged": 0,
   "auto_merge_candidates": [],
   "fast_track_needed": [],
   "batches": {},
   "close_candidates": [],
   "statistics": {"by_category": {}, "by_risk": {}, "by_priority": {}, "by_action": {}},
-  "notes": "6 open PRs checked: #3131, #3126, #3125, #3123, #3119 (amalgamated-bot, same-repo), #3105 (veverkap, same-repo). All isCrossRepository=false. No fork PRs exist in scope. Nothing to triage."
+  "notes": "4 open PRs checked: #3131, #3123, #3119 (amalgamated-bot, same-repo), #3105 (veverkap, same-repo). All isCrossRepository=false. No fork PRs exist in scope. Nothing to triage. Consistent with previous run 26744547991."
 }
