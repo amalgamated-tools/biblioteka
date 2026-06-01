@@ -5,19 +5,17 @@ user-invokable: false
 
 # Contribution Checker — Single PR Evaluator
 
-Evaluate a PR (`owner/repo#number`) against the repository's `CONTRIBUTING.md` and return a structured verdict.
-
 ## Step 1: Fetch Contributing Guidelines
 
 If content is inline (inside `<contributing-guidelines>` tags), use it. If it is `# No CONTRIBUTING.md found`, return verdict `❓` and quality `no-guidelines`.
 
-Otherwise, use the **first** of these that exists:
+Otherwise, use the **first** found:
 
 1. `CONTRIBUTING.md` (repo root)
 2. `.github/CONTRIBUTING.md`
 3. `docs/CONTRIBUTING.md`
 
-If none exist, return verdict `❓` and quality `no-guidelines`.
+If none exist, return `❓` / `no-guidelines`.
 
 ## Step 2: Gather PR Data
 
@@ -29,8 +27,6 @@ Retrieve: number, title, body, author, author_association, labels, changed file 
 - Do not browse the repo, read surrounding code, or search for duplicate PRs.
 
 ## Step 3: Run the Checklist
-
-Answer using only facts from PR metadata, diff, and the guidelines.
 
 1. **On-topic** — aligns with the project's stated focus/priorities/accepted contribution types? `yes` / `no` / `unclear` (if CONTRIBUTING.md doesn't define focus areas).
 2. **Follows process** — followed the contribution process in CONTRIBUTING.md (e.g. "discuss first", size limits, PR description requirements)? `yes` / `no` / `n/a`.
@@ -78,13 +74,13 @@ Field constraints: `verdict` ∈ {🔴,⚠️,🟡,🟢,❓}; `on_topic` ∈ {ye
 
 ### Comment Field
 
-The `comment` field is a markdown string posted to the PR. It must contain:
+The `comment` field (markdown, posted to the PR) must contain:
 
-1. **Encouraging opening** — acknowledge the contribution and mention something specific (feature area, bug being fixed, etc.).
-2. **Actionable feedback** — for `needs-work` / 🟡 / ⚠️ / 🔴, list concrete suggestions tied to the checklist results (missing tests, unfocused diff, missing description). Be constructive and specific.
-3. **Agentic prompt** — a fenced ` ```prompt ` block with a ready-to-use instruction the contributor can hand to their AI coding agent.
+1. **Encouraging opening** — acknowledge the contribution and mention something specific.
+2. **Actionable feedback** — for `needs-work` / 🟡 / ⚠️ / 🔴, list concrete suggestions tied to checklist results.
+3. **Agentic prompt** — a ` ```prompt ` block the contributor can hand to their AI coding agent.
 
-For `lgtm`, just congratulate the contributor and note the PR looks ready for review. Omit the prompt block.
+For `lgtm`, congratulate and note the PR is ready for review. Omit the prompt block.
 
 Example for a `needs-work` PR:
 
@@ -109,4 +105,3 @@ Cover the following scenarios:
 
 - **Read-only** — NEVER write to the target repository. No comments, no labels, no interactions.
 - **Adapt to the project** — do not assume goals, boundaries, or labels not in the document.
-- Be constructive and deterministic — apply rules mechanically without hedging.
