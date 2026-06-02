@@ -1,70 +1,35 @@
-## Latest Updates (2026-05-31)
+## Latest Updates (2026-06-02)
 
-### Critical Issues (Day 6-10, No Progress on Core Problems)
+### Critical Issues (Day 8-12, Caveman WORSENING)
+- 🚨 Caveman Optimizer: NOW 3 DUPLICATE OPEN PRs (#3123, #3131, #3138) — worsened from 2 yesterday
+- 🚨 Architecture Guardian: 0 runs 7+ days — stalled/offline (no fix applied)
+- 🚨 Code Refiner: all-cancelled pattern persists (0% success, #3119 unmerged 7+ days)
+- 🚨 Code Simplifier: 0% PR merge rate (3rd closed PR) — scope-creep
+- 🚨 Dead Code Remover: 0% PR merge rate, #3142 new PR today (3rd rejection expected)
+- 🚨 Metrics Collector: STILL STALE 59+ days (last: 2026-04-04)
+
+### Positive Changes (June 1 → June 2)
+- ✅ Typist promoted to clean (consistent runs)
+- ✅ Clean percentage improved: 27% → 40% (6/15)
+- ✅ Daily Testify Expert successful run
+
+### Pattern Detection (June 2)
+- 6 clean: Contribution Check, Agentic Maintenance, Go Fan, Testify Expert, Malicious Scan, Typist
+- 1 over-creation: Daily Doc Updater (16 PRs/day, 50% merge)
+- 2 scope-creep: Code Simplifier, Dead Code Remover
+- 1 repetition: Caveman Optimizer (3 duplicate open PRs)
+- 3 inconsistency: PR Triage Agent, Efficiency Improver, Daily Doc Healer
+- 2 offline: Code Refiner, Architecture Guardian
+
+### Actions Urgently Needed
+1. CLOSE duplicate Caveman PRs (#3123, #3131 — keep #3138)
+2. Fix/retire Architecture Guardian
+3. Fix Code Refiner cancellation
+4. Re-scope or disable Code Simplifier + Dead Code Remover
+
+### Previous Updates (2026-05-31)
 - 🚨 Architecture Guardian intermittent failure 16+ days (3/10 success, no fix)
 - 🚨 Code Refiner all-cancelled pattern persists (0% success, #3111 closed but problem remains)
 - 🚨 Code Simplifier run-recovered but 0% PR merge rate — scope-creep pattern
 - 🚨 Dead Code Remover 0% PR merge rate (0/2 closed)
 - 🚨 Metrics Collector stale 57+ days (last: 2026-04-04)
-
-### Positive Changes (May 30 → May 31)
-- ✅ Code Simplifier run success RECOVERED (was silent failure, now 10/10)
-- ✅ Efficiency Improver new agent — first PR #3116 merged, excellent start
-- ✅ PR Triage Agent deployed (first run today)
-- ✅ Issues #3109, #3111 closed (agent-perf follow-ups addressed)
-
-### Pattern Detection (May 31)
-- 3 clean (Contribution Check, Go Fan, Efficiency Improver)
-- 3 scope-creep (Code Simplifier, Daily Doc Updater, Caveman Optimizer)
-- 4 inconsistency (Code Simplifier, Architecture Guardian, Caveman Optimizer, Function Namer)
-- 4 under-creation (Code Refiner, Agentic Maintenance, Dead Code Remover, PR Triage Agent)
-- 1 repetition (Testify Expert)
-
-### PR Merge Rate Summary
-- copilot (Go Fan, Testify Expert, Function Namer): 90% ✅
-- dependabot: 77% ✅
-- efficiency-improver: 100% ✅ (1 PR)
-- docs (Daily Doc Updater): 33% ⚠️
-- caveman: 27% ⚠️
-- code-simplifier: 0% ❌
-- dead-code: 0% ❌
-
-### Previous Updates
-
-### Critical Issues (Day 5-9, No Progress)
-- 🚨 Architecture Guardian OFFLINE 16+ days (#3033 open 9+ days, ZERO HUMAN ACTION)
-- 🚨 Code Simplifier silent failure day 5 (#3064 open 3 days, ZERO HUMAN ACTION)
-- 🚨 Dead Code Remover 0% merge rate, functionally inactive, NO ISSUE CREATED
-- 🚨 Metrics Collector stale 54+ days (last: 2026-04-04) - ALL meta-orchestrators flying blind
-
-### Pending Fixes (Day 3-5)
-- ⚠️ #3062, #3063, #3065 created May 24 but STILL NOT IMPLEMENTED
-- ⚠️ Security Red Team config error #3066 (day 3)
-
-### Positive Trends
-- 🟡 Clean percentage stable ~53%
-- ✅ 15/19 agents with 100% success rate (79%)
-- 🏆 Top performers exemplary: Contribution Check (98/100), Daily Doc Updater (90/100)
-- ✅ Go Fan RECOVERED from over-creation
-
-### Declining Metrics
-- 📉 PR Merge Rate: 50% (↓ -34pp from Apr 4 baseline 84%)
-
-### Pattern Detection (May 30)
-- 10 clean (53%), 2 over_creation, 2 under_creation, 1 repetition, 1 scope_creep, 1 silent_failure, 2 offline, 1 inconsistency
-
-### Actions Urgently Needed
-1. Fix 3 critical agents (Architecture Guardian, Code Simplifier, Dead Code Remover)
-2. Trigger Metrics Collector (54+ days stale)
-3. Implement May 24 fixes (#3062, #3063, #3065, #3066)
-4. Close stale issues #3022/#3031
-
-### Previous Updates
-
-## 2026-05-29 (Updated by agent-performance-analyzer)
-- 🟡 ECOSYSTEM HOLDING: Clean percentage stable ~53-63%, 15/19 agents with 100% success (79%)
-- 🚨 CRITICAL - NO PROGRESS (Day 9): Architecture Guardian OFFLINE 16+ days (#3033 open 9+ days, ZERO HUMAN ACTION)
-- 🚨 CRITICAL - NO PROGRESS (Day 5): Code Simplifier silent failure day 5 (#3064 open 3 days, ZERO HUMAN ACTION)
-- 🚨 NEW CRITICAL: Dead Code Remover 0% merge rate (0/1 PRs), functionally inactive, NO ISSUE CREATED YET
-- 🚨 METRICS STALE (Day 55): 54+ days old (last: 2026-04-04)
-- ⚠️ PENDING FIXES (Day 5): #3062, #3063, #3065 created May 24 but STILL NOT IMPLEMENTED
