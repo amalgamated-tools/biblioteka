@@ -337,6 +337,11 @@ Worker logs are emitted through the application's structured `slog` logger (JSON
 
 On shutdown, the worker calls `srv.Stop()` (stops dequeueing new tasks) before `srv.Shutdown()` (waits for in-flight tasks), giving running jobs up to `DefaultShutdownTimeout` (8 seconds) to complete cleanly.
 
+Two additional operational safety nets are active at runtime:
+
+- **Redis health check** — The worker configures a `HealthCheckFunc` that emits a `WARN`-level structured log entry whenever Redis becomes temporarily unreachable. The log includes the error and appears in the same JSON log stream as all other application logs, making Redis connectivity issues visible without requiring access to the Asynqmon dashboard.
+- **Unknown-job-type logging** — A `notFoundLoggingMiddleware` wraps the asynq handler mux. When a task arrives whose type has no registered handler, the middleware detects the `asynq.ErrHandlerNotFound` sentinel and emits a `WARN`-level log entry including the task type. This surfaces dropped or misrouted jobs in logs instead of failing silently.
+
 ## How Jobs Are Enqueued
 
 Jobs enter the queue in two ways:

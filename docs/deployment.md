@@ -377,6 +377,39 @@ No additional reverse proxy configuration is required — the application server
 
 ---
 
+## HTTP Response Compression
+
+Biblioteka compresses HTTP responses with gzip when the client sends `Accept-Encoding: gzip`. Compression is applied transparently by the `GzipMiddleware` registered in the global middleware chain — no configuration is required.
+
+### Compressed content types
+
+| Content-Type | Compressed? | Notes |
+|---|---|---|
+| `application/json` | ✅ | API responses |
+| `application/atom+xml` | ✅ | OPDS feeds |
+| `application/xml`, `text/xml` | ✅ | |
+| `text/html`, `text/plain`, `text/css` | ✅ | |
+| `application/javascript`, `text/javascript` | ✅ | |
+| `image/svg+xml` | ✅ | Vector graphics |
+| `image/jpeg`, `image/png`, `image/webp` | ❌ | Already compressed at format level |
+| `application/epub+zip`, `application/pdf` | ❌ | Binary formats |
+| `text/event-stream` | ❌ | SSE — streaming must stay uncompressed |
+| Clients without `Accept-Encoding: gzip` | ❌ | Pass-through; no compression attempted |
+
+### Cache correctness
+
+A `Vary: Accept-Encoding` header is added to **all** responses (compressed and uncompressed). This ensures that intermediate caches — including browser caches, CDNs, and reverse proxies — store separate entries for gzip and non-gzip clients, preventing a compressed response from being served to a client that did not request it.
+
+### Range requests
+
+Range requests (`Range:` header present) bypass compression so that `Content-Range` semantics are preserved. Book file downloads, which use range requests for partial content delivery, are unaffected by the middleware.
+
+### Reverse proxy considerations
+
+If your reverse proxy (Nginx, Caddy, Traefik) also performs gzip compression, disable it for requests forwarded to Biblioteka to avoid double-compression. Biblioteka handles compression itself and the `Vary: Accept-Encoding` header signals this to caching layers.
+
+---
+
 ## Static Asset Caching
 
 Biblioteka uses Vite's content-hashing for frontend assets (JavaScript, CSS, fonts). Every compiled asset under `/assets/` has a content-derived hash in its filename (e.g., `index-DfzxFbzN.js`), meaning a changed file always gets a new URL.
