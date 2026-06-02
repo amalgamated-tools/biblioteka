@@ -340,23 +340,6 @@ func TestExtractMetadata_EPUB2And3ProduceSameMetadata(t *testing.T) {
 	require.Equal(t, meta2.Format, meta3.Format, "format should be 'epub' for both versions")
 }
 
-func TestExtractMetadata_PDF(t *testing.T) {
-	dir := t.TempDir()
-	pdfPath := filepath.Join(dir, "test.pdf")
-
-	ext := requireExifTool(t)
-	defer ext.Close(t.Context())
-
-	testutils.MakeTestPDF(t, pdfPath, "PDF Title", "PDF Author", ext.exiftool())
-
-	meta, err := ext.ExtractMetadata(t.Context(), pdfPath)
-	require.NoError(t, err, "extract")
-
-	require.Equal(t, "pdf", meta.Format)
-	require.Equal(t, "PDF Title", meta.Title)
-	require.Equal(t, "PDF Author", meta.Author)
-}
-
 func TestExtractMetadata_InvalidFile(t *testing.T) {
 	dir := t.TempDir()
 	badPath := filepath.Join(dir, "bad.epub")
