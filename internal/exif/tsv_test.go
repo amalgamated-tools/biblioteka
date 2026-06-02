@@ -1,10 +1,20 @@
 package exif
 
 import (
+	"context"
+	"os"
 	"testing"
 
+	"github.com/amalgamated-tools/biblioteka/internal/otel"
 	"github.com/stretchr/testify/require"
 )
+
+func TestMain(m *testing.M) {
+	os.Setenv(("LOG_LEVEL"), "debug")
+	otel.SetupLogger(context.Background())
+	code := m.Run()
+	os.Exit(code)
+}
 
 func TestParseTSV_EmptyInput(t *testing.T) {
 	out, err := ParseTSV(t.Context(), "", "epub")

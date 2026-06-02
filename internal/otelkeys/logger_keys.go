@@ -44,6 +44,7 @@ const (
 	ErrorCode            string = "error_code"
 	ErrorCount           string = "error_count"
 	Errors               string = "errors"
+	ExifOutput           string = "exif_output"
 	Existing             string = "existing"
 	ExpiresAt            string = "expires_at"
 	Ext                  string = "ext"

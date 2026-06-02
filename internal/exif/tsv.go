@@ -18,6 +18,14 @@ import (
 func ParseTSV(ctx context.Context, data, fileFormat string) (*ExifToolOutput, error) {
 	normalizedFormat := strings.ToLower(strings.TrimPrefix(fileFormat, "."))
 
+	// write the normalized format to a debug log file
+	slog.DebugContext(
+		ctx,
+		"parsing exiftool output",
+		slog.String(otelkeys.ExifOutput, data),
+		slog.String(otelkeys.Format, normalizedFormat),
+	)
+
 	out := &ExifToolOutput{
 		Identifiers:   []Identifier{},
 		MetaTags:      []MetaTag{},

@@ -229,6 +229,7 @@ func (e *Exiftool) ExtractMetadataFromFile(ctx context.Context, file string) (*E
 	}
 
 	if s.IsDir() {
+		slog.WarnContext(ctx, "path is a directory, not a file", slog.String(otelkeys.Path, file))
 		return nil, ErrNotFile
 	}
 
@@ -288,6 +289,8 @@ func (e *Exiftool) ExtractMetadataFromFile(ctx context.Context, file string) (*E
 		e.markDead()
 		return nil, eofErr
 	}
+
+	slog.DebugContext(ctx, "successfully extracted metadata from file", slog.String(otelkeys.Path, file))
 
 	return ParseTSV(ctx, e.scanMergedOut.Text(), fileFormat)
 }
