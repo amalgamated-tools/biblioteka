@@ -1,11 +1,11 @@
 {
-  "run_date": "2026-06-02T08:23:46Z",
-  "run_id": "26807668224",
+  "run_date": "2026-06-02T14:20:24Z",
+  "run_id": "26825875751",
   "total_prs_triaged": 0,
   "auto_merge_candidates": [],
   "fast_track_needed": [],
   "batches": {},
   "close_candidates": [],
   "statistics": {"by_category": {}, "by_risk": {}, "by_priority": {}, "by_action": {}},
-  "notes": "6 open PRs checked: #3139 (amalgamated-bot, same-repo, DRAFT), #3138 (amalgamated-bot, same-repo), #3131 (amalgamated-bot, same-repo), #3123 (amalgamated-bot, same-repo), #3119 (amalgamated-bot, same-repo), #3105 (release-please/veverkap, same-repo). All isCrossRepository=false. No fork PRs authored by app/github-copilot exist in scope. Nothing to triage. Consistent with previous runs."
+  "notes": "7 open PRs checked: #3142 (amalgamated-bot, DRAFT, chore), #3139 (amalgamated-bot, DRAFT, docs), #3138 (amalgamated-bot, caveman/docs), #3131 (amalgamated-bot, caveman/docs), #3123 (amalgamated-bot, caveman/docs), #3119 (amalgamated-bot, refiner), #3105 (veverkap, release-please). All isCrossRepository=false. No fork PRs authored by app/github-copilot exist in scope. Nothing to triage. Consistent with previous runs."
 }
