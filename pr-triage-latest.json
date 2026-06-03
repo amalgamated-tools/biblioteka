@@ -1,11 +1,11 @@
 {
-  "run_date": "2026-06-03T01:46:14Z",
-  "run_id": "26858683382",
+  "run_date": "2026-06-03T08:36:03Z",
+  "run_id": "26873326191",
   "total_prs_triaged": 0,
   "auto_merge_candidates": [],
   "fast_track_needed": [],
   "batches": {},
   "close_candidates": [],
   "statistics": {"by_category": {}, "by_risk": {}, "by_priority": {}, "by_action": {}},
-  "notes": "7 open PRs checked: #3142 (chore/dead-code), #3139 (docs/heal), #3138 (caveman/optimize-reporting), #3131 (caveman/optimize-contribution-checker), #3123 (caveman/optimize-contribution-checker), #3119 (refiner), #3105 (release-please). All isCrossRepository=false (same-repo branches). No fork PRs authored by app/github-copilot exist in scope. Nothing to triage."
+  "notes": "6 open PRs found (all by amalgamated-bot or veverkap, none by app/github-copilot). All PRs originate from same-repo branches (isCrossRepository=false). No fork PRs authored by app/github-copilot exist in scope. Nothing to triage."
 }
