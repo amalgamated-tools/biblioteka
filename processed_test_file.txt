@@ -2,3 +2,4 @@
 ./internal/handlers/testsetup_test.go|2026-05-27
 ./internal/opds/pagination_test.go|2026-05-30
 ./internal/pathparser/pathparser_test.go|2026-05-31
+./internal/organize/organize_test.go|2026-06-03
