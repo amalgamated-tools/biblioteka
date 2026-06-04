@@ -1,11 +1,11 @@
 {
-  "run_date": "2026-06-03T20:04:03Z",
-  "run_id": "26909743455",
+  "run_date": "2026-06-04T01:48:00Z",
+  "run_id": "26924900757",
   "total_prs_triaged": 0,
   "auto_merge_candidates": [],
   "fast_track_needed": [],
   "batches": {},
   "close_candidates": [],
   "statistics": {"by_category": {}, "by_risk": {}, "by_priority": {}, "by_action": {}},
-  "notes": "5 open PRs found. Authors: amalgamated-bot (4), veverkap (1). None authored by app/github-copilot. All are same-repo branch PRs (not forks). No fork PRs to triage per workflow instructions. Same result as previous runs."
+  "notes": "5 open PRs found. Authors: amalgamated-bot (4), veverkap (1). None authored by app/github-copilot. All are same-repo branch PRs (not forks). No fork PRs to triage per workflow instructions."
 }
