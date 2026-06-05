@@ -23,8 +23,10 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
+	"github.com/amalgamated-tools/biblioteka/internal/ssrf"
 	goauthlib "github.com/amalgamated-tools/goauth/auth"
 	goauthhandler "github.com/amalgamated-tools/goauth/handler"
+	"github.com/coreos/go-oidc/v3/oidc"
 )
 
 // apiKeyDTO is the JSON representation of an API key (without the raw token).
@@ -67,7 +69,8 @@ type OIDCHandler struct {
 
 // NewOIDCHandler creates a new OIDCHandler wrapping goauth's handler.
 func NewOIDCHandler(ctx context.Context, users goauthlib.UserStore, jwt *goauthlib.JWTManager, issuerURL, clientID, clientSecret, redirectURI, cookieName string, secureCookies bool, database *db.DB) (*OIDCHandler, error) {
-	inner, err := goauthhandler.NewOIDCHandler(ctx, users, jwt, issuerURL, clientID, clientSecret, redirectURI, cookieName, secureCookies)
+	safeCtx := oidc.ClientContext(ctx, ssrf.SafeHTTPClient(0))
+	inner, err := goauthhandler.NewOIDCHandler(safeCtx, users, jwt, issuerURL, clientID, clientSecret, redirectURI, cookieName, secureCookies)
 	if err != nil {
 		return nil, err
 	}

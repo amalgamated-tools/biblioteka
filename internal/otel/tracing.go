@@ -22,7 +22,7 @@ func TraceMiddleware(next http.Handler) http.Handler {
 		// Each HTTP request gets its own trace context
 		spanName := r.Method
 		if r.URL != nil {
-			spanName += " " + r.URL.Path
+			spanName += " " + SanitizePathForTelemetry(r.URL.Path)
 		}
 
 		ctx, span := StartTracer(
