@@ -1,6 +1,6 @@
 {
-  "run_date": "2026-06-05T13:53:09Z",
-  "run_id": "27018851204",
+  "run_date": "2026-06-05T19:25:33Z",
+  "run_id": "27035481917",
   "total_prs_triaged": 0,
   "auto_merge_candidates": [],
   "fast_track_needed": [],
@@ -12,5 +12,5 @@
     "by_priority": {},
     "by_action": {}
   },
-  "notes": "7 open PRs found. None are fork PRs (all isCrossRepository=false). PRs surveyed: #3162 (amalgamated-bot, docs), #3161 (amalgamated-bot, caveman), #3160 (app/copilot-swe-agent, refactor, same-repo), #3156 (app/copilot-swe-agent, security, same-repo), #3150 (veverkap, deep-review), #3119 (amalgamated-bot, refiner), #3105 (veverkap, release-please). PR #3142 (amalgamated-bot, dead-code) from previous run is now closed. Per triage workflow instructions, only fork PRs authored by app/github-copilot are in scope. No such PRs exist."
+  "notes": "3 open PRs found. None are fork PRs (all isCrossRepository=false). PRs surveyed: #3162 (amalgamated-bot, docs), #3160 (app/copilot-swe-agent, refactor, same-repo), #3105 (veverkap, release-please). Since previous run (#27018851204, 2026-06-05T13:53:09Z), PRs #3161, #3119, #3156, #3150 have been closed. Per triage workflow instructions, only fork PRs authored by app/github-copilot are in scope. No such PRs exist."
 }
