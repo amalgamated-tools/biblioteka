@@ -11,7 +11,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/hibiken/asynq v0.26.0
 	github.com/hibiken/asynqmon v0.7.2
-	github.com/jackc/pgx/v5 v5.9.2
+	github.com/jackc/pgx/v5 v5.10.0
 	github.com/justinas/alice v1.2.0
 	github.com/sblinch/mobi v0.0.0-20200306085920-9ddf0dc140e7
 	github.com/stretchr/testify v1.11.1
