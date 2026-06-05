@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.20.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.19.0...v0.20.0) (2026-06-05)
+
+
+### Features
+
+* **generate_books:** add link to generate_books.py script in new text file ([893d05a](https://github.com/amalgamated-tools/biblioteka/commit/893d05a749a8db743d0c54c36f1366b951adcfde))
+
+
+### Bug Fixes
+
+* **docker-compose:** update JWT_SECRET default value for security and add books volume ([893d05a](https://github.com/amalgamated-tools/biblioteka/commit/893d05a749a8db743d0c54c36f1366b951adcfde))
+* recompile ([3ff3719](https://github.com/amalgamated-tools/biblioteka/commit/3ff3719ec6faf70364c207e444ee22cc5098c8b3))
+
 ## [0.19.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.18.0...v0.19.0) (2026-05-27)
 
 
