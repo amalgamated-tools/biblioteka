@@ -3,6 +3,8 @@ package middleware
 import (
 	"net/url"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestRedactRequestURL(t *testing.T) {
@@ -10,13 +12,9 @@ func TestRedactRequestURL(t *testing.T) {
 
 	raw := "https://example.com/kobo/secret-token/v1/library/sync?x=1"
 	parsed, err := url.Parse(raw)
-	if err != nil {
-		t.Fatalf("parse url: %v", err)
-	}
+	require.NoError(t, err)
 
 	got := redactRequestURL(parsed)
-	want := "https://example.com/kobo/%5Bredacted%5D/v1/library/sync?x=1"
-	if got != want {
-		t.Fatalf("redactRequestURL() = %q, want %q", got, want)
-	}
+	want := "https://example.com/kobo/REDACTED/v1/library/sync?x=1"
+	require.Equal(t, want, got)
 }

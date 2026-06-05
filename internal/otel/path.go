@@ -12,8 +12,8 @@ func SanitizePathForTelemetry(path string) string {
 	rest := strings.TrimPrefix(path, "/kobo/")
 	slashIdx := strings.Index(rest, "/")
 	if slashIdx < 0 {
-		return "/kobo/[redacted]"
+		return "/kobo/REDACTED"
 	}
 
-	return "/kobo/[redacted]" + rest[slashIdx:]
+	return "/kobo/REDACTED" + rest[slashIdx:]
 }
