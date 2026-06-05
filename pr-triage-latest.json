@@ -1,11 +1,16 @@
 {
-  "run_date": "2026-06-05T01:37:02Z",
-  "run_id": "26990043907",
+  "run_date": "2026-06-05T08:17:00Z",
+  "run_id": "27003730911",
   "total_prs_triaged": 0,
   "auto_merge_candidates": [],
   "fast_track_needed": [],
   "batches": {},
   "close_candidates": [],
-  "statistics": {"by_category": {}, "by_risk": {}, "by_priority": {}, "by_action": {}},
-  "notes": "6 open PRs found. None are fork PRs (all head.repo == base.repo == amalgamated-tools/biblioteka). PRs: 3156 (app/copilot-swe-agent, same-repo branch copilot/fix-findings), 3150 (veverkap, branch deep-review), 3142 (amalgamated-bot, branch chore/remove-dead-code), 3139 (amalgamated-bot, branch docs/heal), 3119 (amalgamated-bot, branch refiner/3116), 3105 (veverkap, release-please branch). No fork PRs to triage per workflow instructions."
+  "statistics": {
+    "by_category": {},
+    "by_risk": {},
+    "by_priority": {},
+    "by_action": {}
+  },
+  "notes": "8 open PRs found. None are fork PRs (all isCrossRepository=false). PRs surveyed: #3162 (amalgamated-bot, docs), #3161 (amalgamated-bot, caveman), #3160 (app/copilot-swe-agent, refactor), #3156 (app/copilot-swe-agent, security), #3150 (veverkap, deep-review), #3142 (amalgamated-bot, dead-code), #3119 (amalgamated-bot, refiner), #3105 (veverkap, release-please). Per triage workflow instructions, only fork PRs authored by app/github-copilot are in scope. No such PRs exist."
 }
