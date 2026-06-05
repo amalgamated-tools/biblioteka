@@ -1,57 +1,72 @@
-# Agent Performance 2026-06-04
+# Agent Performance 2026-06-05
 
-**Run**: agent-performance-analyzer | 2026-06-04T13:53Z | [§26956072294](https://github.com/amalgamated-tools/biblioteka/actions/runs/26956072294)
+**Run**: agent-performance-analyzer | 2026-06-05T13:52Z | [§27018816726](https://github.com/amalgamated-tools/biblioteka/actions/runs/27018816726)
 
 ## Summary
 - 15 workflows analyzed
-- 6/15 clean agents (40%) — Contribution Check, Go Fan, Testify Expert, Malicious Code Scan, Typist, Architecture Guardian (correction: now confirmed active)
-- Quality: 59/100 average (↑ +2 from June 3)
-- Effectiveness: 57/100 average (↑ +2)
-- Key improvement: Caveman Optimizer crisis fully resolved (both duplicates gone)
-- New concern: Efficiency Improver failure today
+- 5/15 clean agents (33%) — Contribution Check, Go Fan, Agentic Maintenance, Typist, Duplicate Code Detector
+- Quality: 58/100 average (↓ -1 from June 4 — Architecture Guardian failure)
+- Effectiveness: 54/100 average (↓ -3 from June 4)
+- Key concern: Code Refiner now 6 days broken (all-skip)
+- New observation: Architecture Guardian issue #3155 (failure) still open
 
 ## PR Merge Rates (updated)
-- Efficiency Improver: 100% (2/2) ✅ — but 1 NEW failure today
-- Testify Expert: 100% (3/3) ✅
 - Go Fan: ~90% ✅
-- Caveman Optimizer: ~38% ↑ IMPROVING (all duplicates resolved — #3138 merged, #3131 closed)
-- Function Namer: 50% ⚠️
-- Daily Doc Updater: ~33% ⚠️
-- Daily Doc Healer: ~33% ⚠️
-- Code Simplifier: 0% 🔴
-- Dead Code Remover: 0% (#3142 open) 🔴
-- Code Refiner: 0% (PR #3119 stale 5 days, all runs cancelled/skipped) 🔴
+- Contribution Check: N/A (issues only) ✅
+- Agentic Maintenance: N/A (no PR outputs) ✅
+- Caveman Optimizer: ~38% ⚠️ — new PR #3161 open (re-targeting contribution-check again)
+- Daily Doc Updater: ~33% ⚠️ — PR #3162 open today
+- Code Simplifier: 0% 🔴 (2+ rejected PRs)
+- Dead Code Remover: 0% 🔴 (2 rejected PRs)
+- Code Refiner: 0% 🔴 (PR #3119 stale 6 days, all runs skipped)
 
-## Ecosystem Health: 🟡 MODERATE — IMPROVING
-- ✅ Caveman Optimizer: FULLY RESOLVED — #3138 merged June 3, #3131 closed
-- ✅ Architecture Guardian: CORRECTION — confirmed 4/5 recent runs successful (was misreported as offline)
-- ⚠️ Efficiency Improver: 1 failure today (new issue — was 100%)
-- 🔴 Code Refiner: all-cancelled pattern persists (PR #3119 stale 5+ days)
-- 🔴 Dead Code Remover: PR #3142 still open, 0% merge rate
-- 🔴 Code Simplifier: 0% PR merge rate persists
-- 🔴 Metrics Collector: STALE 61 days (last: 2026-04-04)
+## Ecosystem Health: 🟡 MODERATE — SLIGHT DECLINE
+- ✅ Caveman Optimizer: duplicate crisis still resolved, but #3161 is new risk
+- ⚠️ Architecture Guardian: issue #3155 "failed" still open (new June 4)
+- 🔴 Code Refiner: all-skip pattern day 6 (PR #3119 now 6 days stale)
+- 🔴 Code Simplifier: 0% merge rate persists
+- 🔴 Dead Code Remover: 0% merge rate, previous PRs closed
+- 🔴 Metrics Collector: STALE 62 days (last: 2026-04-04)
 
 ## Top Performers
-1. **Contribution Check**: 98/100 ✅
-2. **Go Fan**: 85/100 ✅
-3. **Daily Testify Expert**: 82/100 ✅
-4. **Agentic Maintenance**: 80/100 ✅
-5. **Architecture Guardian**: 78/100 ✅ (corrected from previous misreport)
+1. **Contribution Check**: 98/100 ✅ (issue #3157 today)
+2. **Go Fan**: 85/100 ✅ (issue #3165 today)
+3. **Agentic Maintenance**: 82/100 ✅ (4/4 runs today)
+4. **Typist**: 78/100 ✅
+5. **Duplicate Code Detector**: 72/100 ✅ (issues #3158, #3159 today)
 
-## Changes (June 3 → June 4)
-- ✅ Caveman: #3138 merged, #3131 closed — duplicate crisis RESOLVED
-- ✅ Architecture Guardian: confirmed active (was incorrectly flagged as offline)
-- ⚠️ Efficiency Improver: new failure today
-- ↔️ Code Refiner: still broken (all skipped/cancelled)
-- ↔️ Dead Code Remover: #3142 still open
+## Changes (June 4 → June 5)
+- 🔴 Code Refiner: now 6 days broken (no change)
+- ⚠️ Architecture Guardian: issue #3155 still open (no fix yet)
+- ⚠️ Caveman Optimizer: new PR #3161 — same area as previously rejected #3131
+- ↔️ Daily Doc Updater: new PR #3162 (over-creation continues)
+- ↔️ Dead Code Remover: new run success, but PR outcome TBD
+
+## Reactive Agents (healthy skips)
+- PR Code Quality Reviewer: 10/10 skip (expected — no qualifying PRs)
+- Q: 12/12 skip (slash command, not invoked)
+- Mergefest: 10/10 skip (no qualifying PRs)
+- CLA Assistant: 7/7 skip (no triggers)
 
 ## Actions This Run
-- Agent Performance issue created (Week of June 4, 2026)
+- Agent Performance issue created (Week of June 5, 2026)
 - Shared memory updated
 
 ## Recommendations for Human Action
-1. 🔴 Investigate Efficiency Improver failure today
-2. 🔴 Fix or retire Code Refiner (all-cancelled, PR #3119 stale 5+ days)
-3. 🔴 Re-scope or disable Code Simplifier + Dead Code Remover (0% merge rates)
-4. 🔴 Fix Metrics Collector (61 days stale)
-5. ⚠️ Review Daily Doc Updater over-creation (16 PRs/day)
+1. 🔴 Fix or retire Code Refiner (6-day broken streak, PR #3119 stale)
+2. 🔴 Narrow Code Simplifier scope (0% merge rate, waste of review time)
+3. 🔴 Narrow Dead Code Remover scope (0% merge rate)
+4. 🔴 Fix Metrics Collector (62 days stale — observability gap)
+5. ⚠️ Investigate Architecture Guardian failure (#3155)
+6. ⚠️ Reduce Daily Doc Updater PR volume (16 PRs/run, 33% merge rate)
+7. ⚠️ Monitor Caveman PR #3161 (risk of new duplicate cycle)
+
+## Pattern Detector Results (confirmed)
+- Code Refiner: under-creation + inconsistency (regression from prior productivity)
+- Code Simplifier: over-creation + scope-creep
+- Dead Code Removal Agent: over-creation
+- Daily Documentation Updater: over-creation
+- Caveman Optimizer: repetition (re-targeting same area as rejected #3131)
+- Architecture Guardian: inconsistency (intermittent failures)
+- Contribution Check, Agentic Maintenance, Go Fan, Typist, Duplicate Code Detector: clean (no patterns)
+- PR Code Quality Reviewer, Q, Mergefest, Metrics Collector: under-creation (dormant)
