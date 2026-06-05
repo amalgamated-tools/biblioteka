@@ -395,6 +395,32 @@ The `immutable` directive tells browsers not to issue conditional requests for `
 
 ---
 
+## HTTP Response Compression
+
+Biblioteka transparently compresses HTTP responses using gzip for text-based content types via `GzipMiddleware` (`internal/handlers/middleware/gzip.go`). Compression is applied lazily — the decision is deferred until the first write so the handler's `Content-Type` header is available at decision time.
+
+| Content type | Compressed? |
+|---|---|
+| `application/json` (API responses) | ✅ |
+| `application/atom+xml` (OPDS feeds) | ✅ |
+| `application/javascript`, `text/javascript` | ✅ |
+| `application/xml`, `text/xml` | ✅ |
+| `text/html`, `text/plain`, `text/css` | ✅ |
+| `image/svg+xml` | ✅ |
+| JPEG, PNG, WebP images | ❌ Already compressed |
+| `text/event-stream` (server-sent events) | ❌ Streaming must remain uncompressed |
+| EPUB, PDF, AZW3 files | ❌ Binary formats, already compressed |
+| Requests with a `Range` header | ❌ Range requests bypass compression |
+| Clients without `Accept-Encoding: gzip` | ❌ Pass-through, no compression |
+
+The `Vary: Accept-Encoding` header is set on **all** responses (whether compressed or not) to ensure intermediate caches store separate entries for compressed and uncompressed clients.
+
+`gzip.Writer` instances are pooled via `sync.Pool` to avoid per-request allocation overhead. Compression level is `gzip.BestSpeed` (level 1), which favours CPU efficiency over maximum size reduction.
+
+> **Reverse proxy note:** If your reverse proxy (Nginx, Caddy, Traefik) also performs gzip compression, disable proxy-level compression for requests forwarded to Biblioteka to avoid double-compression. The application already sets `Content-Encoding: gzip` on compressed responses, which most proxies honour automatically.
+
+---
+
 ## Health Check
 
 The `GET /api/health` endpoint returns `200 OK` with `{"status":"ok"}` and requires no authentication. Use it for liveness/readiness probes:
