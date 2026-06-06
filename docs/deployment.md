@@ -377,6 +377,42 @@ No additional reverse proxy configuration is required — the application server
 
 ---
 
+## HTTP Response Compression
+
+Biblioteka applies gzip compression automatically via `GzipMiddleware` in `internal/handlers/middleware/gzip.go`. No configuration is required — the middleware is applied globally to all responses.
+
+### Compressed content types
+
+Only text-based formats are compressed. Binary formats (images, book files) and streaming responses (SSE) are passed through uncompressed.
+
+| Content type | Compressed |
+|---|---|
+| `application/json` | ✓ |
+| `application/xml` | ✓ |
+| `application/atom+xml` (OPDS feeds) | ✓ |
+| `application/javascript` | ✓ |
+| `text/css` | ✓ |
+| `text/html` | ✓ |
+| `text/javascript` | ✓ |
+| `text/plain` | ✓ |
+| `text/xml` | ✓ |
+| `image/svg+xml` | ✓ |
+| Images, EPUB, MOBI, PDF, other binary | ✗ (passed through) |
+
+### Cache correctness
+
+The middleware adds `Vary: Accept-Encoding` to **every** response, including uncompressed ones. This tells intermediate caches to store separate entries for compressed and uncompressed variants of the same URL, preventing a compressed response from being incorrectly served to a client that does not support gzip.
+
+### Range request bypass
+
+Requests that include a `Range` header (used for partial book file downloads) bypass compression entirely, preserving correct `Content-Range` semantics for range-aware clients.
+
+### Reverse proxy considerations
+
+If your reverse proxy also buffers or caches responses, ensure it propagates the `Vary: Accept-Encoding` header to clients unchanged. Most modern proxies (Nginx, Caddy, Traefik) handle this correctly by default. Do not configure the proxy to add its own gzip layer on top of already-compressed responses — double compression wastes CPU and can corrupt the response.
+
+---
+
 ## Static Asset Caching
 
 Biblioteka uses Vite's content-hashing for frontend assets (JavaScript, CSS, fonts). Every compiled asset under `/assets/` has a content-derived hash in its filename (e.g., `index-DfzxFbzN.js`), meaning a changed file always gets a new URL.
