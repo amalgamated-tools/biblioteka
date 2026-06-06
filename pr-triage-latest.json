@@ -1,6 +1,6 @@
 {
-  "run_date": "2026-06-06T07:50:16Z",
-  "run_id": "27056644893",
+  "run_date": "2026-06-06T13:22:36Z",
+  "run_id": "27063432041",
   "total_prs_triaged": 0,
   "auto_merge_candidates": [],
   "fast_track_needed": [],
@@ -12,5 +12,5 @@
     "by_priority": {},
     "by_action": {}
   },
-  "notes": "4 open PRs found. None are fork PRs (all isCrossRepository=false). Per triage workflow instructions, only fork PRs authored by app/github-copilot are in scope. No such PRs exist. PRs surveyed: #3174 (amalgamated-bot, docs, same-repo, DRAFT, 2026-06-06), #3172 (app/copilot-swe-agent, refactor, same-repo, DRAFT, 2026-06-06), #3162 (amalgamated-bot, docs, same-repo, DRAFT, 2026-06-05), #3160 (app/copilot-swe-agent, refactor, same-repo, DRAFT, 2026-06-05). Two new PRs since previous run (2026-06-06T01:32:10Z): #3174 and #3172. Previous run: #27048817627 (2026-06-06T01:32:10Z) had same result (0 PRs in scope). Pattern consistent across 4+ consecutive runs."
+  "notes": "7 open PRs found. None are fork PRs (all isCrossRepository=false). Per triage workflow instructions, only fork PRs authored by app/github-copilot are in scope. No such PRs exist. PRs surveyed: #3177 (amalgamated-bot, refactor, same-repo, DRAFT, 2026-06-06), #3176 (amalgamated-bot, chore, same-repo, DRAFT, 2026-06-06), #3175 (amalgamated-bot, docs, same-repo, OPEN, 2026-06-06), #3174 (amalgamated-bot, docs, same-repo, DRAFT, 2026-06-06), #3172 (app/copilot-swe-agent, refactor, same-repo, DRAFT, 2026-06-06), #3162 (amalgamated-bot, docs, same-repo, DRAFT, 2026-06-05), #3160 (app/copilot-swe-agent, refactor, same-repo, DRAFT, 2026-06-05). Three new PRs since previous run (2026-06-06T07:50:16Z): #3177, #3176, #3175. Previous run: #27056644893 (2026-06-06T07:50:16Z) had same result (0 PRs in scope). Pattern consistent across 5+ consecutive runs."
 }
