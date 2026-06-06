@@ -87,7 +87,7 @@ Update a series (full update).
 
 ---
 
-### `DELETE /api/series/{id}` 🔒
+### `DELETE /api/series/{id}` 🔒 **Admin**
 
 Delete a series. Returns `204 No Content`.
 

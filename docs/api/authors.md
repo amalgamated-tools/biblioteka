@@ -89,7 +89,7 @@ Update an author (full update).
 
 ---
 
-### `DELETE /api/authors/{id}` 🔒
+### `DELETE /api/authors/{id}` 🔒 **Admin**
 
 Delete an author. Returns `204 No Content`.
 

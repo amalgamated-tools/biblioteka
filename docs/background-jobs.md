@@ -337,6 +337,26 @@ Worker logs are emitted through the application's structured `slog` logger (JSON
 
 On shutdown, the worker calls `srv.Stop()` (stops dequeueing new tasks) before `srv.Shutdown()` (waits for in-flight tasks), giving running jobs up to `DefaultShutdownTimeout` (8 seconds) to complete cleanly.
 
+### Operational safety nets
+
+Two middleware layers protect the worker from silent failures:
+
+**Redis health check** — The worker's `HealthCheckFunc` is called by asynq whenever the Redis connection is checked. If the check returns an error (e.g. Redis is temporarily unreachable), the worker emits a structured `WARN` log:
+
+```
+level=WARN msg="Redis health check failed" error="<reason>"
+```
+
+This surfaces connectivity problems in the log stream without interrupting in-flight jobs. Alert on `msg="Redis health check failed"` to catch transient Redis outages before they exhaust the retry budget on queued jobs.
+
+**Unknown task type logging** — The `notFoundLoggingMiddleware` wraps every task dispatch. If a task arrives for a job type with no registered handler (for example after a deployment rolls back a job registration), the middleware emits a `WARN` log and asynq retries the task according to its retry budget:
+
+```
+level=WARN msg="no handler registered for job type" job="<task-type>"
+```
+
+These warnings appear in the structured log stream and in Asynqmon's Retrying tab. They indicate a mismatch between the tasks in the queue and the handlers registered in the running binary — usually caused by a partial rollout or an in-flight queue at deployment time.
+
 ## How Jobs Are Enqueued
 
 Jobs enter the queue in two ways:

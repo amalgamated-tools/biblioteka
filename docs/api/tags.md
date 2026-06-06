@@ -81,7 +81,7 @@ Update a tag (full update).
 
 ---
 
-### `DELETE /api/tags/{id}` 🔒
+### `DELETE /api/tags/{id}` 🔒 **Admin**
 
 Delete a tag. Returns `204 No Content`.
 

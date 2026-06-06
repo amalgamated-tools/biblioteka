@@ -214,7 +214,7 @@ Update a book's metadata. This is a **full replacement** — every field not inc
 
 ---
 
-### `DELETE /api/books/{id}` 🔒
+### `DELETE /api/books/{id}` 🔒 **Admin**
 
 Delete a book. Returns `204 No Content`.
 
@@ -839,7 +839,7 @@ Send a book file as an email attachment to a specified address. Requires SMTP to
 
 ---
 
-### `DELETE /api/book-files/{id}` 🔒
+### `DELETE /api/book-files/{id}` 🔒 **Admin**
 
 Delete a book file record (does not delete the file from disk). Returns `204 No Content`.
 

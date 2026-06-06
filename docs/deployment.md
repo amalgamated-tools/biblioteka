@@ -395,6 +395,42 @@ The `immutable` directive tells browsers not to issue conditional requests for `
 
 ---
 
+## HTTP Response Compression
+
+Biblioteka compresses HTTP responses with gzip when the client sends `Accept-Encoding: gzip`. Compression is applied transparently by the `GzipMiddleware` layer.
+
+### Compressed content types
+
+Only text-based formats are compressed. Binary formats (images, EPUB/MOBI/PDF downloads) and streaming responses (SSE) are passed through uncompressed.
+
+| Content type | Compressed |
+|---|---|
+| `application/json` | ✓ |
+| `application/xml` | ✓ |
+| `application/atom+xml` (OPDS feeds) | ✓ |
+| `application/javascript` | ✓ |
+| `text/css` | ✓ |
+| `text/html` | ✓ |
+| `text/javascript` | ✓ |
+| `text/plain` | ✓ |
+| `text/xml` | ✓ |
+| `image/svg+xml` | ✓ |
+| Images, EPUB, MOBI, PDF | ✗ (pass-through) |
+
+### Cache correctness
+
+The middleware adds `Vary: Accept-Encoding` to every response so that intermediate caches (CDNs, reverse proxies) store separate entries for compressed and uncompressed versions of the same URL.
+
+### Range requests
+
+Responses to requests that include a `Range` header are never compressed. This preserves `Content-Range` semantics for partial-content downloads.
+
+### Reverse proxy considerations
+
+If your reverse proxy (Nginx, Caddy, etc.) also performs gzip compression, disable it for responses from Biblioteka — double-compression produces invalid output. Because `Vary: Accept-Encoding` is already set, proxy-level caches handle encoding negotiation correctly without additional configuration.
+
+---
+
 ## Health Check
 
 The `GET /api/health` endpoint returns `200 OK` with `{"status":"ok"}` and requires no authentication. Use it for liveness/readiness probes:
