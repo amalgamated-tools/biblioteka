@@ -326,10 +326,6 @@ func (h *LibraryHandler) updateLibrary(w http.ResponseWriter, r *http.Request, i
 //	@Failure		500	{object}	errorResponse
 //	@Router			/libraries/{id} [delete]
 func (h *LibraryHandler) deleteLibrary(w http.ResponseWriter, r *http.Request, id string) {
-	if !requireAdmin(h.DB, w, r) {
-		return
-	}
-
 	deleteResource(h.DB, w, r, id, "library", "library", otelkeys.LibraryID,
 		h.DB.GetLibrary, h.DB.DeleteLibrary,
 		db.AuditActionLibraryDeleted,
