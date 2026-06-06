@@ -210,26 +210,14 @@ func (d *DB) ListBooksByLibraryPaginated(ctx context.Context, libraryID string, 
 	)
 
 	orderBy := d.dialectOrderBy("b.title", "ASC")
-	rows, err := d.QueryContext(ctx,
+	return d.execBooksPaginated(
+		ctx,
+		offset,
 		`SELECT `+bookColumnsWithPrefix("b.")+`, COUNT(*) OVER() FROM books b INNER JOIN library_books lb ON lb.book_id = b.id WHERE lb.library_id = $1 `+orderBy+` LIMIT $2 OFFSET $3`,
-		libraryID, limit, offset,
-	)
-	if err != nil {
-		return nil, 0, err
-	}
-	books, total, err := collectRowsAndTotal(rows, scanBookAndTotal)
-	if err != nil {
-		return nil, 0, err
-	}
-	// When offset exceeds total rows, the window function returns nothing.
-	// Fall back to a COUNT query so the caller can report the true total.
-	if err := countFallback(ctx, d, &total, len(books), offset,
 		`SELECT COUNT(*) FROM books b INNER JOIN library_books lb ON lb.book_id = b.id WHERE lb.library_id = $1`,
-		libraryID,
-	); err != nil {
-		return nil, 0, err
-	}
-	return books, total, nil
+		[]any{libraryID, limit, offset},
+		[]any{libraryID},
+	)
 }
 
 // UpdateBook updates a book's fields and returns the updated book.
