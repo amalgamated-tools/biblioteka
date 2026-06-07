@@ -57,28 +57,13 @@ func (d *DB) SetBookAuthors(ctx context.Context, bookID string, authorIDs []stri
 		slog.String(otelkeys.BookID, bookID),
 		slog.Int(otelkeys.AuthorCount, len(authorIDs)),
 	)
-	seen := make(map[string]struct{}, len(authorIDs))
-	unique := make([]string, 0, len(authorIDs))
-	for _, id := range authorIDs {
-		if _, ok := seen[id]; !ok {
-			seen[id] = struct{}{}
-			unique = append(unique, id)
-		}
-	}
-
-	return d.WithTx(ctx, func(tx *sql.Tx) error {
-		if _, err := tx.ExecContext(ctx, `DELETE FROM book_authors WHERE book_id = $1`, bookID); err != nil {
-			return err
-		}
-
-		for _, authorID := range unique {
-			if _, err := tx.ExecContext(ctx, `INSERT INTO book_authors (book_id, author_id) VALUES ($1, $2)`, bookID, authorID); err != nil {
-				return err
-			}
-		}
-
-		return nil
-	})
+	return d.setBookStringIDs(
+		ctx,
+		bookID,
+		authorIDs,
+		`DELETE FROM book_authors WHERE book_id = $1`,
+		`INSERT INTO book_authors (book_id, author_id) VALUES ($1, $2)`,
+	)
 }
 
 // GetBookSeries returns all series entries for a book.
@@ -101,8 +86,36 @@ func scanBookSeriesEntry(row interface{ Scan(...any) error }) (*BookSeriesEntry,
 	})
 }
 
+// setBookStringIDs atomically replaces all string-ID associations for a book.
+func (d *DB) setBookStringIDs(ctx context.Context, bookID string, entityIDs []string, deleteQuery, insertQuery string) error {
+	seen := make(map[string]struct{}, len(entityIDs))
+	unique := make([]string, 0, len(entityIDs))
+	for _, id := range entityIDs {
+		if _, ok := seen[id]; !ok {
+			seen[id] = struct{}{}
+			unique = append(unique, id)
+		}
+	}
+
+	return d.WithTx(ctx, func(tx *sql.Tx) error {
+		if _, err := tx.ExecContext(ctx, deleteQuery, bookID); err != nil {
+			return err
+		}
+
+		for _, entityID := range unique {
+			if _, err := tx.ExecContext(ctx, insertQuery, bookID, entityID); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+}
+
 // SetBookSeries replaces all series associations for a book.
 // Duplicate series IDs are silently deduplicated (last position wins).
+// This intentionally does not use setBookStringIDs because it stores positions
+// and applies last-position-wins deduplication.
 func (d *DB) SetBookSeries(ctx context.Context, bookID string, entries []BookSeriesInput) error {
 	slog.DebugContext(ctx, "db: setting book series",
 		slog.String(otelkeys.BookID, bookID),
