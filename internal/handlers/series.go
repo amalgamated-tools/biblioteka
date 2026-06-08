@@ -114,9 +114,7 @@ func (h *SeriesHandler) HandleSeries(w http.ResponseWriter, r *http.Request) {
 
 type seriesListDTO struct {
 	Series []seriesDTO `json:"series"`
-	Total  int         `json:"total"`
-	Limit  int         `json:"limit"`
-	Offset int         `json:"offset"`
+	paginationMeta
 }
 
 // listSeries returns a paginated list of series.
@@ -137,9 +135,11 @@ func (h *SeriesHandler) listSeries(w http.ResponseWriter, r *http.Request) {
 		func(items []seriesDTO, total, limit, offset int) seriesListDTO {
 			return seriesListDTO{
 				Series: items,
-				Total:  total,
-				Limit:  limit,
-				Offset: offset,
+				paginationMeta: paginationMeta{
+					Total:  total,
+					Limit:  limit,
+					Offset: offset,
+				},
 			}
 		},
 	)

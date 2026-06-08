@@ -26,9 +26,7 @@ type auditLogDTO struct {
 
 type auditLogListDTO struct {
 	Entries []auditLogDTO `json:"entries"`
-	Total   int           `json:"total"`
-	Limit   int           `json:"limit"`
-	Offset  int           `json:"offset"`
+	paginationMeta
 }
 
 func toAuditLogDTO(e *db.AuditLog) auditLogDTO {
@@ -92,8 +90,10 @@ func (h *AuditLogHandler) HandleAuditLogs(w http.ResponseWriter, r *http.Request
 
 	writeJSON(r.Context(), w, http.StatusOK, auditLogListDTO{
 		Entries: mapSlice(entries, toAuditLogDTO),
-		Total:   total,
-		Limit:   limit,
-		Offset:  offset,
+		paginationMeta: paginationMeta{
+			Total:  total,
+			Limit:  limit,
+			Offset: offset,
+		},
 	})
 }

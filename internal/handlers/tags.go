@@ -126,20 +126,20 @@ func (h *TagHandler) HandleTag(w http.ResponseWriter, r *http.Request) {
 }
 
 type tagListDTO struct {
-	Tags   []tagDTO `json:"tags"`
-	Total  int      `json:"total"`
-	Limit  int      `json:"limit"`
-	Offset int      `json:"offset"`
+	Tags []tagDTO `json:"tags"`
+	paginationMeta
 }
 
 func (h *TagHandler) listTags(w http.ResponseWriter, r *http.Request) {
 	listPaginatedEntities(w, r, "tags", h.DB.ListTagsPaginated, toTagDTO,
 		func(items []tagDTO, total, limit, offset int) tagListDTO {
 			return tagListDTO{
-				Tags:   items,
-				Total:  total,
-				Limit:  limit,
-				Offset: offset,
+				Tags: items,
+				paginationMeta: paginationMeta{
+					Total:  total,
+					Limit:  limit,
+					Offset: offset,
+				},
 			}
 		},
 	)

@@ -75,10 +75,8 @@ type bookSummaryDTO struct {
 }
 
 type bookListDTO struct {
-	Books  []bookSummaryDTO `json:"books"`
-	Total  int              `json:"total"`
-	Limit  int              `json:"limit"`
-	Offset int              `json:"offset"`
+	Books []bookSummaryDTO `json:"books"`
+	paginationMeta
 }
 
 func toBookSummaryDTO(b *db.Book) bookSummaryDTO {

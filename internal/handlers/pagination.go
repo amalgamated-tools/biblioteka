@@ -11,6 +11,12 @@ const (
 	maxPageOffset    = maxPageLimit * 1000 // 200,000
 )
 
+type paginationMeta struct {
+	Total  int `json:"total"`
+	Limit  int `json:"limit"`
+	Offset int `json:"offset"`
+}
+
 // parseBoundedQueryInt extracts a single integer query parameter by key.
 // It falls back to defaultVal on parse errors or when the value is below
 // minVal, and caps values above maxVal at maxVal.
