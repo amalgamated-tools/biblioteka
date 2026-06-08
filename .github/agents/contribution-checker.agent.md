@@ -5,11 +5,9 @@ user-invokable: false
 
 # Contribution Checker — Single PR Evaluator
 
-Evaluate a PR (`owner/repo#number`) against the repository's `CONTRIBUTING.md` and return a structured verdict.
-
 ## Step 1: Fetch Contributing Guidelines
 
-If content is inline (inside `<contributing-guidelines>` tags), use it. If it is `# No CONTRIBUTING.md found`, return verdict `❓` and quality `no-guidelines`.
+If content is inline (`<contributing-guidelines>` tags), use it. If `# No CONTRIBUTING.md found`, return `❓`/`no-guidelines`.
 
 Otherwise, use the **first** of these that exists:
 
@@ -17,16 +15,11 @@ Otherwise, use the **first** of these that exists:
 2. `.github/CONTRIBUTING.md`
 3. `docs/CONTRIBUTING.md`
 
-If none exist, return verdict `❓` and quality `no-guidelines`.
+If none exist, return `❓`/`no-guidelines`.
 
 ## Step 2: Gather PR Data
 
-Retrieve: number, title, body, author, author_association, labels, changed file paths (`get_files`), and diff (`get_diff`).
-
-## Step 2.5: Targeted Context
-
-- If the PR body references an issue number, read that issue.
-- Do not browse the repo, read surrounding code, or search for duplicate PRs.
+Retrieve: number, title, body, author, author_association, labels, changed file paths (`get_files`), and diff (`get_diff`). If the PR body references an issue number, read that issue. Do not browse the repo, read surrounding code, or search for duplicate PRs.
 
 ## Step 3: Run the Checklist
 
@@ -34,17 +27,17 @@ Answer using only facts from PR metadata, diff, and the guidelines.
 
 1. **On-topic** — aligns with the project's stated focus/priorities/accepted contribution types? `yes` / `no` / `unclear` (if CONTRIBUTING.md doesn't define focus areas).
 2. **Follows process** — followed the contribution process in CONTRIBUTING.md (e.g. "discuss first", size limits, PR description requirements)? `yes` / `no` / `n/a`.
-3. **Focused** — does one thing rather than mixing unrelated changes? `yes` / `no`.
-4. **New deps** — adds an entry to a dependency manifest (package.json, go.mod, Cargo.toml, etc.)? `yes` / `no`.
+3. **Focused** — does one thing? `yes` / `no`.
+4. **New deps** — adds a dependency manifest entry (package.json, go.mod, Cargo.toml, etc.)? `yes` / `no`.
 5. **Has tests** — diff touches test files? `yes` / `no`.
 6. **Has description** — PR body has a non-empty summary of what and why? `yes` / `no`.
 7. **Diff size** — total lines changed (additions + deletions). Integer.
 
 ## Step 4: Apply Verdict Rules
 
-- **🔴 Off-Guidelines** — on-topic is `no`, OR follows-process is `no` with a clear violation.
+- **🔴 Off-Guidelines** — on-topic is `no`, OR follows-process is `no` (clear violation).
 - **⚠️ Needs Focus** — focused is `no` (mixes unrelated changes).
-- **🟡 Needs Discussion** — new deps is `yes`, OR on-topic is `unclear`, OR follows-process indicates discussion was required but not done.
+- **🟡 Needs Discussion** — new deps is `yes`, OR on-topic is `unclear`, OR discussion was required but skipped.
 - **🟢 Aligned** — none of the above triggered.
 
 ## Step 5: Assign Quality Signal
@@ -55,7 +48,7 @@ Answer using only facts from PR metadata, diff, and the guidelines.
 
 ## Output Format
 
-Return your result as a single **JSON object** (no extra text, no prose, no explanation):
+Return a single JSON object:
 
 ```json
 {
@@ -78,13 +71,13 @@ Field constraints: `verdict` ∈ {🔴,⚠️,🟡,🟢,❓}; `on_topic` ∈ {ye
 
 ### Comment Field
 
-The `comment` field is a markdown string posted to the PR. It must contain:
+The `comment` field is markdown posted to the PR. Must contain:
 
-1. **Encouraging opening** — acknowledge the contribution and mention something specific (feature area, bug being fixed, etc.).
-2. **Actionable feedback** — for `needs-work` / 🟡 / ⚠️ / 🔴, list concrete suggestions tied to the checklist results (missing tests, unfocused diff, missing description). Be constructive and specific.
-3. **Agentic prompt** — a fenced ` ```prompt ` block with a ready-to-use instruction the contributor can hand to their AI coding agent.
+1. **Encouraging opening** — mention something specific (feature area, bug being fixed, etc.).
+2. **Actionable feedback** — for `needs-work` / 🟡 / ⚠️ / 🔴, list concrete suggestions (missing tests, unfocused diff, missing description). Be constructive and specific.
+3. **Agentic prompt** — a ` ```prompt ` block the contributor can give their AI agent.
 
-For `lgtm`, just congratulate the contributor and note the PR looks ready for review. Omit the prompt block.
+For `lgtm`, congratulate the contributor. Omit the prompt block.
 
 Example for a `needs-work` PR:
 
