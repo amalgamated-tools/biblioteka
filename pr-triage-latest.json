@@ -1,6 +1,6 @@
 {
-  "run_date": "2026-06-08T01:38:47Z",
-  "run_id": "27111250881",
+  "run_date": "2026-06-08T08:31:21Z",
+  "run_id": "27125412870",
   "total_prs_triaged": 0,
   "auto_merge_candidates": [],
   "fast_track_needed": [],
@@ -12,16 +12,17 @@
     "by_priority": {},
     "by_action": {}
   },
-  "notes": "8 open PRs found. None are fork PRs (all isCrossRepository=false). Per triage workflow instructions, only fork PRs are in scope. No such PRs exist. All PRs originate from branches within the same repository. Consistent pattern across 11+ consecutive runs.",
-  "consecutive_no_fork_runs": 11,
+  "notes": "9 open PRs found. None are fork PRs (all isCrossRepository=false). Per triage workflow instructions, only fork PRs are in scope. No such PRs exist. All PRs originate from branches within the same repository. Consistent pattern across 12+ consecutive runs.",
+  "consecutive_no_fork_runs": 12,
   "all_surveyed_prs": [
+    {"number": 3191, "author": "amalgamated-bot", "category": "chore", "cross_repo": false, "draft": false},
+    {"number": 3190, "author": "app/copilot-swe-agent", "category": "refactor", "cross_repo": false, "draft": true},
     {"number": 3185, "author": "amalgamated-bot", "category": "docs", "cross_repo": false, "draft": false},
-    {"number": 3184, "author": "Copilot", "category": "refactor", "cross_repo": false, "draft": true},
-    {"number": 3183, "author": "Copilot", "category": "refactor", "cross_repo": false, "draft": true},
+    {"number": 3184, "author": "app/copilot-swe-agent", "category": "refactor", "cross_repo": false, "draft": true},
+    {"number": 3183, "author": "app/copilot-swe-agent", "category": "refactor", "cross_repo": false, "draft": true},
     {"number": 3176, "author": "amalgamated-bot", "category": "chore", "cross_repo": false, "draft": true},
     {"number": 3174, "author": "amalgamated-bot", "category": "docs", "cross_repo": false, "draft": true},
-    {"number": 3172, "author": "Copilot", "category": "refactor", "cross_repo": false, "draft": true},
-    {"number": 3162, "author": "amalgamated-bot", "category": "docs", "cross_repo": false, "draft": true},
-    {"number": 3160, "author": "Copilot", "category": "refactor", "cross_repo": false, "draft": true}
+    {"number": 3172, "author": "app/copilot-swe-agent", "category": "refactor", "cross_repo": false, "draft": true},
+    {"number": 3160, "author": "app/copilot-swe-agent", "category": "refactor", "cross_repo": false, "draft": true}
   ]
 }
