@@ -1,50 +1,55 @@
-# Agent Performance 2026-06-07
+# Agent Performance 2026-06-08
 
-**Run**: agent-performance-analyzer | 2026-06-07T13:22Z | [§27093759465](https://github.com/amalgamated-tools/biblioteka/actions/runs/27093759465)
+**Run**: agent-performance-analyzer | 2026-06-08T14:19Z | [§27144015202](https://github.com/amalgamated-tools/biblioteka/actions/runs/27144015202)
 
 ## Summary
-- 15 workflows analyzed | Quality: 60/100 (↓-2) | Effectiveness: 48/100 (↓-3)
-- Ecosystem: 🔴 DEGRADED | Clean: 7/15 (47% healthy)
-- ESCALATED: Contribution Check day 10 failures (now 10 consecutive)
-- NEW CRITICAL: Efficiency Improver 5 consecutive daily failures (new alert)
-- ESCALATED: Architecture Guardian + Go Fan both missing 2+ days
-- PERSISTENT: Code Refiner day 8 skip/cancel loop
+- 17 workflows analyzed | Quality: 55/100 (↓-5) | Effectiveness: 50/100 (↑+2)
+- Ecosystem: 🔴 DEGRADED (3rd consecutive) | Healthy: 7/17 (41%, ↓ from 47%)
+- NEW CRITICAL: Architecture Guardian day 3 missing (escalated from Warning)
+- NEW CRITICAL: Go Fan now actively FAILING (was missing, now run 27124476632 failed)
+- ONGOING: Contribution Check day 11, Code Refiner day 9, Efficiency Improver day 6
+- NEW WATCH: Daily Doc Healer + Daily Malicious Scan both failed at 07:22 UTC (shared infra?)
+- NEW AGENT: Typist - Go Type Analysis (first run today, succeeded)
 
 ## Agent Scores
 | Agent | Quality | Effectiveness | Notes |
 |-------|---------|--------------|-------|
-| Agentic Maintenance | 90 ✅ | 95 ✅ | 7+ days perfect, 4 runs today |
-| Daily Testify Expert | 82 ✅ | 80 ✅ | 7/7, issue #3173 open |
-| Daily Caveman Optimizer | 82 ✅ | 78 ✅ | 7/7, PR #3161 merged |
-| Daily Doc Healer | 80 ✅ | 78 ✅ | 7/7, PR #3174 open |
-| Daily Malicious Scan | 78 ✅ | 75 ✅ | 1/1 today |
-| PR Triage Agent | 75 ✅ | 72 ✅ | running correctly |
-| Duplicate Code Detector | 74 ✅ | 75 ✅ | issues #3181/#3182 → PRs #3183/#3184 |
-| Architecture Guardian | 60 ⚠️ | 45 ⚠️ | MISSING June 6-7 (2 days, escalated) |
-| Go Fan | 60 ⚠️ | 45 ⚠️ | MISSING June 6-7 (2 days, escalated) |
-| Code Simplifier | 55 ⚠️ | 48 ⚠️ | 0% merge rate 7 days; quality improving |
-| Daily Doc Updater | 48 ⚠️ | 43 ⚠️ | PR pile-up: #3162/#3174/#3185 open |
-| Dead Code Remover | 48 ⚠️ | 38 ⚠️ | 0% merge rate; PR #3176 open |
-| Efficiency Improver | 20 🔴 | 10 🔴 | NEW: 5 consecutive daily failures |
-| Contribution Check | 12 🔴 | 8 🔴 | DAY 10 infra failures; content still valid |
-| Code Refiner | 8 🔴 | 5 🔴 | DAY 8 skip/cancel loop |
+| Agentic Maintenance | 90 ✅ | 95 ✅ | 5 runs today, perfect |
+| Daily Testify Expert | 82 ✅ | 80 ✅ | Succeeded today |
+| Daily Caveman Optimizer | 82 ✅ | 78 ✅ | PR #3191 created today |
+| Daily Doc Healer | 75 ⚠️ | 73 ⚠️ | FIRST FAIL today 07:22 UTC (shared infra?) |
+| PR Triage Agent | 75 ✅ | 72 ✅ | Running correctly |
+| Duplicate Code Detector | 74 ✅ | 75 ✅ | Issue #3189 today → copilot PR #3190 |
+| copilot-swe-agent | 72 ✅ | 65 ✅ | ~60% merge rate, 8 open PRs |
+| Typist - Go Type Analysis | 70 🆕 | 65 🆕 | New today, 1 run success |
+| Daily Malicious Scan | 73 ⚠️ | 70 ⚠️ | FIRST FAIL today 07:22 UTC (shared infra?) |
+| Code Simplifier | 55 ⚠️ | 48 ⚠️ | 0% merge 7 days, today succeeded |
+| Daily Doc Updater | 48 ⚠️ | 43 ⚠️ | PR pile-up, scope overlap with Doc Healer |
+| Dead Code Remover | 48 ⚠️ | 38 ⚠️ | PR #3176 open, 0% merge rate |
+| Go Fan | 25 🔴 | 15 🔴 | CRITICAL: now failing (run 27124476632), day 3 |
+| Architecture Guardian | 20 🔴 | 15 🔴 | CRITICAL: day 3 missing, no output |
+| Efficiency Improver | 20 🔴 | 10 🔴 | Day 6 failures (June 3-8) |
+| Contribution Check | 12 🔴 | 8 🔴 | Day 11, 3 runs today all fail, content valid |
+| Code Refiner | 8 🔴 | 5 🔴 | Day 9 cancelled, disable immediately |
 
-## PR Merge Rates (14 days)
-- amalgamated-bot: 20% (4/20) — problematic; Code Simplifier + Dead Code = 0 merges
-- copilot-swe-agent: 55% (6/11) — acceptable; 3 new refactor PRs today
-- dependabot: 100% (6/6)
+## PR Merge Rates (30 days)
+- dependabot: 100% (11/11)
+- copilot-swe-agent: ~60% (9/~15) — acceptable
+- amalgamated-bot: ~35% (7/~20) — low; drag from Code Simplifier + Dead Code Remover (0 merges each)
 
-## Key Changes vs June 6
-- 🔴 NEW: Efficiency Improver tracked — 5 consecutive failures since June 3
-- 🔴 ESCALATED: Contribution Check now day 10 (was day 5)
-- ⚠️ ESCALATED: Architecture Guardian + Go Fan both now 2 days missing
-- ✅ Duplicate Code Detector ecosystem effect: issues → copilot-swe PRs same day
-- → Code Refiner: day 8 (unchanged, persistent)
+## Key Changes vs June 7
+- 🔴 NEW CRITICAL: Architecture Guardian escalated (day 3 missing)
+- 🔴 NEW CRITICAL: Go Fan now actively failing (was missing, escalated)
+- ⚠️ NEW WATCH: Daily Doc Healer first failure (07:22 UTC)
+- ⚠️ NEW WATCH: Daily Malicious Scan first failure (07:22 UTC, same minute as Doc Healer)
+- 🆕 NEW: Typist - Go Type Analysis appeared (1 run, success)
+- → Code Refiner day 9, Contribution Check day 11, Efficiency Improver day 6 (all unchanged)
 
 ## Recommendations
-1. 🔴 Fix Contribution Check — post-output infra step (day 10, ~1-2h fix)
-2. 🔴 Disable Code Refiner — day 8, CI waste
-3. 🔴 Diagnose Efficiency Improver — successful before June 2 (PR #3116), failing since June 3
-4. ⚠️ Investigate Architecture Guardian + Go Fan scheduling (both missing June 6-7)
-5. ⚠️ Gate Dead Code Remover + Code Simplifier on open PR count
-6. ⚠️ Resolve Daily Doc Updater / Daily Doc Healer scope overlap
+1. 🔴 Disable Code Refiner — day 9, CI waste (15 min effort)
+2. 🔴 Fix Contribution Check post-output infra step (day 11, ~1-2h)
+3. 🔴 Investigate Architecture Guardian + Go Fan — shared scheduling/secrets issue
+4. 🔴 Diagnose Efficiency Improver — regression since June 3
+5. ⚠️ Watch Doc Healer + Malicious Scan tomorrow — shared infra or transient?
+6. ⚠️ Gate Code Simplifier + Dead Code Remover on open PR count
+7. ⚠️ Define scope boundary between Daily Doc Updater and Daily Doc Healer
