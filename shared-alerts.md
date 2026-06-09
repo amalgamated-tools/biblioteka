@@ -1,42 +1,44 @@
-## Latest Updates (2026-06-08)
+## Latest Updates (2026-06-09)
 
-### CRITICAL (June 8)
+### CRITICAL (June 9)
+- 🔴 Contribution Check: DAY 12 consecutive failures (2 runs today: 27208897662, 27196957811)
+  - Content VALID (issue #3197 created correctly today); post-output infra step is failure point
+  - Fix priority: HIGH (~1-2h effort)
+- 🔴 Efficiency Improver: DAY 7 consecutive failures (05:13 UTC, run 27185357617)
+  - No outputs since May 31 (last success: PR #3116 gzip). Regression started ~June 3.
+- 🔴 Code Refiner: DAY 9+ all-cancelled/skipped (no run today)
+  - Pure CI waste. Disable immediately.
+
+### RECOVERED (June 9) ✅
+- ✅ Go Fan: RECOVERED - run 27191467749 succeeded (07:41 UTC); issue #3205 created
+  - June 8 failure (27124476632) appears resolved. Monitor for recurrence.
+- ✅ Architecture Guardian: ACTIVE - last run June 8 success (27146008940, 14:50 UTC)
+  - June 6-7 gap resolved. Runs afternoon UTC. Watch for recurrence.
+- ✅ Daily Doc Healer: RECOVERED - run 27189649719 succeeded (07:03 UTC)
+  - June 8 failure CONFIRMED transient/shared-infra (co-incident with Malicious Scan)
+- ✅ Daily Malicious Scan: RECOVERED - run 27189660102 succeeded (07:03 UTC)
+  - CONFIRMED: June 8 failure was shared transient infra event at 07:22 UTC
+
+### Watch (June 9)
+- ⚠️ copilot-swe-agent: 8 open PRs accumulating (#3160, #3172, #3183, #3184, #3190, #3201, #3202, #3203)
+  - Created 3 new PRs today in response to duplicate-code issues #3198-3200
+  - Merge backlog needs clearing before more are added
+- ⚠️ Daily Caveman Optimizer: PR #3191 title flagged by Contribution Check (missing conventional commit format)
+- ⚠️ amalgamated-bot PR merge rate: 22% (7/32, 30 days) — low due to 0% merge on Code Simplifier + Dead Code Remover
+
+### Ecosystem Health (June 9)
+- Overall: ⚠️ RECOVERING (was DEGRADED 3 consecutive days)
+- Quality avg: 64/100 (↑+9)
+- Effectiveness avg: 56/100 (↑+6)
+- Healthy: 9/17 (53%, ↑ from 41%)
+- Critical agents: 3 (↓ from 5+ yesterday)
+
+### Previous Updates (2026-06-08)
 - 🔴 Code Refiner: DAY 9 all-cancelled (disable immediately — pure CI waste)
-- 🔴 Contribution Check: 11 consecutive failures (3 runs today all failed: 27118845876, 27129743603, 27142123286)
-  - Content valid (issue #3188 created correctly); post-output infra step is failure point
-- 🔴 Architecture Guardian: DAY 3 MISSING — escalated to Critical
-  - No runs June 6, 7, 8; issue #3155 still open; last success June 5
-- 🔴 Go Fan: DAY 3, NOW ACTIVELY FAILING — escalated to Critical
-  - Was missing June 6-7; run 27124476632 failed June 8
-  - Both Guardian + Go Fan missing same dates → possible shared scheduling/secrets issue
-- 🔴 Efficiency Improver: 6 consecutive daily failures (June 3-8, ~05:00-05:30 UTC)
-  - Last success: PR #3116 (gzip) on May 31; something changed around June 3
-
-### WARNING (June 8)
-- ⚠️ Daily Doc Healer: FIRST FAILURE today (run 27122221410, 07:22 UTC)
-  - Was 7/7 success; co-incident with Malicious Scan failure → shared infra event?
-  - Monitor tomorrow before treating as agent-specific
-- ⚠️ Daily Malicious Scan: FIRST FAILURE today (run 27122262851, 07:22 UTC)
-  - Same timestamp as Doc Healer → likely shared external dependency issue
-- ⚠️ Daily Doc Updater: PR pile-up continues (#3162, #3174, #3185 open); scope overlap with Doc Healer
-- ⚠️ Dead Code Remover: PR #3176 open, 0% merge rate 7 days
-- ⚠️ Code Simplifier: 0% merge rate 7 days; PRs #3172, #3190 open
-
-### New Today (June 8)
-- 🆕 Typist - Go Type Analysis: First observed run (27137355720), succeeded; establishing baseline
-
-### Positive Trends (June 8)
-- ✅ Agentic Maintenance: 5 successful runs today, 100% reliable
-- ✅ Duplicate Code Detector ecosystem pipeline: #3189 today → copilot PR #3190 triggered
-- ✅ Daily Caveman Optimizer: PR #3191 created today
-- ✅ Daily Testify Expert: Succeeded today
-- ✅ copilot-swe-agent: ~60% merge rate, healthy throughput
-
-### Previous Updates (2026-06-07)
-- 🔴 Contribution Check: 10 consecutive failures (was day 10, now day 11)
-- 🔴 Code Refiner: day 8 all-cancelled/skipped (now day 9)
-- 🔴 Efficiency Improver: 5 consecutive failures (now day 6)
-- ⚠️ Architecture Guardian: Missing June 6-7 (now day 3, escalated Critical)
-- ⚠️ Go Fan: Missing June 6-7 (now failing, escalated Critical)
-- ✅ Duplicate Code Detector: issues #3181/#3182 → PRs #3183/#3184 same day
-- ✅ Agentic Maintenance: 4 successful runs June 7
+- 🔴 Contribution Check: 11 consecutive failures (3 runs all failed: 27118845876, 27129743603, 27142123286)
+- 🔴 Architecture Guardian: DAY 3 MISSING — escalated to Critical (resolved June 8)
+- 🔴 Go Fan: DAY 3, NOW ACTIVELY FAILING — escalated to Critical (resolved June 9)
+- 🔴 Efficiency Improver: 6 consecutive daily failures (June 3-8)
+- ⚠️ Daily Doc Healer: FIRST FAILURE (run 27122221410, 07:22 UTC) — resolved June 9
+- ⚠️ Daily Malicious Scan: FIRST FAILURE (run 27122262851, 07:22 UTC) — resolved June 9
+- 🆕 Typist - Go Type Analysis: First observed (run 27137355720), succeeded
