@@ -116,11 +116,12 @@ func extractWorkData(
 	author contributorNode,
 ) *workData {
 	return &workData{
-		workID:       work.GetId(),
-		workLegacyID: work.GetLegacyId(),
-		bookID:       book.GetId(),
-		bookLegacyID: book.GetLegacyId(),
-		bookImageURL: book.GetImageUrl(), bookTitle: book.GetTitle(),
+		workID:                work.GetId(),
+		workLegacyID:          work.GetLegacyId(),
+		bookID:                book.GetId(),
+		bookLegacyID:          book.GetLegacyId(),
+		bookImageURL:          book.GetImageUrl(),
+		bookTitle:             book.GetTitle(),
 		bookASIN:              details.GetAsin(),
 		bookISBN:              details.GetIsbn(),
 		bookISBN13:            details.GetIsbn13(),
