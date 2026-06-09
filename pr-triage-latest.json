@@ -1,6 +1,6 @@
 {
-  "run_date": "2026-06-09T08:09:02Z",
-  "run_id": "27192637154",
+  "run_date": "2026-06-09T13:47:57Z",
+  "run_id": "27210614866",
   "total_prs_triaged": 0,
   "auto_merge_candidates": [],
   "fast_track_needed": [],
@@ -12,8 +12,8 @@
     "by_priority": {},
     "by_action": {}
   },
-  "notes": "10 open PRs found. None are fork PRs (all isCrossRepository=false). Per triage workflow instructions, only fork PRs are in scope. No such PRs exist. All PRs originate from branches within the same repository. Consistent pattern across 16+ consecutive runs.",
-  "consecutive_no_fork_runs": 16,
+  "notes": "9 open PRs found. None are fork PRs (all isCrossRepository=false). Per triage workflow instructions, only fork PRs are in scope. No such PRs exist. All PRs originate from branches within the same repository. Consistent pattern across 17+ consecutive runs.",
+  "consecutive_no_fork_runs": 17,
   "all_surveyed_prs": [
     {
       "number": 3203,
@@ -39,7 +39,7 @@
     {
       "number": 3191,
       "author": "amalgamated-bot",
-      "title": "[caveman] Optimize instruction verbosity \u2014 contribution-checker, workflows_shared_reporting (2026-06-08)",
+      "title": "[caveman] Optimize instruction verbosity — contribution-checker, workflows_shared_reporting (2026-06-08)",
       "cross_repo": false,
       "draft": false
     },
@@ -61,13 +61,6 @@
       "number": 3183,
       "author": "app/copilot-swe-agent",
       "title": "refactor(db): extract batchFetchByBookID to eliminate 4x duplicated batch-fetch skeleton",
-      "cross_repo": false,
-      "draft": true
-    },
-    {
-      "number": 3176,
-      "author": "amalgamated-bot",
-      "title": "[dead-code] chore: remove dead functions \u2014 2 functions removed",
       "cross_repo": false,
       "draft": true
     },
