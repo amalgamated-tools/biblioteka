@@ -156,3 +156,10 @@ docs-serve:
 db-dump: clean
 	go run cmd/cli/main.go db-migrate
 	dbmate -u "sqlite:db/biblioteka.db" -d "db/migrations/sqlite" dump
+
+modupdate: ## Update all Go module dependencies to their latest versions
+	go get -u ./...
+	go mod tidy
+
+frontendupdate: ## Update all frontend dependencies to their latest versions
+	cd frontend && pnpm up --latest && pnpm install
