@@ -1,6 +1,6 @@
 {
-  "run_date": "2026-06-10T01:37:06Z",
-  "run_id": "27247210152",
+  "run_date": "2026-06-10T08:18:42Z",
+  "run_id": "27262851028",
   "total_prs_triaged": 0,
   "auto_merge_candidates": [],
   "fast_track_needed": [],
@@ -12,9 +12,37 @@
     "by_priority": {},
     "by_action": {}
   },
-  "notes": "9 open PRs found. None are fork PRs (all isCrossRepository=false). None are authored by app/github-copilot. Per triage workflow instructions, only fork PRs from app/github-copilot are in scope. No such PRs exist. All PRs originate from branches within the same repository (copilot-swe-agent and amalgamated-bot). Consistent pattern across 19+ consecutive runs.",
-  "consecutive_no_fork_runs": 19,
+  "notes": "13 open PRs found. None are fork PRs (all isCrossRepository=false). None are authored by app/github-copilot. Per triage workflow instructions, only fork PRs from app/github-copilot are in scope. No such PRs exist. All PRs originate from branches within the same repository (copilot-swe-agent and amalgamated-bot). Consistent pattern across 20+ consecutive runs. New PRs since last run: #3215, #3214, #3213, #3212.",
+  "consecutive_no_fork_runs": 20,
   "all_surveyed_prs": [
+    {
+      "number": 3215,
+      "author": "amalgamated-bot",
+      "title": "[docs] Self-healing documentation fixes from issue analysis - 2026-06-10",
+      "cross_repo": false,
+      "draft": true
+    },
+    {
+      "number": 3214,
+      "author": "amalgamated-bot",
+      "title": "[caveman] Optimize instruction verbosity — contribution-checker.agent.md (2026-06-10)",
+      "cross_repo": false,
+      "draft": false
+    },
+    {
+      "number": 3213,
+      "author": "app/copilot-swe-agent",
+      "title": "refactor(db): deduplicate batch book relation loaders",
+      "cross_repo": false,
+      "draft": true
+    },
+    {
+      "number": 3212,
+      "author": "app/copilot-swe-agent",
+      "title": "refactor(calibre): deduplicate book metadata map loaders",
+      "cross_repo": false,
+      "draft": true
+    },
     {
       "number": 3203,
       "author": "app/copilot-swe-agent",
