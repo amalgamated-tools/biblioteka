@@ -32,8 +32,8 @@ Retrieve: number, title, body, author, author_association, labels, changed file 
 
 Answer using only facts from PR metadata, diff, and the guidelines.
 
-1. **On-topic** — aligns with the project's stated focus/priorities/accepted contribution types? `yes` / `no` / `unclear` (if CONTRIBUTING.md doesn't define focus areas).
-2. **Follows process** — followed the contribution process in CONTRIBUTING.md (e.g. "discuss first", size limits, PR description requirements)? `yes` / `no` / `n/a`.
+1. **On-topic** — aligns with project focus/priorities/accepted types? `yes` / `no` / `unclear` (if no focus areas defined).
+2. **Follows process** — followed CONTRIBUTING.md's process (e.g. "discuss first", size limits, description requirements)? `yes` / `no` / `n/a`.
 3. **Focused** — does one thing rather than mixing unrelated changes? `yes` / `no`.
 4. **New deps** — adds an entry to a dependency manifest (package.json, go.mod, Cargo.toml, etc.)? `yes` / `no`.
 5. **Has tests** — diff touches test files? `yes` / `no`.
@@ -42,9 +42,9 @@ Answer using only facts from PR metadata, diff, and the guidelines.
 
 ## Step 4: Apply Verdict Rules
 
-- **🔴 Off-Guidelines** — on-topic is `no`, OR follows-process is `no` with a clear violation.
-- **⚠️ Needs Focus** — focused is `no` (mixes unrelated changes).
-- **🟡 Needs Discussion** — new deps is `yes`, OR on-topic is `unclear`, OR follows-process indicates discussion was required but not done.
+- **🔴 Off-Guidelines** — on-topic `no`, OR follows-process `no` with a clear violation.
+- **⚠️ Needs Focus** — focused `no`.
+- **🟡 Needs Discussion** — new deps `yes`, on-topic `unclear`, or follows-process missed required discussion.
 - **🟢 Aligned** — none of the above triggered.
 
 ## Step 5: Assign Quality Signal
@@ -55,7 +55,7 @@ Answer using only facts from PR metadata, diff, and the guidelines.
 
 ## Output Format
 
-Return your result as a single **JSON object** (no extra text, no prose, no explanation):
+Return a single **JSON object**:
 
 ```json
 {
@@ -78,23 +78,23 @@ Field constraints: `verdict` ∈ {🔴,⚠️,🟡,🟢,❓}; `on_topic` ∈ {ye
 
 ### Comment Field
 
-The `comment` field is a markdown string posted to the PR. It must contain:
+The `comment` field must contain:
 
-1. **Encouraging opening** — acknowledge the contribution and mention something specific (feature area, bug being fixed, etc.).
-2. **Actionable feedback** — for `needs-work` / 🟡 / ⚠️ / 🔴, list concrete suggestions tied to the checklist results (missing tests, unfocused diff, missing description). Be constructive and specific.
-3. **Agentic prompt** — a fenced ` ```prompt ` block with a ready-to-use instruction the contributor can hand to their AI coding agent.
+1. **Encouraging opening** — acknowledge the contribution; mention something specific.
+2. **Actionable feedback** — for non-lgtm results, list concrete suggestions tied to checklist failures. Be specific.
+3. **Agentic prompt** — a fenced ` ```prompt ` block the contributor can hand to their coding agent.
 
 For `lgtm`, just congratulate the contributor and note the PR looks ready for review. Omit the prompt block.
 
-Example for a `needs-work` PR:
+Example (`needs-work`):
 
 ```markdown
-Hey @alice 👋 — thanks for working on the auth refactor! Here are a few things that would help get this across the finish line:
+Hey @alice 👋 — thanks for working on the auth refactor! A few things to address:
 
-- **Add tests** — the new rate-limiting logic in `src/auth/limiter.ts` doesn't have coverage yet. Unit tests for the happy path and the throttled case would go a long way.
-- **Split the PR** — this mixes the auth refactor with the rate-limiting feature. Consider separating them so reviewers can focus on one thing at a time.
+- **Add tests** — `src/auth/limiter.ts` has no coverage yet; add unit tests for the happy path and throttled case.
+- **Split the PR** — mixes the auth refactor with rate-limiting; separate them so reviewers can focus on one thing.
 
-If you'd like a hand, you can assign this prompt to your coding agent:
+Assign this to your coding agent:
 
 ` `` prompt
 Add unit tests for the rate-limiting middleware in src/auth/limiter.ts.
