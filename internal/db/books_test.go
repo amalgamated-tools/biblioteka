@@ -243,6 +243,61 @@ func TestGetAuthorsForBooks(t *testing.T) {
 	require.Equal(t, author1.ID, got[book2.ID][0].ID)
 }
 
+func TestGetSeriesForBooks_EmptyInput(t *testing.T) {
+	d := newTestDB(t)
+
+	result, err := d.GetSeriesForBooks(t.Context(), []string{})
+	require.NoError(t, err, "GetSeriesForBooks(empty) error")
+	require.Nil(t, result)
+}
+
+func TestGetSeriesForBooks_NilInput(t *testing.T) {
+	d := newTestDB(t)
+
+	result, err := d.GetSeriesForBooks(t.Context(), nil)
+	require.NoError(t, err, "GetSeriesForBooks(nil) error")
+	require.Nil(t, result)
+}
+
+func TestGetSeriesForBooks_MultipleBooks(t *testing.T) {
+	d := newTestDB(t)
+
+	book1, err := d.CreateBook(t.Context(), BookInput{Title: "The Gunslinger"})
+	require.NoError(t, err, "CreateBook() for book1 error")
+	book2, err := d.CreateBook(t.Context(), BookInput{Title: "Wizard and Glass"})
+	require.NoError(t, err, "CreateBook() for book2 error")
+
+	series1, err := d.CreateSeries(t.Context(), "The Dark Tower", nil, nil, nil)
+	require.NoError(t, err, "CreateSeries() for series1 error")
+	series2, err := d.CreateSeries(t.Context(), "Mid-World Tales", nil, nil, nil)
+	require.NoError(t, err, "CreateSeries() for series2 error")
+
+	position1 := 1.0
+	position2 := 4.0
+	require.NoError(t, d.SetBookSeries(t.Context(), book1.ID, []BookSeriesInput{
+		{SeriesID: series1.ID, Position: &position1},
+	}), "SetBookSeries() for book1 error")
+	require.NoError(t, d.SetBookSeries(t.Context(), book2.ID, []BookSeriesInput{
+		{SeriesID: series1.ID, Position: &position2},
+		{SeriesID: series2.ID},
+	}), "SetBookSeries() for book2 error")
+
+	result, err := d.GetSeriesForBooks(t.Context(), []string{book1.ID, book2.ID})
+	require.NoError(t, err, "GetSeriesForBooks() error")
+	require.Len(t, result, 2)
+	require.Len(t, result[book1.ID], 1)
+	require.Equal(t, series1.ID, result[book1.ID][0].Series.ID)
+	require.NotNil(t, result[book1.ID][0].Position)
+	require.InDelta(t, position1, *result[book1.ID][0].Position, 0.001)
+
+	require.Len(t, result[book2.ID], 2)
+	require.Equal(t, series2.ID, result[book2.ID][0].Series.ID)
+	require.Nil(t, result[book2.ID][0].Position)
+	require.Equal(t, series1.ID, result[book2.ID][1].Series.ID)
+	require.NotNil(t, result[book2.ID][1].Position)
+	require.InDelta(t, position2, *result[book2.ID][1].Position, 0.001)
+}
+
 func TestDeleteBook_CascadeAuthorsAndSeries(t *testing.T) {
 	d := newTestDB(t)
 
