@@ -90,12 +90,12 @@ Common HTTP status codes:
 | **API Keys** | `/api/api-keys`, `/api/api-keys/{id}` | Long-lived `bib_`-prefixed access tokens; JWT only |
 | **Config** | `/api/config/status`, `/api/config/llm`, `/api/config/oidc`, `/api/config/smtp`, `/api/config/smtp/test`, `/api/config/watch-folder` | `/api/config/status` — JWT only (any authenticated user); all others — admin only |
 | **Admin** | `GET /api/admin/users`, `PUT /api/admin/users/{id}`, `POST /api/admin/search/reindex` | User listing, promote/demote admin, rebuild full-text search index; admin only |
-| **Libraries** | `/api/libraries`, `/api/libraries/{id}` | Named book collections with file-system paths |
-| **Authors** | `/api/authors`, `/api/authors/{id}` | Author management |
-| **Series** | `/api/series`, `/api/series/{id}` | Series management |
-| **Tags** | `/api/tags`, `/api/tags/{id}`, `GET`/`PUT /api/books/{id}/tags` | Tag management; book tags updated via the book sub-resource |
-| **Books** | `/api/books`, `/api/books/{id}` and sub-resources (`/authors`, `/series`, `/tags`, `/files`, `/reading-lists`, `/metadata`, `/metadata/ai`, `/metadata/ai-fetch`, `/metadata/ai-apply`, `/metadata/ai-reject`) | Full book CRUD including author, series, tag, and file associations; AI enrichment enqueues a background job |
-| **Book Files** | `/api/book-files/{id}` | Individual book file records |
+| **Libraries** | `/api/libraries`, `/api/libraries/{id}` | Named book collections with file-system paths; create, update, and delete — admin only |
+| **Authors** | `/api/authors`, `/api/authors/{id}` | Author management; delete — admin only |
+| **Series** | `/api/series`, `/api/series/{id}` | Series management; delete — admin only |
+| **Tags** | `/api/tags`, `/api/tags/{id}`, `GET`/`PUT /api/books/{id}/tags` | Tag management; book tags updated via the book sub-resource; delete — admin only |
+| **Books** | `/api/books`, `/api/books/{id}` and sub-resources (`/authors`, `/series`, `/tags`, `/files`, `/reading-lists`, `/metadata`, `/metadata/ai`, `/metadata/ai-fetch`, `/metadata/ai-apply`, `/metadata/ai-reject`) | Full book CRUD including author, series, tag, and file associations; AI enrichment enqueues a background job; delete — admin only |
+| **Book Files** | `/api/book-files/{id}` | Individual book file records; delete — admin only |
 | **Calibre Import** | `POST /api/calibre-import/preview`, `/api/calibre-import/confirm` | Preview and apply a Calibre library import; admin only |
 | **Reading Lists** | `/api/reading-lists`, `/api/reading-lists/{id}`, `/api/reading-lists/{id}/books` | Per-user ordered book lists |
 | **Reading Groups** | `/api/groups`, `/api/groups/{id}`, `/api/groups/{id}/members`, `/api/groups/{id}/lists`, `/api/groups/{id}/progress` | Collaborative reading groups with shared lists and progress tracking |

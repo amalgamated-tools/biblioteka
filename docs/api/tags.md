@@ -81,11 +81,18 @@ Update a tag (full update).
 
 ---
 
-### `DELETE /api/tags/{id}` 🔒
+### `DELETE /api/tags/{id}` 🔒 **Admin**
 
 Delete a tag. Returns `204 No Content`.
 
 > **Cascade:** Deleting a tag also removes all `book_tags` join entries for that tag via the `book_tags.tag_id` foreign key's `ON DELETE CASCADE` constraint. Books themselves are **not** deleted.
+
+**Errors:**
+
+| Status | Meaning |
+|--------|---------|
+| `403` | Caller is not an admin |
+| `404` | Tag not found |
 
 ---
 
