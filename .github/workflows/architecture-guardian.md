@@ -1,8 +1,8 @@
 ---
 name: Architecture Guardian
-description: Daily analysis of commits from the last 24 hours to detect code structure violations in Go and JavaScript files, such as large files, oversized functions, high export counts, and import cycles
+description: Weekly analysis of commits from the last 24 hours to detect code structure violations in Go and JavaScript files, such as large files, oversized functions, high export counts, and import cycles
 on:
-  schedule: "daily around 14:00 on weekdays"  # ~2 PM UTC, weekdays only
+  schedule: weekly
   workflow_dispatch:
 permissions:
   contents: read

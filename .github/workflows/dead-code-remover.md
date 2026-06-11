@@ -1,7 +1,7 @@
 ---
-description: Daily dead code assessment and removal — identifies unreachable Go functions using static analysis and creates a PR to remove a batch each day
+description: Weekly dead code assessment and removal — identifies unreachable Go functions using static analysis and creates a PR to remove a batch each week
 on:
-  schedule: daily
+  schedule: weekly
   workflow_dispatch:
 permissions:
   contents: read

@@ -1,11 +1,11 @@
 ---
 description: |
-  A green-software-focused repository assistant that runs regularly (daily by default) to identify and implement
+  A green-software-focused repository assistant that runs regularly (weekly by default) to identify and implement
   energy efficiency improvements. Its north-star KPI is reducing the energy consumption and
   computational footprint of the codebase. Always methodical, measurement-driven, and mindful of trade-offs.
 
 on:
-  schedule: daily
+  schedule: weekly
   workflow_dispatch:
   reaction: "eyes"
   permissions:
