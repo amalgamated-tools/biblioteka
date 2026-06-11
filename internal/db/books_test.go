@@ -243,6 +243,73 @@ func TestGetAuthorsForBooks(t *testing.T) {
 	require.Equal(t, author1.ID, got[book2.ID][0].ID)
 }
 
+func TestGetSeriesForBooks(t *testing.T) {
+	d := newTestDB(t)
+
+	book1, err := d.CreateBook(t.Context(), BookInput{Title: "The Gunslinger"})
+	require.NoError(t, err, "CreateBook() for book1 error")
+	require.NotNil(t, book1)
+
+	book2, err := d.CreateBook(t.Context(), BookInput{Title: "The Drawing of the Three"})
+	require.NoError(t, err, "CreateBook() for book2 error")
+	require.NotNil(t, book2)
+
+	book3, err := d.CreateBook(t.Context(), BookInput{Title: "Wolves of the Calla"})
+	require.NoError(t, err, "CreateBook() for book3 error")
+	require.NotNil(t, book3)
+
+	seriesA, err := d.CreateSeries(t.Context(), "A Series", nil, nil, nil)
+	require.NoError(t, err, "CreateSeries() for seriesA error")
+	require.NotNil(t, seriesA)
+
+	seriesB, err := d.CreateSeries(t.Context(), "B Series", nil, nil, nil)
+	require.NoError(t, err, "CreateSeries() for seriesB error")
+	require.NotNil(t, seriesB)
+
+	require.NoError(t, d.SetBookSeries(t.Context(), book1.ID, []BookSeriesInput{
+		{SeriesID: seriesB.ID, Position: new(2.0)},
+		{SeriesID: seriesA.ID, Position: new(1.0)},
+	}), "SetBookSeries() for book1 error")
+	require.NoError(t, d.SetBookSeries(t.Context(), book2.ID, []BookSeriesInput{
+		{SeriesID: seriesA.ID, Position: nil},
+	}), "SetBookSeries() for book2 error")
+
+	got, err := d.GetSeriesForBooks(t.Context(), []string{book1.ID, book2.ID, book3.ID})
+	require.NoError(t, err, "GetSeriesForBooks() error")
+	require.Len(t, got, 2)
+
+	require.Len(t, got[book1.ID], 2)
+	require.Equal(t, seriesA.ID, got[book1.ID][0].Series.ID)
+	require.NotNil(t, got[book1.ID][0].Position)
+	require.Equal(t, 1.0, *got[book1.ID][0].Position)
+	require.Equal(t, seriesB.ID, got[book1.ID][1].Series.ID)
+	require.NotNil(t, got[book1.ID][1].Position)
+	require.Equal(t, 2.0, *got[book1.ID][1].Position)
+
+	require.Len(t, got[book2.ID], 1)
+	require.Equal(t, seriesA.ID, got[book2.ID][0].Series.ID)
+	require.Nil(t, got[book2.ID][0].Position)
+
+	_, ok := got[book3.ID]
+	require.False(t, ok)
+}
+
+func TestGetSeriesForBooks_EmptyInput(t *testing.T) {
+	d := newTestDB(t)
+
+	result, err := d.GetSeriesForBooks(t.Context(), []string{})
+	require.NoError(t, err, "GetSeriesForBooks(empty) error")
+	require.Nil(t, result)
+}
+
+func TestGetSeriesForBooks_NilInput(t *testing.T) {
+	d := newTestDB(t)
+
+	result, err := d.GetSeriesForBooks(t.Context(), nil)
+	require.NoError(t, err, "GetSeriesForBooks(nil) error")
+	require.Nil(t, result)
+}
+
 func TestDeleteBook_CascadeAuthorsAndSeries(t *testing.T) {
 	d := newTestDB(t)
 

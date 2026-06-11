@@ -111,17 +111,14 @@ func (d *DB) GetFilesForBooks(ctx context.Context, bookIDs []string) (map[string
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	result := make(map[string][]BookFile, len(bookIDs))
-	for rows.Next() {
-		bf, err := scanBookFile(rows)
+	return collectRowsGrouped(rows, func(row interface{ Scan(...any) error }) (string, *BookFile, error) {
+		bf, err := scanBookFile(row)
 		if err != nil {
-			return nil, err
+			return "", nil, err
 		}
-		result[bf.BookID] = append(result[bf.BookID], *bf)
-	}
-	return result, rows.Err()
+		return bf.BookID, bf, nil
+	}, len(bookIDs))
 }
 
 // IncrementBookFileDownloadCount atomically increments the download_count for the
