@@ -1,6 +1,6 @@
 {
-  "run_date": "2026-06-11T14:13:41Z",
-  "run_id": "27353024388",
+  "run_date": "2026-06-11T19:45:33Z",
+  "run_id": "27372917870",
   "total_prs_triaged": 0,
   "auto_merge_candidates": [],
   "fast_track_needed": [],
@@ -12,8 +12,8 @@
     "by_priority": {},
     "by_action": {}
   },
-  "notes": "16 open PRs found. None are fork PRs (all isCrossRepository=false). Per triage workflow instructions, only fork PRs from app/github-copilot are in scope. None of the open PRs match this criteria. Authors found: app/copilot-swe-agent, amalgamated-bot, veverkap — all from same-repo branches. Consistent pattern across 25 consecutive runs.",
-  "consecutive_no_fork_runs": 25,
+  "notes": "16 open PRs found. None are fork PRs (all isCrossRepository=false). Per triage workflow instructions, only fork PRs from app/github-copilot are in scope. None of the open PRs match this criteria. Authors found: app/copilot-swe-agent, amalgamated-bot, veverkap — all from same-repo branches. Consistent pattern across 26 consecutive runs.",
+  "consecutive_no_fork_runs": 26,
   "all_surveyed_prs": [
     {"number": 3229, "author": "amalgamated-bot", "title": "[docs] Self-healing documentation fixes from issue analysis - 2026-06-11", "cross_repo": false},
     {"number": 3227, "author": "app/copilot-swe-agent", "title": "refactor(db): extract shared replace-and-deduplicate flow for book associations", "cross_repo": false},
