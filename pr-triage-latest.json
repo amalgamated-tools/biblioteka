@@ -1,6 +1,6 @@
 {
-  "run_date": "2026-06-10T19:45:01Z",
-  "run_id": "27301615254",
+  "run_date": "2026-06-11T01:42:43Z",
+  "run_id": "27318123135",
   "total_prs_triaged": 0,
   "auto_merge_candidates": [],
   "fast_track_needed": [],
@@ -12,8 +12,8 @@
     "by_priority": {},
     "by_action": {}
   },
-  "notes": "14 open PRs found. None are fork PRs (all isCrossRepository=false). Per triage workflow instructions, only fork PRs from app/github-copilot are in scope. None of the open PRs are authored by app/github-copilot AND opened from a fork. Authors found: app/copilot-swe-agent, amalgamated-bot, veverkap — all from same-repo branches. Consistent pattern across 22+ consecutive runs.",
-  "consecutive_no_fork_runs": 22,
+  "notes": "14 open PRs found. None are fork PRs (all isCrossRepository=false). Per triage workflow instructions, only fork PRs from app/github-copilot are in scope. None of the open PRs are authored by app/github-copilot AND opened from a fork. Authors found: app/copilot-swe-agent, amalgamated-bot, veverkap — all from same-repo branches. Consistent pattern across 23+ consecutive runs.",
+  "consecutive_no_fork_runs": 23,
   "all_surveyed_prs": [
     {"number": 3220, "author": "veverkap", "title": "chore: aw", "cross_repo": false, "draft": false},
     {"number": 3215, "author": "amalgamated-bot", "title": "[docs] Self-healing documentation fixes from issue analysis - 2026-06-10", "cross_repo": false, "draft": true},
