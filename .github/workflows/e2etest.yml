@@ -1,0 +1,187 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'cmd/**'
+      - 'internal/**'
+      - 'frontend/**'
+      - 'db/**'
+      - 'e2e/**'
+      - 'go.mod'
+      - 'go.sum'
+      # docs/swagger/docs.go is auto-generated Swagger code imported by internal/server;
+      # a bad regeneration would break the Go binary build
+      - 'docs/swagger/docs.go'
+      - '.github/workflows/e2etest.yml'
+  pull_request:
+    branches: [main]
+    # Paths filter is omitted so the workflow always runs on PR events —
+    # check-docs-only evaluates the changed files and skips tests when the
+    # PR only touches documentation (docs/** non-code files and *.md).
+    # labeled/unlabeled are intentionally excluded: label-triggered runs
+    # share the same concurrency group and would cancel in-progress test
+    # runs, and their aggregator "success" result could override a prior
+    # failure in branch protection.
+    types: [synchronize, opened, reopened]
+
+permissions:
+  contents: read
+
+# Cancel in-progress runs for the same branch/PR when a new push arrives.
+# Main branch runs are never cancelled so merge results are always recorded.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  check-docs-only:
+    runs-on: ubuntu-latest
+    outputs:
+      skip-tests: ${{ steps.check.outputs.skip-tests }}
+    steps:
+      - name: Checkout code
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          fetch-depth: 0
+
+      - name: Check if docs-only PR
+        id: check
+        run: |
+          # Always run this step to ensure skip-tests output is always set.
+          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+            echo "skip-tests=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Evaluate the actual changed files instead of relying on labels,
+          # which avoids a race condition with auto-label-docs-only.yml.
+          BASE_REF="origin/${{ github.event.pull_request.base.ref }}"
+          git fetch origin "${{ github.event.pull_request.base.ref }}"
+          CHANGED=$(git diff --name-only "$BASE_REF"...HEAD)
+
+          DOCS_ONLY=true
+          while IFS= read -r file; do
+            [[ -z "$file" ]] && continue
+            if ([[ "$file" =~ ^docs/ ]] && [[ ! "$file" =~ \.(go|ts|js|py|sh)$ ]]) || \
+               [[ "$file" =~ (^|/)[^/]+\.md$ ]]; then
+              continue
+            fi
+            DOCS_ONLY=false
+            echo "Found non-docs file: $file"
+            break
+          done <<< "$CHANGED"
+
+          if [[ "$DOCS_ONLY" == "true" ]]; then
+            echo "skip-tests=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip-tests=false" >> $GITHUB_OUTPUT
+          fi
+
+  e2e:
+    needs: [check-docs-only]
+    if: needs.check-docs-only.outputs.skip-tests != 'true' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    name: E2E Tests
+    # The full job (build frontend + Go binary + Playwright install + tests)
+    # completes in ~10-15 minutes with warm caches. 30 minutes gives a 2×
+    # safety margin while still catching hung runners much earlier than 45.
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093
+        with:
+          version: 10.32.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: "22"
+          cache: 'pnpm'
+          cache-dependency-path: |
+            frontend/pnpm-lock.yaml
+            e2e/pnpm-lock.yaml
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Build frontend
+        working-directory: ./frontend
+        run: pnpm run build
+
+      - name: Set up Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+        with:
+          go-version: 1.26.2
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Build Go binary
+        run: go build -o biblioteka ./cmd/server
+
+      - name: Install e2e dependencies
+        working-directory: ./e2e
+        run: pnpm install --frozen-lockfile
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-chromium-${{ hashFiles('e2e/pnpm-lock.yaml') }}
+
+      - name: Install Playwright browsers
+        working-directory: ./e2e
+        run: |
+          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" = "true" ]; then
+            pnpm exec playwright install-deps chromium
+          else
+            pnpm exec playwright install --with-deps chromium
+          fi
+
+      - name: Run e2e tests
+        working-directory: ./e2e
+        run: pnpm test
+        env:
+          CI: "true"
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          # 3 days is sufficient for post-failure review; saves artifact storage.
+          retention-days: 3
+
+      - name: Upload Playwright test results on failure
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-test-results-${{ github.run_id }}
+          path: e2e/test-results/
+          retention-days: 7
+
+  e2e-all:
+    needs: [check-docs-only, e2e]
+    runs-on: ubuntu-latest
+    if: always()
+    timeout-minutes: 2
+    steps:
+      - name: Check E2E tests (passed or skipped for docs-only)
+        run: |
+          # For docs-only PRs, tests are skipped and that's expected
+          if [[ "${{ needs.check-docs-only.outputs.skip-tests }}" == "true" ]]; then
+            echo "✅ E2E tests skipped (docs-only PR)"
+            exit 0
+          fi
+          # For other PRs, ensure the e2e job succeeded
+          if [[ "${{ needs.e2e.result }}" != "success" ]]; then
+            echo "❌ E2E job failed"
+            exit 1
+          fi
+          echo "✅ E2E tests passed"

@@ -1,0 +1,126 @@
+name: Benchmark
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'internal/pathparser/**'
+      - 'internal/db/**'
+      - 'internal/metadata/**'
+      - 'internal/organize/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Cancel in-progress benchmark runs for the same PR on new pushes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    name: Go Benchmarks
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Set up Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v5
+        with:
+          go-version: 1.26.2
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Cache exiftool apt package
+        id: exiftool-cache
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae
+        with:
+          path: ${{ runner.temp }}/apt-cache
+          key: ${{ runner.os }}-apt-exiftool-v1
+          restore-keys: |
+            ${{ runner.os }}-apt-exiftool-
+
+      - name: Install exiftool
+        run: |
+          mkdir -p "${{ runner.temp }}/apt-cache"
+          if [ "${{ steps.exiftool-cache.outputs.cache-hit }}" = "true" ]; then
+            sudo apt-get -o dir::cache::archives="${{ runner.temp }}/apt-cache" install -y -q --no-download libimage-exiftool-perl
+          else
+            sudo apt-get update -qq
+            sudo apt-get -o dir::cache::archives="${{ runner.temp }}/apt-cache" install -y -q libimage-exiftool-perl
+          fi
+          exiftool -ver
+
+      - name: Run benchmarks
+        run: |
+          set -o pipefail
+          go test -bench=. -benchmem -benchtime=3s -run='^$' \
+            ./internal/pathparser/... \
+            ./internal/db/... \
+            ./internal/metadata/... \
+            ./internal/organize/... \
+            2>&1 | tee benchmark-results.txt
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: benchmark-results
+          path: benchmark-results.txt
+          retention-days: 90
+
+      - name: Post benchmark comment
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const fs = require('fs');
+            const raw = fs.readFileSync('benchmark-results.txt', 'utf8');
+
+            // Extract only benchmark lines (lines starting with Benchmark)
+            const benchLines = raw.split('\n').filter(l => l.startsWith('Benchmark'));
+            const MARKER = '<!-- gh-benchmark-comment -->';
+            const body = [
+              MARKER,
+              '## Benchmark Results',
+              '',
+              'Results for packages touched by this PR (`-benchtime=3s`).',
+              '',
+              '```',
+              benchLines.length > 0 ? benchLines.join('\n') : 'No benchmarks found in the changed packages.',
+              '```',
+              '',
+              `_Full results are available in the [Actions run for this benchmark](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}). To establish a performance baseline, compare these numbers against the \`main\` branch benchmarks._`,
+            ].join('\n');
+
+            try {
+              const { data: comments } = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+              });
+              const existing = comments.find(c =>
+                c.user.login === 'github-actions[bot]' && c.body.startsWith(MARKER)
+              );
+              if (existing) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: existing.id,
+                  body,
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body,
+                });
+              }
+            } catch (e) {
+              core.warning(`Could not post benchmark comment: ${e.message}`);
+            }

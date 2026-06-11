@@ -1,0 +1,512 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'cmd/**'
+      - 'internal/**'
+      - 'frontend/**'
+      - 'db/**'
+      - 'go.mod'
+      - 'go.sum'
+      - '.golangci.yml'
+      # docs/swagger/docs.go is auto-generated Swagger code imported by internal/server;
+      # a bad regeneration would break compilation but wouldn't touch internal/**
+      - 'docs/swagger/docs.go'
+      - '.github/workflows/test.yml'
+  pull_request:
+    branches: [main]
+    # Paths filter is omitted so the workflow always runs on PR events —
+    # check-docs-only evaluates the changed files and skips tests when the
+    # PR only touches documentation (docs/** non-code files and *.md).
+    # labeled/unlabeled are intentionally excluded: label-triggered runs
+    # share the same concurrency group and would cancel in-progress test
+    # runs, and their aggregator "success" result could override a prior
+    # failure in branch protection.
+    types: [synchronize, opened, reopened]
+
+permissions:
+  # Required: allow read access to the content for analysis.
+  contents: read
+  # Optional: allow read access to pull requests. Use with `only-new-issues` option.
+  pull-requests: read
+
+# Cancel in-progress runs for the same branch/PR when a new push arrives.
+# Main-branch runs are never cancelled so merge results are always recorded.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  check-docs-only:
+    runs-on: ubuntu-latest
+    outputs:
+      skip-tests: ${{ steps.check.outputs.skip-tests }}
+    steps:
+      - name: Checkout code
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          fetch-depth: 0
+
+      - name: Check if docs-only PR
+        id: check
+        run: |
+          # Always run this step to ensure skip-tests output is always set.
+          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+            echo "skip-tests=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Evaluate the actual changed files instead of relying on labels,
+          # which avoids a race condition with auto-label-docs-only.yml.
+          BASE_REF="origin/${{ github.event.pull_request.base.ref }}"
+          git fetch origin "${{ github.event.pull_request.base.ref }}"
+          CHANGED=$(git diff --name-only "$BASE_REF"...HEAD)
+
+          DOCS_ONLY=true
+          while IFS= read -r file; do
+            [[ -z "$file" ]] && continue
+            if ([[ "$file" =~ ^docs/ ]] && [[ ! "$file" =~ \.(go|ts|js|py|sh)$ ]]) || \
+               [[ "$file" =~ (^|/)[^/]+\.md$ ]]; then
+              continue
+            fi
+            DOCS_ONLY=false
+            echo "Found non-docs file: $file"
+            break
+          done <<< "$CHANGED"
+
+          if [[ "$DOCS_ONLY" == "true" ]]; then
+            echo "skip-tests=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip-tests=false" >> $GITHUB_OUTPUT
+          fi
+
+  frontend-checks:
+    needs: [check-docs-only]
+    if: needs.check-docs-only.outputs.skip-tests != 'true' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    name: Frontend Checks
+    timeout-minutes: 20
+    outputs:
+      coverage-pct: ${{ steps.coverage.outputs.pct }}
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+
+      # pnpm must be set up before setup-node so the node cache can locate the pnpm store
+      - name: Install pnpm
+        uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093
+        with:
+          version: 10.32.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: "22"
+          cache: 'pnpm'
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: pnpm install --frozen-lockfile
+
+      # Fail fast: run cheap static checks before the expensive build step.
+      # prettier, eslint, svelte-check, and vitest all operate on source files
+      # and do not require the production build output.
+      - name: Check formatting
+        working-directory: ./frontend
+        run: |
+          pnpm exec prettier --check . || {
+            echo "Frontend files are not formatted. Please run 'pnpm run format'"
+            exit 1
+          }
+
+      - name: Run ESLint
+        working-directory: ./frontend
+        run: pnpm run lint
+
+      - name: Check TypeScript
+        working-directory: ./frontend
+        run: pnpm run check
+
+      - name: Run frontend tests
+        working-directory: ./frontend
+        run: pnpm exec vitest run --coverage
+
+      - name: Extract frontend coverage total
+        id: coverage
+        working-directory: ./frontend
+        run: |
+          PCT=$(node -e "
+            const fs = require('fs');
+            try {
+              const summary = JSON.parse(fs.readFileSync('coverage/coverage-summary.json', 'utf8'));
+              console.log(summary.total.lines.pct + '%');
+            } catch { console.log('N/A'); }
+          ")
+          echo "pct=${PCT}" >> "$GITHUB_OUTPUT"
+          echo "Frontend coverage: ${PCT}"
+
+      - name: Upload frontend coverage report
+        # Only upload on main-branch pushes to keep artifact storage in check.
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
+          retention-days: 14
+
+      # Build last: catches Vite-specific bundling errors after all source-level
+      # checks have passed, so fast-failing checks above aren't blocked by a
+      # slow build.
+      - name: Build frontend
+        working-directory: ./frontend
+        run: pnpm run build
+
+  frontend-all:
+    needs: [check-docs-only, frontend-checks]
+    runs-on: ubuntu-latest
+    if: always()
+    # This job only runs a shell check; 2 minutes is more than enough.
+    # Without a timeout, a hung runner would default to 6 hours.
+    timeout-minutes: 2
+    steps:
+      - name: Verify frontend checks job passed (or skipped for docs-only)
+        run: |
+          if [[ "${{ needs.check-docs-only.outputs.skip-tests }}" == "true" ]]; then
+            echo "Skipping frontend tests (docs-only PR)"
+            exit 0
+          fi
+          if [[ "${{ needs.frontend-checks.result }}" != "success" ]]; then
+            echo "Frontend checks job failed"
+            exit 1
+          fi
+
+  # Lint and test run fully in parallel with frontend-checks; the dist placeholder
+  # (.gitkeep) in internal/server/dist satisfies //go:embed all:dist for compilation.
+  go-lint:
+    needs: [check-docs-only]
+    if: needs.check-docs-only.outputs.skip-tests != 'true' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    name: Go Lint
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+
+      - name: Set up Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+        with:
+          go-version: 1.26.2
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Check Go formatting
+        id: gofmt
+        run: |
+          if [ "$(gofmt -l . | wc -l)" -gt 0 ]; then
+            echo "Go files are not formatted. Please run 'go fmt ./...'"
+            gofmt -d .
+            exit 1
+          fi
+
+      - name: Check strict Go formatting (gofumpt)
+        id: gofumpt
+        run: |
+          if [ "$(go tool gofumpt -l . | wc -l)" -gt 0 ]; then
+            echo "Go files are not strictly formatted. Please run 'make hardfmt'."
+            go tool gofumpt -d .
+            exit 1
+          fi
+
+      - name: Verify go.mod is tidy
+        id: gomod
+        run: |
+          go mod tidy
+          if [ -n "$(git status --porcelain go.mod go.sum)" ]; then
+            echo "go.mod or go.sum is not tidy. Please run 'go mod tidy'."
+            git diff go.mod go.sum
+            exit 1
+          fi
+          
+      - name: golangci-lint
+        id: golangci
+        uses: golangci/golangci-lint-action@82606bf257cbaff209d206a39f5134f0cfbfd2ee
+        with:
+          version: v2.11.3
+
+      - name: Run slogcheck
+        id: slogcheck
+        continue-on-error: true
+        run: go run ./cmd/slogcheck ./...
+
+      - name: Run errorfcheck
+        id: errorfcheck
+        continue-on-error: true
+        run: go run ./cmd/errorfcheck ./...
+
+      - name: Report Go lint check outcomes
+        if: always()
+        run: |
+          {
+            echo "### Go Lint Check Outcomes"
+            echo "- go formatting: ${{ steps.gofmt.outcome }}"
+            echo "- strict go formatting (gofumpt): ${{ steps.gofumpt.outcome }}"
+            echo "- go.mod tidy: ${{ steps.gomod.outcome }}"
+            echo "- golangci-lint: ${{ steps.golangci.outcome }}"
+            echo "- slogcheck: ${{ steps.slogcheck.outcome }}"
+            echo "- errorfcheck: ${{ steps.errorfcheck.outcome }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "${{ steps.gofmt.outcome }}" = "failure" ]; then
+            echo "::error::Go Lint failed check: go formatting"
+          elif [ "${{ steps.gofumpt.outcome }}" = "failure" ]; then
+            echo "::error::Go Lint failed check: strict go formatting (gofumpt)"
+          elif [ "${{ steps.gomod.outcome }}" = "failure" ]; then
+            echo "::error::Go Lint failed check: go.mod tidy"
+          elif [ "${{ steps.golangci.outcome }}" = "failure" ]; then
+            echo "::error::Go Lint failed check: golangci-lint"
+          elif [ "${{ steps.slogcheck.outcome }}" = "failure" ]; then
+            echo "::error::Go Lint failed check: slogcheck"
+          elif [ "${{ steps.errorfcheck.outcome }}" = "failure" ]; then
+            echo "::error::Go Lint failed check: errorfcheck"
+          fi
+
+          if [ "${{ steps.slogcheck.outcome }}" = "failure" ] || \
+             [ "${{ steps.errorfcheck.outcome }}" = "failure" ]; then
+            exit 1
+          fi
+
+  go-test:
+    needs: [check-docs-only]
+    if: needs.check-docs-only.outputs.skip-tests != 'true' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    name: Go Tests
+    timeout-minutes: 15
+    outputs:
+      coverage-pct: ${{ steps.coverage.outputs.pct }}
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+
+      - name: Set up Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+        with:
+          go-version: 1.26.2
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Cache exiftool apt package
+        id: exiftool-cache
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae
+        with:
+          path: ${{ runner.temp }}/apt-cache
+          # Stable key tied to the OS only; bump the version suffix (v1 → v2) only
+          # when a different exiftool version is intentionally required.
+          # Previously used hashFiles('.github/workflows/test.yml'), which caused
+          # cache misses on every unrelated workflow edit (action bumps, comments, etc.).
+          key: ${{ runner.os }}-apt-exiftool-v1
+          restore-keys: |
+            ${{ runner.os }}-apt-exiftool-
+
+      - name: Install exiftool
+        run: |
+          mkdir -p "${{ runner.temp }}/apt-cache"
+          if [ "${{ steps.exiftool-cache.outputs.cache-hit }}" = "true" ]; then
+            sudo apt-get -o dir::cache::archives="${{ runner.temp }}/apt-cache" install -y -q --no-download libimage-exiftool-perl
+          else
+            sudo apt-get update -qq
+            sudo apt-get -o dir::cache::archives="${{ runner.temp }}/apt-cache" install -y -q libimage-exiftool-perl
+          fi
+          exiftool -ver
+
+      - name: Run Go tests
+        run: go test -coverprofile=coverage.out -covermode=atomic ./...
+
+      - name: Display Go coverage summary
+        id: coverage
+        run: |
+          PCT=$(go tool cover -func=coverage.out | awk '/^total:/{print $NF}')
+          echo "pct=${PCT}" >> "$GITHUB_OUTPUT"
+          echo "Coverage: ${PCT}"
+
+      - name: Check for known vulnerabilities
+        run: |
+          # govulncheck exit codes: 0 = no vulns, 3 = vulns found, other = error.
+          # Stdlib vulns require a Go toolchain update and cannot be fixed in-repo,
+          # so we only fail on non-stdlib (third-party) vulnerabilities.
+          set +e
+          go tool govulncheck -format json ./... > vulncheck.json 2>vulncheck.stderr
+          rc=$?
+          set -e
+
+          if [ "$rc" -eq 0 ]; then
+            echo "No vulnerabilities found."
+            exit 0
+          fi
+
+          # Any exit code other than 3 is an execution error — fail hard.
+          if [ "$rc" -ne 3 ]; then
+            echo "::error::govulncheck failed with exit code $rc"
+            cat vulncheck.stderr
+            exit 1
+          fi
+
+          # Count non-stdlib findings (module path is not "stdlib").
+          # Fail closed: if jq parsing fails, treat as non-stdlib to avoid masking issues.
+          if ! jq_out=$(jq -r 'select(.finding != null) | .finding.trace[0].module' vulncheck.json 2>/dev/null); then
+            non_stdlib=1
+          else
+            non_stdlib=$(echo "$jq_out" | (grep -cv '^stdlib$' || echo 0))
+          fi
+
+          # Render a human-readable summary from the JSON instead of re-running govulncheck.
+          summary=$(jq -r '
+            select(.finding != null)
+            | .finding as $f
+            | ($f.osv // "unknown") as $osv
+            | ($f.trace[0].module // "unknown") as $module
+            | ($f.trace[0].package // "unknown") as $package
+            | "- \($osv) | module: \($module) | package: \($package)"
+          ' vulncheck.json 2>/dev/null)
+
+          if [ -n "$summary" ]; then
+            echo "Vulnerability summary:"
+            echo "$summary"
+          else
+            echo "Vulnerabilities were detected, but no summary could be rendered from vulncheck.json."
+            echo "Raw govulncheck JSON output:"
+            cat vulncheck.json
+          fi
+
+          if [ "$non_stdlib" -gt 0 ]; then
+            echo "::error::Non-stdlib vulnerabilities found"
+            exit 1
+          fi
+
+          echo "::warning::Only Go stdlib vulnerabilities found (requires Go toolchain update to fix)"
+          exit 0
+
+  go-test-postgres:
+    needs: [check-docs-only]
+    if: needs.check-docs-only.outputs.skip-tests != 'true' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    name: Go Tests (PostgreSQL)
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: biblioteka
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: biblioteka_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+
+      - name: Set up Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+        with:
+          go-version: 1.26.2
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Run PostgreSQL integration tests
+        env:
+          TEST_DATABASE_URL: postgres://biblioteka:testpassword@localhost:5432/biblioteka_test?sslmode=disable
+        run: go test ./internal/db/... -run Postgres -v
+
+  go-all:
+    needs: [check-docs-only, go-lint, go-test, go-test-postgres]
+    runs-on: ubuntu-latest
+    if: always()
+    # This job only runs a shell check; 2 minutes is more than enough.
+    # Without a timeout, a hung runner would default to 6 hours.
+    timeout-minutes: 2
+    steps:
+      - name: Check all Go jobs passed (or skipped for docs-only)
+        run: |
+          if [[ "${{ needs.check-docs-only.outputs.skip-tests }}" == "true" ]]; then
+            echo "Skipping Go tests (docs-only PR)"
+            exit 0
+          fi
+          if [[ "${{ needs.go-lint.result }}" != "success" || "${{ needs.go-test.result }}" != "success" || "${{ needs.go-test-postgres.result }}" != "success" ]]; then
+            echo "One or more Go jobs failed"
+            exit 1
+          fi
+
+  coverage-comment:
+    needs: [check-docs-only, go-test, frontend-checks]
+    if: >-
+      always()
+      && github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.full_name == github.repository
+      && needs.go-test.result == 'success'
+      && needs.check-docs-only.outputs.skip-tests != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      # No checkout, Go setup, or artifact downloads needed: both coverage
+      # percentages are exported as job outputs from go-test and frontend-checks.
+
+      - name: Post coverage comment
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          GO_PCT: ${{ needs.go-test.outputs.coverage-pct }}
+          FRONTEND_PCT: ${{ needs.frontend-checks.outputs.coverage-pct }}
+        with:
+          script: |
+            const MARKER = '<!-- gh-coverage-comment -->';
+            const goPct = process.env.GO_PCT || 'N/A';
+            const frontendPct = process.env.FRONTEND_PCT || 'N/A';
+            const rows = [
+              `| Go backend | ${goPct} |`,
+            ];
+            if (frontendPct && frontendPct !== 'N/A') {
+              rows.push(`| Frontend | ${frontendPct} |`);
+            }
+            const body = [
+              MARKER,
+              '## Test Coverage',
+              '',
+              '| Component | Coverage |',
+              '|-----------|----------|',
+              ...rows,
+              '',
+              '_Coverage is measured for all packages under `./...`. The full frontend coverage report is uploaded as an artifact on main-branch pushes only._',
+            ].join('\n');
+
+            try {
+              const { data: comments } = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+              });
+              const existing = comments.find(c =>
+                c.user.login === 'github-actions[bot]' && c.body.startsWith(MARKER)
+              );
+              if (existing) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: existing.id,
+                  body,
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body,
+                });
+              }
+            } catch (e) {
+              core.warning(`Could not post coverage comment: ${e.message}`);
+            }
