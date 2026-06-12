@@ -479,7 +479,7 @@ func makeTestUserOwnedNamedEntityOps(t *testing.T) namedEntityOps[testEntity, te
 
 // ---- createNamedEntity with user-scoped closures ----
 
-func TestCreateUserOwnedNamedEntity_Success(t *testing.T) {
+func TestCreateNamedEntity_UserScoped_Success(t *testing.T) {
 	ops := makeTestUserOwnedNamedEntityOps(t)
 
 	var capturedUserID string

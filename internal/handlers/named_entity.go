@@ -17,7 +17,7 @@ import (
 type namedEntityOps[T any, DTO any, Req any] struct {
 	db              *db.DB
 	entityLabel     string // human-readable label, e.g. "author" or "series"
-	auditEntityType string // stable snake_case type written to audit logs; defaults to entityLabel when blank
+	auditEntityType string // stable type written to audit logs (snake_case preferred); defaults to entityLabel when blank
 	entityArticle   string // with indefinite article, e.g. "an author" or "a series"
 	idKey           string // otelkeys constant for the entity ID field
 	errInvalidName  error
