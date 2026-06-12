@@ -1,6 +1,6 @@
 {
-  "run_date": "2026-06-12T08:22:48Z",
-  "run_id": "27403889764",
+  "run_date": "2026-06-12T13:55:49Z",
+  "run_id": "27420159190",
   "total_prs_triaged": 0,
   "auto_merge_candidates": [],
   "fast_track_needed": [],
@@ -12,8 +12,8 @@
     "by_priority": {},
     "by_action": {}
   },
-  "notes": "20 open PRs found. None are fork PRs (all isCrossRepository=false). Per triage workflow instructions, only fork PRs from app/github-copilot are in scope. None match. New PRs since last run (#3243, #3241, #3240) also from same-repo branches. This is now the 28th consecutive run with no in-scope fork PRs. Authors: app/copilot-swe-agent, amalgamated-bot, veverkap — all from same-repo branches.",
-  "consecutive_no_fork_runs": 28,
+  "notes": "20 open PRs found. None are fork PRs (all isCrossRepository=false). Per triage workflow instructions, only fork PRs from app/github-copilot are in scope. None match. New PRs since last run (#3243, #3241, #3240) also from same-repo branches. This is now the 29th consecutive run with no in-scope fork PRs. Authors: app/copilot-swe-agent (13), amalgamated-bot (5), veverkap (2) — all from same-repo branches.",
+  "consecutive_no_fork_runs": 29,
   "all_surveyed_prs": [
     {"number": 3243, "author": "amalgamated-bot", "title": "[docs] Self-healing documentation fixes from issue analysis - 2026-06-12", "cross_repo": false},
     {"number": 3241, "author": "amalgamated-bot", "title": "[caveman] Optimize instruction verbosity — workflows_shared_reporting.md (2026-06-12)", "cross_repo": false},
@@ -32,7 +32,7 @@
     {"number": 3201, "author": "app/copilot-swe-agent", "title": "Refactor duplicated Calibre metadata loaders into a shared row collector", "cross_repo": false},
     {"number": 3190, "author": "app/copilot-swe-agent", "title": "Refactor paginated handler DTOs to share embedded pagination metadata", "cross_repo": false},
     {"number": 3184, "author": "app/copilot-swe-agent", "title": "Refactor duplicate book association setters via shared transactional helper", "cross_repo": false},
-    {"number": 3183, "author": "app/copilot-swe-agent", "title": "refactor(db): extract batchFetchByBookID to eliminate 4x duplicated batch-fetch skeleton", "cross_repo": false},
+    {"number": 3183, "author": "app/copilot-swe-agent", "title": "refactor(db): extract batchFetchByBookID to eliminate 4× duplicated batch-fetch skeleton", "cross_repo": false},
     {"number": 3172, "author": "app/copilot-swe-agent", "title": "Refactor paginated book query flow into shared executor", "cross_repo": false},
     {"number": 3160, "author": "app/copilot-swe-agent", "title": "Refactor SMTP setting decryption into shared handler helper", "cross_repo": false}
   ]
