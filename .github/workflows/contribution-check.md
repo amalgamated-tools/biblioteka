@@ -1,7 +1,7 @@
 ---
 name: "Contribution Check"
 on:
-  schedule: "every 4 hours"
+  schedule: "every 24 hours"
   workflow_dispatch:
 
 permissions:
