@@ -259,10 +259,12 @@ func (h *ReadingListHandler) listReadingListBooks(w http.ResponseWriter, r *http
 	}
 
 	writeJSON(ctx, w, http.StatusOK, bookListDTO{
-		Books:  mapSlice(books, toBookSummaryDTO),
-		Total:  total,
-		Limit:  limit,
-		Offset: offset,
+		Books: mapSlice(books, toBookSummaryDTO),
+		paginationMeta: paginationMeta{
+			Total:  total,
+			Limit:  limit,
+			Offset: offset,
+		},
 	})
 }
 
