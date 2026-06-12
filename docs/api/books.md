@@ -214,11 +214,18 @@ Update a book's metadata. This is a **full replacement** — every field not inc
 
 ---
 
-### `DELETE /api/books/{id}` 🔒
+### `DELETE /api/books/{id}` 🔒 **Admin**
 
 Delete a book. Returns `204 No Content`.
 
 > **Cascade:** Deleting a book also removes all associated `book_files`, `book_authors`, `book_series`, and `library_books` records. See [Cascade Deletion Summary](../database-schema.md#cascade-deletion-summary).
+
+**Errors:**
+
+| Status | Meaning |
+|--------|---------|
+| `403` | Caller is not an admin |
+| `404` | Book not found |
 
 ---
 
@@ -839,9 +846,16 @@ Send a book file as an email attachment to a specified address. Requires SMTP to
 
 ---
 
-### `DELETE /api/book-files/{id}` 🔒
+### `DELETE /api/book-files/{id}` 🔒 **Admin**
 
 Delete a book file record (does not delete the file from disk). Returns `204 No Content`.
+
+**Errors:**
+
+| Status | Meaning |
+|--------|---------|
+| `403` | Caller is not an admin |
+| `404` | Book file not found |
 
 ---
 

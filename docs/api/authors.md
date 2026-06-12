@@ -89,11 +89,18 @@ Update an author (full update).
 
 ---
 
-### `DELETE /api/authors/{id}` 🔒
+### `DELETE /api/authors/{id}` 🔒 **Admin**
 
 Delete an author. Returns `204 No Content`.
 
 > **Cascade:** Deleting an author also removes all `book_authors` join entries for that author. Books themselves are **not** deleted. See [Cascade Deletion Summary](../database-schema.md#cascade-deletion-summary).
+
+**Errors:**
+
+| Status | Meaning |
+|--------|---------|
+| `403` | Caller is not an admin |
+| `404` | Author not found |
 
 ---
 
