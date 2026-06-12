@@ -1,9 +1,9 @@
 ---
-name: Daily Caveman Optimizer
-description: Applies caveman optimization to instruction files in .github/aw and .github/agents — making them more concise without losing technical accuracy. Round-robins through files daily and creates a PR when improvements are found.
+name: Weekly Caveman Optimizer
+description: Applies caveman optimization to instruction files in .github/aw and .github/agents — making them more concise without losing technical accuracy. Round-robins through files weekly and creates a PR when improvements are found.
 on:
   schedule:
-    - cron: daily
+    - cron: weekly
   workflow_dispatch:
 
 permissions:
@@ -11,7 +11,7 @@ permissions:
   pull-requests: read
   issues: read
 
-tracker-id: daily-caveman-optimizer
+tracker-id: weekly-caveman-optimizer
 engine: copilot
 strict: true
 
