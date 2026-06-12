@@ -603,6 +603,7 @@ Biblioteka uses a set of AI-powered workflows (GitHub Agentic Workflows) that ru
 | **Daily Repo Chronicle** | Weekdays at 4 PM UTC | Narrative summary of daily repository activity |
 | **Weekly Repo Map** | Mondays | ASCII file-tree visualization of the repository |
 | **Greptile Labeler** | On PR open, update, or new PR comment | Adds or removes the `greptile-changes` label based on Greptile bot activity |
+| **Goal** | Every hour; on `/goal`; on workflow dispatch | Works open issues labeled `goal` until their evidence-based completion contract is satisfied, maintaining a canonical branch, one draft PR, and durable status comments |
 | **Update Docs** | On push to `main` | Draft pull requests with documentation updates for code changes |
 | **Portfolio Analyst** | Mondays at ~09:00 UTC | GitHub Discussion in "audits" category with workflow cost and reliability analysis |
 | **Static Analysis Report** | Daily | GitHub Discussion in "security" category with security scan results |
