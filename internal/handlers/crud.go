@@ -202,6 +202,9 @@ func deleteResource[T any](
 	auditAction string,
 	auditMeta func(T) map[string]any,
 ) {
+	if !requireAdmin(d, w, r) {
+		return
+	}
 	userID := auth.UserIDFromContext(r.Context())
 	deleteResourceCore(d, w, r, userID, id, resource, auditEntityType, idKey,
 		func(ctx context.Context) (T, error) { return get(ctx, id) },

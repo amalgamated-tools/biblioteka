@@ -339,6 +339,27 @@ func TestDeleteBook_Handler(t *testing.T) {
 	require.Equal(t, http.StatusNoContent, w.Code)
 }
 
+func TestDeleteBook_NonAdminForbidden(t *testing.T) {
+	h, _ := setupBookHandler(t)
+
+	nonAdmin, err := h.DB.CreateUser(t.Context(), "Non Admin", "nonadmin@example.com", "password2")
+	require.NoError(t, err, "create non-admin user")
+
+	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Waste Lands"})
+	require.NoError(t, err, "create book")
+
+	r := httptest.NewRequest(http.MethodDelete, "/api/books/"+b.ID, nil)
+	r = withUserID(r, nonAdmin.ID)
+	w := httptest.NewRecorder()
+
+	h.HandleBookRoutes(w, r)
+
+	require.Equal(t, http.StatusForbidden, w.Code)
+	var resp errorResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
+	require.Equal(t, "admin access required", resp.Error)
+}
+
 func TestDeleteBook_NotFound(t *testing.T) {
 	h, userID := setupBookHandler(t)
 

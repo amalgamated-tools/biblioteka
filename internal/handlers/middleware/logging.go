@@ -5,9 +5,11 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
+	"github.com/amalgamated-tools/biblioteka/internal/otel"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
@@ -66,11 +68,12 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		userID := auth.UserIDFromContext(r.Context())
+		requestURL := redactRequestURL(r.URL)
 		slog.DebugContext(
 			r.Context(),
 			"Incoming request",
 			slog.String(otelkeys.Method, r.Method),
-			slog.String(otelkeys.URL, r.URL.String()),
+			slog.String(otelkeys.URL, requestURL),
 			slog.String(otelkeys.RemoteAddr, r.RemoteAddr),
 			slog.String(otelkeys.UserAgent, r.UserAgent()),
 			slog.String(otelkeys.RequestID, GetRequestID(r.Context())),
@@ -84,7 +87,7 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 			r.Context(),
 			"Request completed",
 			slog.String(otelkeys.Method, r.Method),
-			slog.String(otelkeys.URL, r.URL.String()),
+			slog.String(otelkeys.URL, requestURL),
 			slog.Int(otelkeys.StatusCode, rec.statusCode),
 			slog.Duration(otelkeys.Duration, time.Since(start)),
 			slog.String(otelkeys.RequestID, GetRequestID(r.Context())),
@@ -93,4 +96,16 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 	}
 
 	return http.HandlerFunc(fn)
+}
+
+func redactRequestURL(u *url.URL) string {
+	if u == nil {
+		return ""
+	}
+	clone := *u
+	clone.Path = otel.SanitizePathForTelemetry(u.Path)
+	if u.RawPath != "" {
+		clone.RawPath = otel.SanitizePathForTelemetry(u.RawPath)
+	}
+	return clone.String()
 }
