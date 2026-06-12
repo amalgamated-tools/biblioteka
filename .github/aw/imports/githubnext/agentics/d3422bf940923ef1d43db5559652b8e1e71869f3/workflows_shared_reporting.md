@@ -27,6 +27,8 @@ Full report content with all sections, tables, and detailed information goes her
 </details>
 `````
 
+## Reporting Workflow Run Information
+
 ### 1. Workflow Run ID Formatting
 
 Always render run IDs as clickable URLs using the `url` field from run data:
