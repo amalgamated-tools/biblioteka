@@ -192,20 +192,20 @@ func Test_ListPaginatedEntities(t *testing.T) {
 		Label string `json:"label"`
 	}
 	type listDTO struct {
-		Items  []dto `json:"items"`
-		Total  int   `json:"total"`
-		Limit  int   `json:"limit"`
-		Offset int   `json:"offset"`
+		Items []dto `json:"items"`
+		paginationMeta
 	}
 	toDTO := func(e *entity) dto {
 		return dto{Label: e.Name}
 	}
 	makeListDTO := func(items []dto, total, limit, offset int) listDTO {
 		return listDTO{
-			Items:  items,
-			Total:  total,
-			Limit:  limit,
-			Offset: offset,
+			Items: items,
+			paginationMeta: paginationMeta{
+				Total:  total,
+				Limit:  limit,
+				Offset: offset,
+			},
 		}
 	}
 
