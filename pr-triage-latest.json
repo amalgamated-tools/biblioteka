@@ -1,6 +1,6 @@
 {
-  "run_date": "2026-06-13T08:05:15Z",
-  "run_id": "27461109777",
+  "run_date": "2026-06-13T13:24:45Z",
+  "run_id": "27467980424",
   "total_prs_triaged": 0,
   "auto_merge_candidates": [],
   "fast_track_needed": [],
@@ -12,8 +12,8 @@
     "by_priority": {},
     "by_action": {}
   },
-  "notes": "14 open PRs found. None are fork PRs (all isCrossRepository=false). Per triage workflow instructions, only fork PRs are in scope. This is now the 32nd consecutive run with no in-scope fork PRs. Authors: app/copilot-swe-agent (12), amalgamated-bot (2). Changes since last run: 2 PRs closed (#3215, #3214).",
-  "consecutive_no_fork_runs": 32,
+  "notes": "14 open PRs found. None are fork PRs (all isCrossRepository=false). Per triage workflow instructions, only fork PRs are in scope. This is now the 33rd consecutive run with no in-scope fork PRs. Authors: app/copilot-swe-agent (12), amalgamated-bot (2). No change from previous run — same 14 PRs remain open.",
+  "consecutive_no_fork_runs": 33,
   "all_surveyed_prs": [
     {"number": 3254, "author": "app/copilot-swe-agent", "title": "chore(ci): install Goal workflow", "cross_repo": false},
     {"number": 3243, "author": "amalgamated-bot", "title": "[docs] Self-healing documentation fixes from issue analysis - 2026-06-12", "cross_repo": false},
