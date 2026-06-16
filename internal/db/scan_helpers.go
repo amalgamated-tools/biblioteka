@@ -90,9 +90,10 @@ func collectRowsWithCap[T any](rows *sql.Rows, scan func(interface{ Scan(...any)
 func collectForBooks[T any](
 	rows *sql.Rows,
 	scan func(interface{ Scan(...any) error }) (string, *T, error),
+	cap int,
 ) (map[string][]T, error) {
 	defer rows.Close()
-	items := map[string][]T{}
+	items := make(map[string][]T, cap)
 	for rows.Next() {
 		bookID, item, err := scan(rows)
 		if err != nil {
