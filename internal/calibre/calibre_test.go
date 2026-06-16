@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-
-	_ "modernc.org/sqlite"
 )
 
 // ── parseCalibreDate ──────────────────────────────────────────────────────────
@@ -131,10 +129,7 @@ func TestCollectBookMap_CollectsRows(t *testing.T) {
 	`)
 	require.NoError(t, err)
 
-	rows, err := sqlDB.QueryContext(t.Context(), `SELECT book, val FROM t ORDER BY rowid`)
-	require.NoError(t, err)
-
-	got, err := collectBookMap(rows,
+	got, err := collectBookMap(t.Context(), sqlDB, `SELECT book, val FROM t ORDER BY rowid`,
 		func(r *sql.Rows) (int64, string, error) {
 			var bookID int64
 			var value string
@@ -154,6 +149,90 @@ func TestCollectBookMap_CollectsRows(t *testing.T) {
 	}, got)
 }
 
+func TestLoadBooks_LoadsRelatedMetadata(t *testing.T) {
+	cdb := newTestCalibreDB(t)
+
+	bookID := insertCalibreBook(t, cdb, "Dune", "Frank Herbert/Dune (1)", "1965-08-01 00:00:00+00:00", 1.5)
+	secondBookID := insertCalibreBook(t, cdb, "Neuromancer", "William Gibson/Neuromancer (1)", "", 1.0)
+
+	authorAID := insertCalibreAuthor(t, cdb, "Frank Herbert")
+	authorBID := insertCalibreAuthor(t, cdb, "Brian Herbert")
+	linkBookAuthor(t, cdb, bookID, authorAID)
+	linkBookAuthor(t, cdb, bookID, authorBID)
+
+	mainSeriesID := insertCalibreSeries(t, cdb, "Dune Saga")
+	sideSeriesID := insertCalibreSeries(t, cdb, "Sci-Fi Classics")
+	linkBookSeries(t, cdb, bookID, mainSeriesID)
+	linkBookSeries(t, cdb, bookID, sideSeriesID)
+
+	firstPublisherID := insertCalibrePublisher(t, cdb, "Chilton Books")
+	secondPublisherID := insertCalibrePublisher(t, cdb, "Ace")
+	linkBookPublisher(t, cdb, bookID, firstPublisherID)
+	linkBookPublisher(t, cdb, bookID, secondPublisherID)
+
+	insertCalibreComment(t, cdb, bookID, "A science fiction masterpiece.")
+	insertCalibreFormat(t, cdb, bookID, "EPUB", "Dune", 512000)
+	insertCalibreFormat(t, cdb, bookID, "PDF", "Dune", 1024000)
+	insertCalibreIdentifier(t, cdb, bookID, "isbn13", "9780441013593")
+	insertCalibreIdentifier(t, cdb, bookID, "goodreads", "234225")
+
+	insertCalibreLanguage(t, cdb, bookID, "eng")
+
+	res, err := cdb.db.ExecContext(t.Context(), `INSERT INTO languages (lang_code) VALUES (?)`, "fra")
+	require.NoError(t, err)
+
+	secondLangID, err := res.LastInsertId()
+	require.NoError(t, err)
+
+	_, err = cdb.db.ExecContext(
+		t.Context(),
+		`INSERT INTO books_languages_link (book, lang_code, item_order) VALUES (?, ?, ?)`,
+		bookID,
+		secondLangID,
+		1,
+	)
+	require.NoError(t, err)
+
+	insertCalibreComment(t, cdb, secondBookID, "Cyberpunk classic.")
+
+	books, err := cdb.LoadBooks(t.Context())
+	require.NoError(t, err)
+	require.Len(t, books, 2)
+
+	require.Equal(t, []Book{
+		{
+			CalibreID:   bookID,
+			Title:       "Dune",
+			Path:        "Frank Herbert/Dune (1)",
+			SeriesIndex: 1.5,
+			Pubdate:     time.Date(1965, time.August, 1, 0, 0, 0, 0, time.UTC),
+			Authors:     []string{"Frank Herbert", "Brian Herbert"},
+			Series: []SeriesEntry{
+				{Name: "Dune Saga", Position: 1.5},
+				{Name: "Sci-Fi Classics", Position: 1.5},
+			},
+			Publisher:   "Chilton Books",
+			Description: "A science fiction masterpiece.",
+			Formats: []Format{
+				{FormatCode: "EPUB", Name: "Dune", UncompressedSize: 512000},
+				{FormatCode: "PDF", Name: "Dune", UncompressedSize: 1024000},
+			},
+			Identifiers: map[string]string{
+				"goodreads": "234225",
+				"isbn13":    "9780441013593",
+			},
+			Language: "eng",
+		},
+		{
+			CalibreID:   secondBookID,
+			Title:       "Neuromancer",
+			Path:        "William Gibson/Neuromancer (1)",
+			SeriesIndex: 1.0,
+			Description: "Cyberpunk classic.",
+		},
+	}, books)
+}
+
 func TestLoadBookLanguages_MissingTables(t *testing.T) {
 	sqlDB, err := sql.Open("sqlite", ":memory:")
 	require.NoError(t, err)
@@ -161,7 +240,7 @@ func TestLoadBookLanguages_MissingTables(t *testing.T) {
 
 	cdb := &DB{db: sqlDB}
 
-	got, err := cdb.loadBookLanguages(t.Context())
+	languages, err := cdb.loadBookLanguages(t.Context())
 	require.NoError(t, err)
-	require.Empty(t, got)
+	require.Empty(t, languages)
 }
