@@ -46,9 +46,9 @@ func toReadingListDTO(rl *db.ReadingList) readingListDTO {
 	}
 }
 
-// readingListOps returns the userOwnedNamedEntityOps configuration for the ReadingList entity.
-func (h *ReadingListHandler) readingListOps() userOwnedNamedEntityOps[db.ReadingList, readingListDTO, readingListRequest] {
-	return userOwnedNamedEntityOps[db.ReadingList, readingListDTO, readingListRequest]{
+// readingListOps returns the namedEntityOps configuration for the ReadingList entity.
+func (h *ReadingListHandler) readingListOps() namedEntityOps[db.ReadingList, readingListDTO, readingListRequest] {
+	return namedEntityOps[db.ReadingList, readingListDTO, readingListRequest]{
 		db:              h.DB,
 		entityLabel:     "reading list",
 		auditEntityType: "reading_list",
@@ -58,12 +58,17 @@ func (h *ReadingListHandler) readingListOps() userOwnedNamedEntityOps[db.Reading
 		errNameExists:   db.ErrReadingListNameExists,
 		auditCreate:     db.AuditActionReadingListCreated,
 		auditUpdate:     db.AuditActionReadingListUpdated,
-		get:             h.DB.GetReadingList,
-		create: func(ctx context.Context, userID string, req readingListRequest) (*db.ReadingList, error) {
-			return h.DB.CreateReadingList(ctx, userID, req.Name, req.Description)
+		// These closures enforce user isolation by extracting the authenticated
+		// user ID from the request context before delegating to the user-scoped
+		// DB methods.
+		get: func(ctx context.Context, id string) (*db.ReadingList, error) {
+			return h.DB.GetReadingList(ctx, id, auth.UserIDFromContext(ctx))
 		},
-		update: func(ctx context.Context, id, userID string, req readingListRequest) (*db.ReadingList, error) {
-			return h.DB.UpdateReadingList(ctx, id, userID, req.Name, req.Description)
+		create: func(ctx context.Context, req readingListRequest) (*db.ReadingList, error) {
+			return h.DB.CreateReadingList(ctx, auth.UserIDFromContext(ctx), req.Name, req.Description)
+		},
+		update: func(ctx context.Context, id string, req readingListRequest) (*db.ReadingList, error) {
+			return h.DB.UpdateReadingList(ctx, id, auth.UserIDFromContext(ctx), req.Name, req.Description)
 		},
 		reqName:    func(req readingListRequest) string { return req.Name },
 		entityName: func(rl *db.ReadingList) string { return rl.Name },
@@ -141,7 +146,7 @@ func (h *ReadingListHandler) listReadingLists(w http.ResponseWriter, r *http.Req
 //	@Failure		500		{object}	errorResponse
 //	@Router			/reading-lists [post]
 func (h *ReadingListHandler) createReadingList(w http.ResponseWriter, r *http.Request) {
-	createUserOwnedNamedEntity(h.readingListOps(), w, r)
+	createNamedEntity(h.readingListOps(), w, r)
 }
 
 // handleReadingList dispatches GET, PUT, DELETE for /api/reading-lists/{id}.
@@ -173,7 +178,7 @@ func (h *ReadingListHandler) handleReadingList(w http.ResponseWriter, r *http.Re
 //	@Failure		500	{object}	errorResponse
 //	@Router			/reading-lists/{id} [get]
 func (h *ReadingListHandler) getReadingList(w http.ResponseWriter, r *http.Request, id string) {
-	getUserOwnedNamedEntity(h.readingListOps(), w, r, id)
+	getNamedEntity(h.readingListOps(), w, r, id)
 }
 
 // updateReadingList updates the name and description of a reading list.
@@ -194,7 +199,7 @@ func (h *ReadingListHandler) getReadingList(w http.ResponseWriter, r *http.Reque
 //	@Failure		500		{object}	errorResponse
 //	@Router			/reading-lists/{id} [put]
 func (h *ReadingListHandler) updateReadingList(w http.ResponseWriter, r *http.Request, id string) {
-	updateUserOwnedNamedEntity(h.readingListOps(), w, r, id)
+	updateNamedEntity(h.readingListOps(), w, r, id)
 }
 
 // deleteReadingList deletes a reading list owned by the authenticated user.
