@@ -117,6 +117,38 @@ func TestFormat_FileName(t *testing.T) {
 	}
 }
 
+func TestCollectBookMap_CollectsRows(t *testing.T) {
+	sqlDB, err := sql.Open("sqlite", ":memory:")
+	require.NoError(t, err)
+	sqlDB.SetMaxOpenConns(1)
+	t.Cleanup(func() { require.NoError(t, sqlDB.Close()) })
+
+	_, err = sqlDB.Exec(`
+		CREATE TABLE t (book INTEGER NOT NULL, val TEXT NOT NULL);
+		INSERT INTO t (book, val) VALUES (1, 'a'), (1, 'b'), (2, 'c');
+	`)
+	require.NoError(t, err)
+
+	got, err := collectBookMap(t.Context(), sqlDB, `SELECT book, val FROM t ORDER BY rowid`,
+		func(r *sql.Rows) (int64, string, error) {
+			var bookID int64
+			var value string
+			if err := r.Scan(&bookID, &value); err != nil {
+				return 0, "", err
+			}
+			return bookID, value, nil
+		},
+		func(result map[int64][]string, bookID int64, value string) {
+			result[bookID] = append(result[bookID], value)
+		},
+	)
+	require.NoError(t, err)
+	require.Equal(t, map[int64][]string{
+		1: {"a", "b"},
+		2: {"c"},
+	}, got)
+}
+
 func TestLoadBooks_LoadsRelatedMetadata(t *testing.T) {
 	cdb := newTestCalibreDB(t)
 
@@ -204,7 +236,7 @@ func TestLoadBooks_LoadsRelatedMetadata(t *testing.T) {
 func TestLoadBookLanguages_MissingTables(t *testing.T) {
 	sqlDB, err := sql.Open("sqlite", ":memory:")
 	require.NoError(t, err)
-	t.Cleanup(func() { _ = sqlDB.Close() })
+	t.Cleanup(func() { require.NoError(t, sqlDB.Close()) })
 
 	cdb := &DB{db: sqlDB}
 

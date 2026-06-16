@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"log/slog"
 
@@ -158,18 +157,15 @@ func (d *DB) GetTagsForBooks(ctx context.Context, bookIDs []string) (map[string]
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	result := make(map[string][]Tag, len(bookIDs))
-	for rows.Next() {
+	return collectRowsGrouped(rows, func(row interface{ Scan(...any) error }) (string, *Tag, error) {
 		var bookID string
-		t, err := scanTag(prefixedScanner{row: rows, prefix: []any{&bookID}})
+		t, err := scanTag(prefixedScanner{row: row, prefix: []any{&bookID}})
 		if err != nil {
-			return nil, err
+			return "", nil, err
 		}
-		result[bookID] = append(result[bookID], *t)
-	}
-	return result, rows.Err()
+		return bookID, t, nil
+	}, len(bookIDs))
 }
 
 // SetBookTags replaces all tag associations for a book atomically.
@@ -179,27 +175,8 @@ func (d *DB) SetBookTags(ctx context.Context, bookID string, tagIDs []string) er
 		slog.String(otelkeys.BookID, bookID),
 		slog.Int(otelkeys.Count, len(tagIDs)),
 	)
-
-	seen := make(map[string]struct{}, len(tagIDs))
-	unique := make([]string, 0, len(tagIDs))
-	for _, id := range tagIDs {
-		if _, ok := seen[id]; !ok {
-			seen[id] = struct{}{}
-			unique = append(unique, id)
-		}
-	}
-
-	return d.WithTx(ctx, func(tx *sql.Tx) error {
-		if _, err := tx.ExecContext(ctx, `DELETE FROM book_tags WHERE book_id = $1`, bookID); err != nil {
-			return err
-		}
-
-		for _, tagID := range unique {
-			if _, err := tx.ExecContext(ctx, `INSERT INTO book_tags (book_id, tag_id) VALUES ($1, $2)`, bookID, tagID); err != nil {
-				return err
-			}
-		}
-
-		return nil
-	})
+	return d.replaceBookAssociations(ctx, bookID, tagIDs,
+		`DELETE FROM book_tags WHERE book_id = $1`,
+		`INSERT INTO book_tags (book_id, tag_id) VALUES ($1, $2)`,
+	)
 }

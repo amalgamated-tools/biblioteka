@@ -210,26 +210,14 @@ func (d *DB) ListBooksByLibraryPaginated(ctx context.Context, libraryID string, 
 	)
 
 	orderBy := d.dialectOrderBy("b.title", "ASC")
-	rows, err := d.QueryContext(ctx,
+	return d.execBooksPaginated(
+		ctx,
+		offset,
 		`SELECT `+bookColumnsWithPrefix("b.")+`, COUNT(*) OVER() FROM books b INNER JOIN library_books lb ON lb.book_id = b.id WHERE lb.library_id = $1 `+orderBy+` LIMIT $2 OFFSET $3`,
-		libraryID, limit, offset,
-	)
-	if err != nil {
-		return nil, 0, err
-	}
-	books, total, err := collectRowsAndTotal(rows, scanBookAndTotal)
-	if err != nil {
-		return nil, 0, err
-	}
-	// When offset exceeds total rows, the window function returns nothing.
-	// Fall back to a COUNT query so the caller can report the true total.
-	if err := countFallback(ctx, d, &total, len(books), offset,
 		`SELECT COUNT(*) FROM books b INNER JOIN library_books lb ON lb.book_id = b.id WHERE lb.library_id = $1`,
-		libraryID,
-	); err != nil {
-		return nil, 0, err
-	}
-	return books, total, nil
+		[]any{libraryID, limit, offset},
+		[]any{libraryID},
+	)
 }
 
 // UpdateBook updates a book's fields and returns the updated book.
@@ -351,16 +339,13 @@ func (d *DB) GetSeriesForBooks(ctx context.Context, bookIDs []string) (map[strin
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	result := make(map[string][]BookSeriesEntry, len(bookIDs))
-	for rows.Next() {
+	return collectRowsGrouped(rows, func(row interface{ Scan(...any) error }) (string, *BookSeriesEntry, error) {
 		var bookID string
-		var entry BookSeriesEntry
-		if err := rows.Scan(&bookID, &entry.Series.ID, &entry.Series.Name, &entry.Series.GoodreadsID, &entry.Series.HardcoverID, &entry.Series.GoogleBooksID, &entry.Series.CreatedAt, &entry.Series.UpdatedAt, &entry.Position); err != nil {
-			return nil, err
+		entry, err := scanBookSeriesEntry(prefixedScanner{row: row, prefix: []any{&bookID}})
+		if err != nil {
+			return "", nil, err
 		}
-		result[bookID] = append(result[bookID], entry)
-	}
-	return result, rows.Err()
+		return bookID, entry, nil
+	}, len(bookIDs))
 }

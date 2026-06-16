@@ -87,11 +87,18 @@ Update a series (full update).
 
 ---
 
-### `DELETE /api/series/{id}` 🔒
+### `DELETE /api/series/{id}` 🔒 **Admin**
 
 Delete a series. Returns `204 No Content`.
 
 > **Cascade:** Deleting a series also removes all `book_series` join entries for that series. Books themselves are **not** deleted. See [Cascade Deletion Summary](../database-schema.md#cascade-deletion-summary).
+
+**Errors:**
+
+| Status | Meaning |
+|--------|---------|
+| `403` | Caller is not an admin |
+| `404` | Series not found |
 
 ---
 
