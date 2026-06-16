@@ -121,6 +121,8 @@ func scanBookSeriesEntry(row interface{ Scan(...any) error }) (*BookSeriesEntry,
 
 // SetBookSeries replaces all series associations for a book.
 // Duplicate series IDs are silently deduplicated (last position wins).
+// This intentionally does not use replaceBookAssociations because it stores positions
+// and applies last-position-wins deduplication.
 func (d *DB) SetBookSeries(ctx context.Context, bookID string, entries []BookSeriesInput) error {
 	slog.DebugContext(ctx, "db: setting book series",
 		slog.String(otelkeys.BookID, bookID),
