@@ -151,16 +151,13 @@ func (d *DB) GetAuthorsForBooks(ctx context.Context, bookIDs []string) (map[stri
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	result := make(map[string][]Author, len(bookIDs))
-	for rows.Next() {
+	return collectRowsGrouped(rows, func(row interface{ Scan(...any) error }) (string, *Author, error) {
 		var bookID string
-		a, err := scanAuthor(prefixedScanner{row: rows, prefix: []any{&bookID}})
+		a, err := scanAuthor(prefixedScanner{row: row, prefix: []any{&bookID}})
 		if err != nil {
-			return nil, err
+			return "", nil, err
 		}
-		result[bookID] = append(result[bookID], *a)
-	}
-	return result, rows.Err()
+		return bookID, a, nil
+	}, len(bookIDs))
 }

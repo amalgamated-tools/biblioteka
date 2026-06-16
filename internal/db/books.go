@@ -351,16 +351,13 @@ func (d *DB) GetSeriesForBooks(ctx context.Context, bookIDs []string) (map[strin
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	result := make(map[string][]BookSeriesEntry, len(bookIDs))
-	for rows.Next() {
+	return collectRowsGrouped(rows, func(row interface{ Scan(...any) error }) (string, *BookSeriesEntry, error) {
 		var bookID string
-		var entry BookSeriesEntry
-		if err := rows.Scan(&bookID, &entry.Series.ID, &entry.Series.Name, &entry.Series.GoodreadsID, &entry.Series.HardcoverID, &entry.Series.GoogleBooksID, &entry.Series.CreatedAt, &entry.Series.UpdatedAt, &entry.Position); err != nil {
-			return nil, err
+		entry, err := scanBookSeriesEntry(prefixedScanner{row: row, prefix: []any{&bookID}})
+		if err != nil {
+			return "", nil, err
 		}
-		result[bookID] = append(result[bookID], entry)
-	}
-	return result, rows.Err()
+		return bookID, entry, nil
+	}, len(bookIDs))
 }

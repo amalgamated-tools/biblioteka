@@ -121,3 +121,36 @@ func collectRowsAndTotal[T any](rows *sql.Rows, scan func(interface{ Scan(...any
 	}
 	return items, total, nil
 }
+
+// collectRowsGrouped iterates rows, scans each one using scan (which returns a
+// grouping key), and returns a map of key -> []T.
+//
+// It always closes rows before returning.
+func collectRowsGrouped[T any](
+	rows *sql.Rows,
+	scan func(interface{ Scan(...any) error }) (string, *T, error),
+	cap int,
+) (map[string][]T, error) {
+	defer rows.Close()
+
+	var result map[string][]T
+	if cap > 0 {
+		result = make(map[string][]T, cap)
+	} else {
+		result = make(map[string][]T)
+	}
+
+	for rows.Next() {
+		key, item, err := scan(rows)
+		if err != nil {
+			return nil, err
+		}
+		result[key] = append(result[key], *item)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
