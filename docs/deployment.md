@@ -403,7 +403,7 @@ Binary responses (EPUB, MOBI, PDF, JPEG, PNG) and streaming responses (Server-Se
 
 **Cache correctness:** Every response (compressed or not) includes `Vary: Accept-Encoding` so that caches store separate entries for compressed and uncompressed clients.
 
-**Range requests:** Compression is skipped for requests that include a `Range` header to preserve `Content-Range` semantics (e.g. partial file downloads).
+**Range requests:** Compression is skipped for requests that include a `Range` header to preserve `Content-Range` semantics (e.g. partial file downloads). Note: the `Vary: Accept-Encoding` header is still present on Range responses, which may cause redundant cache entries for partial content in CDN or proxy caches.
 
 > **Reverse proxy note:** If your reverse proxy (Caddy, nginx) also compresses responses, you can either disable its compression for upstream responses or leave both active — Biblioteka will only compress when the client explicitly requests gzip, and the proxy will see `Content-Encoding: gzip` on already-compressed responses and forward them unchanged.
 
