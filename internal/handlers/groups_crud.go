@@ -4,14 +4,15 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
-// groupOps returns the userOwnedNamedEntityOps configuration for the
+// groupOps returns the namedEntityOps configuration for the
 // ReadingGroup entity.
-func (h *GroupHandler) groupOps() userOwnedNamedEntityOps[db.ReadingGroup, groupDTO, groupRequest] {
-	return userOwnedNamedEntityOps[db.ReadingGroup, groupDTO, groupRequest]{
+func (h *GroupHandler) groupOps() namedEntityOps[db.ReadingGroup, groupDTO, groupRequest] {
+	return namedEntityOps[db.ReadingGroup, groupDTO, groupRequest]{
 		db:              h.DB,
 		entityLabel:     "group",
 		entityArticle:   "a group",
@@ -21,12 +22,17 @@ func (h *GroupHandler) groupOps() userOwnedNamedEntityOps[db.ReadingGroup, group
 		errNameExists:   db.ErrGroupNameExists,
 		auditCreate:     db.AuditActionGroupCreated,
 		auditUpdate:     db.AuditActionGroupUpdated,
-		get:             h.DB.GetGroup,
-		create: func(ctx context.Context, userID string, req groupRequest) (*db.ReadingGroup, error) {
-			return h.DB.CreateGroup(ctx, userID, req.Name, req.Description)
+		// These closures enforce user isolation by extracting the authenticated
+		// user ID from the request context before delegating to the user-scoped
+		// DB methods.
+		get: func(ctx context.Context, id string) (*db.ReadingGroup, error) {
+			return h.DB.GetGroup(ctx, id, auth.UserIDFromContext(ctx))
 		},
-		update: func(ctx context.Context, id, userID string, req groupRequest) (*db.ReadingGroup, error) {
-			return h.DB.UpdateGroup(ctx, id, userID, req.Name, req.Description)
+		create: func(ctx context.Context, req groupRequest) (*db.ReadingGroup, error) {
+			return h.DB.CreateGroup(ctx, auth.UserIDFromContext(ctx), req.Name, req.Description)
+		},
+		update: func(ctx context.Context, id string, req groupRequest) (*db.ReadingGroup, error) {
+			return h.DB.UpdateGroup(ctx, id, auth.UserIDFromContext(ctx), req.Name, req.Description)
 		},
 		reqName:    func(req groupRequest) string { return req.Name },
 		entityName: func(g *db.ReadingGroup) string { return g.Name },
@@ -66,7 +72,7 @@ func (h *GroupHandler) listGroups(w http.ResponseWriter, r *http.Request) {
 //	@Failure		500		{object}	errorResponse
 //	@Router			/groups [post]
 func (h *GroupHandler) createGroup(w http.ResponseWriter, r *http.Request) {
-	createUserOwnedNamedEntity(h.groupOps(), w, r)
+	createNamedEntity(h.groupOps(), w, r)
 }
 
 func (h *GroupHandler) handleGroup(w http.ResponseWriter, r *http.Request, id string) {
@@ -97,7 +103,7 @@ func (h *GroupHandler) handleGroup(w http.ResponseWriter, r *http.Request, id st
 //	@Failure		500	{object}	errorResponse
 //	@Router			/groups/{id} [get]
 func (h *GroupHandler) getGroup(w http.ResponseWriter, r *http.Request, id string) {
-	getUserOwnedNamedEntity(h.groupOps(), w, r, id)
+	getNamedEntity(h.groupOps(), w, r, id)
 }
 
 // updateGroup updates an existing group.
@@ -118,7 +124,7 @@ func (h *GroupHandler) getGroup(w http.ResponseWriter, r *http.Request, id strin
 //	@Failure		500		{object}	errorResponse
 //	@Router			/groups/{id} [put]
 func (h *GroupHandler) updateGroup(w http.ResponseWriter, r *http.Request, id string) {
-	updateUserOwnedNamedEntity(h.groupOps(), w, r, id)
+	updateNamedEntity(h.groupOps(), w, r, id)
 }
 
 // deleteGroup deletes a reading group.

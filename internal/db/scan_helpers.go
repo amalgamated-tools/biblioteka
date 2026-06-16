@@ -135,13 +135,27 @@ func collectRowsAndTotal[T any](rows *sql.Rows, scan func(interface{ Scan(...any
 //
 // This is the grouped variant of collectRows, used by batch-fetch helpers
 // such as batchFetchByBookID that group results by an association key.
-func collectRowsGrouped[T any](rows *sql.Rows, scan func(interface{ Scan(...any) error }) (string, *T, error)) (map[string][]T, error) {
+func collectRowsGrouped[T any](
+	rows *sql.Rows,
+	scan func(interface{ Scan(...any) error }) (string, *T, error),
+	mapCap int,
+) (map[string][]T, error) {
 	defer rows.Close()
-	result := make(map[string][]T)
+
+	var result map[string][]T
+	if mapCap > 0 {
+		result = make(map[string][]T, mapCap)
+	} else {
+		result = make(map[string][]T)
+	}
+
 	for rows.Next() {
 		key, v, err := scan(rows)
 		if err != nil {
 			return nil, err
+		}
+		if v == nil {
+			continue
 		}
 		result[key] = append(result[key], *v)
 	}
@@ -180,5 +194,5 @@ func batchFetchByBookID[T any](
 	if err != nil {
 		return nil, err
 	}
-	return collectRowsGrouped(rows, scan)
+	return collectRowsGrouped(rows, scan, len(bookIDs))
 }

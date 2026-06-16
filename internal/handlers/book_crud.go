@@ -62,10 +62,12 @@ func (h *BookHandler) listBooks(w http.ResponseWriter, r *http.Request) {
 	slog.DebugContext(r.Context(), "books listed", slog.Int(otelkeys.Count, len(books)))
 
 	writeJSON(r.Context(), w, http.StatusOK, bookListDTO{
-		Books:  mapSlice(books, toBookSummaryDTO),
-		Total:  total,
-		Limit:  limit,
-		Offset: offset,
+		Books: mapSlice(books, toBookSummaryDTO),
+		paginationMeta: paginationMeta{
+			Total:  total,
+			Limit:  limit,
+			Offset: offset,
+		},
 	})
 }
 

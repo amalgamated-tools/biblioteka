@@ -117,9 +117,7 @@ func (h *AuthorHandler) HandleAuthor(w http.ResponseWriter, r *http.Request) {
 
 type authorListDTO struct {
 	Authors []authorDTO `json:"authors"`
-	Total   int         `json:"total"`
-	Limit   int         `json:"limit"`
-	Offset  int         `json:"offset"`
+	paginationMeta
 }
 
 // listAuthors returns a paginated list of authors.
@@ -140,9 +138,11 @@ func (h *AuthorHandler) listAuthors(w http.ResponseWriter, r *http.Request) {
 		func(items []authorDTO, total, limit, offset int) authorListDTO {
 			return authorListDTO{
 				Authors: items,
-				Total:   total,
-				Limit:   limit,
-				Offset:  offset,
+				paginationMeta: paginationMeta{
+					Total:  total,
+					Limit:  limit,
+					Offset: offset,
+				},
 			}
 		},
 	)

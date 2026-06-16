@@ -55,24 +55,42 @@ func (d *DB) GetBookAuthors(ctx context.Context, bookID string) ([]Author, error
 func (d *DB) SetBookAuthors(ctx context.Context, bookID string, authorIDs []string) error {
 	slog.DebugContext(ctx, "db: setting book authors",
 		slog.String(otelkeys.BookID, bookID),
-		slog.Int(otelkeys.AuthorCount, len(authorIDs)),
+		slog.Int(otelkeys.Count, len(authorIDs)),
 	)
-	seen := make(map[string]struct{}, len(authorIDs))
-	unique := make([]string, 0, len(authorIDs))
-	for _, id := range authorIDs {
-		if _, ok := seen[id]; !ok {
-			seen[id] = struct{}{}
-			unique = append(unique, id)
+	return d.replaceBookAssociations(ctx, bookID, authorIDs,
+		`DELETE FROM book_authors WHERE book_id = $1`,
+		`INSERT INTO book_authors (book_id, author_id) VALUES ($1, $2)`,
+	)
+}
+
+// deduplicateStrings removes duplicates while preserving first-seen order.
+func deduplicateStrings(values []string) []string {
+	seen := make(map[string]struct{}, len(values))
+	unique := make([]string, 0, len(values))
+	for _, value := range values {
+		if _, ok := seen[value]; ok {
+			continue
 		}
+		seen[value] = struct{}{}
+		unique = append(unique, value)
 	}
 
+	return unique
+}
+
+// replaceBookAssociations atomically replaces all join-table rows for bookID
+// by deleting existing rows and inserting deduplicated related IDs.
+// deleteQuery must accept bookID as $1; insertQuery must accept bookID as $1
+// and relatedID as $2.
+func (d *DB) replaceBookAssociations(ctx context.Context, bookID string, relatedIDs []string, deleteQuery, insertQuery string) error {
+	unique := deduplicateStrings(relatedIDs)
 	return d.WithTx(ctx, func(tx *sql.Tx) error {
-		if _, err := tx.ExecContext(ctx, `DELETE FROM book_authors WHERE book_id = $1`, bookID); err != nil {
+		if _, err := tx.ExecContext(ctx, deleteQuery, bookID); err != nil {
 			return err
 		}
 
-		for _, authorID := range unique {
-			if _, err := tx.ExecContext(ctx, `INSERT INTO book_authors (book_id, author_id) VALUES ($1, $2)`, bookID, authorID); err != nil {
+		for _, relatedID := range unique {
+			if _, err := tx.ExecContext(ctx, insertQuery, bookID, relatedID); err != nil {
 				return err
 			}
 		}

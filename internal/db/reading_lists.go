@@ -221,28 +221,19 @@ func (d *DB) ListReadingListBooks(ctx context.Context, listID, userID string, li
 		return nil, 0, err
 	}
 
-	rows, err := d.QueryContext(ctx,
+	return d.execBooksPaginated(
+		ctx,
+		offset,
 		`SELECT `+bookColumns+`, COUNT(*) OVER() AS total
          FROM books b
          INNER JOIN reading_list_books rlb ON rlb.book_id = b.id
          WHERE rlb.reading_list_id = $1
          ORDER BY rlb.added_at ASC, b.id ASC
          LIMIT $2 OFFSET $3`,
-		listID, limit, offset,
+		`SELECT COUNT(*) FROM reading_list_books WHERE reading_list_id = $1`,
+		[]any{listID, limit, offset},
+		[]any{listID},
 	)
-	if err != nil {
-		return nil, 0, err
-	}
-	books, total, err := collectRowsAndTotal(rows, scanBookAndTotal)
-	if err != nil {
-		return nil, 0, err
-	}
-	if err := countFallback(ctx, d, &total, len(books), offset,
-		`SELECT COUNT(*) FROM reading_list_books WHERE reading_list_id = $1`, listID,
-	); err != nil {
-		return nil, 0, err
-	}
-	return books, total, nil
 }
 
 // GetReadingListsForBook returns all reading lists owned by userID that contain

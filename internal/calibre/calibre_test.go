@@ -1,10 +1,13 @@
 package calibre
 
 import (
+	"database/sql"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
+
+	_ "modernc.org/sqlite"
 )
 
 // ── parseCalibreDate ──────────────────────────────────────────────────────────
@@ -114,4 +117,51 @@ func TestFormat_FileName(t *testing.T) {
 			require.Equal(t, tc.wantSuffix, tc.format.FileName())
 		})
 	}
+}
+
+func TestCollectBookMap_CollectsRows(t *testing.T) {
+	sqlDB, err := sql.Open("sqlite", ":memory:")
+	require.NoError(t, err)
+	sqlDB.SetMaxOpenConns(1)
+	t.Cleanup(func() { require.NoError(t, sqlDB.Close()) })
+
+	_, err = sqlDB.Exec(`
+		CREATE TABLE t (book INTEGER NOT NULL, val TEXT NOT NULL);
+		INSERT INTO t (book, val) VALUES (1, 'a'), (1, 'b'), (2, 'c');
+	`)
+	require.NoError(t, err)
+
+	rows, err := sqlDB.QueryContext(t.Context(), `SELECT book, val FROM t ORDER BY rowid`)
+	require.NoError(t, err)
+
+	got, err := collectBookMap(rows,
+		func(r *sql.Rows) (int64, string, error) {
+			var bookID int64
+			var value string
+			if err := r.Scan(&bookID, &value); err != nil {
+				return 0, "", err
+			}
+			return bookID, value, nil
+		},
+		func(result map[int64][]string, bookID int64, value string) {
+			result[bookID] = append(result[bookID], value)
+		},
+	)
+	require.NoError(t, err)
+	require.Equal(t, map[int64][]string{
+		1: {"a", "b"},
+		2: {"c"},
+	}, got)
+}
+
+func TestLoadBookLanguages_MissingTables(t *testing.T) {
+	sqlDB, err := sql.Open("sqlite", ":memory:")
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, sqlDB.Close()) })
+
+	cdb := &DB{db: sqlDB}
+
+	got, err := cdb.loadBookLanguages(t.Context())
+	require.NoError(t, err)
+	require.Empty(t, got)
 }
