@@ -383,7 +383,7 @@ Biblioteka automatically compresses HTTP responses using gzip via `GzipMiddlewar
 
 **Conditions for compression:**
 
-1. The client includes `Accept-Encoding: gzip` in its request headers.
+1. The client signals support for gzip via `Accept-Encoding` (i.e., includes `gzip` with a non-zero `q` value).
 2. The response `Content-Type` is a known text-based format.
 
 **Compressed content types:**
