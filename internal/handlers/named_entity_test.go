@@ -503,7 +503,7 @@ func TestCreateNamedEntity_UserScoped_Success(t *testing.T) {
 	require.Equal(t, "My Widget", dto.Name)
 }
 
-func TestCreateUserOwnedNamedEntity_UsesConfiguredAuditEntityType(t *testing.T) {
+func TestCreateNamedEntity_UserScoped_UsesConfiguredAuditEntityType(t *testing.T) {
 	ops := makeTestUserOwnedNamedEntityOps(t)
 
 	body := mustMarshal(t, testEntityRequest{Name: "My Widget"})
