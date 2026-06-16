@@ -12,6 +12,21 @@ import (
 // searchLikeReplacer escapes special LIKE pattern characters for use in SQL LIKE/ILIKE queries.
 var searchLikeReplacer = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
 
+func (d *DB) execBooksPaginated(ctx context.Context, offset int, mainQuery, countQuery string, mainArgs, countArgs []any) ([]Book, int, error) {
+	rows, err := d.QueryContext(ctx, mainQuery, mainArgs...)
+	if err != nil {
+		return nil, 0, err
+	}
+	books, total, err := collectRowsAndTotal(rows, scanBookAndTotal)
+	if err != nil {
+		return nil, 0, err
+	}
+	if err := countFallback(ctx, d, &total, len(books), offset, countQuery, countArgs...); err != nil {
+		return nil, 0, err
+	}
+	return books, total, nil
+}
+
 // ListBooksPaginated returns books ordered by title with pagination and total count.
 func (d *DB) ListBooksPaginated(ctx context.Context, limit, offset int) ([]Book, int, error) {
 	slog.DebugContext(ctx, "db: listing books paginated",
@@ -20,21 +35,14 @@ func (d *DB) ListBooksPaginated(ctx context.Context, limit, offset int) ([]Book,
 	)
 
 	orderBy := d.dialectOrderBy("title", "ASC")
-	rows, err := d.QueryContext(ctx,
+	return d.execBooksPaginated(
+		ctx,
+		offset,
 		`SELECT `+bookColumns+`, COUNT(*) OVER() FROM books `+orderBy+` LIMIT $1 OFFSET $2`,
-		limit, offset,
+		`SELECT COUNT(*) FROM books`,
+		[]any{limit, offset},
+		nil,
 	)
-	if err != nil {
-		return nil, 0, err
-	}
-	books, total, err := collectRowsAndTotal(rows, scanBookAndTotal)
-	if err != nil {
-		return nil, 0, err
-	}
-	if err := countFallback(ctx, d, &total, len(books), offset, `SELECT COUNT(*) FROM books`); err != nil {
-		return nil, 0, err
-	}
-	return books, total, nil
 }
 
 // ListRecentBooks returns books ordered by creation time (newest first) with pagination and total count.
@@ -44,21 +52,14 @@ func (d *DB) ListRecentBooks(ctx context.Context, limit, offset int) ([]Book, in
 		slog.Int(otelkeys.Offset, offset),
 	)
 
-	rows, err := d.QueryContext(ctx,
+	return d.execBooksPaginated(
+		ctx,
+		offset,
 		`SELECT `+bookColumns+`, COUNT(*) OVER() FROM books ORDER BY created_at DESC, id DESC LIMIT $1 OFFSET $2`,
-		limit, offset,
+		`SELECT COUNT(*) FROM books`,
+		[]any{limit, offset},
+		nil,
 	)
-	if err != nil {
-		return nil, 0, err
-	}
-	books, total, err := collectRowsAndTotal(rows, scanBookAndTotal)
-	if err != nil {
-		return nil, 0, err
-	}
-	if err := countFallback(ctx, d, &total, len(books), offset, `SELECT COUNT(*) FROM books`); err != nil {
-		return nil, 0, err
-	}
-	return books, total, nil
 }
 
 // ListBooksByAuthor returns all books for a specific author.
@@ -84,24 +85,14 @@ func (d *DB) ListBooksByAuthorPaginated(ctx context.Context, authorID string, li
 	)
 
 	orderBy := d.dialectOrderBy("b.title", "ASC")
-	rows, err := d.QueryContext(ctx,
+	return d.execBooksPaginated(
+		ctx,
+		offset,
 		`SELECT `+bookColumnsWithPrefix("b.")+`, COUNT(*) OVER() FROM books b INNER JOIN book_authors ba ON ba.book_id = b.id WHERE ba.author_id = $1 `+orderBy+` LIMIT $2 OFFSET $3`,
-		authorID, limit, offset,
-	)
-	if err != nil {
-		return nil, 0, err
-	}
-	books, total, err := collectRowsAndTotal(rows, scanBookAndTotal)
-	if err != nil {
-		return nil, 0, err
-	}
-	if err := countFallback(ctx, d, &total, len(books), offset,
 		`SELECT COUNT(*) FROM books b INNER JOIN book_authors ba ON ba.book_id = b.id WHERE ba.author_id = $1`,
-		authorID,
-	); err != nil {
-		return nil, 0, err
-	}
-	return books, total, nil
+		[]any{authorID, limit, offset},
+		[]any{authorID},
+	)
 }
 
 // seriesPositionOrderBy returns a dialect-appropriate ORDER BY clause for series books,
@@ -134,24 +125,14 @@ func (d *DB) ListBooksBySeriesPaginated(ctx context.Context, seriesID string, li
 		slog.Int(otelkeys.Offset, offset),
 	)
 
-	rows, err := d.QueryContext(ctx,
+	return d.execBooksPaginated(
+		ctx,
+		offset,
 		`SELECT `+bookColumnsWithPrefix("b.")+`, COUNT(*) OVER() FROM books b INNER JOIN book_series bs ON bs.book_id = b.id WHERE bs.series_id = $1 `+d.seriesPositionOrderBy()+` LIMIT $2 OFFSET $3`,
-		seriesID, limit, offset,
-	)
-	if err != nil {
-		return nil, 0, err
-	}
-	books, total, err := collectRowsAndTotal(rows, scanBookAndTotal)
-	if err != nil {
-		return nil, 0, err
-	}
-	if err := countFallback(ctx, d, &total, len(books), offset,
 		`SELECT COUNT(*) FROM books b INNER JOIN book_series bs ON bs.book_id = b.id WHERE bs.series_id = $1`,
-		seriesID,
-	); err != nil {
-		return nil, 0, err
-	}
-	return books, total, nil
+		[]any{seriesID, limit, offset},
+		[]any{seriesID},
+	)
 }
 
 // buildILIKESearchWhere builds a WHERE clause and args for a per-token ILIKE
@@ -241,21 +222,12 @@ func (d *DB) SearchBooks(ctx context.Context, query string, limit, offset int) (
 	mainArgs = append(mainArgs, limit, offset)
 
 	orderBy := d.dialectOrderBy("title", "ASC")
-	rows, err := d.QueryContext(ctx,
+	return d.execBooksPaginated(
+		ctx,
+		offset,
 		`SELECT `+bookColumns+`, COUNT(*) OVER() FROM books `+whereClause+` `+orderBy+` LIMIT `+limitPos+` OFFSET `+offsetPos,
-		mainArgs...,
+		`SELECT COUNT(*) FROM books `+whereClause,
+		mainArgs,
+		searchArgs,
 	)
-	if err != nil {
-		return nil, 0, err
-	}
-	books, total, err := collectRowsAndTotal(rows, scanBookAndTotal)
-	if err != nil {
-		return nil, 0, err
-	}
-	if err := countFallback(ctx, d, &total, len(books), offset,
-		`SELECT COUNT(*) FROM books `+whereClause, searchArgs...,
-	); err != nil {
-		return nil, 0, err
-	}
-	return books, total, nil
 }
