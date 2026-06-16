@@ -272,12 +272,14 @@ func titleSimilar(a, b string) bool {
 // publishProgress is a convenience wrapper that publishes a progress event
 // with a source of db.MetadataSourceGoodreads.
 func publishProgress(ctx context.Context, publisher pubsub.Publisher, channel, step, message string) {
-	publishEvent(ctx, publisher, channel, progressEvent{
-		Event:   EventProgress,
-		Source:  db.MetadataSourceGoodreads,
-		Step:    step,
-		Message: message,
-	})
+	publishAIProgress(
+		ctx,
+		publisher,
+		channel,
+		db.MetadataSourceGoodreads,
+		step,
+		message,
+	)
 }
 
 // publishEvent marshals and publishes a progress event to the given channel.

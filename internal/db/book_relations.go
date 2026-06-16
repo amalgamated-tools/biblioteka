@@ -55,15 +55,48 @@ func (d *DB) GetBookAuthors(ctx context.Context, bookID string) ([]Author, error
 func (d *DB) SetBookAuthors(ctx context.Context, bookID string, authorIDs []string) error {
 	slog.DebugContext(ctx, "db: setting book authors",
 		slog.String(otelkeys.BookID, bookID),
-		slog.Int(otelkeys.AuthorCount, len(authorIDs)),
+		slog.Int(otelkeys.Count, len(authorIDs)),
 	)
-	return d.setBookStringIDs(
-		ctx,
-		bookID,
-		authorIDs,
+	return d.replaceBookAssociations(ctx, bookID, authorIDs,
 		`DELETE FROM book_authors WHERE book_id = $1`,
 		`INSERT INTO book_authors (book_id, author_id) VALUES ($1, $2)`,
 	)
+}
+
+// deduplicateStrings removes duplicates while preserving first-seen order.
+func deduplicateStrings(values []string) []string {
+	seen := make(map[string]struct{}, len(values))
+	unique := make([]string, 0, len(values))
+	for _, value := range values {
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		unique = append(unique, value)
+	}
+
+	return unique
+}
+
+// replaceBookAssociations atomically replaces all join-table rows for bookID
+// by deleting existing rows and inserting deduplicated related IDs.
+// deleteQuery must accept bookID as $1; insertQuery must accept bookID as $1
+// and relatedID as $2.
+func (d *DB) replaceBookAssociations(ctx context.Context, bookID string, relatedIDs []string, deleteQuery, insertQuery string) error {
+	unique := deduplicateStrings(relatedIDs)
+	return d.WithTx(ctx, func(tx *sql.Tx) error {
+		if _, err := tx.ExecContext(ctx, deleteQuery, bookID); err != nil {
+			return err
+		}
+
+		for _, relatedID := range unique {
+			if _, err := tx.ExecContext(ctx, insertQuery, bookID, relatedID); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
 }
 
 // GetBookSeries returns all series entries for a book.
@@ -86,35 +119,9 @@ func scanBookSeriesEntry(row interface{ Scan(...any) error }) (*BookSeriesEntry,
 	})
 }
 
-// setBookStringIDs atomically replaces all string-ID associations for a book.
-func (d *DB) setBookStringIDs(ctx context.Context, bookID string, entityIDs []string, deleteQuery, insertQuery string) error {
-	seen := make(map[string]struct{}, len(entityIDs))
-	unique := make([]string, 0, len(entityIDs))
-	for _, id := range entityIDs {
-		if _, ok := seen[id]; !ok {
-			seen[id] = struct{}{}
-			unique = append(unique, id)
-		}
-	}
-
-	return d.WithTx(ctx, func(tx *sql.Tx) error {
-		if _, err := tx.ExecContext(ctx, deleteQuery, bookID); err != nil {
-			return err
-		}
-
-		for _, entityID := range unique {
-			if _, err := tx.ExecContext(ctx, insertQuery, bookID, entityID); err != nil {
-				return err
-			}
-		}
-
-		return nil
-	})
-}
-
 // SetBookSeries replaces all series associations for a book.
 // Duplicate series IDs are silently deduplicated (last position wins).
-// This intentionally does not use setBookStringIDs because it stores positions
+// This intentionally does not use replaceBookAssociations because it stores positions
 // and applies last-position-wins deduplication.
 func (d *DB) SetBookSeries(ctx context.Context, bookID string, entries []BookSeriesInput) error {
 	slog.DebugContext(ctx, "db: setting book series",
@@ -164,16 +171,13 @@ func (d *DB) GetAuthorsForBooks(ctx context.Context, bookIDs []string) (map[stri
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	result := make(map[string][]Author, len(bookIDs))
-	for rows.Next() {
+	return collectRowsGrouped(rows, func(row interface{ Scan(...any) error }) (string, *Author, error) {
 		var bookID string
-		a, err := scanAuthor(prefixedScanner{row: rows, prefix: []any{&bookID}})
+		a, err := scanAuthor(prefixedScanner{row: row, prefix: []any{&bookID}})
 		if err != nil {
-			return nil, err
+			return "", nil, err
 		}
-		result[bookID] = append(result[bookID], *a)
-	}
-	return result, rows.Err()
+		return bookID, a, nil
+	}, len(bookIDs))
 }

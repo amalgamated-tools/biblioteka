@@ -223,6 +223,24 @@ func (c *DB) loadRawBooks(ctx context.Context) ([]rawBook, error) {
 	return books, rows.Err()
 }
 
+func collectBookMap[RowT any, MapT any](
+	rows *sql.Rows,
+	scan func(*sql.Rows) (int64, RowT, error),
+	collect func(map[int64]MapT, int64, RowT),
+) (map[int64]MapT, error) {
+	defer rows.Close()
+
+	result := make(map[int64]MapT)
+	for rows.Next() {
+		bookID, value, err := scan(rows)
+		if err != nil {
+			return nil, err
+		}
+		collect(result, bookID, value)
+	}
+	return result, rows.Err()
+}
+
 func (c *DB) loadBookAuthors(ctx context.Context) (map[int64][]string, error) {
 	rows, err := c.db.QueryContext(ctx,
 		`SELECT bal.book, a.name
@@ -233,18 +251,19 @@ func (c *DB) loadBookAuthors(ctx context.Context) (map[int64][]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	result := make(map[int64][]string)
-	for rows.Next() {
-		var bookID int64
-		var name string
-		if err := rows.Scan(&bookID, &name); err != nil {
-			return nil, err
-		}
-		result[bookID] = append(result[bookID], name)
-	}
-	return result, rows.Err()
+	return collectBookMap(rows,
+		func(r *sql.Rows) (int64, string, error) {
+			var bookID int64
+			var name string
+			if err := r.Scan(&bookID, &name); err != nil {
+				return 0, "", err
+			}
+			return bookID, name, nil
+		},
+		func(result map[int64][]string, bookID int64, name string) {
+			result[bookID] = append(result[bookID], name)
+		},
+	)
 }
 
 func (c *DB) loadBookSeriesEntries(ctx context.Context) (map[int64][]SeriesEntry, error) {
@@ -258,18 +277,19 @@ func (c *DB) loadBookSeriesEntries(ctx context.Context) (map[int64][]SeriesEntry
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	result := make(map[int64][]SeriesEntry)
-	for rows.Next() {
-		var bookID int64
-		var entry SeriesEntry
-		if err := rows.Scan(&bookID, &entry.Name, &entry.Position); err != nil {
-			return nil, err
-		}
-		result[bookID] = append(result[bookID], entry)
-	}
-	return result, rows.Err()
+	return collectBookMap(rows,
+		func(r *sql.Rows) (int64, SeriesEntry, error) {
+			var bookID int64
+			var entry SeriesEntry
+			if err := r.Scan(&bookID, &entry.Name, &entry.Position); err != nil {
+				return 0, SeriesEntry{}, err
+			}
+			return bookID, entry, nil
+		},
+		func(result map[int64][]SeriesEntry, bookID int64, entry SeriesEntry) {
+			result[bookID] = append(result[bookID], entry)
+		},
+	)
 }
 
 func (c *DB) loadBookPublishers(ctx context.Context) (map[int64]string, error) {
@@ -282,21 +302,22 @@ func (c *DB) loadBookPublishers(ctx context.Context) (map[int64]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	result := make(map[int64]string)
-	for rows.Next() {
-		var bookID int64
-		var name string
-		if err := rows.Scan(&bookID, &name); err != nil {
-			return nil, err
-		}
-		// Keep the first publisher when a book has multiple (unusual in practice).
-		if _, exists := result[bookID]; !exists {
-			result[bookID] = name
-		}
-	}
-	return result, rows.Err()
+	return collectBookMap(rows,
+		func(r *sql.Rows) (int64, string, error) {
+			var bookID int64
+			var name string
+			if err := r.Scan(&bookID, &name); err != nil {
+				return 0, "", err
+			}
+			return bookID, name, nil
+		},
+		func(result map[int64]string, bookID int64, name string) {
+			// Keep the first publisher when a book has multiple (unusual in practice).
+			if _, exists := result[bookID]; !exists {
+				result[bookID] = name
+			}
+		},
+	)
 }
 
 func (c *DB) loadBookComments(ctx context.Context) (map[int64]string, error) {
@@ -304,18 +325,20 @@ func (c *DB) loadBookComments(ctx context.Context) (map[int64]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	result := make(map[int64]string)
-	for rows.Next() {
-		var bookID int64
-		var text string
-		if err := rows.Scan(&bookID, &text); err != nil {
-			return nil, err
-		}
-		result[bookID] = text
-	}
-	return result, rows.Err()
+	return collectBookMap(rows,
+		func(r *sql.Rows) (int64, string, error) {
+			var bookID int64
+			var text string
+			if err := r.Scan(&bookID, &text); err != nil {
+				return 0, "", err
+			}
+			return bookID, text, nil
+		},
+		func(result map[int64]string, bookID int64, text string) {
+			// Calibre enforces at most one comment per book; overwrite is safe.
+			result[bookID] = text
+		},
+	)
 }
 
 func (c *DB) loadBookFormats(ctx context.Context) (map[int64][]Format, error) {
@@ -325,18 +348,19 @@ func (c *DB) loadBookFormats(ctx context.Context) (map[int64][]Format, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	result := make(map[int64][]Format)
-	for rows.Next() {
-		var bookID int64
-		var f Format
-		if err := rows.Scan(&bookID, &f.FormatCode, &f.Name, &f.UncompressedSize); err != nil {
-			return nil, err
-		}
-		result[bookID] = append(result[bookID], f)
-	}
-	return result, rows.Err()
+	return collectBookMap(rows,
+		func(r *sql.Rows) (int64, Format, error) {
+			var bookID int64
+			var f Format
+			if err := r.Scan(&bookID, &f.FormatCode, &f.Name, &f.UncompressedSize); err != nil {
+				return 0, Format{}, err
+			}
+			return bookID, f, nil
+		},
+		func(result map[int64][]Format, bookID int64, f Format) {
+			result[bookID] = append(result[bookID], f)
+		},
+	)
 }
 
 func (c *DB) loadBookIdentifiers(ctx context.Context) (map[int64]map[string]string, error) {
@@ -346,21 +370,27 @@ func (c *DB) loadBookIdentifiers(ctx context.Context) (map[int64]map[string]stri
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	result := make(map[int64]map[string]string)
-	for rows.Next() {
-		var bookID int64
-		var typ, val string
-		if err := rows.Scan(&bookID, &typ, &val); err != nil {
-			return nil, err
-		}
-		if result[bookID] == nil {
-			result[bookID] = make(map[string]string)
-		}
-		result[bookID][typ] = val
+	type identifier struct {
+		typ string
+		val string
 	}
-	return result, rows.Err()
+
+	return collectBookMap(rows,
+		func(r *sql.Rows) (int64, identifier, error) {
+			var bookID int64
+			var id identifier
+			if err := r.Scan(&bookID, &id.typ, &id.val); err != nil {
+				return 0, identifier{}, err
+			}
+			return bookID, id, nil
+		},
+		func(result map[int64]map[string]string, bookID int64, id identifier) {
+			if result[bookID] == nil {
+				result[bookID] = make(map[string]string)
+			}
+			result[bookID][id.typ] = id.val
+		},
+	)
 }
 
 func (c *DB) loadBookLanguages(ctx context.Context) (map[int64]string, error) {
@@ -379,19 +409,20 @@ func (c *DB) loadBookLanguages(ctx context.Context) (map[int64]string, error) {
 		}
 		return nil, err
 	}
-	defer rows.Close()
-
-	result := make(map[int64]string)
-	for rows.Next() {
-		var bookID int64
-		var langCode string
-		if err := rows.Scan(&bookID, &langCode); err != nil {
-			return nil, err
-		}
-		// Retain only the primary language (lowest item_order) per book.
-		if _, exists := result[bookID]; !exists {
-			result[bookID] = langCode
-		}
-	}
-	return result, rows.Err()
+	return collectBookMap(rows,
+		func(r *sql.Rows) (int64, string, error) {
+			var bookID int64
+			var langCode string
+			if err := r.Scan(&bookID, &langCode); err != nil {
+				return 0, "", err
+			}
+			return bookID, langCode, nil
+		},
+		func(result map[int64]string, bookID int64, langCode string) {
+			// Retain only the primary language (lowest item_order) per book.
+			if _, exists := result[bookID]; !exists {
+				result[bookID] = langCode
+			}
+		},
+	)
 }

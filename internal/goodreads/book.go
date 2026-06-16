@@ -66,6 +66,29 @@ type workData struct {
 	workLegacyID, bookLegacyID, authorLegacyID   int64
 }
 
+type workNode interface {
+	GetId() string
+	GetLegacyId() int64
+}
+
+type bestBookNode interface {
+	workNode
+	GetImageUrl() string
+	GetTitle() string
+}
+
+type bestBookDetailsNode interface {
+	GetAsin() string
+	GetIsbn() string
+	GetIsbn13() string
+}
+
+type contributorNode interface {
+	workNode
+	GetName() string
+	GetProfileImageUrl() string
+}
+
 func (d *workData) toBookResult() *BookResult {
 	return &BookResult{
 		WorkID:                d.workID,
@@ -85,6 +108,31 @@ func (d *workData) toBookResult() *BookResult {
 	}
 }
 
+func extractWorkData(
+	work workNode,
+	book bestBookNode,
+	details bestBookDetailsNode,
+	language string,
+	author contributorNode,
+) *workData {
+	return &workData{
+		workID:                work.GetId(),
+		workLegacyID:          work.GetLegacyId(),
+		bookID:                book.GetId(),
+		bookLegacyID:          book.GetLegacyId(),
+		bookImageURL:          book.GetImageUrl(),
+		bookTitle:             book.GetTitle(),
+		bookASIN:              details.GetAsin(),
+		bookISBN:              details.GetIsbn(),
+		bookISBN13:            details.GetIsbn13(),
+		bookLanguage:          language,
+		authorName:            author.GetName(),
+		authorID:              author.GetId(),
+		authorLegacyID:        author.GetLegacyId(),
+		authorProfileImageURL: author.GetProfileImageUrl(),
+	}
+}
+
 // loadBookResult gets a BookResult from a Work type, which is the common type
 // returned by all the different book queries. It handles all the different
 // possible types of the Work field in the various queries.
@@ -93,53 +141,41 @@ func loadBookResult(ctx context.Context, work any) (*BookResult, error) {
 
 	switch v := work.(type) {
 	case SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWork:
-		book := v.BestBook
-		author := book.PrimaryContributorEdge.Node
-		d = &workData{
-			workID: v.Id, workLegacyID: v.LegacyId,
-			bookID: book.Id, bookLegacyID: book.LegacyId,
-			bookImageURL: book.ImageUrl, bookTitle: book.Title,
-			bookASIN: book.Details.Asin, bookISBN: book.Details.Isbn,
-			bookISBN13: book.Details.Isbn13, bookLanguage: book.Details.Language.Name,
-			authorName: author.Name, authorID: author.Id,
-			authorLegacyID: author.LegacyId, authorProfileImageURL: author.ProfileImageUrl,
-		}
+		book := &v.BestBook
+		d = extractWorkData(
+			&v,
+			book,
+			&book.Details,
+			book.Details.Language.Name,
+			&book.PrimaryContributorEdge.Node,
+		)
 	case GetBookByLegacyIdGetBookByLegacyIdBookWork:
-		book := v.BestBook
-		author := book.PrimaryContributorEdge.Node
-		d = &workData{
-			workID: v.Id, workLegacyID: v.LegacyId,
-			bookID: book.Id, bookLegacyID: book.LegacyId,
-			bookImageURL: book.ImageUrl, bookTitle: book.Title,
-			bookASIN: book.Details.Asin, bookISBN: book.Details.Isbn,
-			bookISBN13: book.Details.Isbn13, bookLanguage: book.Details.Language.Name,
-			authorName: author.Name, authorID: author.Id,
-			authorLegacyID: author.LegacyId, authorProfileImageURL: author.ProfileImageUrl,
-		}
+		book := &v.BestBook
+		d = extractWorkData(
+			&v,
+			book,
+			&book.Details,
+			book.Details.Language.Name,
+			&book.PrimaryContributorEdge.Node,
+		)
 	case GetBookByAsinGetBookByAsinBookWork:
-		book := v.BestBook
-		author := book.PrimaryContributorEdge.Node
-		d = &workData{
-			workID: v.Id, workLegacyID: v.LegacyId,
-			bookID: book.Id, bookLegacyID: book.LegacyId,
-			bookImageURL: book.ImageUrl, bookTitle: book.Title,
-			bookASIN: book.Details.Asin, bookISBN: book.Details.Isbn,
-			bookISBN13: book.Details.Isbn13, bookLanguage: book.Details.Language.Name,
-			authorName: author.Name, authorID: author.Id,
-			authorLegacyID: author.LegacyId, authorProfileImageURL: author.ProfileImageUrl,
-		}
+		book := &v.BestBook
+		d = extractWorkData(
+			&v,
+			book,
+			&book.Details,
+			book.Details.Language.Name,
+			&book.PrimaryContributorEdge.Node,
+		)
 	case GetBookGetBookWork:
-		book := v.BestBook
-		author := book.PrimaryContributorEdge.Node
-		d = &workData{
-			workID: v.Id, workLegacyID: v.LegacyId,
-			bookID: book.Id, bookLegacyID: book.LegacyId,
-			bookImageURL: book.ImageUrl, bookTitle: book.Title,
-			bookASIN: book.Details.Asin, bookISBN: book.Details.Isbn,
-			bookISBN13: book.Details.Isbn13, bookLanguage: book.Details.Language.Name,
-			authorName: author.Name, authorID: author.Id,
-			authorLegacyID: author.LegacyId, authorProfileImageURL: author.ProfileImageUrl,
-		}
+		book := &v.BestBook
+		d = extractWorkData(
+			&v,
+			book,
+			&book.Details,
+			book.Details.Language.Name,
+			&book.PrimaryContributorEdge.Node,
+		)
 	default:
 		slog.ErrorContext(
 			ctx,

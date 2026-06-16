@@ -157,18 +157,15 @@ func (d *DB) GetTagsForBooks(ctx context.Context, bookIDs []string) (map[string]
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	result := make(map[string][]Tag, len(bookIDs))
-	for rows.Next() {
+	return collectRowsGrouped(rows, func(row interface{ Scan(...any) error }) (string, *Tag, error) {
 		var bookID string
-		t, err := scanTag(prefixedScanner{row: rows, prefix: []any{&bookID}})
+		t, err := scanTag(prefixedScanner{row: row, prefix: []any{&bookID}})
 		if err != nil {
-			return nil, err
+			return "", nil, err
 		}
-		result[bookID] = append(result[bookID], *t)
-	}
-	return result, rows.Err()
+		return bookID, t, nil
+	}, len(bookIDs))
 }
 
 // SetBookTags replaces all tag associations for a book atomically.
@@ -178,10 +175,7 @@ func (d *DB) SetBookTags(ctx context.Context, bookID string, tagIDs []string) er
 		slog.String(otelkeys.BookID, bookID),
 		slog.Int(otelkeys.Count, len(tagIDs)),
 	)
-	return d.setBookStringIDs(
-		ctx,
-		bookID,
-		tagIDs,
+	return d.replaceBookAssociations(ctx, bookID, tagIDs,
 		`DELETE FROM book_tags WHERE book_id = $1`,
 		`INSERT INTO book_tags (book_id, tag_id) VALUES ($1, $2)`,
 	)
