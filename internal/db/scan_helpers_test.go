@@ -195,7 +195,7 @@ func TestCollectForBooks_HappyPath(t *testing.T) {
 	rows, err := d.Query(`SELECT book_id, name, age FROM t_books ORDER BY book_id, age`)
 	require.NoError(t, err)
 
-	items, err := collectForBooks(rows, scanSampleForBook)
+	items, err := collectForBooks(rows, scanSampleForBook, 0)
 	require.NoError(t, err)
 	require.Len(t, items, 2)
 	require.Equal(t, []sample{{Name: "Bob", Age: 25}, {Name: "Alice", Age: 30}}, items["book-1"])
@@ -210,7 +210,7 @@ func TestCollectForBooks_EmptyResult(t *testing.T) {
 	rows, err := d.Query(`SELECT book_id, name, age FROM t_books_empty`)
 	require.NoError(t, err)
 
-	items, err := collectForBooks(rows, scanSampleForBook)
+	items, err := collectForBooks(rows, scanSampleForBook, 0)
 	require.NoError(t, err)
 	require.NotNil(t, items)
 	require.Empty(t, items)
@@ -227,7 +227,7 @@ func TestCollectForBooks_ClosesRowsOnError(t *testing.T) {
 	rows, err := d.Query(`SELECT book_id, name FROM t_books_err`)
 	require.NoError(t, err)
 
-	_, _ = collectForBooks(rows, scanSampleForBook)
+	_, _ = collectForBooks(rows, scanSampleForBook, 0)
 
 	// Even after an error, rows should be closed.
 	require.False(t, rows.Next())

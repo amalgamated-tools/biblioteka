@@ -223,152 +223,174 @@ func (c *DB) loadRawBooks(ctx context.Context) ([]rawBook, error) {
 	return books, rows.Err()
 }
 
-func (c *DB) loadBookAuthors(ctx context.Context) (map[int64][]string, error) {
-	rows, err := c.db.QueryContext(ctx,
-		`SELECT bal.book, a.name
-		 FROM authors a
-		 INNER JOIN books_authors_link bal ON bal.author = a.id
-		 ORDER BY bal.book, bal.id`,
-	)
+type bookIdentifier struct {
+	typ string
+	val string
+}
+
+func collectBookMap[V any, M any](
+	ctx context.Context,
+	db *sql.DB,
+	query string,
+	scan func(*sql.Rows) (int64, V, error),
+	collect func(map[int64]M, int64, V),
+) (map[int64]M, error) {
+	rows, err := db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	result := make(map[int64][]string)
+	result := make(map[int64]M)
 	for rows.Next() {
-		var bookID int64
-		var name string
-		if err := rows.Scan(&bookID, &name); err != nil {
+		bookID, value, err := scan(rows)
+		if err != nil {
 			return nil, err
 		}
-		result[bookID] = append(result[bookID], name)
+		collect(result, bookID, value)
 	}
+
 	return result, rows.Err()
 }
 
+func (c *DB) loadBookAuthors(ctx context.Context) (map[int64][]string, error) {
+	return collectBookMap(ctx, c.db,
+		`SELECT bal.book, a.name
+		 FROM authors a
+		 INNER JOIN books_authors_link bal ON bal.author = a.id
+		 ORDER BY bal.book, bal.id`,
+		func(rows *sql.Rows) (int64, string, error) {
+			var bookID int64
+			var name string
+			if err := rows.Scan(&bookID, &name); err != nil {
+				return 0, "", err
+			}
+			return bookID, name, nil
+		},
+		func(result map[int64][]string, bookID int64, name string) {
+			result[bookID] = append(result[bookID], name)
+		},
+	)
+}
+
 func (c *DB) loadBookSeriesEntries(ctx context.Context) (map[int64][]SeriesEntry, error) {
-	rows, err := c.db.QueryContext(ctx,
+	return collectBookMap(ctx, c.db,
 		`SELECT bsl.book, s.name, b.series_index
 		 FROM series s
 		 INNER JOIN books_series_link bsl ON bsl.series = s.id
 		 INNER JOIN books b ON b.id = bsl.book
 		 ORDER BY bsl.book, s.name`,
+		func(rows *sql.Rows) (int64, SeriesEntry, error) {
+			var bookID int64
+			var entry SeriesEntry
+			if err := rows.Scan(&bookID, &entry.Name, &entry.Position); err != nil {
+				return 0, SeriesEntry{}, err
+			}
+			return bookID, entry, nil
+		},
+		func(result map[int64][]SeriesEntry, bookID int64, entry SeriesEntry) {
+			result[bookID] = append(result[bookID], entry)
+		},
 	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	result := make(map[int64][]SeriesEntry)
-	for rows.Next() {
-		var bookID int64
-		var entry SeriesEntry
-		if err := rows.Scan(&bookID, &entry.Name, &entry.Position); err != nil {
-			return nil, err
-		}
-		result[bookID] = append(result[bookID], entry)
-	}
-	return result, rows.Err()
 }
 
 func (c *DB) loadBookPublishers(ctx context.Context) (map[int64]string, error) {
-	rows, err := c.db.QueryContext(ctx,
+	return collectBookMap(ctx, c.db,
 		`SELECT bpl.book, p.name
 		 FROM publishers p
 		 INNER JOIN books_publishers_link bpl ON bpl.publisher = p.id
-		 ORDER BY bpl.book`,
+		 ORDER BY bpl.book, bpl.id`,
+		func(rows *sql.Rows) (int64, string, error) {
+			var bookID int64
+			var name string
+			if err := rows.Scan(&bookID, &name); err != nil {
+				return 0, "", err
+			}
+			return bookID, name, nil
+		},
+		func(result map[int64]string, bookID int64, name string) {
+			// Keep the first publisher when a book has multiple (unusual in practice).
+			if _, exists := result[bookID]; !exists {
+				result[bookID] = name
+			}
+		},
 	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	result := make(map[int64]string)
-	for rows.Next() {
-		var bookID int64
-		var name string
-		if err := rows.Scan(&bookID, &name); err != nil {
-			return nil, err
-		}
-		// Keep the first publisher when a book has multiple (unusual in practice).
-		if _, exists := result[bookID]; !exists {
-			result[bookID] = name
-		}
-	}
-	return result, rows.Err()
 }
 
 func (c *DB) loadBookComments(ctx context.Context) (map[int64]string, error) {
-	rows, err := c.db.QueryContext(ctx, `SELECT book, text FROM comments`)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	result := make(map[int64]string)
-	for rows.Next() {
-		var bookID int64
-		var text string
-		if err := rows.Scan(&bookID, &text); err != nil {
-			return nil, err
-		}
-		result[bookID] = text
-	}
-	return result, rows.Err()
+	return collectBookMap(ctx, c.db,
+		`SELECT book, text FROM comments`,
+		func(rows *sql.Rows) (int64, string, error) {
+			var bookID int64
+			var text string
+			if err := rows.Scan(&bookID, &text); err != nil {
+				return 0, "", err
+			}
+			return bookID, text, nil
+		},
+		func(result map[int64]string, bookID int64, text string) {
+			result[bookID] = text
+		},
+	)
 }
 
 func (c *DB) loadBookFormats(ctx context.Context) (map[int64][]Format, error) {
-	rows, err := c.db.QueryContext(ctx,
+	return collectBookMap(ctx, c.db,
 		`SELECT book, format, name, uncompressed_size FROM data ORDER BY book, format`,
+		func(rows *sql.Rows) (int64, Format, error) {
+			var bookID int64
+			var format Format
+			if err := rows.Scan(&bookID, &format.FormatCode, &format.Name, &format.UncompressedSize); err != nil {
+				return 0, Format{}, err
+			}
+			return bookID, format, nil
+		},
+		func(result map[int64][]Format, bookID int64, format Format) {
+			result[bookID] = append(result[bookID], format)
+		},
 	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	result := make(map[int64][]Format)
-	for rows.Next() {
-		var bookID int64
-		var f Format
-		if err := rows.Scan(&bookID, &f.FormatCode, &f.Name, &f.UncompressedSize); err != nil {
-			return nil, err
-		}
-		result[bookID] = append(result[bookID], f)
-	}
-	return result, rows.Err()
 }
 
 func (c *DB) loadBookIdentifiers(ctx context.Context) (map[int64]map[string]string, error) {
-	rows, err := c.db.QueryContext(ctx,
+	return collectBookMap(ctx, c.db,
 		`SELECT book, type, val FROM identifiers ORDER BY book`,
+		func(rows *sql.Rows) (int64, bookIdentifier, error) {
+			var bookID int64
+			var identifier bookIdentifier
+			if err := rows.Scan(&bookID, &identifier.typ, &identifier.val); err != nil {
+				return 0, bookIdentifier{}, err
+			}
+			return bookID, identifier, nil
+		},
+		func(result map[int64]map[string]string, bookID int64, identifier bookIdentifier) {
+			if result[bookID] == nil {
+				result[bookID] = make(map[string]string)
+			}
+			result[bookID][identifier.typ] = identifier.val
+		},
 	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	result := make(map[int64]map[string]string)
-	for rows.Next() {
-		var bookID int64
-		var typ, val string
-		if err := rows.Scan(&bookID, &typ, &val); err != nil {
-			return nil, err
-		}
-		if result[bookID] == nil {
-			result[bookID] = make(map[string]string)
-		}
-		result[bookID][typ] = val
-	}
-	return result, rows.Err()
 }
 
 func (c *DB) loadBookLanguages(ctx context.Context) (map[int64]string, error) {
-	rows, err := c.db.QueryContext(ctx,
+	result, err := collectBookMap(ctx, c.db,
 		`SELECT bll.book, l.lang_code
 		 FROM languages l
 		 INNER JOIN books_languages_link bll ON bll.lang_code = l.id
 		 ORDER BY bll.book, bll.item_order`,
+		func(rows *sql.Rows) (int64, string, error) {
+			var bookID int64
+			var langCode string
+			if err := rows.Scan(&bookID, &langCode); err != nil {
+				return 0, "", err
+			}
+			return bookID, langCode, nil
+		},
+		func(result map[int64]string, bookID int64, langCode string) {
+			// Retain only the primary language (lowest item_order) per book.
+			if _, exists := result[bookID]; !exists {
+				result[bookID] = langCode
+			}
+		},
 	)
 	if err != nil {
 		// Older Calibre databases may not have the languages tables. The SQLite
@@ -379,19 +401,5 @@ func (c *DB) loadBookLanguages(ctx context.Context) (map[int64]string, error) {
 		}
 		return nil, err
 	}
-	defer rows.Close()
-
-	result := make(map[int64]string)
-	for rows.Next() {
-		var bookID int64
-		var langCode string
-		if err := rows.Scan(&bookID, &langCode); err != nil {
-			return nil, err
-		}
-		// Retain only the primary language (lowest item_order) per book.
-		if _, exists := result[bookID]; !exists {
-			result[bookID] = langCode
-		}
-	}
-	return result, rows.Err()
+	return result, nil
 }

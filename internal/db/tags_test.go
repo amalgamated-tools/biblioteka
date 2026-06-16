@@ -211,6 +211,23 @@ func TestSetBookTags_Replace(t *testing.T) {
 	require.Equal(t, "Mystery", tags[0].Name)
 }
 
+func TestSetBookTags_DeduplicatesIDs(t *testing.T) {
+	d := newTestDB(t)
+
+	book, err := d.CreateBook(t.Context(), BookInput{Title: "Test Book"})
+	require.NoError(t, err)
+
+	tag, err := d.CreateTag(t.Context(), "Fiction")
+	require.NoError(t, err)
+
+	require.NoError(t, d.SetBookTags(t.Context(), book.ID, []string{tag.ID, tag.ID, tag.ID}))
+
+	tags, err := d.GetBookTags(t.Context(), book.ID)
+	require.NoError(t, err)
+	require.Len(t, tags, 1)
+	require.Equal(t, tag.ID, tags[0].ID)
+}
+
 func TestSetBookTags_ClearAll(t *testing.T) {
 	d := newTestDB(t)
 
@@ -229,6 +246,26 @@ func TestSetBookTags_ClearAll(t *testing.T) {
 	tags, err := d.GetBookTags(t.Context(), book.ID)
 	require.NoError(t, err)
 	require.Empty(t, tags)
+}
+
+func TestSetBookTags_RollsBackOnInsertError(t *testing.T) {
+	d := newTestDB(t)
+
+	book, err := d.CreateBook(t.Context(), BookInput{Title: "Test Book"})
+	require.NoError(t, err)
+
+	tag, err := d.CreateTag(t.Context(), "Fiction")
+	require.NoError(t, err)
+
+	require.NoError(t, d.SetBookTags(t.Context(), book.ID, []string{tag.ID}))
+
+	err = d.SetBookTags(t.Context(), book.ID, []string{"missing-tag-id"})
+	require.Error(t, err)
+
+	tags, err := d.GetBookTags(t.Context(), book.ID)
+	require.NoError(t, err)
+	require.Len(t, tags, 1)
+	require.Equal(t, tag.ID, tags[0].ID)
 }
 
 // ---- GetTagsForBooks ----

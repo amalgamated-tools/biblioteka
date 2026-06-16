@@ -15,14 +15,15 @@ import (
 // enables the generic createNamedEntity, getNamedEntity, and updateNamedEntity
 // helpers to share the common handler flow while remaining entity-agnostic.
 type namedEntityOps[T any, DTO any, Req any] struct {
-	db             *db.DB
-	entityLabel    string // human-readable label, e.g. "author" or "series"
-	entityArticle  string // with indefinite article, e.g. "an author" or "a series"
-	idKey          string // otelkeys constant for the entity ID field
-	errInvalidName error
-	errNameExists  error
-	auditCreate    string
-	auditUpdate    string
+	db              *db.DB
+	entityLabel     string // human-readable label, e.g. "author" or "series"
+	auditEntityType string // stable type written to audit logs (snake_case preferred); defaults to entityLabel when blank
+	entityArticle   string // with indefinite article, e.g. "an author" or "a series"
+	idKey           string // otelkeys constant for the entity ID field
+	errInvalidName  error
+	errNameExists   error
+	auditCreate     string
+	auditUpdate     string
 
 	get    func(context.Context, string) (*T, error)
 	create func(context.Context, Req) (*T, error)
@@ -38,6 +39,18 @@ type namedEntityOps[T any, DTO any, Req any] struct {
 	entityID func(*T) string
 
 	toDTO func(*T) DTO
+}
+
+// resolvedAuditEntityType returns the configured audit entity type when one is
+// provided, otherwise it falls back to entityLabel for backward compatibility
+// with admin-owned entities that historically reused their display label in
+// audit logs.
+func (ops namedEntityOps[T, DTO, Req]) resolvedAuditEntityType() string {
+	if ops.auditEntityType != "" {
+		return ops.auditEntityType
+	}
+
+	return ops.entityLabel
 }
 
 // createNamedEntity implements the common create flow for named entities:
@@ -86,7 +99,7 @@ func createNamedEntity[T, DTO, Req any](ops namedEntityOps[T, DTO, Req], w http.
 	)
 
 	userID := auth.UserIDFromContext(ctx)
-	logAudit(ctx, ops.db, userID, ops.auditCreate, ops.entityLabel, ops.entityID(entity), map[string]any{otelkeys.Name: ops.entityName(entity)})
+	logAudit(ctx, ops.db, userID, ops.auditCreate, ops.resolvedAuditEntityType(), ops.entityID(entity), map[string]any{otelkeys.Name: ops.entityName(entity)})
 
 	writeJSON(ctx, w, http.StatusCreated, ops.toDTO(entity))
 }
@@ -141,148 +154,7 @@ func updateNamedEntity[T, DTO, Req any](ops namedEntityOps[T, DTO, Req], w http.
 	}
 
 	userID := auth.UserIDFromContext(ctx)
-	logAudit(ctx, ops.db, userID, ops.auditUpdate, ops.entityLabel, ops.entityID(entity), map[string]any{otelkeys.Name: ops.entityName(entity)})
-
-	writeJSON(ctx, w, http.StatusOK, ops.toDTO(entity))
-}
-
-// userOwnedNamedEntityOps captures the entity-specific operations for
-// user-owned named-entity CRUD handlers (e.g. reading lists and reading
-// groups). Unlike namedEntityOps, the get, create, and update functions each
-// receive the authenticated user's ID so that ownership and visibility can be
-// enforced at the database layer.
-type userOwnedNamedEntityOps[T any, DTO any, Req any] struct {
-	db              *db.DB
-	entityLabel     string // human-readable label, e.g. "reading list" or "group"
-	auditEntityType string // stable snake_case type written to audit logs, e.g. "reading_list" or "group"
-	entityArticle   string // with indefinite article, e.g. "a reading list" or "a group"
-	idKey           string // otelkeys constant for the entity ID field
-	errInvalidName  error
-	errNameExists   error
-	auditCreate     string
-	auditUpdate     string
-
-	get    func(context.Context, string, string) (*T, error)
-	create func(context.Context, string, Req) (*T, error)
-	update func(context.Context, string, string, Req) (*T, error)
-
-	// reqName extracts the name field from a decoded request body.
-	reqName func(Req) string
-	// entityName extracts the name from a stored entity (used for audit metadata
-	// and post-write debug logging).
-	entityName func(*T) string
-	// entityID extracts the ID from a stored entity (used for audit and debug
-	// logging).
-	entityID func(*T) string
-
-	toDTO func(*T) DTO
-}
-
-// createUserOwnedNamedEntity implements the common create flow for user-owned
-// named entities: decode request → validate name → call create (with userID) →
-// handle errors → audit → respond.
-func createUserOwnedNamedEntity[T, DTO, Req any](ops userOwnedNamedEntityOps[T, DTO, Req], w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	var req Req
-	if !decodeJSON(r, w, &req) {
-		return
-	}
-
-	name := ops.reqName(req)
-	if !validateName(ctx, w, name) {
-		return
-	}
-
-	slog.DebugContext(ctx, "creating entity",
-		slog.String(otelkeys.EntityType, ops.entityLabel),
-		slog.String(otelkeys.Name, name),
-	)
-
-	userID := auth.UserIDFromContext(ctx)
-	entity, err := ops.create(ctx, userID, req)
-	if err != nil {
-		if handleNameErr(ctx, w, err, ops.errInvalidName, ops.errNameExists, ops.entityArticle) {
-			return
-		}
-		slog.ErrorContext(ctx, "failed to create entity",
-			slog.String(otelkeys.EntityType, ops.entityLabel),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(ctx, w, http.StatusInternalServerError, "failed to create "+ops.entityLabel)
-		return
-	}
-	if entity == nil {
-		slog.ErrorContext(ctx, "create returned nil entity without error",
-			slog.String(otelkeys.EntityType, ops.entityLabel),
-		)
-		writeError(ctx, w, http.StatusInternalServerError, "failed to create "+ops.entityLabel)
-		return
-	}
-
-	slog.DebugContext(ctx, "entity created",
-		slog.String(otelkeys.EntityType, ops.entityLabel),
-		slog.String(ops.idKey, ops.entityID(entity)), //nolint:sloglint // idKey is always an otelkeys constant passed by callers
-		slog.String(otelkeys.Name, ops.entityName(entity)),
-	)
-
-	logAudit(ctx, ops.db, userID, ops.auditCreate, ops.auditEntityType, ops.entityID(entity), map[string]any{"name": ops.entityName(entity)})
-
-	writeJSON(ctx, w, http.StatusCreated, ops.toDTO(entity))
-}
-
-// getUserOwnedNamedEntity implements the common get-by-ID flow for user-owned
-// named entities: call get (with userID) → handle errors → respond.
-func getUserOwnedNamedEntity[T, DTO, Req any](ops userOwnedNamedEntityOps[T, DTO, Req], w http.ResponseWriter, r *http.Request, id string) {
-	ctx := r.Context()
-	slog.DebugContext(ctx, "fetching entity",
-		slog.String(otelkeys.EntityType, ops.entityLabel),
-		slog.String(ops.idKey, id)) //nolint:sloglint // idKey is always an otelkeys constant passed by callers
-	userID := auth.UserIDFromContext(ctx)
-	entity, err := ops.get(ctx, id, userID)
-	if handleDBErr(ctx, w, err, ops.entityLabel) {
-		return
-	}
-	if entity == nil {
-		slog.ErrorContext(ctx, "get returned nil entity without error", slog.String(ops.idKey, id)) //nolint:sloglint // idKey is always an otelkeys constant passed by callers
-		writeError(ctx, w, http.StatusInternalServerError, "failed to fetch "+ops.entityLabel)
-		return
-	}
-	writeJSON(ctx, w, http.StatusOK, ops.toDTO(entity))
-}
-
-// updateUserOwnedNamedEntity implements the common update flow for user-owned
-// named entities: decode request → validate name → call update (with userID) →
-// handle errors → audit → respond.
-func updateUserOwnedNamedEntity[T, DTO, Req any](ops userOwnedNamedEntityOps[T, DTO, Req], w http.ResponseWriter, r *http.Request, id string) {
-	ctx := r.Context()
-	var req Req
-	if !decodeJSON(r, w, &req) {
-		return
-	}
-
-	name := ops.reqName(req)
-	if !validateName(ctx, w, name) {
-		return
-	}
-
-	slog.DebugContext(ctx, "updating entity",
-		slog.String(otelkeys.EntityType, ops.entityLabel),
-		slog.String(ops.idKey, id), //nolint:sloglint // idKey is always an otelkeys constant passed by callers
-		slog.String(otelkeys.Name, name),
-	)
-
-	userID := auth.UserIDFromContext(ctx)
-	entity, err := ops.update(ctx, id, userID, req)
-	if handleUpdateErr(ctx, w, err, ops.errInvalidName, ops.errNameExists, ops.entityArticle, ops.entityLabel, id) {
-		return
-	}
-	if entity == nil {
-		slog.ErrorContext(ctx, "update returned nil entity without error", slog.String(ops.idKey, id)) //nolint:sloglint // idKey is always an otelkeys constant passed by callers
-		writeError(ctx, w, http.StatusInternalServerError, "failed to update "+ops.entityLabel)
-		return
-	}
-
-	logAudit(ctx, ops.db, userID, ops.auditUpdate, ops.auditEntityType, ops.entityID(entity), map[string]any{"name": ops.entityName(entity)})
+	logAudit(ctx, ops.db, userID, ops.auditUpdate, ops.resolvedAuditEntityType(), ops.entityID(entity), map[string]any{otelkeys.Name: ops.entityName(entity)})
 
 	writeJSON(ctx, w, http.StatusOK, ops.toDTO(entity))
 }

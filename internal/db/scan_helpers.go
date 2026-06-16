@@ -1,6 +1,12 @@
 package db
 
-import "database/sql"
+import (
+	"context"
+	"database/sql"
+	"log/slog"
+
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
+)
 
 // scanRow creates a new T, passes a pointer to it to fill (which returns the
 // destination pointers for row.Scan), and returns a pointer to the populated
@@ -142,4 +148,73 @@ func collectRowsAndTotal[T any](rows *sql.Rows, scan func(interface{ Scan(...any
 		return nil, 0, err
 	}
 	return items, total, nil
+}
+
+// collectRowsGrouped iterates rows, calling scan for each row. scan must
+// return a string group key, a pointer to the scanned value, and an error.
+// Results are accumulated into a map keyed by the returned string. It always
+// closes rows before returning.
+//
+// This is the grouped variant of collectRows, used by batch-fetch helpers
+// such as batchFetchByBookID that group results by an association key.
+func collectRowsGrouped[T any](
+	rows *sql.Rows,
+	scan func(interface{ Scan(...any) error }) (string, *T, error),
+	mapCap int,
+) (map[string][]T, error) {
+	defer rows.Close()
+
+	var result map[string][]T
+	if mapCap > 0 {
+		result = make(map[string][]T, mapCap)
+	} else {
+		result = make(map[string][]T)
+	}
+
+	for rows.Next() {
+		key, v, err := scan(rows)
+		if err != nil {
+			return nil, err
+		}
+		if v == nil {
+			continue
+		}
+		result[key] = append(result[key], *v)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// batchFetchByBookID is the shared skeleton for all GetXForBooks methods.
+// It handles the early-return, debug logging, IN-clause construction, query
+// execution, and grouped collection, delegating the SQL string and per-row
+// scanning to the caller.
+//
+// buildQuery receives the IN-clause placeholder string (e.g. "$1,$2,$3") and
+// must return the full SQL statement to execute.
+//
+// scan receives each *sql.Rows and must return the book ID that the row
+// belongs to, a pointer to the scanned value, and an error.
+func batchFetchByBookID[T any](
+	ctx context.Context,
+	d *DB,
+	bookIDs []string,
+	logMsg string,
+	buildQuery func(inClause string) string,
+	scan func(interface{ Scan(...any) error }) (string, *T, error),
+) (map[string][]T, error) {
+	if len(bookIDs) == 0 {
+		return nil, nil
+	}
+	slog.DebugContext(ctx, logMsg, slog.Int(otelkeys.BookCount, len(bookIDs)))
+
+	inClause, args := buildInClause(bookIDs, 1)
+
+	rows, err := d.QueryContext(ctx, buildQuery(inClause), args...)
+	if err != nil {
+		return nil, err
+	}
+	return collectRowsGrouped(rows, scan, len(bookIDs))
 }

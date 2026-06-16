@@ -55,24 +55,42 @@ func (d *DB) GetBookAuthors(ctx context.Context, bookID string) ([]Author, error
 func (d *DB) SetBookAuthors(ctx context.Context, bookID string, authorIDs []string) error {
 	slog.DebugContext(ctx, "db: setting book authors",
 		slog.String(otelkeys.BookID, bookID),
-		slog.Int(otelkeys.AuthorCount, len(authorIDs)),
+		slog.Int(otelkeys.Count, len(authorIDs)),
 	)
-	seen := make(map[string]struct{}, len(authorIDs))
-	unique := make([]string, 0, len(authorIDs))
-	for _, id := range authorIDs {
-		if _, ok := seen[id]; !ok {
-			seen[id] = struct{}{}
-			unique = append(unique, id)
+	return d.replaceBookAssociations(ctx, bookID, authorIDs,
+		`DELETE FROM book_authors WHERE book_id = $1`,
+		`INSERT INTO book_authors (book_id, author_id) VALUES ($1, $2)`,
+	)
+}
+
+// deduplicateStrings removes duplicates while preserving first-seen order.
+func deduplicateStrings(values []string) []string {
+	seen := make(map[string]struct{}, len(values))
+	unique := make([]string, 0, len(values))
+	for _, value := range values {
+		if _, ok := seen[value]; ok {
+			continue
 		}
+		seen[value] = struct{}{}
+		unique = append(unique, value)
 	}
 
+	return unique
+}
+
+// replaceBookAssociations atomically replaces all join-table rows for bookID
+// by deleting existing rows and inserting deduplicated related IDs.
+// deleteQuery must accept bookID as $1; insertQuery must accept bookID as $1
+// and relatedID as $2.
+func (d *DB) replaceBookAssociations(ctx context.Context, bookID string, relatedIDs []string, deleteQuery, insertQuery string) error {
+	unique := deduplicateStrings(relatedIDs)
 	return d.WithTx(ctx, func(tx *sql.Tx) error {
-		if _, err := tx.ExecContext(ctx, `DELETE FROM book_authors WHERE book_id = $1`, bookID); err != nil {
+		if _, err := tx.ExecContext(ctx, deleteQuery, bookID); err != nil {
 			return err
 		}
 
-		for _, authorID := range unique {
-			if _, err := tx.ExecContext(ctx, `INSERT INTO book_authors (book_id, author_id) VALUES ($1, $2)`, bookID, authorID); err != nil {
+		for _, relatedID := range unique {
+			if _, err := tx.ExecContext(ctx, insertQuery, bookID, relatedID); err != nil {
 				return err
 			}
 		}
@@ -103,6 +121,8 @@ func scanBookSeriesEntry(row interface{ Scan(...any) error }) (*BookSeriesEntry,
 
 // SetBookSeries replaces all series associations for a book.
 // Duplicate series IDs are silently deduplicated (last position wins).
+// This intentionally does not use replaceBookAssociations because it stores positions
+// and applies last-position-wins deduplication.
 func (d *DB) SetBookSeries(ctx context.Context, bookID string, entries []BookSeriesInput) error {
 	slog.DebugContext(ctx, "db: setting book series",
 		slog.String(otelkeys.BookID, bookID),
@@ -134,29 +154,17 @@ func (d *DB) SetBookSeries(ctx context.Context, bookID string, entries []BookSer
 
 // GetAuthorsForBooks returns authors grouped by book ID for the given book IDs.
 func (d *DB) GetAuthorsForBooks(ctx context.Context, bookIDs []string) (map[string][]Author, error) {
-	if len(bookIDs) == 0 {
-		return nil, nil
-	}
-	slog.DebugContext(ctx, "db: batch fetching authors for books", slog.Int(otelkeys.BookCount, len(bookIDs)))
-
-	inClause, args := buildInClause(bookIDs, 1)
-
-	rows, err := d.QueryContext(ctx,
-		`SELECT ba.book_id, a.id, a.name, a.goodreads_id, a.hardcover_id, a.google_books_id, a.image_url, a.created_at, a.updated_at
+	return batchFetchByBookID(ctx, d, bookIDs, "db: batch fetching authors for books",
+		func(inClause string) string {
+			return `SELECT ba.book_id, a.id, a.name, a.goodreads_id, a.hardcover_id, a.google_books_id, a.image_url, a.created_at, a.updated_at
 		FROM authors a INNER JOIN book_authors ba ON ba.author_id = a.id
-		WHERE ba.book_id IN (`+inClause+`)
-		ORDER BY a.name ASC`,
-		args...,
+		WHERE ba.book_id IN (` + inClause + `)
+		ORDER BY a.name ASC`
+		},
+		func(row interface{ Scan(...any) error }) (string, *Author, error) {
+			var bookID string
+			a, err := scanAuthor(prefixedScanner{row: row, prefix: []any{&bookID}})
+			return bookID, a, err
+		},
 	)
-	if err != nil {
-		return nil, err
-	}
-	return collectForBooks(rows, func(row interface{ Scan(...any) error }) (string, *Author, error) {
-		var bookID string
-		a, err := scanAuthor(prefixedScanner{row: row, prefix: []any{&bookID}})
-		if err != nil {
-			return "", nil, err
-		}
-		return bookID, a, nil
-	})
 }

@@ -1,6 +1,7 @@
 package calibre
 
 import (
+	"database/sql"
 	"testing"
 	"time"
 
@@ -114,4 +115,132 @@ func TestFormat_FileName(t *testing.T) {
 			require.Equal(t, tc.wantSuffix, tc.format.FileName())
 		})
 	}
+}
+
+func TestCollectBookMap_CollectsRows(t *testing.T) {
+	sqlDB, err := sql.Open("sqlite", ":memory:")
+	require.NoError(t, err)
+	sqlDB.SetMaxOpenConns(1)
+	t.Cleanup(func() { require.NoError(t, sqlDB.Close()) })
+
+	_, err = sqlDB.Exec(`
+		CREATE TABLE t (book INTEGER NOT NULL, val TEXT NOT NULL);
+		INSERT INTO t (book, val) VALUES (1, 'a'), (1, 'b'), (2, 'c');
+	`)
+	require.NoError(t, err)
+
+	got, err := collectBookMap(t.Context(), sqlDB, `SELECT book, val FROM t ORDER BY rowid`,
+		func(r *sql.Rows) (int64, string, error) {
+			var bookID int64
+			var value string
+			if err := r.Scan(&bookID, &value); err != nil {
+				return 0, "", err
+			}
+			return bookID, value, nil
+		},
+		func(result map[int64][]string, bookID int64, value string) {
+			result[bookID] = append(result[bookID], value)
+		},
+	)
+	require.NoError(t, err)
+	require.Equal(t, map[int64][]string{
+		1: {"a", "b"},
+		2: {"c"},
+	}, got)
+}
+
+func TestLoadBooks_LoadsRelatedMetadata(t *testing.T) {
+	cdb := newTestCalibreDB(t)
+
+	bookID := insertCalibreBook(t, cdb, "Dune", "Frank Herbert/Dune (1)", "1965-08-01 00:00:00+00:00", 1.5)
+	secondBookID := insertCalibreBook(t, cdb, "Neuromancer", "William Gibson/Neuromancer (1)", "", 1.0)
+
+	authorAID := insertCalibreAuthor(t, cdb, "Frank Herbert")
+	authorBID := insertCalibreAuthor(t, cdb, "Brian Herbert")
+	linkBookAuthor(t, cdb, bookID, authorAID)
+	linkBookAuthor(t, cdb, bookID, authorBID)
+
+	mainSeriesID := insertCalibreSeries(t, cdb, "Dune Saga")
+	sideSeriesID := insertCalibreSeries(t, cdb, "Sci-Fi Classics")
+	linkBookSeries(t, cdb, bookID, mainSeriesID)
+	linkBookSeries(t, cdb, bookID, sideSeriesID)
+
+	firstPublisherID := insertCalibrePublisher(t, cdb, "Chilton Books")
+	secondPublisherID := insertCalibrePublisher(t, cdb, "Ace")
+	linkBookPublisher(t, cdb, bookID, firstPublisherID)
+	linkBookPublisher(t, cdb, bookID, secondPublisherID)
+
+	insertCalibreComment(t, cdb, bookID, "A science fiction masterpiece.")
+	insertCalibreFormat(t, cdb, bookID, "EPUB", "Dune", 512000)
+	insertCalibreFormat(t, cdb, bookID, "PDF", "Dune", 1024000)
+	insertCalibreIdentifier(t, cdb, bookID, "isbn13", "9780441013593")
+	insertCalibreIdentifier(t, cdb, bookID, "goodreads", "234225")
+
+	insertCalibreLanguage(t, cdb, bookID, "eng")
+
+	res, err := cdb.db.ExecContext(t.Context(), `INSERT INTO languages (lang_code) VALUES (?)`, "fra")
+	require.NoError(t, err)
+
+	secondLangID, err := res.LastInsertId()
+	require.NoError(t, err)
+
+	_, err = cdb.db.ExecContext(
+		t.Context(),
+		`INSERT INTO books_languages_link (book, lang_code, item_order) VALUES (?, ?, ?)`,
+		bookID,
+		secondLangID,
+		1,
+	)
+	require.NoError(t, err)
+
+	insertCalibreComment(t, cdb, secondBookID, "Cyberpunk classic.")
+
+	books, err := cdb.LoadBooks(t.Context())
+	require.NoError(t, err)
+	require.Len(t, books, 2)
+
+	require.Equal(t, []Book{
+		{
+			CalibreID:   bookID,
+			Title:       "Dune",
+			Path:        "Frank Herbert/Dune (1)",
+			SeriesIndex: 1.5,
+			Pubdate:     time.Date(1965, time.August, 1, 0, 0, 0, 0, time.UTC),
+			Authors:     []string{"Frank Herbert", "Brian Herbert"},
+			Series: []SeriesEntry{
+				{Name: "Dune Saga", Position: 1.5},
+				{Name: "Sci-Fi Classics", Position: 1.5},
+			},
+			Publisher:   "Chilton Books",
+			Description: "A science fiction masterpiece.",
+			Formats: []Format{
+				{FormatCode: "EPUB", Name: "Dune", UncompressedSize: 512000},
+				{FormatCode: "PDF", Name: "Dune", UncompressedSize: 1024000},
+			},
+			Identifiers: map[string]string{
+				"goodreads": "234225",
+				"isbn13":    "9780441013593",
+			},
+			Language: "eng",
+		},
+		{
+			CalibreID:   secondBookID,
+			Title:       "Neuromancer",
+			Path:        "William Gibson/Neuromancer (1)",
+			SeriesIndex: 1.0,
+			Description: "Cyberpunk classic.",
+		},
+	}, books)
+}
+
+func TestLoadBookLanguages_MissingTables(t *testing.T) {
+	sqlDB, err := sql.Open("sqlite", ":memory:")
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, sqlDB.Close()) })
+
+	cdb := &DB{db: sqlDB}
+
+	languages, err := cdb.loadBookLanguages(t.Context())
+	require.NoError(t, err)
+	require.Empty(t, languages)
 }

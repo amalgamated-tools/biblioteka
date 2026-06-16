@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"log/slog"
 
@@ -141,31 +140,19 @@ func (d *DB) GetBookTags(ctx context.Context, bookID string) ([]Tag, error) {
 
 // GetTagsForBooks returns tags grouped by book ID for the given book IDs.
 func (d *DB) GetTagsForBooks(ctx context.Context, bookIDs []string) (map[string][]Tag, error) {
-	if len(bookIDs) == 0 {
-		return nil, nil
-	}
-	slog.DebugContext(ctx, "db: batch fetching tags for books", slog.Int(otelkeys.BookCount, len(bookIDs)))
-
-	inClause, args := buildInClause(bookIDs, 1)
-
-	rows, err := d.QueryContext(ctx,
-		`SELECT bt.book_id, t.id, t.name, t.created_at, t.updated_at
+	return batchFetchByBookID(ctx, d, bookIDs, "db: batch fetching tags for books",
+		func(inClause string) string {
+			return `SELECT bt.book_id, t.id, t.name, t.created_at, t.updated_at
 		FROM tags t INNER JOIN book_tags bt ON bt.tag_id = t.id
-		WHERE bt.book_id IN (`+inClause+`)
-		ORDER BY LOWER(t.name) ASC`,
-		args...,
+		WHERE bt.book_id IN (` + inClause + `)
+		ORDER BY LOWER(t.name) ASC`
+		},
+		func(row interface{ Scan(...any) error }) (string, *Tag, error) {
+			var bookID string
+			t, err := scanTag(prefixedScanner{row: row, prefix: []any{&bookID}})
+			return bookID, t, err
+		},
 	)
-	if err != nil {
-		return nil, err
-	}
-	return collectForBooks(rows, func(row interface{ Scan(...any) error }) (string, *Tag, error) {
-		var bookID string
-		t, err := scanTag(prefixedScanner{row: row, prefix: []any{&bookID}})
-		if err != nil {
-			return "", nil, err
-		}
-		return bookID, t, nil
-	})
 }
 
 // SetBookTags replaces all tag associations for a book atomically.
@@ -175,27 +162,8 @@ func (d *DB) SetBookTags(ctx context.Context, bookID string, tagIDs []string) er
 		slog.String(otelkeys.BookID, bookID),
 		slog.Int(otelkeys.Count, len(tagIDs)),
 	)
-
-	seen := make(map[string]struct{}, len(tagIDs))
-	unique := make([]string, 0, len(tagIDs))
-	for _, id := range tagIDs {
-		if _, ok := seen[id]; !ok {
-			seen[id] = struct{}{}
-			unique = append(unique, id)
-		}
-	}
-
-	return d.WithTx(ctx, func(tx *sql.Tx) error {
-		if _, err := tx.ExecContext(ctx, `DELETE FROM book_tags WHERE book_id = $1`, bookID); err != nil {
-			return err
-		}
-
-		for _, tagID := range unique {
-			if _, err := tx.ExecContext(ctx, `INSERT INTO book_tags (book_id, tag_id) VALUES ($1, $2)`, bookID, tagID); err != nil {
-				return err
-			}
-		}
-
-		return nil
-	})
+	return d.replaceBookAssociations(ctx, bookID, tagIDs,
+		`DELETE FROM book_tags WHERE book_id = $1`,
+		`INSERT INTO book_tags (book_id, tag_id) VALUES ($1, $2)`,
+	)
 }

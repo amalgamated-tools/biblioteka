@@ -12,6 +12,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/amalgamated-tools/biblioteka/internal/auth"
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/stretchr/testify/require"
 )
 
@@ -96,6 +98,26 @@ func TestCreateNamedEntity_Success(t *testing.T) {
 	var dto testEntityDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto), "unmarshal")
 	require.Equal(t, "My Widget", dto.Name)
+}
+
+func TestCreateNamedEntity_AuditEntityTypeDefaultsToLabel(t *testing.T) {
+	ops := makeTestNamedEntityOps(t)
+	ops.auditEntityType = ""
+
+	body := mustMarshal(t, testEntityRequest{Name: "My Widget"})
+	r := httptest.NewRequest(http.MethodPost, "/api/widgets", bytes.NewReader(body))
+	r = withUserID(r, "user-1")
+	w := httptest.NewRecorder()
+
+	createNamedEntity(ops, w, r)
+
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	ctx := t.Context()
+	logs, _, err := ops.db.ListAuditLogs(ctx, 10, 0)
+	require.NoError(t, err, "list audit logs")
+	require.Len(t, logs, 1)
+	require.Equal(t, "widget", logs[0].EntityType)
 }
 
 func TestCreateNamedEntity_InvalidJSON(t *testing.T) {
@@ -420,16 +442,16 @@ func TestUpdateNamedEntity_NilEntityWithoutError(t *testing.T) {
 	require.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
-// ---- userOwnedNamedEntityOps helpers ----
+// ---- user-scoped namedEntityOps helpers ----
 
-// makeTestUserOwnedNamedEntityOps returns a userOwnedNamedEntityOps backed by
+// makeTestUserOwnedNamedEntityOps returns a namedEntityOps backed by
 // simple in-memory closures. The caller can override individual fields after
 // receiving the ops.
-func makeTestUserOwnedNamedEntityOps(t *testing.T) userOwnedNamedEntityOps[testEntity, testEntityDTO, testEntityRequest] {
+func makeTestUserOwnedNamedEntityOps(t *testing.T) namedEntityOps[testEntity, testEntityDTO, testEntityRequest] {
 	t.Helper()
 	d := newTestDB(t)
 
-	return userOwnedNamedEntityOps[testEntity, testEntityDTO, testEntityRequest]{
+	return namedEntityOps[testEntity, testEntityDTO, testEntityRequest]{
 		db:              d,
 		entityLabel:     "widget",
 		auditEntityType: "widget",
@@ -439,13 +461,13 @@ func makeTestUserOwnedNamedEntityOps(t *testing.T) userOwnedNamedEntityOps[testE
 		errNameExists:   errWidgetNameExists,
 		auditCreate:     testAuditWidgetCreate,
 		auditUpdate:     testAuditWidgetUpdate,
-		get: func(_ context.Context, id, _ string) (*testEntity, error) {
+		get: func(_ context.Context, id string) (*testEntity, error) {
 			return nil, sql.ErrNoRows // default to not-found; override in tests
 		},
-		create: func(_ context.Context, _ string, req testEntityRequest) (*testEntity, error) {
+		create: func(_ context.Context, req testEntityRequest) (*testEntity, error) {
 			return &testEntity{ID: "new-id", Name: req.Name}, nil
 		},
-		update: func(_ context.Context, id, _ string, req testEntityRequest) (*testEntity, error) {
+		update: func(_ context.Context, id string, req testEntityRequest) (*testEntity, error) {
 			return &testEntity{ID: id, Name: req.Name}, nil
 		},
 		reqName:    func(req testEntityRequest) string { return req.Name },
@@ -455,14 +477,14 @@ func makeTestUserOwnedNamedEntityOps(t *testing.T) userOwnedNamedEntityOps[testE
 	}
 }
 
-// ---- createUserOwnedNamedEntity ----
+// ---- createNamedEntity with user-scoped closures ----
 
-func TestCreateUserOwnedNamedEntity_Success(t *testing.T) {
+func TestCreateNamedEntity_UserScoped_Success(t *testing.T) {
 	ops := makeTestUserOwnedNamedEntityOps(t)
 
 	var capturedUserID string
-	ops.create = func(_ context.Context, userID string, req testEntityRequest) (*testEntity, error) {
-		capturedUserID = userID
+	ops.create = func(ctx context.Context, req testEntityRequest) (*testEntity, error) {
+		capturedUserID = auth.UserIDFromContext(ctx)
 		return &testEntity{ID: "new-id", Name: req.Name}, nil
 	}
 
@@ -471,7 +493,7 @@ func TestCreateUserOwnedNamedEntity_Success(t *testing.T) {
 	r = withUserID(r, "user-1")
 	w := httptest.NewRecorder()
 
-	createUserOwnedNamedEntity(ops, w, r)
+	createNamedEntity(ops, w, r)
 
 	require.Equal(t, http.StatusCreated, w.Code)
 	require.Equal(t, "user-1", capturedUserID)
@@ -481,6 +503,30 @@ func TestCreateUserOwnedNamedEntity_Success(t *testing.T) {
 	require.Equal(t, "My Widget", dto.Name)
 }
 
+func TestCreateNamedEntity_UserScoped_UsesConfiguredAuditEntityType(t *testing.T) {
+	ops := makeTestUserOwnedNamedEntityOps(t)
+
+	body := mustMarshal(t, testEntityRequest{Name: "My Widget"})
+	r := httptest.NewRequest(http.MethodPost, "/api/widgets", bytes.NewReader(body))
+	r = withUserID(r, "user-1")
+	w := httptest.NewRecorder()
+
+	createNamedEntity(ops, w, r)
+
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	ctx := t.Context()
+	logs, _, err := ops.db.ListAuditLogs(ctx, 10, 0)
+	require.NoError(t, err, "list audit logs")
+	require.Len(t, logs, 1)
+	require.Equal(t, "widget", logs[0].EntityType)
+	require.NotNil(t, logs[0].Metadata)
+
+	var metadata map[string]string
+	require.NoError(t, json.Unmarshal([]byte(*logs[0].Metadata), &metadata), "unmarshal metadata")
+	require.Equal(t, "My Widget", metadata[otelkeys.Name])
+}
+
 func TestCreateUserOwnedNamedEntity_InvalidJSON(t *testing.T) {
 	ops := makeTestUserOwnedNamedEntityOps(t)
 
@@ -488,7 +534,7 @@ func TestCreateUserOwnedNamedEntity_InvalidJSON(t *testing.T) {
 	r = withUserID(r, "user-1")
 	w := httptest.NewRecorder()
 
-	createUserOwnedNamedEntity(ops, w, r)
+	createNamedEntity(ops, w, r)
 
 	require.Equal(t, http.StatusBadRequest, w.Code)
 }
@@ -501,14 +547,14 @@ func TestCreateUserOwnedNamedEntity_EmptyName(t *testing.T) {
 	r = withUserID(r, "user-1")
 	w := httptest.NewRecorder()
 
-	createUserOwnedNamedEntity(ops, w, r)
+	createNamedEntity(ops, w, r)
 
 	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestCreateUserOwnedNamedEntity_ErrInvalidName(t *testing.T) {
 	ops := makeTestUserOwnedNamedEntityOps(t)
-	ops.create = func(_ context.Context, _ string, _ testEntityRequest) (*testEntity, error) {
+	ops.create = func(_ context.Context, _ testEntityRequest) (*testEntity, error) {
 		return nil, errInvalidWidgetName
 	}
 
@@ -517,14 +563,14 @@ func TestCreateUserOwnedNamedEntity_ErrInvalidName(t *testing.T) {
 	r = withUserID(r, "user-1")
 	w := httptest.NewRecorder()
 
-	createUserOwnedNamedEntity(ops, w, r)
+	createNamedEntity(ops, w, r)
 
 	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestCreateUserOwnedNamedEntity_ErrNameExists(t *testing.T) {
 	ops := makeTestUserOwnedNamedEntityOps(t)
-	ops.create = func(_ context.Context, _ string, _ testEntityRequest) (*testEntity, error) {
+	ops.create = func(_ context.Context, _ testEntityRequest) (*testEntity, error) {
 		return nil, errWidgetNameExists
 	}
 
@@ -533,14 +579,14 @@ func TestCreateUserOwnedNamedEntity_ErrNameExists(t *testing.T) {
 	r = withUserID(r, "user-1")
 	w := httptest.NewRecorder()
 
-	createUserOwnedNamedEntity(ops, w, r)
+	createNamedEntity(ops, w, r)
 
 	require.Equal(t, http.StatusConflict, w.Code)
 }
 
 func TestCreateUserOwnedNamedEntity_GenericCreateError(t *testing.T) {
 	ops := makeTestUserOwnedNamedEntityOps(t)
-	ops.create = func(_ context.Context, _ string, _ testEntityRequest) (*testEntity, error) {
+	ops.create = func(_ context.Context, _ testEntityRequest) (*testEntity, error) {
 		return nil, errors.New("unexpected db error")
 	}
 
@@ -549,14 +595,14 @@ func TestCreateUserOwnedNamedEntity_GenericCreateError(t *testing.T) {
 	r = withUserID(r, "user-1")
 	w := httptest.NewRecorder()
 
-	createUserOwnedNamedEntity(ops, w, r)
+	createNamedEntity(ops, w, r)
 
 	require.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
 func TestCreateUserOwnedNamedEntity_NilEntityWithoutError(t *testing.T) {
 	ops := makeTestUserOwnedNamedEntityOps(t)
-	ops.create = func(_ context.Context, _ string, _ testEntityRequest) (*testEntity, error) {
+	ops.create = func(_ context.Context, _ testEntityRequest) (*testEntity, error) {
 		return nil, nil
 	}
 
@@ -565,19 +611,19 @@ func TestCreateUserOwnedNamedEntity_NilEntityWithoutError(t *testing.T) {
 	r = withUserID(r, "user-1")
 	w := httptest.NewRecorder()
 
-	createUserOwnedNamedEntity(ops, w, r)
+	createNamedEntity(ops, w, r)
 
 	require.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
-// ---- getUserOwnedNamedEntity ----
+// ---- getNamedEntity with user-scoped closures ----
 
 func TestGetUserOwnedNamedEntity_Success(t *testing.T) {
 	ops := makeTestUserOwnedNamedEntityOps(t)
 
 	var capturedUserID string
-	ops.get = func(_ context.Context, id, userID string) (*testEntity, error) {
-		capturedUserID = userID
+	ops.get = func(ctx context.Context, id string) (*testEntity, error) {
+		capturedUserID = auth.UserIDFromContext(ctx)
 		return &testEntity{ID: id, Name: "Existing Widget"}, nil
 	}
 
@@ -585,7 +631,7 @@ func TestGetUserOwnedNamedEntity_Success(t *testing.T) {
 	r = withUserID(r, "user-1")
 	w := httptest.NewRecorder()
 
-	getUserOwnedNamedEntity(ops, w, r, "entity-1")
+	getNamedEntity(ops, w, r, "entity-1")
 
 	require.Equal(t, http.StatusOK, w.Code)
 	require.Equal(t, "user-1", capturedUserID)
@@ -604,14 +650,14 @@ func TestGetUserOwnedNamedEntity_NotFound(t *testing.T) {
 	r = withUserID(r, "user-1")
 	w := httptest.NewRecorder()
 
-	getUserOwnedNamedEntity(ops, w, r, "missing")
+	getNamedEntity(ops, w, r, "missing")
 
 	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestGetUserOwnedNamedEntity_DBError(t *testing.T) {
 	ops := makeTestUserOwnedNamedEntityOps(t)
-	ops.get = func(_ context.Context, _, _ string) (*testEntity, error) {
+	ops.get = func(_ context.Context, _ string) (*testEntity, error) {
 		return nil, errors.New("connection refused")
 	}
 
@@ -619,14 +665,14 @@ func TestGetUserOwnedNamedEntity_DBError(t *testing.T) {
 	r = withUserID(r, "user-1")
 	w := httptest.NewRecorder()
 
-	getUserOwnedNamedEntity(ops, w, r, "any")
+	getNamedEntity(ops, w, r, "any")
 
 	require.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
 func TestGetUserOwnedNamedEntity_NilEntityWithoutError(t *testing.T) {
 	ops := makeTestUserOwnedNamedEntityOps(t)
-	ops.get = func(_ context.Context, _, _ string) (*testEntity, error) {
+	ops.get = func(_ context.Context, _ string) (*testEntity, error) {
 		return nil, nil
 	}
 
@@ -634,19 +680,19 @@ func TestGetUserOwnedNamedEntity_NilEntityWithoutError(t *testing.T) {
 	r = withUserID(r, "user-1")
 	w := httptest.NewRecorder()
 
-	getUserOwnedNamedEntity(ops, w, r, "any")
+	getNamedEntity(ops, w, r, "any")
 
 	require.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
-// ---- updateUserOwnedNamedEntity ----
+// ---- updateNamedEntity with user-scoped closures ----
 
 func TestUpdateUserOwnedNamedEntity_Success(t *testing.T) {
 	ops := makeTestUserOwnedNamedEntityOps(t)
 
 	var capturedUserID string
-	ops.update = func(_ context.Context, id, userID string, req testEntityRequest) (*testEntity, error) {
-		capturedUserID = userID
+	ops.update = func(ctx context.Context, id string, req testEntityRequest) (*testEntity, error) {
+		capturedUserID = auth.UserIDFromContext(ctx)
 		return &testEntity{ID: id, Name: req.Name}, nil
 	}
 
@@ -655,7 +701,7 @@ func TestUpdateUserOwnedNamedEntity_Success(t *testing.T) {
 	r = withUserID(r, "user-1")
 	w := httptest.NewRecorder()
 
-	updateUserOwnedNamedEntity(ops, w, r, "entity-1")
+	updateNamedEntity(ops, w, r, "entity-1")
 
 	require.Equal(t, http.StatusOK, w.Code)
 	require.Equal(t, "user-1", capturedUserID)
@@ -672,7 +718,7 @@ func TestUpdateUserOwnedNamedEntity_InvalidJSON(t *testing.T) {
 	r = withUserID(r, "user-1")
 	w := httptest.NewRecorder()
 
-	updateUserOwnedNamedEntity(ops, w, r, "entity-1")
+	updateNamedEntity(ops, w, r, "entity-1")
 
 	require.Equal(t, http.StatusBadRequest, w.Code)
 }
@@ -685,14 +731,14 @@ func TestUpdateUserOwnedNamedEntity_EmptyName(t *testing.T) {
 	r = withUserID(r, "user-1")
 	w := httptest.NewRecorder()
 
-	updateUserOwnedNamedEntity(ops, w, r, "entity-1")
+	updateNamedEntity(ops, w, r, "entity-1")
 
 	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestUpdateUserOwnedNamedEntity_NotFound(t *testing.T) {
 	ops := makeTestUserOwnedNamedEntityOps(t)
-	ops.update = func(_ context.Context, _, _ string, _ testEntityRequest) (*testEntity, error) {
+	ops.update = func(_ context.Context, _ string, _ testEntityRequest) (*testEntity, error) {
 		return nil, sql.ErrNoRows
 	}
 
@@ -701,14 +747,14 @@ func TestUpdateUserOwnedNamedEntity_NotFound(t *testing.T) {
 	r = withUserID(r, "user-1")
 	w := httptest.NewRecorder()
 
-	updateUserOwnedNamedEntity(ops, w, r, "missing")
+	updateNamedEntity(ops, w, r, "missing")
 
 	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestUpdateUserOwnedNamedEntity_ErrInvalidName(t *testing.T) {
 	ops := makeTestUserOwnedNamedEntityOps(t)
-	ops.update = func(_ context.Context, _, _ string, _ testEntityRequest) (*testEntity, error) {
+	ops.update = func(_ context.Context, _ string, _ testEntityRequest) (*testEntity, error) {
 		return nil, errInvalidWidgetName
 	}
 
@@ -717,14 +763,14 @@ func TestUpdateUserOwnedNamedEntity_ErrInvalidName(t *testing.T) {
 	r = withUserID(r, "user-1")
 	w := httptest.NewRecorder()
 
-	updateUserOwnedNamedEntity(ops, w, r, "entity-1")
+	updateNamedEntity(ops, w, r, "entity-1")
 
 	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestUpdateUserOwnedNamedEntity_ErrNameExists(t *testing.T) {
 	ops := makeTestUserOwnedNamedEntityOps(t)
-	ops.update = func(_ context.Context, _, _ string, _ testEntityRequest) (*testEntity, error) {
+	ops.update = func(_ context.Context, _ string, _ testEntityRequest) (*testEntity, error) {
 		return nil, errWidgetNameExists
 	}
 
@@ -733,14 +779,14 @@ func TestUpdateUserOwnedNamedEntity_ErrNameExists(t *testing.T) {
 	r = withUserID(r, "user-1")
 	w := httptest.NewRecorder()
 
-	updateUserOwnedNamedEntity(ops, w, r, "entity-1")
+	updateNamedEntity(ops, w, r, "entity-1")
 
 	require.Equal(t, http.StatusConflict, w.Code)
 }
 
 func TestUpdateUserOwnedNamedEntity_GenericUpdateError(t *testing.T) {
 	ops := makeTestUserOwnedNamedEntityOps(t)
-	ops.update = func(_ context.Context, _, _ string, _ testEntityRequest) (*testEntity, error) {
+	ops.update = func(_ context.Context, _ string, _ testEntityRequest) (*testEntity, error) {
 		return nil, errors.New("unexpected db failure")
 	}
 
@@ -749,14 +795,14 @@ func TestUpdateUserOwnedNamedEntity_GenericUpdateError(t *testing.T) {
 	r = withUserID(r, "user-1")
 	w := httptest.NewRecorder()
 
-	updateUserOwnedNamedEntity(ops, w, r, "entity-1")
+	updateNamedEntity(ops, w, r, "entity-1")
 
 	require.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
 func TestUpdateUserOwnedNamedEntity_NilEntityWithoutError(t *testing.T) {
 	ops := makeTestUserOwnedNamedEntityOps(t)
-	ops.update = func(_ context.Context, _, _ string, _ testEntityRequest) (*testEntity, error) {
+	ops.update = func(_ context.Context, _ string, _ testEntityRequest) (*testEntity, error) {
 		return nil, nil
 	}
 
@@ -765,7 +811,7 @@ func TestUpdateUserOwnedNamedEntity_NilEntityWithoutError(t *testing.T) {
 	r = withUserID(r, "user-1")
 	w := httptest.NewRecorder()
 
-	updateUserOwnedNamedEntity(ops, w, r, "entity-1")
+	updateNamedEntity(ops, w, r, "entity-1")
 
 	require.Equal(t, http.StatusInternalServerError, w.Code)
 }

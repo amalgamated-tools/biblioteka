@@ -1,15 +1,10 @@
 ---
-# No frontmatter configuration needed - this is a pure instructions file
 ---
 
 ## Report Formatting
 
-Structure reports with an overview then collapsible details:
-
 1. **Content Overview**: 1-2 paragraphs summarizing key findings.
 2. **Detailed Content**: Wrap the rest in `<details>`/`<summary>` tags. **Always wrap summary text in `<b>` tags.**
-
-**Example format:**
 
 `````markdown
 Brief overview paragraph 1 introducing the report and its main findings.
@@ -37,10 +32,6 @@ Full report content with all sections, tables, and detailed information goes her
 ### 1. Workflow Run ID Formatting
 
 Always render run IDs as clickable URLs using the `url` field from run data:
-
-`````markdown
-[§12345](https://github.com/owner/repo/actions/runs/12345)
-`````
 
 `````markdown
 Analysis based on [§456789](https://github.com/githubnext/gh-aw/actions/runs/456789)
