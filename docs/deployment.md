@@ -377,6 +377,38 @@ No additional reverse proxy configuration is required — the application server
 
 ---
 
+## HTTP Response Compression
+
+Biblioteka automatically compresses HTTP responses using gzip via `GzipMiddleware`. Compression is applied transparently on the server side with no configuration required.
+
+**Conditions for compression:**
+
+1. The client signals support for gzip via `Accept-Encoding` (i.e., includes `gzip` with a non-zero `q` value).
+2. The response `Content-Type` is a known text-based format.
+
+**Compressed content types:**
+
+| Content-Type | Examples |
+|---|---|
+| `application/json` | API responses |
+| `application/xml`, `application/atom+xml` | OPDS feeds |
+| `application/javascript`, `text/javascript` | Frontend assets |
+| `text/css` | Stylesheets |
+| `text/html` | HTML pages |
+| `text/plain` | Plain-text responses |
+| `text/xml` | XML documents |
+| `image/svg+xml` | SVG images |
+
+Binary responses (EPUB, MOBI, PDF, JPEG, PNG) and streaming responses (Server-Sent Events) are passed through uncompressed.
+
+**Cache correctness:** Every response (compressed or not) includes `Vary: Accept-Encoding` so that caches store separate entries for compressed and uncompressed clients.
+
+**Range requests:** Compression is skipped for requests that include a `Range` header to preserve `Content-Range` semantics (e.g. partial file downloads). Note: the `Vary: Accept-Encoding` header is still present on Range responses, which may cause redundant cache entries for partial content in CDN or proxy caches.
+
+> **Reverse proxy note:** If your reverse proxy (Caddy, nginx) also compresses responses, you can either disable its compression for upstream responses or leave both active — Biblioteka will only compress when the client explicitly requests gzip, and the proxy will see `Content-Encoding: gzip` on already-compressed responses and forward them unchanged.
+
+---
+
 ## Static Asset Caching
 
 Biblioteka uses Vite's content-hashing for frontend assets (JavaScript, CSS, fonts). Every compiled asset under `/assets/` has a content-derived hash in its filename (e.g., `index-DfzxFbzN.js`), meaning a changed file always gets a new URL.
