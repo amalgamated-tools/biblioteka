@@ -299,7 +299,7 @@ func (c *DB) loadBookPublishers(ctx context.Context) (map[int64]string, error) {
 		`SELECT bpl.book, p.name
 		 FROM publishers p
 		 INNER JOIN books_publishers_link bpl ON bpl.publisher = p.id
-		 ORDER BY bpl.book`,
+		 ORDER BY bpl.book, bpl.id`,
 		func(rows *sql.Rows) (int64, string, error) {
 			var bookID int64
 			var name string
