@@ -50,6 +50,11 @@ func TestMakeDecryptingSMTPGetSetting_DecryptsSMTPPassword(t *testing.T) {
 	password, err := wrapped(t.Context(), smtp.SettingKeyPassword)
 	require.NoError(t, err)
 	require.Equal(t, "smtp-password", password)
+
+	// Non-password keys must be returned as-is even when secrets is set.
+	host, err := wrapped(t.Context(), smtp.SettingKeyHost)
+	require.NoError(t, err)
+	require.Equal(t, "other", host)
 }
 
 func TestMakeDecryptingSMTPGetSetting_ReturnsDecryptError(t *testing.T) {
