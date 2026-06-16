@@ -133,9 +133,11 @@ func collectRowsGrouped[T any](
 ) (map[string][]T, error) {
 	defer rows.Close()
 
-	result := make(map[string][]T)
+	var result map[string][]T
 	if cap > 0 {
 		result = make(map[string][]T, cap)
+	} else {
+		result = make(map[string][]T)
 	}
 
 	for rows.Next() {
