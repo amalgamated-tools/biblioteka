@@ -75,9 +75,49 @@ func Test_loadBookResultSupportedWorkTypes(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			result, err := loadBookResult(t.Context(), tc.work)
 			require.NoError(t, err)
-			require.NotEmpty(t, result.WorkID)
-			require.NotEmpty(t, result.BookID)
-			require.NotEmpty(t, result.AuthorID)
+
+			var (
+				expWorkID    string
+				expBookID    string
+				expAuthorID  string
+				expBookTitle string
+				expBookASIN  string
+			)
+
+			switch w := tc.work.(type) {
+			case SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWork:
+				expWorkID = w.Id
+				expBookID = w.BestBook.Id
+				expAuthorID = w.BestBook.PrimaryContributorEdge.Node.Id
+				expBookTitle = w.BestBook.Title
+				expBookASIN = w.BestBook.Details.Asin
+			case GetBookByLegacyIdGetBookByLegacyIdBookWork:
+				expWorkID = w.Id
+				expBookID = w.BestBook.Id
+				expAuthorID = w.BestBook.PrimaryContributorEdge.Node.Id
+				expBookTitle = w.BestBook.Title
+				expBookASIN = w.BestBook.Details.Asin
+			case GetBookByAsinGetBookByAsinBookWork:
+				expWorkID = w.Id
+				expBookID = w.BestBook.Id
+				expAuthorID = w.BestBook.PrimaryContributorEdge.Node.Id
+				expBookTitle = w.BestBook.Title
+				expBookASIN = w.BestBook.Details.Asin
+			case GetBookGetBookWork:
+				expWorkID = w.Id
+				expBookID = w.BestBook.Id
+				expAuthorID = w.BestBook.PrimaryContributorEdge.Node.Id
+				expBookTitle = w.BestBook.Title
+				expBookASIN = w.BestBook.Details.Asin
+			default:
+				require.FailNow(t, "unexpected work type", "%T", tc.work)
+			}
+
+			require.Equal(t, expWorkID, result.WorkID)
+			require.Equal(t, expBookID, result.BookID)
+			require.Equal(t, expAuthorID, result.AuthorID)
+			require.Equal(t, expBookTitle, result.BookTitle)
+			require.Equal(t, expBookASIN, result.BookASIN)
 		})
 	}
 }
