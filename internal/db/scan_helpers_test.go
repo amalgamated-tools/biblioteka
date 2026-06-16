@@ -173,6 +173,66 @@ func TestCollectRows_ClosesRowsOnError(t *testing.T) {
 	require.False(t, rows.Next())
 }
 
+func scanSampleForBook(row interface{ Scan(...any) error }) (string, *sample, error) {
+	var bookID string
+	item, err := scanSample(prefixedScanner{row: row, prefix: []any{&bookID}})
+	if err != nil {
+		return "", nil, err
+	}
+	return bookID, item, nil
+}
+
+func TestCollectForBooks_HappyPath(t *testing.T) {
+	d := memDB(t)
+	_, err := d.Exec(`CREATE TABLE t_books (book_id TEXT, name TEXT, age INTEGER)`)
+	require.NoError(t, err)
+	_, err = d.Exec(`
+		INSERT INTO t_books (book_id, name, age)
+		VALUES ('book-1', 'Alice', 30), ('book-1', 'Bob', 25), ('book-2', 'Carol', 40)
+	`)
+	require.NoError(t, err)
+
+	rows, err := d.Query(`SELECT book_id, name, age FROM t_books ORDER BY book_id, age`)
+	require.NoError(t, err)
+
+	items, err := collectForBooks(rows, scanSampleForBook, 0)
+	require.NoError(t, err)
+	require.Len(t, items, 2)
+	require.Equal(t, []sample{{Name: "Bob", Age: 25}, {Name: "Alice", Age: 30}}, items["book-1"])
+	require.Equal(t, []sample{{Name: "Carol", Age: 40}}, items["book-2"])
+}
+
+func TestCollectForBooks_EmptyResult(t *testing.T) {
+	d := memDB(t)
+	_, err := d.Exec(`CREATE TABLE t_books_empty (book_id TEXT, name TEXT, age INTEGER)`)
+	require.NoError(t, err)
+
+	rows, err := d.Query(`SELECT book_id, name, age FROM t_books_empty`)
+	require.NoError(t, err)
+
+	items, err := collectForBooks(rows, scanSampleForBook, 0)
+	require.NoError(t, err)
+	require.NotNil(t, items)
+	require.Empty(t, items)
+}
+
+func TestCollectForBooks_ClosesRowsOnError(t *testing.T) {
+	d := memDB(t)
+	_, err := d.Exec(`CREATE TABLE t_books_err (book_id TEXT, name TEXT)`)
+	require.NoError(t, err)
+	_, err = d.Exec(`INSERT INTO t_books_err (book_id, name) VALUES ('book-1', 'Alice')`)
+	require.NoError(t, err)
+
+	// Query returns only 2 columns, but scanSampleForBook expects 3 (book_id + name + age).
+	rows, err := d.Query(`SELECT book_id, name FROM t_books_err`)
+	require.NoError(t, err)
+
+	_, _ = collectForBooks(rows, scanSampleForBook, 0)
+
+	// Even after an error, rows should be closed.
+	require.False(t, rows.Next())
+}
+
 // --- collectRowsAndTotal tests -------------------------------------------
 
 // sampleWithTotal is used by collectRowsAndTotal tests to exercise the

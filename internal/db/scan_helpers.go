@@ -85,6 +85,28 @@ func collectRowsWithCap[T any](rows *sql.Rows, scan func(interface{ Scan(...any)
 	return items, nil
 }
 
+// collectForBooks iterates rows, scans each one using scan, and groups the
+// results by book ID. It always closes rows before returning.
+func collectForBooks[T any](
+	rows *sql.Rows,
+	scan func(interface{ Scan(...any) error }) (string, *T, error),
+	cap int,
+) (map[string][]T, error) {
+	defer rows.Close()
+	items := make(map[string][]T, cap)
+	for rows.Next() {
+		bookID, item, err := scan(rows)
+		if err != nil {
+			return nil, err
+		}
+		items[bookID] = append(items[bookID], *item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 // collectRowsAndTotal iterates rows, scans each one using scan (which also
 // returns a window-function total), and returns the collected slice and the
 // total seen on the last row. It always closes rows before returning.

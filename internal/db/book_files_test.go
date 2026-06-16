@@ -127,6 +127,22 @@ func TestGetFilesForBooks(t *testing.T) {
 	require.Equal(t, "wizard-and-glass.epub", got[book2.ID][0].FileName)
 }
 
+func TestGetFilesForBooks_EmptyInput(t *testing.T) {
+	d := newTestDB(t)
+
+	result, err := d.GetFilesForBooks(t.Context(), []string{})
+	require.NoError(t, err, "GetFilesForBooks(empty) error")
+	require.Nil(t, result)
+}
+
+func TestGetFilesForBooks_NilInput(t *testing.T) {
+	d := newTestDB(t)
+
+	result, err := d.GetFilesForBooks(t.Context(), nil)
+	require.NoError(t, err, "GetFilesForBooks(nil) error")
+	require.Nil(t, result)
+}
+
 func TestIncrementBookFileDownloadCount(t *testing.T) {
 	d := newTestDB(t)
 
