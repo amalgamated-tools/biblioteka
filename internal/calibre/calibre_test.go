@@ -122,7 +122,8 @@ func TestFormat_FileName(t *testing.T) {
 func TestCollectBookMap_CollectsRows(t *testing.T) {
 	sqlDB, err := sql.Open("sqlite", ":memory:")
 	require.NoError(t, err)
-	t.Cleanup(func() { _ = sqlDB.Close() })
+	sqlDB.SetMaxOpenConns(1)
+	t.Cleanup(func() { require.NoError(t, sqlDB.Close()) })
 
 	_, err = sqlDB.Exec(`
 		CREATE TABLE t (book INTEGER NOT NULL, val TEXT NOT NULL);
@@ -156,7 +157,7 @@ func TestCollectBookMap_CollectsRows(t *testing.T) {
 func TestLoadBookLanguages_MissingTables(t *testing.T) {
 	sqlDB, err := sql.Open("sqlite", ":memory:")
 	require.NoError(t, err)
-	t.Cleanup(func() { _ = sqlDB.Close() })
+	t.Cleanup(func() { require.NoError(t, sqlDB.Close()) })
 
 	cdb := &DB{db: sqlDB}
 

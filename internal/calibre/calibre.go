@@ -335,6 +335,7 @@ func (c *DB) loadBookComments(ctx context.Context) (map[int64]string, error) {
 			return bookID, text, nil
 		},
 		func(result map[int64]string, bookID int64, text string) {
+			// Calibre enforces at most one comment per book; overwrite is safe.
 			result[bookID] = text
 		},
 	)
