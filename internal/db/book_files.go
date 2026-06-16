@@ -96,29 +96,19 @@ func (d *DB) DeleteBookFile(ctx context.Context, id string) error {
 
 // GetFilesForBooks returns book files grouped by book ID for the given book IDs.
 func (d *DB) GetFilesForBooks(ctx context.Context, bookIDs []string) (map[string][]BookFile, error) {
-	if len(bookIDs) == 0 {
-		return nil, nil
-	}
-	slog.DebugContext(ctx, "db: batch fetching files for books", slog.Int(otelkeys.BookCount, len(bookIDs)))
-
-	inClause, args := buildInClause(bookIDs, 1)
-
 	orderBy := d.dialectOrderBy("bf.file_name", "ASC")
-	rows, err := d.QueryContext(ctx,
-		`SELECT `+bookFileColumnsWithPrefix("bf.")+` FROM book_files bf WHERE bf.book_id IN (`+inClause+`) `+orderBy,
-		args...,
+	return batchFetchByBookID(ctx, d, bookIDs, "db: batch fetching files for books",
+		func(inClause string) string {
+			return `SELECT ` + bookFileColumnsWithPrefix("bf.") + ` FROM book_files bf WHERE bf.book_id IN (` + inClause + `) ` + orderBy
+		},
+		func(row interface{ Scan(...any) error }) (string, *BookFile, error) {
+			bf, err := scanBookFile(row)
+			if err != nil {
+				return "", nil, err
+			}
+			return bf.BookID, bf, nil
+		},
 	)
-	if err != nil {
-		return nil, err
-	}
-
-	return collectRowsGrouped(rows, func(row interface{ Scan(...any) error }) (string, *BookFile, error) {
-		bf, err := scanBookFile(row)
-		if err != nil {
-			return "", nil, err
-		}
-		return bf.BookID, bf, nil
-	}, len(bookIDs))
 }
 
 // IncrementBookFileDownloadCount atomically increments the download_count for the

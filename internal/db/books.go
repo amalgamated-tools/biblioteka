@@ -322,30 +322,20 @@ func (d *DB) ListBooksModifiedSince(ctx context.Context, since time.Time, lastID
 
 // GetSeriesForBooks returns series entries (with position) grouped by book ID for the given book IDs.
 func (d *DB) GetSeriesForBooks(ctx context.Context, bookIDs []string) (map[string][]BookSeriesEntry, error) {
-	if len(bookIDs) == 0 {
-		return nil, nil
-	}
-	slog.DebugContext(ctx, "db: batch fetching series for books", slog.Int(otelkeys.BookCount, len(bookIDs)))
-
-	inClause, args := buildInClause(bookIDs, 1)
-
-	rows, err := d.QueryContext(ctx,
-		`SELECT bs.book_id, s.id, s.name, s.goodreads_id, s.hardcover_id, s.google_books_id, s.created_at, s.updated_at, bs.position
+	return batchFetchByBookID(ctx, d, bookIDs, "db: batch fetching series for books",
+		func(inClause string) string {
+			return `SELECT bs.book_id, s.id, s.name, s.goodreads_id, s.hardcover_id, s.google_books_id, s.created_at, s.updated_at, bs.position
 		FROM series s INNER JOIN book_series bs ON bs.series_id = s.id
-		WHERE bs.book_id IN (`+inClause+`)
-		ORDER BY s.name ASC`,
-		args...,
+		WHERE bs.book_id IN (` + inClause + `)
+		ORDER BY s.name ASC`
+		},
+		func(row interface{ Scan(...any) error }) (string, *BookSeriesEntry, error) {
+			var bookID string
+			var entry BookSeriesEntry
+			if err := row.Scan(&bookID, &entry.Series.ID, &entry.Series.Name, &entry.Series.GoodreadsID, &entry.Series.HardcoverID, &entry.Series.GoogleBooksID, &entry.Series.CreatedAt, &entry.Series.UpdatedAt, &entry.Position); err != nil {
+				return "", nil, err
+			}
+			return bookID, &entry, nil
+		},
 	)
-	if err != nil {
-		return nil, err
-	}
-
-	return collectRowsGrouped(rows, func(row interface{ Scan(...any) error }) (string, *BookSeriesEntry, error) {
-		var bookID string
-		entry, err := scanBookSeriesEntry(prefixedScanner{row: row, prefix: []any{&bookID}})
-		if err != nil {
-			return "", nil, err
-		}
-		return bookID, entry, nil
-	}, len(bookIDs))
 }

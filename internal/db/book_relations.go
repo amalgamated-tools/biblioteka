@@ -152,30 +152,17 @@ func (d *DB) SetBookSeries(ctx context.Context, bookID string, entries []BookSer
 
 // GetAuthorsForBooks returns authors grouped by book ID for the given book IDs.
 func (d *DB) GetAuthorsForBooks(ctx context.Context, bookIDs []string) (map[string][]Author, error) {
-	if len(bookIDs) == 0 {
-		return nil, nil
-	}
-	slog.DebugContext(ctx, "db: batch fetching authors for books", slog.Int(otelkeys.BookCount, len(bookIDs)))
-
-	inClause, args := buildInClause(bookIDs, 1)
-
-	rows, err := d.QueryContext(ctx,
-		`SELECT ba.book_id, a.id, a.name, a.goodreads_id, a.hardcover_id, a.google_books_id, a.image_url, a.created_at, a.updated_at
+	return batchFetchByBookID(ctx, d, bookIDs, "db: batch fetching authors for books",
+		func(inClause string) string {
+			return `SELECT ba.book_id, a.id, a.name, a.goodreads_id, a.hardcover_id, a.google_books_id, a.image_url, a.created_at, a.updated_at
 		FROM authors a INNER JOIN book_authors ba ON ba.author_id = a.id
-		WHERE ba.book_id IN (`+inClause+`)
-		ORDER BY a.name ASC`,
-		args...,
+		WHERE ba.book_id IN (` + inClause + `)
+		ORDER BY a.name ASC`
+		},
+		func(row interface{ Scan(...any) error }) (string, *Author, error) {
+			var bookID string
+			a, err := scanAuthor(prefixedScanner{row: row, prefix: []any{&bookID}})
+			return bookID, a, err
+		},
 	)
-	if err != nil {
-		return nil, err
-	}
-
-	return collectRowsGrouped(rows, func(row interface{ Scan(...any) error }) (string, *Author, error) {
-		var bookID string
-		a, err := scanAuthor(prefixedScanner{row: row, prefix: []any{&bookID}})
-		if err != nil {
-			return "", nil, err
-		}
-		return bookID, a, nil
-	}, len(bookIDs))
 }
